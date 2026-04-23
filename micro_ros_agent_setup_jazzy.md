@@ -1,6 +1,7 @@
 # ROS 2 Jazzy 自律走行・シミュレーション環境構築手順
 
 本ドキュメントでは、Raspberry Pi 5 (Ubuntu 24.04) での実機開発と、PC上での Gazebo シミュレーションの両方を1から完結させるためのセットアップ手順をまとめます。
+現在、このリポジトリ（Meistar）自体が必要なファイルを含む構成になっています。
 
 ## 1. 必須パッケージの一括インストール (共通)
 
@@ -21,109 +22,65 @@ sudo apt install -y \
   ros-jazzy-ros-gz-interfaces
 ```
 
-## 2. パッケージ構成の準備
+## 2. パッケージ構成（このリポジトリの構成）
 
-ロボットのモデルや設定ファイルを管理するための「箱」となるパッケージを作成します。
+本リポジトリは以下の構成になっており、必要なファイルは `src/meistar_description` にまとめられています。
 
-```bash
-# ワークスペースに移動
-mkdir -p ~/ros2_ws/src
-cd ~/ros2_ws/src
+- `Meistar/` (Workspace Root)
+  - `src/meistar_description/`
+    - `urdf/` : ロボットモデル（`robot.urdf.xacro`）
+    - `launch/` : 起動スクリプト（`spawn.launch.py`）
+    - `config/` : 設定ファイル（`bridge.yaml`, `params.yaml`）
 
-# パッケージの作成
-ros2 pkg create --build-type ament_cmake your_bot_description --dependencies urdf xacro
-
-# 必要なディレクトリの作成
-cd your_bot_description
-mkdir -p urdf launch config worlds
-```
-
-## 3. シミュレーション環境の設定 (Gazebo Harmonic)
+## 3. シミュレーション環境の設定
 
 ### 3.1 URDF (xacro) への記述
-`urdf/` 内のファイルに、移動用プラグインとセンサー設定を記述します。
+`urdf/robot.urdf.xacro` に、移動用プラグインとセンサー設定が記述されています。
 
-*   **移動用 (Planar Move):**
-    ```xml
-    <gazebo>
-      <plugin name="planar_move" filename="libgazebo_ros_planar_move.so">
-        <ros><remapping>cmd_vel:=cmd_vel</remapping></ros>
-        <robot_base_frame>base_link</robot_base_frame>
-        <publish_odom>true</publish_odom>
-        <publish_odom_tf>true</publish_odom_tf>
-      </plugin>
-    </gazebo>
-    ```
-*   **センサー用 (LiDAR):**
-    Jazzy（Gazebo Harmonic）では `gpu_lidar` センサーを使用します。
-    ```xml
-    <sensor name="lidar" type="gpu_lidar">
-      <gz_frame_id>lidar_link</gz_frame_id>
-      <topic>scan</topic>
-      <update_rate>10</update_rate>
-      <lidar>
-        <scan><horizontal><samples>640</samples><resolution>1</resolution><min_angle>-3.14</min_angle><max_angle>3.14</max_angle></horizontal></scan>
-        <range><min>0.1</min><max>12.0</max></range>
-      </lidar>
-    </sensor>
-    ```
+*   **移動用 (Planar Move):** `libgazebo_ros_planar_move.so` を使用。
+*   **センサー用 (LiDAR):** Gazebo Harmonic 用の `gpu_lidar` センサーを使用。
 
 ### 3.2 Gazebo ブリッジ設定 (`config/bridge.yaml`)
-Gazebo と ROS 2 間の通信を中継します。
-
-```yaml
-# LiDARデータをGazeboからROS 2へ流す設定
-- ros_topic_name: "/scan"
-  gz_topic_name: "/world/world_name/model/your_bot/link/lidar_link/sensor/lidar/scan"
-  ros_type: "sensor_msgs/msg/LaserScan"
-  gz_type: "gz.msgs.LaserScan"
-  direction: GZ_TO_ROS
-```
-
-> [!IMPORTANT]
-> `world_name` や `your_bot` の部分は、使用する `.world` ファイルやロボットのモデル名に合わせて必ず書き換えてください。
+Gazebo と ROS 2 間の通信を定義しています。`gz_topic_name` は Gazebo 側のワールド・モデル名と一致させる必要があります。
 
 ### 3.3 ビルド設定 (`CMakeLists.txt`)
-作成したフォルダをシステムが認識できるよう、`CMakeLists.txt` の末尾（`ament_package()` の前）に以下を追記します。
-
-```cmake
-install(DIRECTORY urdf launch config worlds
-  DESTINATION share/${PROJECT_NAME}
-)
-```
+`urdf`, `launch`, `config`, `worlds` フォルダが正しくインストールされるよう設定済みです。
 
 ### 3.4 環境変数の設定
-Gazebo が自分のロボットモデルを見つけられるようにします。`.bashrc` に追記しておくと便利です。
-
+Gazebo がモデルを見つけられるよう、以下の設定を `.bashrc` に追記してください。
 ```bash
-export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:~/ros2_ws/install/your_bot_description/share
+export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:~/Meistar/install/meistar_description/share
 ```
 
 ## 4. ビルドと実行
 
 ### ① ビルドの実行
 ```bash
-cd ~/ros2_ws
+cd ~/Meistar
 colcon build --symlink-install
 source install/setup.bash
 ```
 
 > [!TIP]
-> **重要：** 新しくターミナルを開くたびに `source ~/ros2_ws/install/setup.bash` を実行する必要があります。
-> 以下のコマンドで `.bashrc` に追記しておくと自動で source されるようになります。
-> `echo "source ~/ros2_ws/install/setup.bash" >> ~/.bashrc`
+> 新しくターミナルを開くたびに `source ~/Meistar/install/setup.bash` を実行してください。
 
 ### ② シミュレーションの開始
-`ros2 launch your_bot_description spawn.launch.py` 等で起動し、`teleop_twist_keyboard` で横移動を確認します。
+```bash
+ros2 launch meistar_description spawn.launch.py
+```
+起動後、別ターミナルで `teleop_twist_keyboard` を動かして動作確認を行います。
 
 ### ③ SLAM と Navigation2
 ```bash
-# 各々新しいターミナルで実行（sourceを忘れずに！）
+# SLAM (地図作成)
 ros2 launch slam_toolbox online_async_launch.py
+# Navigation2 (自動走行)
 ros2 launch nav2_bringup navigation_launch.py use_sim_time:=true
 ```
 
 ## 5. micro-ROS Agent のインストール (実機用)
+
+実機開発時は別のワークスペースを作成して管理することを推奨します。
 
 ```bash
 mkdir -p ~/microros_ws/src
@@ -137,11 +94,11 @@ colcon build
 
 ## 6. 全方向移動の重要パラメータ (params.yaml)
 
-| 設定項目 | 指定値 | 備考 |
-| :--- | :--- | :--- |
-| `robot_model_type` | `nav2_amcl::HolonomicRobotModel` | AMCL で横移動を考慮 |
-| `holonomic_robot` | `true` | 全方向移動を許可 |
-| `max_vel_y` | `0.5` (例) | 横方向の最大速度 |
+`config/params.yaml` に定義されています。
+- `robot_model_type`: `nav2_amcl::HolonomicRobotModel`
+- `holonomic_robot`: `true`
+- `max_vel_y`: `0.5`
+
 
 ---
 
