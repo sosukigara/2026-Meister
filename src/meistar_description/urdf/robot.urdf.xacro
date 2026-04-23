@@ -57,17 +57,22 @@
 
   <!-- Gazebo Plugins (Gazebo Harmonic / GZ Sim) -->
   <gazebo>
+    <!-- Movement control -->
     <plugin
-      filename="gz-sim-planar-move-system"
-      name="gz::sim::systems::PlanarMove">
+      filename="gz-sim-velocity-control-system"
+      name="gz::sim::systems::VelocityControl">
       <topic>/model/meistar_bot/cmd_vel</topic>
-      <odom_publish_frequency>50</odom_publish_frequency>
+    </plugin>
+
+    <!-- Odometry and TF publishing -->
+    <plugin
+      filename="gz-sim-odometry-publisher-system"
+      name="gz::sim::systems::OdometryPublisher">
       <odom_topic>/model/meistar_bot/odometry</odom_topic>
       <tf_topic>/model/meistar_bot/tf</tf_topic>
+      <odom_publish_frequency>50</odom_publish_frequency>
       <frame_id>odom</frame_id>
       <child_frame_id>base_link</child_frame_id>
-      <publish_odom>true</publish_odom>
-      <publish_odom_tf>true</publish_odom_tf>
     </plugin>
   </gazebo>
 
