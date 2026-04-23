@@ -21,7 +21,8 @@ def generate_launch_description():
     launch_slam = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_slam, 'launch', 'online_async_launch.py')
-        )
+        ),
+        launch_arguments={'use_sim_time': 'true'}.items()
     )
 
     # 3. Navigation2
