@@ -26,7 +26,7 @@ sudo apt install -y \
 ロボットのモデルや設定ファイルを管理するための「箱」となるパッケージを作成します。
 
 ```bash
-# ワークスペースに移動（例：~/ros2_ws）
+# ワークスペースに移動
 mkdir -p ~/ros2_ws/src
 cd ~/ros2_ws/src
 
@@ -40,29 +40,38 @@ mkdir -p urdf launch config worlds
 
 ## 3. シミュレーション環境の設定 (Gazebo Harmonic)
 
-### 3.1 URDF (xacro) へのプラグイン追加
-`urdf/` ディレクトリ内に作成するロボットモデルファイルに、全方向移動を実現するための **Planar Move Plugin** を追記します。
+### 3.1 URDF (xacro) への記述
+`urdf/` 内のファイルに、移動用プラグインとセンサー設定を記述します。
 
-```xml
-<gazebo>
-  <plugin name="planar_move" filename="libgazebo_ros_planar_move.so">
-    <ros>
-      <remapping>cmd_vel:=cmd_vel</remapping>
-      <remapping>odom:=odom</remapping>
-    </ros>
-    <robot_base_frame>base_link</robot_base_frame>
-    <publish_odom>true</publish_odom>
-    <publish_odom_tf>true</publish_odom_tf>
-    <update_rate>50</update_rate>
-  </plugin>
-</gazebo>
-```
+*   **移動用 (Planar Move):**
+    ```xml
+    <gazebo>
+      <plugin name="planar_move" filename="libgazebo_ros_planar_move.so">
+        <ros><remapping>cmd_vel:=cmd_vel</remapping></ros>
+        <robot_base_frame>base_link</robot_base_frame>
+        <publish_odom>true</publish_odom>
+        <publish_odom_tf>true</publish_odom_tf>
+      </plugin>
+    </gazebo>
+    ```
+*   **センサー用 (LiDAR):**
+    Jazzy（Gazebo Harmonic）では `gpu_lidar` センサーを使用します。
+    ```xml
+    <sensor name="lidar" type="gpu_lidar">
+      <gz_frame_id>lidar_link</gz_frame_id>
+      <topic>scan</topic>
+      <update_rate>10</update_rate>
+      <lidar>
+        <scan><horizontal><samples>640</samples><resolution>1</resolution><min_angle>-3.14</min_angle><max_angle>3.14</max_angle></horizontal></scan>
+        <range><min>0.1</min><max>12.0</max></range>
+      </lidar>
+    </sensor>
+    ```
 
-### 3.2 Gazebo ブリッジ設定 (`bridge.yaml`)
-Gazebo Harmonic と ROS 2 間の通信を中継する設定ファイル（`config/bridge.yaml`）を作成します。
+### 3.2 Gazebo ブリッジ設定 (`config/bridge.yaml`)
+Gazebo と ROS 2 間の通信（LiDARデータ等）を中継します。
 
 ```yaml
-# LiDARデータをGazeboからROS 2へ流す設定
 - ros_topic_name: "/scan"
   gz_topic_name: "/world/world_name/model/your_bot/link/lidar_link/sensor/lidar/scan"
   ros_type: "sensor_msgs/msg/LaserScan"
@@ -70,16 +79,43 @@ Gazebo Harmonic と ROS 2 間の通信を中継する設定ファイル（`confi
   direction: GZ_TO_ROS
 ```
 
-### 3.3 シミュレーション起動用 Launch ファイル
-`launch/` ディレクトリに、Gazebo の起動とロボットのスポーン（登場）を行うスクリプトを作成します。
+### 3.3 ビルド設定 (`CMakeLists.txt`)
+作成したフォルダをシステムが認識できるよう、`CMakeLists.txt` の末尾（`ament_package()` の前）に以下を追記します。
 
-*   **Robot State Publisher:** URDFを読み込んで座標系（TF）を配信。
-*   **Spawn Entity:** Gazebo の世界にロボットを配置。
-*   **GZ Bridge:** 上記 `bridge.yaml` を読み込み通信を開始。
+```cmake
+install(DIRECTORY urdf launch config worlds
+  DESTINATION share/${PROJECT_NAME}
+)
+```
 
-## 4. micro-ROS Agent のインストール (実機用)
+### 3.4 環境変数の設定
+Gazebo が自分のロボットモデルを見つけられるようにします。`.bashrc` に追記しておくと便利です。
 
-実機の ESP32 と通信するためのエージェントを準備します。
+```bash
+export GZ_SIM_RESOURCE_PATH=$GZ_SIM_RESOURCE_PATH:~/ros2_ws/install/your_bot_description/share
+```
+
+## 4. ビルドと実行
+
+### ① ビルドの実行
+```bash
+cd ~/ros2_ws
+colcon build --symlink-install
+source install/setup.bash
+```
+
+### ② シミュレーションの開始
+`ros2 launch your_bot_description spawn.launch.py` 等で起動し、`teleop_twist_keyboard` で横移動を確認します。
+
+### ③ SLAM と Navigation2
+```bash
+# SLAM
+ros2 launch slam_toolbox online_async_launch.py
+# Navigation2 (シミュレーション時は use_sim_time:=true)
+ros2 launch nav2_bringup navigation_launch.py use_sim_time:=true
+```
+
+## 5. micro-ROS Agent のインストール (実機用)
 
 ```bash
 mkdir -p ~/microros_ws/src
@@ -87,39 +123,19 @@ cd ~/microros_ws/src
 git clone -b jazzy https://github.com/micro-ROS/micro-ROS-Agent.git
 
 cd ~/microros_ws
-rosdep update
-rosdep install --from-paths src --ignore-src -y
+rosdep update && rosdep install --from-paths src --ignore-src -y
 colcon build
-```
-
-## 5. 実行手順
-
-### ① シミュレーションの開始
-作成した Launch ファイルを実行し、Gazebo 上でロボットを確認します。
-`teleop_twist_keyboard` で横移動（`j`, `l`キー）ができるかテストしてください。
-
-### ② SLAM (地図作成) の起動
-```bash
-ros2 launch slam_toolbox online_async_launch.py
-```
-
-### ③ Navigation2 (自動走行) の起動
-```bash
-# use_sim_time を true に設定
-ros2 launch nav2_bringup navigation_launch.py use_sim_time:=true
 ```
 
 ## 6. 全方向移動の重要パラメータ (params.yaml)
 
-`nav2_bringup` で使用する設定ファイルで以下の項目を必ずチェックしてください。
-
 | 設定項目 | 指定値 | 備考 |
 | :--- | :--- | :--- |
 | `robot_model_type` | `nav2_amcl::HolonomicRobotModel` | AMCL で横移動を考慮 |
-| `holonomic_robot` | `true` | 全方向移動のコマンド許可 |
+| `holonomic_robot` | `true` | 全方向移動を許可 |
 | `max_vel_y` | `0.5` (例) | 横方向の最大速度 |
 
 ---
 
-### 💡 アドバイス
-「1から順番にコマンドを叩けば動く」状態にするためには、各ファイル（URDFやLaunch）の配置場所をドキュメント通りに守ることが重要です。シミュレーションで $v_y$ が動いたら、いよいよ実機のマイコン側に逆運動学を実装しましょう！
+### 💡 最終チェック
+ビルド時に `--symlink-install` を使うことで、URDFや設定ファイルを書き換えた際に再ビルドなしで反映されるようになります。LiDARのデータが `/scan` トピックに来ない場合は、`bridge.yaml` のトピック名が Gazebo 側と一致しているか確認してください。
