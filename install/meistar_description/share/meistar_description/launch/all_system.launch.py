@@ -1,0 +1,1 @@
+/home/so/Meistar/src/meistar_description/launch/all_system.launch.py
