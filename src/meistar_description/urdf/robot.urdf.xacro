@@ -71,8 +71,8 @@
       <odom_topic>/model/meistar_bot/odometry</odom_topic>
       <tf_topic>/model/meistar_bot/tf</tf_topic>
       <odom_publish_frequency>50</odom_publish_frequency>
-      <frame_id>odom</frame_id>
-      <child_frame_id>base_link</child_frame_id>
+      <odom_frame>odom</odom_frame>
+      <robot_base_frame>base_link</robot_base_frame>
     </plugin>
   </gazebo>
 
