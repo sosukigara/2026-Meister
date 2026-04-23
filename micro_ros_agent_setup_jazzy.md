@@ -69,15 +69,19 @@ mkdir -p urdf launch config worlds
     ```
 
 ### 3.2 Gazebo ブリッジ設定 (`config/bridge.yaml`)
-Gazebo と ROS 2 間の通信（LiDARデータ等）を中継します。
+Gazebo と ROS 2 間の通信を中継します。
 
 ```yaml
+# LiDARデータをGazeboからROS 2へ流す設定
 - ros_topic_name: "/scan"
   gz_topic_name: "/world/world_name/model/your_bot/link/lidar_link/sensor/lidar/scan"
   ros_type: "sensor_msgs/msg/LaserScan"
   gz_type: "gz.msgs.LaserScan"
   direction: GZ_TO_ROS
 ```
+
+> [!IMPORTANT]
+> `world_name` や `your_bot` の部分は、使用する `.world` ファイルやロボットのモデル名に合わせて必ず書き換えてください。
 
 ### 3.3 ビルド設定 (`CMakeLists.txt`)
 作成したフォルダをシステムが認識できるよう、`CMakeLists.txt` の末尾（`ament_package()` の前）に以下を追記します。
@@ -104,14 +108,18 @@ colcon build --symlink-install
 source install/setup.bash
 ```
 
+> [!TIP]
+> **重要：** 新しくターミナルを開くたびに `source ~/ros2_ws/install/setup.bash` を実行する必要があります。
+> 以下のコマンドで `.bashrc` に追記しておくと自動で source されるようになります。
+> `echo "source ~/ros2_ws/install/setup.bash" >> ~/.bashrc`
+
 ### ② シミュレーションの開始
 `ros2 launch your_bot_description spawn.launch.py` 等で起動し、`teleop_twist_keyboard` で横移動を確認します。
 
 ### ③ SLAM と Navigation2
 ```bash
-# SLAM
+# 各々新しいターミナルで実行（sourceを忘れずに！）
 ros2 launch slam_toolbox online_async_launch.py
-# Navigation2 (シミュレーション時は use_sim_time:=true)
 ros2 launch nav2_bringup navigation_launch.py use_sim_time:=true
 ```
 
