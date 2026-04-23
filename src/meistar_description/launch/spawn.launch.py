@@ -23,11 +23,14 @@ def generate_launch_description():
         parameters=[{'robot_description': robot_description_raw, 'use_sim_time': True}]
     )
 
+    # Path to world file
+    world_path = os.path.join(pkg_share, 'worlds', 'my_world.sdf')
+
     # Gazebo Sim
     node_gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')]),
-        launch_arguments={'gz_args': '-r empty.sdf'}.items(),
+        launch_arguments={'gz_args': f'-r {world_path}'}.items(),
     )
 
     # Spawn Robot
@@ -43,7 +46,10 @@ def generate_launch_description():
         package='ros_gz_bridge',
         executable='parameter_bridge',
         output='screen',
-        parameters=[{'config_file': os.path.join(pkg_share, 'config', 'bridge.yaml')}]
+        parameters=[{
+            'config_file': os.path.join(pkg_share, 'config', 'bridge.yaml'),
+            'use_sim_time': True
+        }]
     )
 
     return LaunchDescription([
