@@ -5,11 +5,12 @@
 # ==========================================
 
 # 1. 環境の読み込み
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source /opt/ros/jazzy/setup.bash
-cd ~/Meistar
+cd "$SCRIPT_DIR"
 
 # ビルドが必要な場合は実行（初回や変更時）
-echo "Building workspace..."
+echo "Building workspace at $SCRIPT_DIR..."
 colcon build --symlink-install
 source install/setup.bash
 
@@ -28,6 +29,8 @@ cleanup() {
     fi
     # 別窓で開いたテレオペ用プロセスを終了
     pkill -f teleop_twist_keyboard
+    # プロセスの完全な掃除
+    ./kill_all.sh
     echo "Cleanup complete."
     exit 0
 }
@@ -44,9 +47,9 @@ ros2 launch meistar_description all_system.launch.py &
 LAUNCH_PID=$!
 
 # 少し待ってからテレオペ用ウィンドウを表示
-sleep 3
+sleep 5
 echo "Opening Teleop window..."
-gnome-terminal --title="Teleop Keyboard" -- bash -c "source /opt/ros/jazzy/setup.bash; source ~/Meistar/install/setup.bash; ros2 run teleop_twist_keyboard teleop_twist_keyboard"
+gnome-terminal --title="Teleop Keyboard" -- bash -c "source /opt/ros/jazzy/setup.bash; source $SCRIPT_DIR/install/setup.bash; ros2 run teleop_twist_keyboard teleop_twist_keyboard"
 
 echo "------------------------------------------"
 echo "Running. Press Ctrl+C to stop everything."

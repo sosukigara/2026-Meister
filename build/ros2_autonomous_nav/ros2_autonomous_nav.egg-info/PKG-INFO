@@ -1,0 +1,7 @@
+Metadata-Version: 2.1
+Name: ros2-autonomous-nav
+Version: 0.1.0
+Summary: Autonomous Navigation with Nav2 on a diff drive robot in Gazebo.
+Maintainer: Ahmed M. Abbas
+Maintainer-email: ahmed@example.com
+License: MIT

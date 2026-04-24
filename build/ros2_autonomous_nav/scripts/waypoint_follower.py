@@ -1,0 +1,1 @@
+/home/so/Meistar/ros2-autonomous-nav/scripts/waypoint_follower.py
