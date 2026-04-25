@@ -5,7 +5,10 @@ config/mapper_params_online_async.yaml
 config/mapping_nav_params.yaml
 config/nav2_params.yaml
 config/nav2_rviz.rviz
+config/real_mapper_params_online_async.yaml
+config/real_nav2_params.yaml
 launch/mapping_nav.launch.py
+launch/real_robot.launch.py
 launch/robot_nav.launch.py
 launch/slam_map.launch.py
 maps/nav_world.pgm
