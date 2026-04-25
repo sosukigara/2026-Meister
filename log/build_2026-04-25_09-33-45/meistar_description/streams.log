@@ -1,0 +1,53 @@
+[0.012s] Invoking command in '/home/so/Meistar/build/meistar_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/so/Meistar/original/src/meistar_description -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/so/Meistar/install/meistar_description
+[0.109s] -- The C compiler identification is GNU 13.3.0
+[0.171s] -- The CXX compiler identification is GNU 13.3.0
+[0.191s] -- Detecting C compiler ABI info
+[0.296s] -- Detecting C compiler ABI info - done
+[0.304s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.305s] -- Detecting C compile features
+[0.305s] -- Detecting C compile features - done
+[0.316s] -- Detecting CXX compiler ABI info
+[0.440s] -- Detecting CXX compiler ABI info - done
+[0.451s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.452s] -- Detecting CXX compile features
+[0.452s] -- Detecting CXX compile features - done
+[0.463s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.634s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.715s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.781s] -- Found urdf: 2.10.0 (/opt/ros/jazzy/share/urdf/cmake)
+[0.857s] -- Found TinyXML2 via Config file: /usr/lib/x86_64-linux-gnu/cmake/tinyxml2
+[0.877s] -- Found xacro: 2.1.1 (/opt/ros/jazzy/share/xacro/cmake)
+[0.881s] -- Found ament_lint_auto: 0.17.5 (/opt/ros/jazzy/share/ament_lint_auto/cmake)
+[0.997s] -- Configuring done (1.0s)
+[1.002s] -- Generating done (0.0s)
+[1.003s] -- Build files have been written to: /home/so/Meistar/build/meistar_description
+[1.012s] Invoked command in '/home/so/Meistar/build/meistar_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake /home/so/Meistar/original/src/meistar_description -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/so/Meistar/install/meistar_description
+[1.014s] Invoking command in '/home/so/Meistar/build/meistar_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/so/Meistar/build/meistar_description -- -j12 -l12
+[1.075s] Invoked command in '/home/so/Meistar/build/meistar_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --build /home/so/Meistar/build/meistar_description -- -j12 -l12
+[1.090s] Invoking command in '/home/so/Meistar/build/meistar_description': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/so/Meistar/build/meistar_description
+[1.101s] -- Install configuration: ""
+[1.102s] -- Execute custom install script
+[1.102s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/urdf/robot.urdf.xacro
+[1.114s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/launch/all_system.launch.py
+[1.127s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/launch/spawn.launch.py
+[1.139s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/config/bridge.yaml
+[1.153s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/config/nav2_params.yaml
+[1.165s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/config/params.yaml
+[1.178s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/worlds/my_custom_world.sdf
+[1.191s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/worlds/my_world.sdf
+[1.205s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/ament_index/resource_index/package_run_dependencies/meistar_description
+[1.218s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/ament_index/resource_index/parent_prefix_path/meistar_description
+[1.231s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/environment/ament_prefix_path.sh
+[1.243s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/environment/ament_prefix_path.dsv
+[1.257s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/environment/path.sh
+[1.270s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/environment/path.dsv
+[1.283s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/local_setup.bash
+[1.295s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/local_setup.sh
+[1.310s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/local_setup.zsh
+[1.328s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/local_setup.dsv
+[1.346s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/package.dsv
+[1.362s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/ament_index/resource_index/packages/meistar_description
+[1.376s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/cmake/meistar_descriptionConfig.cmake
+[1.391s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/cmake/meistar_descriptionConfig-version.cmake
+[1.405s] -- Symlinking: /home/so/Meistar/install/meistar_description/share/meistar_description/package.xml
+[1.424s] Invoked command in '/home/so/Meistar/build/meistar_description' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy DEBUGINFOD_URLS=https://debuginfod.ubuntu.com /usr/bin/cmake --install /home/so/Meistar/build/meistar_description

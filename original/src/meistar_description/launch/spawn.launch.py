@@ -31,7 +31,7 @@ def generate_launch_description():
     )
 
     # Path to world file
-    world_path = os.path.join(pkg_share, 'worlds', 'my_world.sdf')
+    world_path = os.path.join(pkg_share, 'worlds', 'my_custom_world.sdf')
 
     # Gazebo Sim
     node_gz_sim = IncludeLaunchDescription(

@@ -1,0 +1,1 @@
+/home/so/Meistar/build/meistar_description/ament_cmake_core/meistar_descriptionConfig.cmake
