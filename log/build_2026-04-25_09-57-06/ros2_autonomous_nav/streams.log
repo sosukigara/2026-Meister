@@ -1,0 +1,17 @@
+[1.600s] Invoking command in '/home/so/Meistar/build/ros2_autonomous_nav': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/so/Meistar/build/ros2_autonomous_nav/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/so/Meistar/install/ros2_autonomous_nav/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/so/Meistar/build/ros2_autonomous_nav/build --no-deps symlink_data
+[2.103s] running develop
+[2.409s] running egg_info
+[2.440s] writing ros2_autonomous_nav.egg-info/PKG-INFO
+[2.441s] writing dependency_links to ros2_autonomous_nav.egg-info/dependency_links.txt
+[2.442s] writing entry points to ros2_autonomous_nav.egg-info/entry_points.txt
+[2.442s] writing requirements to ros2_autonomous_nav.egg-info/requires.txt
+[2.443s] writing top-level names to ros2_autonomous_nav.egg-info/top_level.txt
+[2.497s] reading manifest file 'ros2_autonomous_nav.egg-info/SOURCES.txt'
+[2.500s] writing manifest file 'ros2_autonomous_nav.egg-info/SOURCES.txt'
+[2.539s] running build_ext
+[2.568s] Creating /home/so/Meistar/install/ros2_autonomous_nav/lib/python3.12/site-packages/ros2-autonomous-nav.egg-link (link to .)
+[2.569s] Installing waypoint_follower script to /home/so/Meistar/install/ros2_autonomous_nav/lib/ros2_autonomous_nav
+[2.570s] 
+[2.570s] Installed /home/so/Meistar/build/ros2_autonomous_nav
+[2.572s] running symlink_data
+[2.707s] Invoked command in '/home/so/Meistar/build/ros2_autonomous_nav' returned '0': DEBUGINFOD_URLS=https://debuginfod.ubuntu.com PYTHONPATH=/home/so/Meistar/build/ros2_autonomous_nav/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/so/Meistar/install/ros2_autonomous_nav/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/so/Meistar/build/ros2_autonomous_nav/build --no-deps symlink_data

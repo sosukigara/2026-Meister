@@ -16,6 +16,9 @@ source install/setup.bash
 cleanup() {
     echo ""
     echo "システムを終了しています..."
+    # このスクリプトから起動された全ての子プロセスを終了
+    pkill -P $$
+    # 名前で念押し
     pkill -f "mapping_nav.launch.py"
     pkill -f "rviz2"
     pkill -f "gz sim"
@@ -23,7 +26,8 @@ cleanup() {
     exit 0
 }
 
-trap cleanup SIGINT
+# SIGINT (Ctrl+C), SIGTERM, EXIT 時にクリーンアップを実行
+trap cleanup SIGINT SIGTERM EXIT
 
 # ------------------------------------------
 # 実行

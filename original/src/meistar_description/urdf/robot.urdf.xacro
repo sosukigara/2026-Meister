@@ -101,7 +101,7 @@
         </range>
       </lidar>
       <always_on>1</always_on>
-      <visualize>true</visualize>
+      <visualize>false</visualize>
     </sensor>
   </gazebo>
 
