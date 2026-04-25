@@ -1,0 +1,1 @@
+/home/so/Meistar/build/ros2_autonomous_nav/launch/mapping_nav.launch.py

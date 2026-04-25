@@ -2,8 +2,10 @@ package.xml
 setup.cfg
 setup.py
 config/mapper_params_online_async.yaml
+config/mapping_nav_params.yaml
 config/nav2_params.yaml
 config/nav2_rviz.rviz
+launch/mapping_nav.launch.py
 launch/robot_nav.launch.py
 launch/slam_map.launch.py
 maps/nav_world.pgm
@@ -20,4 +22,5 @@ scripts/generate_map.py
 scripts/waypoint_follower.py
 urdf/my_robot_cpu.urdf
 urdf/my_robot_gpu.urdf
+worlds/my_custom_world.sdf
 worlds/nav_world.sdf

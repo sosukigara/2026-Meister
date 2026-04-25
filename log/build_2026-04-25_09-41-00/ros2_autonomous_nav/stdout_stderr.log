@@ -1,0 +1,17 @@
+running develop
+running egg_info
+writing ros2_autonomous_nav.egg-info/PKG-INFO
+writing dependency_links to ros2_autonomous_nav.egg-info/dependency_links.txt
+writing entry points to ros2_autonomous_nav.egg-info/entry_points.txt
+writing requirements to ros2_autonomous_nav.egg-info/requires.txt
+writing top-level names to ros2_autonomous_nav.egg-info/top_level.txt
+reading manifest file 'ros2_autonomous_nav.egg-info/SOURCES.txt'
+writing manifest file 'ros2_autonomous_nav.egg-info/SOURCES.txt'
+running build_ext
+Creating /home/so/Meistar/install/ros2_autonomous_nav/lib/python3.12/site-packages/ros2-autonomous-nav.egg-link (link to .)
+Installing waypoint_follower script to /home/so/Meistar/install/ros2_autonomous_nav/lib/ros2_autonomous_nav
+
+Installed /home/so/Meistar/build/ros2_autonomous_nav
+running symlink_data
+symbolically linking /home/so/Meistar/build/ros2_autonomous_nav/launch/mapping_nav.launch.py -> /home/so/Meistar/install/ros2_autonomous_nav/share/ros2_autonomous_nav/launch
+symbolically linking /home/so/Meistar/build/ros2_autonomous_nav/config/mapping_nav_params.yaml -> /home/so/Meistar/install/ros2_autonomous_nav/share/ros2_autonomous_nav/config
