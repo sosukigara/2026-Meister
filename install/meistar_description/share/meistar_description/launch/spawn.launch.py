@@ -1,1 +1,0 @@
-/home/so/Meistar/original/src/meistar_description/launch/spawn.launch.py

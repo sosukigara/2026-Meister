@@ -1,2 +1,0 @@
-[console_scripts]
-waypoint_follower = scripts.waypoint_follower:main
