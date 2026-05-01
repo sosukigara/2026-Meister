@@ -1,3 +1,6 @@
+/home/so/Meistar/install/meistar_description/share/meistar_description/urdf/chassis.xacro
+/home/so/Meistar/install/meistar_description/share/meistar_description/urdf/gazebo.xacro
+/home/so/Meistar/install/meistar_description/share/meistar_description/urdf/lidar.xacro
 /home/so/Meistar/install/meistar_description/share/meistar_description/urdf/robot.urdf.xacro
 /home/so/Meistar/install/meistar_description/share/meistar_description/launch/all_system.launch.py
 /home/so/Meistar/install/meistar_description/share/meistar_description/launch/spawn.launch.py
