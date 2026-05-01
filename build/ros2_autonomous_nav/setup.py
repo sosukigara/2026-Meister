@@ -1,1 +1,0 @@
-/home/so/Meistar/ros2-autonomous-nav/setup.py
