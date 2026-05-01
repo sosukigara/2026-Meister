@@ -1,39 +1,40 @@
 # Project Context & Progress: Meistar ROS 2 Navigation
 
-このドキュメントは、次回以降の作業を円滑に引き継ぐための現状サマリーです。
+このドキュメントは、作業の進捗と「モジュール化された新構成」を記録した引き継ぎ用サマリーです。
 
-## 1. プロジェクト概要
-*   **目的**: ROS 2を用いた自律移動ロボットの開発。SLAMによる地図作成とNav2による経路計画・走行を実現する。
-*   **現在のフェーズ**: Gazeboシミュレーション環境での動作確認が完了し、実機への移行準備（設計・ドキュメント化）を開始した段階。
+## 1. プロジェクトの現状
+*   **フェーズ**: シミュレーション環境の高度なリファクタリングが完了。
+*   **状態**: 
+    *   URDFはXacroマクロにより部品化済み。
+    *   Launchファイルは役割（Sim/SLAM/Nav2/RSP）ごとに分割され、メンテナンス性が高い状態。
+    *   SLAM (slam_toolbox) と Nav2 が安定して動作することを確認済み。
 
-## 2. ワークスペースと主要ファイル
-*   **メインディレクトリ**: `/home/so/Meistar`
-*   **主要パッケージ**: `ros2-autonomous-nav`
-*   **主要スクリプト**:
-    *   `./scripts/start_mapping_nav.sh`: Gazebo + SLAM (slam_toolbox) + Nav2 を一括起動する。
-    *   `./src/ros2_autonomous_nav/rviz.sh`: 設定済みのRViz2を起動する。
-*   **ドキュメント**:
-    *   `./docs/real_hardware_migration_guide.md`: 実機移行に向けたチェックリストと技術解説。
-    *   `./docs/agent.md`: 本ドキュメント。
+## 2. ディレクトリ構造と主要コンポーネント
 
-## 3. ロボットの構成・見た目 (URDF/Models)
-ロボットの形状やセンサーの配置は以下のファイルで定義されています。
+### 📦 ソースコード (`src/`)
+*   **`meistar_description/urdf/`**: ロボットの定義
+    *   `robot.urdf.xacro`: メイン。以下のパーツを統合。
+    *   `chassis.xacro`: ロボット本体の形状・色。
+    *   `lidar.xacro`: センサー設定（Gazeboプラグイン含む）。
+    *   `gazebo.xacro`: シミュレーション用プラグイン（速度制御・オドメトリ）。
+*   **`ros2_autonomous_nav/launch/`**: 起動設定（分割済み）
+    *   `mapping_nav.launch.py`: **一括起動用メイン**。
+    *   `robot_state_publisher.launch.py`: Xacroの動的処理（静的URDF不要）。
+    *   `simulation.launch.py`: Gazebo + Bridge（通信）。
+    *   `slam.launch.py` / `navigation.launch.py`: それぞれのスタックを起動。
 
-*   **メイン設計データ (Xacro)**:
-    *   `/home/so/Meistar/src/meistar_description/urdf/robot.urdf.xacro`
-    *   見た目（色・形）や物理特性のマスターデータです。
-*   **ナビゲーション用展開データ (URDF)**:
-    *   `/home/so/Meistar/src/ros2_autonomous_nav/urdf/my_robot_gpu.urdf`
-    *   シミュレーション環境が直接参照しているファイルです。
-*   **モデルデータ (Meshes)**:
-    *   3Dモデル（STL等）を使用する場合は `/home/so/Meistar/src/meistar_description/meshes/` を作成して配置します。
+### 📄 ドキュメント・スクリプト
+*   `./scripts/start_mapping_nav.sh`: **【最重要】** ビルドから起動までを行うエントリーポイント。
+*   `./docs/real_hardware_migration_guide.md`: 実機移行への技術メモ。
+*   `./README.md`: ワークスペース全体の概要。
+
+## 3. 次回へのヒント（プロンプト節約）
+*   **見た目の変更**: `chassis.xacro` を編集するだけで即座に反映されます。
+*   **Bridgeの仕様**: Gazebo側は `/model/meistar_bot/` という接頭辞が付く設定になっています。トピックが届かない場合は `simulation.launch.py` の remappings を確認してください。
+*   **時間の同期**: 全てのLaunchで `use_sim_time:=true` がデフォルトになっています。実機移行時はこれを一括で `false` に切り替える必要があります。
 
 ---
-
-## 4. 現在の状況 (Latest Status)
-*   **シミュレーション**: Gazebo上でロボットがスポーンし、Lidarデータとオドメトリに基づいたマッピング・自律移動が正常に動作している。
-*   **移行準備**: 実機に置き換える際に必要な「トピック（/scan, /odom, /cmd_vel）」と「TF（odom -> base_footprint）」の要件を整理済み。
-*   **トラブルシューティング**: 実機で発生しがちな「LiDARの自己干渉（機体への映り込み）」への対策（最短距離制限 vs 角度制限）についてもドキュメント化済み。
+**Status**: 🚀 Ready for next steps (Hardware integration or Visual customization).
 
 ## 4. 次回以降のタスク (Next Actions)
 1.  **実機用パラメータの整備**:

@@ -1,0 +1,1 @@
+/home/so/Meistar/build/ros2_autonomous_nav/launch/simulation.launch.py
