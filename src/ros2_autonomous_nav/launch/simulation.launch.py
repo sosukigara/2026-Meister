@@ -6,15 +6,25 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
+from launch.substitutions import PathJoinSubstitution
+
 def generate_launch_description():
     pkg_nav = get_package_share_directory('ros2_autonomous_nav')
-    world_file = os.path.join(pkg_nav, 'worlds', 'my_custom_world.sdf')
+
+    world_arg = DeclareLaunchArgument(
+        'world',
+        default_value='my_custom_world',
+        description='Name of the Gazebo world file (without .sdf extension)'
+    )
+
+    world_name = LaunchConfiguration('world')
+    world_file = PathJoinSubstitution([pkg_nav, 'worlds', [world_name, '.sdf']])
 
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')
         ),
-        launch_arguments={'gz_args': f'-r {world_file}'}.items()
+        launch_arguments={'gz_args': ['-r ', world_file]}.items()
     )
 
     spawn_robot = Node(
@@ -28,7 +38,7 @@ def generate_launch_description():
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
-            '/world/my_custom_world/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+            ['/world/', world_name, '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
             '/model/meistar_bot/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
             '/model/meistar_bot/odometry@nav_msgs/msg/Odometry@gz.msgs.Odometry',
             '/joint_states@sensor_msgs/msg/JointState@gz.msgs.Model',
@@ -36,7 +46,7 @@ def generate_launch_description():
             '/model/meistar_bot/tf@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V',
         ],
         remappings=[
-            ('/world/my_custom_world/clock', '/clock'),
+            (['/world/', world_name, '/clock'], '/clock'),
             ('/model/meistar_bot/cmd_vel', '/cmd_vel'),
             ('/model/meistar_bot/odometry', '/odom'),
             ('/model/meistar_bot/tf', '/tf')
@@ -46,6 +56,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        world_arg,
         gazebo,
         spawn_robot,
         bridge

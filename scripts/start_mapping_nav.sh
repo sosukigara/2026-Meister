@@ -42,7 +42,7 @@ ros2 launch ros2_autonomous_nav mapping_nav.launch.py &
 LAUNCH_PID=$!
 
 echo "2. RVizを起動するまで少し待ちます..."
-sleep 15
+sleep 5
 
 echo "3. RVizを起動します..."
 ./src/ros2_autonomous_nav/rviz.sh &
