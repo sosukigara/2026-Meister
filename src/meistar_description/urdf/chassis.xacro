@@ -9,26 +9,31 @@
     <color rgba="0.0 0.8 1.0 1"/>
   </material>
 
+  <material name="black">
+    <color rgba="0.1 0.1 0.1 1"/>
+  </material>
+
   <!-- Base Link -->
   <link name="base_link">
     <visual>
       <origin xyz="0 0 0" rpy="0 0 0"/>
       <geometry>
-        <box size="0.5 0.5 0.2"/>
+        <!-- Modified to look more like a rover chassis -->
+        <box size="0.6 0.4 0.15"/>
       </geometry>
       <material name="carbon_grey"/>
     </visual>
     <!-- Accent Visual (Decorative strip) -->
     <visual>
-      <origin xyz="0.251 0 0.05" rpy="0 0 0"/>
+      <origin xyz="0.301 0 0.03" rpy="0 0 0"/>
       <geometry>
-        <box size="0.01 0.4 0.02"/>
+        <box size="0.01 0.3 0.02"/>
       </geometry>
       <material name="neon_blue"/>
     </visual>
     <collision>
       <geometry>
-        <box size="0.5 0.5 0.2"/>
+        <box size="0.6 0.4 0.15"/>
       </geometry>
     </collision>
     <inertial>
@@ -46,9 +51,61 @@
         <specular>0.5 0.5 0.5 1</specular>
       </material>
     </visual>
-    <mu1>0.0</mu1>
-    <mu2>0.0</mu2>
   </gazebo>
+
+  <!-- Wheel Macro -->
+  <xacro:macro name="wheel" params="prefix suffix x y">
+    <link name="${prefix}_${suffix}_wheel">
+      <visual>
+        <!-- rotate cylinder to lay flat along Y axis -->
+        <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+        <geometry>
+          <cylinder radius="0.1" length="0.05"/>
+        </geometry>
+        <material name="black"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+        <geometry>
+          <cylinder radius="0.1" length="0.05"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <mass value="1.0"/>
+        <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+        <!-- Rough inertia for cylinder -->
+        <inertia ixx="0.01" ixy="0" ixz="0" iyy="0.01" iyz="0" izz="0.01"/>
+      </inertial>
+    </link>
+
+    <joint name="${prefix}_${suffix}_joint" type="continuous">
+      <parent link="base_link"/>
+      <child link="${prefix}_${suffix}_wheel"/>
+      <!-- Wheel offset from center. Z = -0.05 drops the wheels down a bit -->
+      <origin xyz="${x} ${y} -0.05" rpy="0 0 0"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+
+    <gazebo reference="${prefix}_${suffix}_wheel">
+      <mu1>1.0</mu1>
+      <mu2>0.1</mu2>
+      <material>
+        <ambient>0.0 0.0 0.0 1</ambient>
+        <diffuse>0.0 0.0 0.0 1</diffuse>
+        <specular>0.1 0.1 0.1 1</specular>
+      </material>
+    </gazebo>
+  </xacro:macro>
+
+  <!-- 6 Wheels: Left side -->
+  <xacro:wheel prefix="front" suffix="left" x="0.25" y="0.25" />
+  <xacro:wheel prefix="middle" suffix="left" x="0.0" y="0.25" />
+  <xacro:wheel prefix="rear" suffix="left" x="-0.25" y="0.25" />
+
+  <!-- 6 Wheels: Right side -->
+  <xacro:wheel prefix="front" suffix="right" x="0.25" y="-0.25" />
+  <xacro:wheel prefix="middle" suffix="right" x="0.0" y="-0.25" />
+  <xacro:wheel prefix="rear" suffix="right" x="-0.25" y="-0.25" />
 
   <!-- Footprint (Ground projection) -->
   <link name="base_footprint"/>
