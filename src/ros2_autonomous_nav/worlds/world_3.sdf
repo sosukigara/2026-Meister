@@ -1,0 +1,66 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <world name="world_3">
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system" name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system" name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system" name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system" name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.95 0.95 0.95 1</diffuse>
+      <specular>0.25 0.25 0.25 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.6 0.8 0.6 1</ambient>
+            <diffuse>0.6 0.8 0.6 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Slalom / Tight Corridor Layout -->
+    <!-- Outer Walls (15x15m) -->
+    <model name="outer_n"><static>true</static><pose>0 7.5 1 0 0 0</pose><link name="link"><collision name="c"><geometry><box><size>15 0.2 2</size></box></geometry></collision><visual name="v"><geometry><box><size>15 0.2 2</size></box></geometry></visual></link></model>
+    <model name="outer_s"><static>true</static><pose>0 -7.5 1 0 0 0</pose><link name="link"><collision name="c"><geometry><box><size>15 0.2 2</size></box></geometry></collision><visual name="v"><geometry><box><size>15 0.2 2</size></box></geometry></visual></link></model>
+    <model name="outer_w"><static>true</static><pose>-7.5 0 1 0 0 0</pose><link name="link"><collision name="c"><geometry><box><size>0.2 15 2</size></box></geometry></collision><visual name="v"><geometry><box><size>0.2 15 2</size></box></geometry></visual></link></model>
+    <model name="outer_e"><static>true</static><pose>7.5 0 1 0 0 0</pose><link name="link"><collision name="c"><geometry><box><size>0.2 15 2</size></box></geometry></collision><visual name="v"><geometry><box><size>0.2 15 2</size></box></geometry></visual></link></model>
+
+    <!-- Slalom Walls -->
+    <model name="wall_1"><static>true</static><pose>-2.5 2 1 0 0 0</pose><link name="link"><collision name="c"><geometry><box><size>10 0.5 2</size></box></geometry></collision><visual name="v"><geometry><box><size>10 0.5 2</size></box></geometry><material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material></visual></link></model>
+    <model name="wall_2"><static>true</static><pose>2.5 -2 1 0 0 0</pose><link name="link"><collision name="c"><geometry><box><size>10 0.5 2</size></box></geometry></collision><visual name="v"><geometry><box><size>10 0.5 2</size></box></geometry><material><ambient>0.2 0.2 0.9 1</ambient><diffuse>0.2 0.2 0.9 1</diffuse></material></visual></link></model>
+
+    <!-- Extra tight passage -->
+    <model name="block_1"><static>true</static><pose>5 5 1 0 0 0</pose><link name="link"><collision name="c"><geometry><cylinder><radius>1.5</radius><length>2</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>1.5</radius><length>2</length></cylinder></geometry><material><ambient>0.2 0.9 0.2 1</ambient><diffuse>0.2 0.9 0.2 1</diffuse></material></visual></link></model>
+    <model name="block_2"><static>true</static><pose>-5 -5 1 0 0 0</pose><link name="link"><collision name="c"><geometry><cylinder><radius>1.5</radius><length>2</length></cylinder></geometry></collision><visual name="v"><geometry><cylinder><radius>1.5</radius><length>2</length></cylinder></geometry><material><ambient>0.2 0.9 0.2 1</ambient><diffuse>0.2 0.9 0.2 1</diffuse></material></visual></link></model>
+
+  </world>
+</sdf>
