@@ -53,8 +53,27 @@
     </visual>
   </gazebo>
 
-  <!-- Wheel Macro -->
+  <!-- Steerable Wheel Macro -->
   <xacro:macro name="wheel" params="prefix suffix x y">
+    <!-- Steering Link (acts as the pivot/knuckle) -->
+    <link name="${prefix}_${suffix}_steer_link">
+      <inertial>
+        <mass value="0.1"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/>
+      </inertial>
+    </link>
+
+    <!-- Steering Joint (rotates around Z-axis) -->
+    <joint name="${prefix}_${suffix}_steer_joint" type="revolute">
+      <parent link="base_link"/>
+      <child link="${prefix}_${suffix}_steer_link"/>
+      <origin xyz="${x} ${y} -0.05" rpy="0 0 0"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="-1.57" upper="1.57" effort="10.0" velocity="2.0"/>
+    </joint>
+
+    <!-- Wheel Link -->
     <link name="${prefix}_${suffix}_wheel">
       <visual>
         <!-- rotate cylinder to lay flat along Y axis -->
@@ -78,17 +97,18 @@
       </inertial>
     </link>
 
+    <!-- Drive Joint (rotates around Y-axis) -->
     <joint name="${prefix}_${suffix}_joint" type="continuous">
-      <parent link="base_link"/>
+      <parent link="${prefix}_${suffix}_steer_link"/>
       <child link="${prefix}_${suffix}_wheel"/>
-      <!-- Wheel offset from center. Z = -0.05 drops the wheels down a bit -->
-      <origin xyz="${x} ${y} -0.05" rpy="0 0 0"/>
+      <!-- Wheel is exactly at the steering pivot -->
+      <origin xyz="0 0 0" rpy="0 0 0"/>
       <axis xyz="0 1 0"/>
     </joint>
 
     <gazebo reference="${prefix}_${suffix}_wheel">
       <mu1>1.0</mu1>
-      <mu2>0.1</mu2>
+      <mu2>1.0</mu2> <!-- Back to 1.0 since it can steer -->
       <material>
         <ambient>0.0 0.0 0.0 1</ambient>
         <diffuse>0.0 0.0 0.0 1</diffuse>
