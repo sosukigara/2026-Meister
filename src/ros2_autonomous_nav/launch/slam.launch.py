@@ -1,9 +1,9 @@
 import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import TimerAction, ExecuteProcess, DeclareLaunchArgument
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
-from launch_ros.actions import Node
 
 def generate_launch_description():
     pkg_nav = get_package_share_directory('ros2_autonomous_nav')
@@ -11,37 +11,17 @@ def generate_launch_description():
     
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
 
-    slam_toolbox = Node(
-        package='slam_toolbox',
-        executable='async_slam_toolbox_node',
-        name='slam_toolbox',
-        output='screen',
-        parameters=[slam_params_file, {'use_sim_time': use_sim_time}],
-    )
-
-    configure_slam = TimerAction(
-        period=5.0,
-        actions=[
-            ExecuteProcess(
-                cmd=['ros2', 'lifecycle', 'set', '/slam_toolbox', 'configure'],
-                output='screen'
-            ),
-        ]
-    )
-
-    activate_slam = TimerAction(
-        period=10.0,
-        actions=[
-            ExecuteProcess(
-                cmd=['ros2', 'lifecycle', 'set', '/slam_toolbox', 'activate'],
-                output='screen'
-            ),
-        ]
+    slam_toolbox = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(get_package_share_directory('slam_toolbox'), 'launch', 'online_async_launch.py')
+        ),
+        launch_arguments={
+            'use_sim_time': use_sim_time,
+            'slam_params_file': slam_params_file
+        }.items()
     )
 
     return LaunchDescription([
         DeclareLaunchArgument('use_sim_time', default_value='true'),
-        slam_toolbox,
-        configure_slam,
-        activate_slam
+        slam_toolbox
     ])
