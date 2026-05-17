@@ -26,7 +26,7 @@ amcl:
     recovery_alpha_fast: 0.0
     recovery_alpha_slow: 0.0
     resample_interval: 1
-    robot_model_type: "nav2_amcl::HolonomicRobotModel"
+    robot_model_type: "nav2_amcl::DifferentialMotionModel"
     save_pose_rate: 0.5
     sigma_hit: 0.2
     tf_broadcast: true
@@ -86,9 +86,9 @@ controller_server:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: true
       min_vel_x: 0.0
-      min_vel_y: -1.0
+      min_vel_y: 0.0
       max_vel_x: 1.0
-      max_vel_y: 0.5
+      max_vel_y: 0.0
       max_vel_theta: 0.8
       min_speed_xy: 0.0
       max_speed_xy: 1.0
