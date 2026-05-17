@@ -37,8 +37,10 @@ trap cleanup SIGINT SIGTERM EXIT
 # 実行
 # ------------------------------------------
 
-echo "1. Gazebo + SLAM + Nav2 を一括起動します..."
-ros2 launch ros2_autonomous_nav mapping_nav.launch.py &
+WORLD_NAME=${1:-"my_custom_world"}
+
+echo "1. Gazebo + SLAM + Nav2 を一括起動します (World: ${WORLD_NAME})..."
+ros2 launch ros2_autonomous_nav mapping_nav.launch.py world:=${WORLD_NAME} &
 LAUNCH_PID=$!
 
 echo "2. RVizを起動するまで少し待ちます..."
