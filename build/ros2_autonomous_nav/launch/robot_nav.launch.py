@@ -1,1 +1,0 @@
-/home/so/Meistar/src/ros2_autonomous_nav/launch/robot_nav.launch.py
