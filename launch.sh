@@ -32,9 +32,9 @@ else
     echo "WARNING: install/setup.bash not found. Run 'colcon build' first."
 fi
 
-# 一意の DDS ドメイン ID（前回の残骸と衝突しないよう起動ごとに変える）
-# PID の下2桁を使うことで同一秒内の多重起動でも衝突回避
-export ROS_DOMAIN_ID=$((20 + ($$ % 10)))
+# 一意の DDS ドメイン ID（前回の残骸と衝突しないよう起動ごとにランダム）
+# 200 のドメインから選択することで、kill -9 後の参加者残骸が再利用される確率を低減
+export ROS_DOMAIN_ID=$((10 + (RANDOM % 200)))
 
 # Gazebo がワールドファイルを見つけられるように
 export GZ_SIM_RESOURCE_PATH="$WORKSPACE_DIR/src/diff_drive_robot/worlds"
