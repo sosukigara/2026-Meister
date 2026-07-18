@@ -1,0 +1,28 @@
+# ROS 2 colcon build artifacts
+build/
+install/
+log/
+.ros_log/
+.slam_nav_pid
+*.runtime.log
+
+# Generated maps (keep folder + README only)
+src/diff_drive_robot/maps/*.pgm
+src/diff_drive_robot/maps/*.yaml
+src/diff_drive_robot/maps/*.data
+src/diff_drive_robot/maps/*.posegraph
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# OS
+.DS_Store
+*.swp
+
+# Editor
+.vscode/
+
+# Resume
+resume.md
