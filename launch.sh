@@ -33,7 +33,7 @@ else
 fi
 
 # 一意の DDS ドメイン ID（デフォルト 10 だと前回の残骸と衝突するため）
-export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-20}
+export ROS_DOMAIN_ID=20
 
 # Gazebo がワールドファイルを見つけられるように
 export GZ_SIM_RESOURCE_PATH="$WORKSPACE_DIR/src/diff_drive_robot/worlds"
