@@ -112,18 +112,26 @@ def _build_runtime_actions(context, pkg_share: str):
         )],
     )
 
-    spawn_robot = Node(
-        package='ros_gz_sim',
-        executable='create',
-        arguments=[
-            '-topic', 'robot_description',
-            '-name', robot_name,
-            '-x', spawn_x,
-            '-y', spawn_y,
-            '-z', spawn_z,
-            '-Y', spawn_yaw,
-        ],
-        output='screen',
+    # Generate robot_description via xacro (avoids DDS QoS issue with -topic)
+    import subprocess as _sp
+    _urdf_path = os.path.join(pkg_share, 'urdf', 'robot.urdf.xacro')
+    _robot_desc = _sp.check_output(['xacro', _urdf_path]).decode('utf-8')
+
+    spawn_robot = TimerAction(
+        period=3.0,
+        actions=[Node(
+            package='ros_gz_sim',
+            executable='create',
+            arguments=[
+                '-string', _robot_desc,
+                '-name', robot_name,
+                '-x', spawn_x,
+                '-y', spawn_y,
+                '-z', spawn_z,
+                '-Y', spawn_yaw,
+            ],
+            output='screen',
+        )],
     )
 
     ros_gz_bridge = Node(
