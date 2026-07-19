@@ -51,6 +51,7 @@ echo "╠═══════════════════════�
 echo "║  World:          $WORLD"
 echo "║  Mode:           $MODE"
 echo "║  Headless:       $HEADLESS"
+echo "║  ROS_DOMAIN_ID:  $ROS_DOMAIN_ID"
 echo "║  ROS_DISTRO:     $ROS_DISTRO"
 echo "╚══════════════════════════════════════════════════╝"
 echo ""
