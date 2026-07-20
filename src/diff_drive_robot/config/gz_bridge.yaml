@@ -5,11 +5,15 @@
   gz_type_name: "gz.msgs.Clock"
   direction: GZ_TO_ROS
 
-- ros_topic_name: "/joint_states"
-  gz_topic_name: "/joint_states"
-  ros_type_name: "sensor_msgs/msg/JointState"
-  gz_type_name: "gz.msgs.Model"
-  direction: GZ_TO_ROS
+# /joint_states bridge removed — Gazebo publishes model poses at 1000 Hz and
+# timestamps occasionally jitter backward, triggering robot_state_publisher's
+# "Moved backwards in time" republish loop that destabilises the entire TF
+# tree.  All robot joints are fixed so RSP does not need live joint states.
+# - ros_topic_name: "/joint_states"
+#   gz_topic_name: "/joint_states"
+#   ros_type_name: "sensor_msgs/msg/JointState"
+#   gz_type_name: "gz.msgs.Model"
+#   direction: GZ_TO_ROS
 
 - ros_topic_name: "/odom"
   gz_topic_name: "/odom"
@@ -42,11 +46,10 @@
   gz_type_name: "gz.msgs.LaserScan"
   direction: GZ_TO_ROS
 
-- ros_topic_name: "/tf"
-  gz_topic_name: "/tf"
-  ros_type_name: "tf2_msgs/msg/TFMessage"
-  gz_type_name: "gz.msgs.Pose_V"
-  direction: GZ_TO_ROS
+# /tf bridge removed — Gazebo Pose_V duplicates child frames already published by
+# robot_state_publisher (/tf_static), causing TF2 "detected jump back in time"
+# buffer clears that prevent all transform lookups.
+# odom→base_link is now published by odom_tf_broadcaster from /odom messages.
 
 # 3D LiDAR PointCloud2 (only active when lidar3d.xacro is used)
 - ros_topic_name: "/points"

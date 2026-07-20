@@ -43,6 +43,9 @@ export GZ_SIM_RESOURCE_PATH="$WORKSPACE_DIR/src/diff_drive_robot/worlds"
 # gz-transport を lo に固定（VPN トンネルがマルチキャスト通信を妨害するのを回避）
 export GZ_IP=127.0.0.1
 
+# ROS2 DDS を lo に制限（VPN/multicast 問題回避）
+export CYCLONEDDS_URI='<CycloneDDS><Domain><General><NetworkInterfaceAddress>lo</NetworkInterfaceAddress></General></Domain></CycloneDDS>'
+
 # ── Banner ─────────────────────────────────────────────────────────────────────
 echo ""
 echo "╔══════════════════════════════════════════════════╗"

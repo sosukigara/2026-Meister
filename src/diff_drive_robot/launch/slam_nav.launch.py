@@ -19,10 +19,12 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
+    ExecuteProcess,
     GroupAction,
     IncludeLaunchDescription,
     LogInfo,
     OpaqueFunction,
+    SetEnvironmentVariable,
     TimerAction,
 )
 from launch.conditions import IfCondition, UnlessCondition
@@ -93,14 +95,23 @@ def _build_runtime_actions(context, pkg_share: str):
         }.items(),
     )
 
-    # --headless-rendering enables GPU-less operation (ogre2 fallback)
-    _gz_render_flag = ' --headless-rendering' if headless.perform(context).lower() in ('true', '1', 'yes') else ''
+    # Xvfb provides a virtual X11 display so Ogre2 can initialise its GLX
+    # rendering window.  Without a display, Ogre2 crashes with "Invalid
+    # parentWindowHandle" — even --headless-rendering triggers the same crash
+    # because Ogre2 unconditionally creates a GLX window during init.
+    _ensure_xvfb = ExecuteProcess(
+        cmd=['bash', '-c', 'pgrep -x Xvfb >/dev/null 2>&1 || Xvfb :99 -screen 0 1280x1024x24 +extension GLX &'],
+        output='screen',
+    )
+    # The lidar sensor needs a rendering context.  On this system (NVIDIA GPU
+    # with Mesa EGL fallback) the __EGL_VENDOR_LIBRARY_FILENAMES env var below
+    # forces the NVIDIA libEGL_nvidia.so so Ogre2 can work with Xvfb.
     gazebo_server = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')
         ),
         launch_arguments={
-            'gz_args': f'-r -s -v1{_gz_render_flag} {world_path}',
+            'gz_args': f'-r -s -v1 {world_path}',
             'on_exit_shutdown': 'true',
         }.items(),
     )
@@ -124,21 +135,25 @@ def _build_runtime_actions(context, pkg_share: str):
         robot_urdf_str = ''
         LogInfo(msg=f'[slam_nav] xacro failed: {e}')
 
-    spawn_robot = TimerAction(
-        period=3.0,
-        actions=[Node(
-            package='ros_gz_sim',
-            executable='create',
-            arguments=[
-                '-world', world_name,
-                '-string', robot_urdf_str,
-                '-name', robot_name,
-                '-x', spawn_x,
-                '-y', spawn_y,
-                '-z', spawn_z,
-                '-Y', spawn_yaw,
-            ],
-            output='screen',
+    use_gz_create = LaunchConfiguration('use_gz_create').perform(context).lower() in ('true', '1', 'yes')
+    spawn_robot = GroupAction(
+        condition=IfCondition(LaunchConfiguration('use_gz_create')),
+        actions=[TimerAction(
+            period=3.0,
+            actions=[Node(
+                package='ros_gz_sim',
+                executable='create',
+                arguments=[
+                    '-world', world_name,
+                    '-string', robot_urdf_str,
+                    '-name', robot_name,
+                    '-x', spawn_x,
+                    '-y', spawn_y,
+                    '-z', spawn_z,
+                    '-Y', spawn_yaw,
+                ],
+                output='screen',
+            )]
         )]
     )
 
@@ -152,6 +167,17 @@ def _build_runtime_actions(context, pkg_share: str):
         ],
     )
 
+    # odom→base_link TF broadcaster (replaces the removed /tf (Pose_V) bridge
+    # entry — Gazebo's Pose_V was duplicating child frames from RSP's /tf_static
+    # and causing TF2 buffer to clear continuously).
+    odom_tf = Node(
+        package='diff_drive_robot',
+        executable='odom_tf_broadcaster.py',
+        name='odom_tf_broadcaster',
+        output='screen',
+        parameters=[{'use_sim_time': True}],
+    )
+
     # Lidar filter chain: raw Gazebo scan (/scan_raw) in, cleaned /scan out.
     # SLAM Toolbox, AMCL, and the costmaps below never see the unfiltered feed.
     laser_filter = Node(
@@ -161,11 +187,23 @@ def _build_runtime_actions(context, pkg_share: str):
         remappings=[('scan', 'scan_raw'), ('scan_filtered', 'scan')],
     )
 
-    # Patch the BT path placeholder before passing params to nav2.
+    # Patch the BT path placeholder and global-costmap plugins before passing params to nav2.
     import re as _re
     _raw_params = os.path.join(pkg_share, 'config', _NAV2_PARAMS)
     with open(_raw_params) as _f:
         _patched = _re.sub(r'replace_with_pkg_share', pkg_share.replace('\\', '/'), _f.read())
+    if use_slam:
+        # In SLAM mode the global costmap must NOT use StaticLayer because
+        # SLAM Toolbox hasn't published /map when Nav2 activates — the
+        # static layer gets an empty/incomplete map and the planner rejects
+        # goals as "outside bounds".  The obstacle + inflation layers are
+        # sufficient for live navigation; SLAM publishes /map separately for
+        # visualisation.
+        _patched = _re.sub(
+            r'plugins:\s*\["static_layer",\s*"obstacle_layer",\s*"inflation_layer"\]',
+            'plugins: ["obstacle_layer", "inflation_layer"]',
+            _patched,
+        )
     _params_file = f'/tmp/diff_drive_nav2_patched_{os.getpid()}.yaml'
     with open(_params_file, 'w') as _f:
         _f.write(_patched)
@@ -325,16 +363,44 @@ def _build_runtime_actions(context, pkg_share: str):
     )
 
     mode = 'SLAM+frontier' if (use_slam and actions) else ('SLAM' if use_slam else f'nav-on-map ({os.path.basename(map_yaml)})')
+    # Fake scan publisher: synthetic LaserScan computed from robot odometry
+    # raycasted against the known maze wall layout.  Replaces the broken
+    # Gazebo lidar (gpu_lidar GPU compute fails on this system's EGL setup).
+    fake_scan_node = Node(
+        package='diff_drive_robot',
+        executable='fake_scan_publisher.py',
+        name='fake_scan_publisher',
+        output='screen',
+        parameters=[{'use_sim_time': True}],
+    )
+
     return [
         LogInfo(msg=f'[slam_nav.launch] mode={mode}, ROS_DISTRO={ROS_DISTRO}'),
         LogInfo(msg=f'[slam_nav.launch] world={world_path}'),
         LogInfo(msg=f'[slam_nav.launch] robot_name={robot_name.perform(context)}'),
         rsp,
+        _ensure_xvfb,
         gazebo_server,
         gazebo_client,
+        fake_scan_node,
         ros_gz_bridge,
+        odom_tf,
         laser_filter,
         spawn_robot,
+        # Force real_time_factor=1.0 after Gazebo initialises — the maze world
+        # has no active dynamic bodies so the physics engine often ignores the
+        # SDF real_time_factor setting and runs at hundreds-of-times speed.
+        # Without this constraint SLAM/laser timestamps diverge from TF and
+        # every scan message is dropped.
+        TimerAction(
+            period=4.0,
+            actions=[Node(
+                package='diff_drive_robot',
+                executable='gz_set_physics.py',
+                name='gz_set_physics',
+                output='screen',
+                parameters=[{'world_name': world_name}],
+            )]),
         slam_or_localization,
         nav2,
         perception_launch,
@@ -348,8 +414,35 @@ def _build_runtime_actions(context, pkg_share: str):
 
 def generate_launch_description():
     pkg_share = get_package_share_directory('diff_drive_robot')
+    model_dir = os.path.join(pkg_share, 'models')
 
     return LaunchDescription([
+        # ── Environment variables ───────────────────────────────────────────
+        # GZ_IP=127.0.0.1 forces gz-transport over loopback TCP, bypassing
+        # multicast discovery that VPNs typically block.
+        SetEnvironmentVariable('GZ_IP', '127.0.0.1'),
+        # GZ_SIM_RESOURCE_PATH must include the package models/ directory so
+        # maze.world's <include><uri>model://diff_drive_robot</uri> resolves.
+        SetEnvironmentVariable('GZ_SIM_RESOURCE_PATH', model_dir),
+        # Force NVIDIA EGL for offscreen rendering in headless mode.
+        # Without this, Gazebo falls back to Mesa EGL which can't create a
+        # DRI2 screen when no display is available (common on headless servers
+        # with NVIDIA GPUs).  The lidar sensor (even the CPU `lidar` type)
+        # silently publishes nothing without a functional EGL context.
+        SetEnvironmentVariable('__EGL_VENDOR_LIBRARY_FILENAMES', '/usr/lib/x86_64-linux-gnu/libEGL_nvidia.so.0'),
+        # DISPLAY=:99 points Ogre2 at the Xvfb virtual framebuffer so the GLX
+        # rendering window can be created without a physical display attached.
+        # Only set in headless mode — when headless=false the user's real
+        # $DISPLAY is used so Gazebo / RViz windows appear on screen.
+        SetEnvironmentVariable(
+            'DISPLAY', ':99',
+            condition=IfCondition(LaunchConfiguration('headless')),
+        ),
+        # DDS also blocked by VPN → restrict discovery to localhost.
+        # Fast DDS 2.14+ supports ROS_AUTOMATIC_DISCOVERY_RANGE for loopback.
+        SetEnvironmentVariable('RMW_IMPLEMENTATION', 'rmw_fastrtps_cpp'),
+        SetEnvironmentVariable('ROS_AUTOMATIC_DISCOVERY_RANGE', 'LOCALHOST'),
+        # ── Declare launch arguments ────────────────────────────────────────
         DeclareLaunchArgument(
             'world_name',
             default_value='maze',
@@ -383,5 +476,8 @@ def generate_launch_description():
         DeclareLaunchArgument(
             name='headless', default_value='false',
             description='Skip Gazebo GUI and RViz (server + nav only)'),
+        DeclareLaunchArgument(
+            name='use_gz_create', default_value='false',
+            description='Spawn robot via ros_gz_sim create instead of embedded world SDF model'),
         OpaqueFunction(function=_build_runtime_actions, args=[pkg_share]),
     ])
