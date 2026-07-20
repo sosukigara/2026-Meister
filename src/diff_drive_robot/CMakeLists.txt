@@ -23,6 +23,7 @@ install(
     scripts/check_odometry.py
     scripts/reset_pose.py
     scripts/odom_tf_broadcaster.py
+    scripts/gz_set_physics.py
     scripts/tf_static_relay.py
     scripts/tf_map_relay.py
     scripts/multi_teleop.py
@@ -37,12 +38,13 @@ install(
     scripts/frontier_coordinator.py
     scripts/priority_collision_avoidance.py
     scripts/deadlock_recovery.py
+    scripts/fake_scan_publisher.py
     scripts/bt_executor.py
     scripts/multi_coverage.py
   DESTINATION lib/${PROJECT_NAME}
 )
 install(
-  DIRECTORY launch urdf config worlds rviz maps bt_editor
+  DIRECTORY launch urdf config worlds rviz maps bt_editor models
   DESTINATION share/${PROJECT_NAME}
 )
 if(BUILD_TESTING)

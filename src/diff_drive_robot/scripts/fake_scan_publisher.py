@@ -226,9 +226,11 @@ class FakeScanPublisher(Node):
         # TF at now() — the 200ms offset gives the costmap's TF buffer
         # enough margin to not drop the scan as "newer than the cache".
         now = self.get_clock().now()
-        self._scan_msg.header.stamp = (
-            now - rclpy.duration.Duration(seconds=0.2)
-        ).to_msg()
+        if now.nanoseconds >= 200_000_000:
+            stamp = now - rclpy.duration.Duration(seconds=0.2)
+        else:
+            stamp = now
+        self._scan_msg.header.stamp = stamp.to_msg()
 
         ranges = [0.0] * self._num_samples
         for i in range(self._num_samples):

@@ -30,12 +30,12 @@
 
    <!-- 2D Lidar New Gazebo Sensor Plugin  -->
    <gazebo reference="laser_frame">
-      <sensor name="laser" type="gpu_lidar">
+      <sensor name="laser" type="lidar">
          <pose> 0 0 0 0 0 0 </pose>
          <always_on>true</always_on>
          <visualize>true</visualize>
          <update_rate>10</update_rate>
-         <topic>${ns + '/scan' if ns else 'scan'}</topic>
+         <topic>${ns + '/scan' if ns else '/scan'}</topic>
          <gz_frame_id>${ns + '/laser_frame' if ns else 'laser_frame'}</gz_frame_id>
          <lidar>
             <scan>
