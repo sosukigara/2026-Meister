@@ -18,7 +18,12 @@ class OdomTfBroadcaster(Node):
             return
 
         tf_msg = TransformStamped()
+        # Use odom header.stamp so scan (which syncs to same odom stamp) and
+        # TF share identical timestamp — slam_toolbox's tf2_ros::MessageFilter
+        # drops scans whose timestamp lands ahead of the last transform cache
+        # entry. Both odom and scan now anchor on the same clock tick.
         tf_msg.header = msg.header
+        tf_msg.header.stamp = msg.header.stamp
         tf_msg.child_frame_id = msg.child_frame_id
         tf_msg.transform.translation.x = msg.pose.pose.position.x
         tf_msg.transform.translation.y = msg.pose.pose.position.y
