@@ -1,0 +1,14 @@
+yolo_ros:
+  ros__parameters:
+    model_type: YOLO
+    model: yolov8m-pose.pt     # Use pose model for human keypoints
+    # tracker: bytetrack.yaml  # Disabled — human_tracker.py runs its own ByteTrack
+    device: cuda:0
+    threshold: 0.5
+    iou: 0.7
+    input_image_topic: /camera/image_raw
+    image_reliability: 0
+    use_tracking: false  # human_tracker.py runs its own ByteTrack
+    use_3d: false
+    use_debug: true
+    enable: true
