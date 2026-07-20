@@ -24,7 +24,7 @@ import math
 import os
 
 import rclpy
-import rclpy.time
+import rclpy.duration
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
@@ -167,7 +167,6 @@ class FakeScanPublisher(Node):
         self._robot_y = 0.0
         self._robot_yaw = 0.0
         self._have_odom = False
-        self._odom_stamp = rclpy.time.Time()
 
         # ── Publishers / Subscribers ──────────────────────────────────
         self._scan_pub = self.create_publisher(LaserScan, 'scan', 10)
@@ -189,7 +188,6 @@ class FakeScanPublisher(Node):
         self._robot_x = msg.pose.pose.position.x
         self._robot_y = msg.pose.pose.position.y
         self._robot_yaw = _quat_to_yaw(msg.pose.pose.orientation)
-        self._odom_stamp = msg.header.stamp
         self._have_odom = True
 
     # ── Raycasting (single ray) ────────────────────────────────────────
@@ -216,18 +214,21 @@ class FakeScanPublisher(Node):
 
     def _publish_scan(self) -> None:
         if not self._have_odom:
-            # No odometry yet — use wall-clock fallback
+            # No odometry yet — any timestamp works before first pose
             self._scan_msg.header.stamp = self.get_clock().now().to_msg()
             self._scan_msg.ranges = [self._range_max] * self._num_samples
             self._scan_msg.intensities = [0.0] * self._num_samples
             self._scan_pub.publish(self._scan_msg)
             return
 
-        # Use the latest odom header.stamp so TF lookup at scan time succeeds.
-        # slam_toolbox's tf2_ros::MessageFilter drops scans whose timestamp
-        # is newer than the latest transform in the cache — using the odom
-        # timestamp guarantees the matching TF arrived with the odom message.
-        self._scan_msg.header.stamp = self._odom_stamp
+        # Stamp 200ms in the past so tf2_ros::MessageFilter always finds
+        # a valid transform in the cache. odom_tf_broadcaster publishes
+        # TF at now() — the 200ms offset gives the costmap's TF buffer
+        # enough margin to not drop the scan as "newer than the cache".
+        now = self.get_clock().now()
+        self._scan_msg.header.stamp = (
+            now - rclpy.duration.Duration(seconds=0.2)
+        ).to_msg()
 
         ranges = [0.0] * self._num_samples
         for i in range(self._num_samples):
