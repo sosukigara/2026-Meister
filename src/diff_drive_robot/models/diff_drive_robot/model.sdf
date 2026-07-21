@@ -374,10 +374,9 @@
       <wheel_torque>10.0</wheel_torque>
       <max_linear_speed>2.0</max_linear_speed>
       <max_angular_speed>3.14</max_angular_speed>
-      <odom_topic>odom</odom_topic>
+      <odom_topic>model/diff_drive_robot/odometry</odom_topic>
       <frame_id>odom</frame_id>
       <child_frame_id>base_link</child_frame_id>
-      <tf_topic>/tf</tf_topic>
       <debug>true</debug>
       <debug_topic>drive_debug</debug_topic>
     </plugin>

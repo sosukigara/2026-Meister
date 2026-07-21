@@ -19,7 +19,7 @@ class OdomTfBroadcaster(Node):
 
         tf_msg = TransformStamped()
         # Keep TF fresh at now() so the costmap buffer always has a recent
-        # transform. Scan publisher offsets its stamp 200ms into the past
+        # transform. Scan publisher offsets its stamp 50ms into the past
         # (transform_tolerance) so tf2_ros::MessageFilter can find this TF.
         tf_msg.header = msg.header
         tf_msg.header.stamp = self.get_clock().now().to_msg()
