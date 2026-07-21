@@ -221,13 +221,13 @@ class FakeScanPublisher(Node):
             self._scan_pub.publish(self._scan_msg)
             return
 
-        # Stamp 200ms in the past so tf2_ros::MessageFilter always finds
-        # a valid transform in the cache. odom_tf_broadcaster publishes
-        # TF at now() — the 200ms offset gives the costmap's TF buffer
-        # enough margin to not drop the scan as "newer than the cache".
+        # Stamp 50ms in the past so tf2_ros::MessageFilter always finds
+        # a valid transform in the cache. Use a minimal offset to avoid
+        # slam_toolbox rejecting the scan as "earlier than all the data
+        # in the transform cache" when its internal TF buffer starts late.
         now = self.get_clock().now()
-        if now.nanoseconds >= 200_000_000:
-            stamp = now - rclpy.duration.Duration(seconds=0.2)
+        if now.nanoseconds >= 100_000_000:
+            stamp = now - rclpy.duration.Duration(seconds=0.05)
         else:
             stamp = now
         self._scan_msg.header.stamp = stamp.to_msg()
