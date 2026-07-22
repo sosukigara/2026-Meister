@@ -11,10 +11,10 @@
 # Topics recorded:
 #   /scan /tf /tf_static /odom /map /cmd_vel /goal_pose /clicked_point
 
-set -euo pipefail
-
 source /opt/ros/jazzy/setup.bash
 export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-42}
+
+set -euo pipefail
 
 BAG_DIR="bag_$(date +%Y%m%d_%H%M%S)"
 

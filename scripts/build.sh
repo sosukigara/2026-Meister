@@ -10,12 +10,16 @@
 #   then sources the resulting install setup. Passes any extra arguments
 #   through to colcon (e.g. --packages-select).
 
-set -euo pipefail
-
 source /opt/ros/jazzy/setup.bash
 export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-42}
 
+set -euo pipefail
+
 colcon build --symlink-install "$@"
+
+# Source workspace setup (nounset disabled: colcon scripts reference unset $COLCON_TRACE)
+set +u
 source install/setup.bash
+set -u
 
 echo "Build complete. Install space sourced."

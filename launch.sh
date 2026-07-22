@@ -18,9 +18,13 @@
 #   --record      Record ros2 bag alongside simulation
 #   -h, --help    Show this help
 
-set -euo pipefail
-
 cd "$(dirname "$0")"
+
+# Source ROS 2 environment BEFORE set -u (ROS setup.bash references unset vars)
+source /opt/ros/jazzy/setup.bash
+export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-42}
+
+set -euo pipefail
 
 # ---- Parse arguments ----
 DO_SETUP=false
@@ -35,7 +39,7 @@ while [[ $# -gt 0 ]]; do
     --no-build) DO_BUILD=false; shift ;;
     --record)   DO_RECORD=true; shift ;;
     -h|--help)
-      head -30 "$0" | tail -28 | sed 's/^#//'
+      sed -n '2,19p' "$0" | sed 's/^# \?//'
       exit 0 ;;
     *)
       POSITIONAL+=("$1")
@@ -47,10 +51,6 @@ done
 if [[ ${#POSITIONAL[@]} -gt 0 ]]; then
   WORLD="${POSITIONAL[0]}"
 fi
-
-# ---- Phase 0: Environment ----
-source /opt/ros/jazzy/setup.bash
-export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-42}
 
 echo "=========================================="
 echo " Meister Launcher"

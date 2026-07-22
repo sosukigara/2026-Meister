@@ -8,9 +8,9 @@
 #   Installs required ros-jazzy packages via apt and resolves source
 #   dependencies via rosdep. Run once after cloning the workspace.
 
-set -euo pipefail
-
 source /opt/ros/jazzy/setup.bash
+
+set -euo pipefail
 
 sudo apt update && sudo apt install -y \
   ros-jazzy-ros-gz-sim ros-jazzy-ros-gz-bridge \
