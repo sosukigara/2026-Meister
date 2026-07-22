@@ -1,0 +1,17 @@
+# ROS 2 colcon build artifacts
+build/
+install/
+log/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# OpenCode planner
+.omo/
+
+# Serena memory
+.serena/
+
+# rosnav symlink (submodule reference via rosnav_submodule/)
+src/rosnav
