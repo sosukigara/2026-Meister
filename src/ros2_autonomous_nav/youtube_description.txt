@@ -1,0 +1,80 @@
+Autonomous Navigation with Nav2 | ROS2 Jazzy + Gazebo + Nav2 Tutorial
+
+In this video, a simulated differential drive robot navigates autonomously through a walled Gazebo maze using the full Nav2 stack — AMCL localization on a pre-built map, NavfnPlanner for global paths, DWB for local trajectory tracking, and recovery behaviors for stuck situations.
+
+The project auto-detects GPU/CPU at launch and adjusts the lidar resolution and Gazebo rendering settings accordingly — so it runs smoothly on any hardware.
+
+What you'll learn:
+- How to configure the full Nav2 stack (AMCL, planner, controller, behaviors, costmaps)
+- How to load a pre-built map with map_server for localization
+- How AMCL particle filter localization works with lidar scans
+- How to send navigation goals via RViz, CLI, or Python (nav2_simple_commander)
+- How to auto-detect GPU/CPU and adjust robot sensors accordingly
+- How to build a waypoint follower that tours the entire maze autonomously
+
+Tech used: ROS2 Jazzy, URDF, Gazebo (gz-sim), Nav2 (AMCL, NavfnPlanner, DWB, BT Navigator), nav2_simple_commander, ros_gz_bridge, RViz2
+
+================================
+HOW TO BUILD AND RUN
+================================
+
+1) Install dependencies:
+   sudo apt update
+   sudo apt install -y \
+       ros-jazzy-ros-gz \
+       ros-jazzy-robot-state-publisher \
+       ros-jazzy-rviz2 \
+       ros-jazzy-slam-toolbox \
+       ros-jazzy-nav2-bringup \
+       ros-jazzy-nav2-simple-commander \
+       ros-jazzy-teleop-twist-keyboard
+
+2) Create a workspace and clone:
+   mkdir -p ~/ros2_ws/src
+   cd ~/ros2_ws/src
+   git clone https://github.com/Ahmed-m-abbas/ros2-autonomous-nav.git
+
+3) Build with colcon:
+   cd ~/ros2_ws
+   source /opt/ros/jazzy/setup.bash
+   colcon build --packages-select ros2_autonomous_nav --symlink-install
+
+4) Source the workspace (in EVERY new terminal):
+   source ~/ros2_ws/install/setup.bash
+
+5) Run navigation — three terminals:
+
+   # Terminal 1 — Gazebo + robot + Nav2 (auto-detects GPU/CPU)
+   bash run.sh
+
+   # Terminal 2 — RViz with Nav2 displays
+   bash rviz.sh
+
+   # Terminal 3 — send goals (pick one)
+   # Click "2D Nav Goal" in RViz, or:
+   bash navigate.sh 3.5 3.5 1.57
+   # or run the full maze tour:
+   bash waypoints.sh
+
+================================
+SOURCE CODE
+================================
+https://github.com/Ahmed-m-abbas/ros2-autonomous-nav
+
+Timestamps:
+0:00 - Intro / what is Nav2
+0:20 - GPU/CPU auto-detection
+0:35 - The pre-built map (or generate with SLAM)
+0:55 - Nav2 params (AMCL, planner, controller, costmaps)
+1:20 - Launch file walkthrough
+1:40 - RViz Nav2 displays
+1:55 - Running it + sending goals
+2:15 - Live navigation demo
+2:35 - Waypoint follower (nav2_simple_commander)
+2:50 - Outro
+
+Subscribe for more ROS2 and robotics simulation tutorials!
+
+#ROS2 #Nav2 #Gazebo #Robotics #Navigation #AMCL #PathPlanning #Simulation #Tutorial #URDF #RViz #DIY
+
+Tags: ros2, nav2, navigation, gazebo, rviz, robotics, simulation, ros2 tutorial, autonomous navigation, amcl, path planning, dwb controller, navfn planner, waypoint follower, nav2_simple_commander, ros2 jazzy, colcon, mobile robot, gpu, cpu, DIY

@@ -1,0 +1,8 @@
+amcl:
+  ros__parameters:
+    robot_model_type: "nav2_amcl::HolonomicRobotModel"
+
+controller_server:
+  ros__parameters:
+    holonomic_robot: true
+    max_vel_y: 0.5
