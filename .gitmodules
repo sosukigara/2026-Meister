@@ -1,3 +1,0 @@
-[submodule "rosnav_submodule"]
-	path = rosnav_submodule
-	url = https://github.com/darshmenon/rosnav.git

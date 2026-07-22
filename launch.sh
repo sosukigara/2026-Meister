@@ -22,6 +22,11 @@ cd "$(dirname "$0")"
 
 # Source ROS 2 environment BEFORE set -u (ROS setup.bash references unset vars)
 source /opt/ros/jazzy/setup.bash
+
+if [[ -f install/setup.bash ]]; then
+  source install/setup.bash
+fi
+
 export ROS_DOMAIN_ID=${ROS_DOMAIN_ID:-42}
 
 set -euo pipefail
@@ -74,6 +79,11 @@ if $DO_BUILD; then
   echo "[2/3] Building workspace..."
   bash scripts/build.sh
 fi
+
+# Source workspace install space (build may have run in a subprocess, so re-source here)
+set +u
+source install/setup.bash
+set -u
 
 # ---- Phase 3: Launch Simulation ----
 echo ""

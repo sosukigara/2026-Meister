@@ -7,11 +7,13 @@ log/
 __pycache__/
 *.pyc
 
+# macOS junk
+.DS_Store
+
 # OpenCode planner
 .omo/
 
 # Serena memory
 .serena/
 
-# rosnav symlink (submodule reference via rosnav_submodule/)
-src/rosnav
+# rosnav source (from darshmenon/rosnav, vendored in-tree)
