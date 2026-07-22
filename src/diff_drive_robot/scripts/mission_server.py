@@ -24,9 +24,10 @@ Send a mission from the command line (daemon must be running):
   ros2 run diff_drive_robot mission_server.py sequence robot1 0,0,0 2,0,0 2,2,90
   ros2 run diff_drive_robot mission_server.py goto    robot1 room_a
   ros2 run diff_drive_robot mission_server.py goto    robot1 3.0 -1.0 45
-  ros2 run diff_drive_robot mission_server.py status
-  ros2 run diff_drive_robot mission_server.py cancel
-  ros2 run diff_drive_robot mission_server.py locations
+   ros2 run diff_drive_robot mission_server.py status
+   ros2 run diff_drive_robot mission_server.py wait [robot_ns] [timeout]
+   ros2 run diff_drive_robot mission_server.py cancel
+   ros2 run diff_drive_robot mission_server.py locations
 
 Or via topic (JSON):
   ros2 topic pub --once /mission/execute std_msgs/msg/String \\
@@ -56,7 +57,7 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.utilities import remove_ros_args
 from action_msgs.msg import GoalStatus
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from nav2_msgs.action import NavigateToPose
 from std_msgs.msg import String
 
@@ -145,6 +146,7 @@ class MissionServer(Node):
         self._lock        = threading.Lock()
         self._clients: dict[str, ActionClient] = {}
         self._missions: dict[str, dict] = {}
+        self._amcl_subs: dict[str, object] = {}
 
         self.create_subscription(String, '/mission/execute', self._mission_cb, 10)
         self._state_pub = self.create_publisher(String, '/mission/state', 10)
@@ -154,6 +156,14 @@ class MissionServer(Node):
         self.get_logger().info(
             f'MissionServer ready — {loc_count} named location(s) loaded. '
             f'Listening on /mission/execute')
+
+    # ── Pose tracking (per robot) ──────────────────────────────────────────────
+
+    def _amcl_cb(self, msg: PoseWithCovarianceStamped, ns: str):
+        p = msg.pose.pose.position
+        with self._lock:
+            if ns in self._missions:
+                self._missions[ns]['current_amcl'] = (p.x, p.y)
 
     # ── Action client (one per robot namespace) ────────────────────────────────
 
@@ -172,7 +182,14 @@ class MissionServer(Node):
                 'goal_handle': None,
                 'mission_gen': 0,
                 'current_pose': None,
+                'current_amcl': None,
+                'last_completion': None,
             }
+            # Subscribe to AMCL pose for end-point accuracy
+            amcl_topic = f'/{ns}/amcl_pose' if ns else '/amcl_pose'
+            self._amcl_subs[ns] = self.create_subscription(
+                PoseWithCovarianceStamped, amcl_topic,
+                lambda msg, n=ns: self._amcl_cb(msg, n), 10)
         return self._missions[ns]
 
     # ── Mission intake ─────────────────────────────────────────────────────────
@@ -258,7 +275,11 @@ class MissionServer(Node):
             self.get_logger().error('Nav2 not available — mission aborted.')
             with self._lock:
                 if self._ctx(ns)['mission_gen'] == my_gen:
-                    self._ctx(ns)['state'] = FAILED
+                    ctx = self._ctx(ns)
+                    ctx['state'] = FAILED
+                    ctx['last_completion'] = {
+                        'status': 'FAILED', 'error_m': -1.0,
+                        'elapsed_s': 0.0, 'recoveries': 0}
             return
 
         loop = True
@@ -285,13 +306,21 @@ class MissionServer(Node):
                     f'→ waypoint {i + 1}/{len(wps)}{loc_str}: '
                     f'({x:.2f}, {y:.2f}, {yaw:.0f}°)')
 
-                ok = self._go(ns, client, x, y, yaw, my_gen)
-                if not ok:
+                result = self._go(ns, client, x, y, yaw, my_gen)
+                if result is None:
+                    return  # superseded
+                with self._lock:
+                    if self._ctx(ns)['mission_gen'] == my_gen:
+                        self._ctx(ns)['last_completion'] = result
+                if result['status'] != 'SUCCEEDED':
                     with self._lock:
                         if self._ctx(ns)['mission_gen'] != my_gen:
                             return
                     self.get_logger().warn(
-                        f'Waypoint {i + 1} unreachable.  '
+                        f'Waypoint {i + 1} → {result["status"]}  '
+                        f'error={result["error_m"]:.3f}m  '
+                        f'elapsed={result["elapsed_s"]:.1f}s  '
+                        f'recoveries={result["recoveries"]}  '
                         f'{"Continuing patrol — RECOVERING." if mtype == "patrol" else "Mission failed."}')
                     if mtype != 'patrol':
                         with self._lock:
@@ -311,27 +340,35 @@ class MissionServer(Node):
                 self._ctx(ns)['state'] = DONE
         self.get_logger().info('Mission complete.')
 
-    def _go(self, ns: str, client: ActionClient, x: float, y: float, yaw: float, my_gen: int) -> bool:
+    def _go(self, ns: str, client: ActionClient, x: float, y: float, yaw: float, my_gen: int) -> dict | None:
         goal      = NavigateToPose.Goal()
         goal.pose = _make_pose(x, y, yaw, self.get_clock().now().to_msg())
 
-        future   = client.send_goal_async(goal)
+        start_time = time.time()
+        recovery_count = [0]
+
+        def _fb_cb(fb):
+            recovery_count[0] = fb.feedback.number_of_recoveries
+
+        future   = client.send_goal_async(goal, feedback_callback=_fb_cb)
         deadline = time.time() + 15.0
         while not future.done():
             if time.time() > deadline:
                 self.get_logger().warn('Goal acceptance timed out (15 s).')
-                return False
+                return {'status': 'FAILED', 'error_m': 0.0,
+                        'elapsed_s': time.time() - start_time, 'recoveries': 0}
             time.sleep(0.05)
 
         handle = future.result()
         if handle is None or not handle.accepted:
-            return False
+            return {'status': 'REJECTED', 'error_m': 0.0,
+                    'elapsed_s': time.time() - start_time, 'recoveries': 0}
 
         with self._lock:
             ctx = self._ctx(ns)
             if ctx['mission_gen'] != my_gen:
                 handle.cancel_goal_async()
-                return False
+                return None  # superseded
             ctx['goal_handle'] = handle
 
         result_future  = handle.get_result_async()
@@ -341,15 +378,32 @@ class MissionServer(Node):
                 superseded = self._ctx(ns)['mission_gen'] != my_gen
             if superseded:
                 handle.cancel_goal_async()
-                return False
+                return None
             if time.time() > nav_deadline:
                 self.get_logger().warn(
                     f'Goal timeout ({self._goal_timeout:.0f}s) — cancelling.')
                 handle.cancel_goal_async()
-                return False
+                return {'status': 'TIMEOUT', 'error_m': 0.0,
+                        'elapsed_s': time.time() - start_time,
+                        'recoveries': recovery_count[0]}
             time.sleep(0.1)
 
-        return result_future.result().status == GoalStatus.STATUS_SUCCEEDED
+        elapsed = time.time() - start_time
+        succeeded = result_future.result().status == GoalStatus.STATUS_SUCCEEDED
+
+        with self._lock:
+            amcl = self._missions.get(ns, {}).get('current_amcl')
+        if amcl is not None:
+            error_m = math.hypot(amcl[0] - x, amcl[1] - y)
+        else:
+            error_m = -1.0
+
+        return {
+            'status': 'SUCCEEDED' if succeeded else 'FAILED',
+            'error_m': round(error_m, 3),
+            'elapsed_s': round(elapsed, 1),
+            'recoveries': recovery_count[0],
+        }
 
     def _cancel_current(self, robot: str = '', log_msg: bool = True):
         with self._lock:
@@ -364,6 +418,7 @@ class MissionServer(Node):
                 ctx['wp_idx'] = 0
                 ctx['wp_labels'] = []
                 ctx['current_pose'] = None
+                ctx['last_completion'] = None
                 if ctx['goal_handle'] is not None:
                     handles.append(ctx['goal_handle'])
                 ctx['goal_handle'] = None
@@ -383,7 +438,7 @@ class MissionServer(Node):
                 mission = ctx['mission']
                 idx = ctx['wp_idx']
                 labels = ctx['wp_labels']
-                snapshots.append({
+                entry = {
                     'state':    ctx['state'],
                     'type':     mission.get('type', ''),
                     'robot':    ns,
@@ -391,7 +446,13 @@ class MissionServer(Node):
                     'wp_total': len(mission.get('waypoints', [])),
                     'location': labels[idx] if labels and idx < len(labels) else '',
                     'pose':     ctx['current_pose'],
-                })
+                }
+                lc = ctx.get('last_completion')
+                if lc and ctx['state'] in (DONE, FAILED):
+                    entry['error_m'] = lc.get('error_m', -1.0)
+                    entry['elapsed_s'] = lc.get('elapsed_s', 0.0)
+                    entry['recoveries'] = lc.get('recoveries', 0)
+                snapshots.append(entry)
         for payload in snapshots:
             msg      = String()
             msg.data = json.dumps(payload)
@@ -440,6 +501,43 @@ def _status(node: Node, robot_filter: str = ''):
         print('──────────────────────────────────────────\n')
     else:
         print('No mission server found (is it running as a daemon?)')
+
+
+def _wait(node: Node, robot_filter: str = '', timeout: float = 120.0):
+    """Block until mission state is DONE/FAILED, then print completion."""
+    received: dict[str, dict] = {}
+
+    def _cb(msg):
+        data = json.loads(msg.data)
+        robot = data.get('robot', '')
+        if robot_filter and robot != robot_filter:
+            return
+        received[robot or '/'] = data
+
+    node.create_subscription(String, '/mission/state', _cb, 10)
+    spin = threading.Thread(target=lambda: rclpy.spin(node), daemon=True)
+    spin.start()
+
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        for r, data in list(received.items()):
+            if data['state'] in (DONE, FAILED):
+                print('\n── Mission Complete ───────────────────────')
+                print(f'  Robot   : {data["robot"] or "/"}')
+                print(f'  State   : {data["state"]}')
+                print(f'  Type    : {data.get("type", "") or "—"}')
+                if 'error_m' in data:
+                    print(f'  Error   : {data["error_m"]:.3f} m')
+                if 'elapsed_s' in data:
+                    print(f'  Elapsed : {data["elapsed_s"]:.1f} s')
+                if 'recoveries' in data:
+                    print(f'  Recoveries: {data["recoveries"]}')
+                print('──────────────────────────────────────────\n')
+                sys.exit(0 if data['state'] == DONE else 1)
+        time.sleep(0.1)
+
+    print(f'Timeout ({timeout:.0f}s) — mission did not complete.')
+    sys.exit(2)
 
 
 def _parse_wp(s: str, locations: dict):
@@ -495,6 +593,11 @@ def main():
 
     elif cmd == 'cancel':
         _send(node, {'type': 'patrol', 'action': 'cancel', 'robot': '', 'waypoints': []})
+
+    elif cmd == 'wait':
+        robot = argv[1] if len(argv) > 1 else ''
+        t = float(argv[2]) if len(argv) > 2 else 120.0
+        _wait(node, robot, t)
 
     elif cmd == 'locations':
         if not locations:
