@@ -17,10 +17,11 @@ Commands
   locations      List all named locations from locations.yaml
   mission <ns> patrol <loc_or_wp> …   Loop through waypoints/locations
   mission <ns> sequence <loc_or_wp> … Visit once in order
-  mission <ns> goto <location>        Single named-location mission
-  mission <ns> goto <x> <y> [yaw]    Single-pose mission
-  mission <ns> status                 Show mission state
-  mission <ns> cancel                 Cancel active mission
+   mission <ns> goto <location>        Single named-location mission
+   mission <ns> goto <x> <y> [yaw]    Single-pose mission
+   mission <ns> status                 Show mission state
+   mission <ns> wait  [timeout]        Block until mission completes
+   mission <ns> cancel                 Cancel active mission
   collision <ns>  Show collision monitor state for a robot
   tasks add <x> <y> <yaw> [label]   Add a task to the shared queue
   tasks status                       Show task queue and robot states
@@ -323,9 +324,47 @@ class FleetNode(Node):
                 print(f'  Robot   : {s["robot"] or "/"}')
                 if s['wp_total']:
                     print(f'  Progress: {s["wp_index"] + 1}/{s["wp_total"]}')
+                if 'error_m' in s:
+                    print(f'  Error   : {s["error_m"]:.3f} m')
+                if 'elapsed_s' in s:
+                    print(f'  Elapsed : {s["elapsed_s"]:.1f} s')
+                if 'recoveries' in s:
+                    print(f'  Recoveries: {s["recoveries"]}')
                 print('──────────────────────────────────────────\n')
             else:
                 print('No mission server found (is it running?)')
+            return
+
+        if sub == 'wait':
+            timeout = float(extra[0]) if extra else 120.0
+            received = [None]
+
+            def _cb(msg):
+                data = json.loads(msg.data)
+                if ns and data.get('robot', '') != ns:
+                    return
+                received[0] = data
+
+            self.create_subscription(String, '/mission/state', _cb, 10)
+            deadline = time.time() + timeout
+            while received[0] is None or received[0]['state'] not in ('DONE', 'FAILED'):
+                if time.time() > deadline:
+                    print(f'Timeout ({timeout:.0f}s) — mission did not complete.')
+                    return
+                time.sleep(0.1)
+
+            s = received[0]
+            print('\n── Mission Complete ───────────────────────')
+            print(f'  State   : {s["state"]}')
+            print(f'  Type    : {s["type"] or "—"}')
+            print(f'  Robot   : {s["robot"] or "/"}')
+            if 'error_m' in s:
+                print(f'  Error   : {s["error_m"]:.3f} m')
+            if 'elapsed_s' in s:
+                print(f'  Elapsed : {s["elapsed_s"]:.1f} s')
+            if 'recoveries' in s:
+                print(f'  Recoveries: {s["recoveries"]}')
+            print('──────────────────────────────────────────\n')
             return
 
         pub = self.create_publisher(String, '/mission/execute', 10)

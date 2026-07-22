@@ -255,6 +255,64 @@ YOLOv11 + ByteTrack による画像認識・人体追跡パッケージ。
 - **PID ゲイン調整**: `PID_GAINS_DEFAULT` は `conf_hardware.h` で定義。実機に合わせて Kp/Ki/Kd を調整すること。
 - **BV ツリーファイル**: デザイン資料は `references/` ディレクトリに格納。システムブロック図、UI モックアップなど。
 
+## Navigation Completion Protocol
+
+ミッション完了を AI が確実に判定するためのプロトコル。
+
+### 完了シグナル: `/mission/state`
+
+MissionServer が 1Hz で publish。完了時 (`DONE`/`FAILED`) に精度情報が付与される:
+
+```json
+{
+  "state": "DONE",
+  "type": "goto",
+  "robot": "robot1",
+  "wp_index": 1, "wp_total": 1,
+  "location": "room_a",
+  "error_m": 0.12,
+  "elapsed_s": 15.3,
+  "recoveries": 1
+}
+```
+
+| フィールド | 型 | 意味 |
+|---|---|---|
+| `state` | string | `DONE` / `FAILED` / `NAVIGATING` / `IDLE` |
+| `error_m` | float | 終端誤差 (AMCL pose と目標の距離) |
+| `elapsed_s` | float | Nav2 goal 送信から完了までの秒数 |
+| `recoveries` | int | Nav2 リカバリ行動の実行回数 |
+
+### AI 判定ロジック
+
+```
+SUCCESS = (state == "DONE" AND error_m < 0.5)
+FAILURE = (state == "FAILED" OR timeout)
+```
+
+### CLI: ブロッキング完了待ち
+
+```bash
+# mission_server 直叩き
+ros2 run diff_drive_robot mission_server.py goto robot1 room_a
+ros2 run diff_drive_robot mission_server.py wait robot1 120
+
+# fleet_manager 経由
+ros2 run diff_drive_robot fleet_manager.py mission robot1 goto room_a
+ros2 run diff_drive_robot fleet_manager.py mission robot1 wait 120
+```
+
+`wait` は `DONE`/`FAILED` になるまでブロック → 完了情報を表示 → exit code 0/1 で終了。
+AI は `$?` または出力の `error_m` で成功判定できる。
+
+### topic echo で生データ確認
+
+```bash
+ros2 topic echo /mission/state --field error_m,elapsed_s,recoveries,state
+```
+
+---
+
 ## クイックスタート
 
 ### 前提条件
