@@ -1,0 +1,7 @@
+build/
+install/
+log/
+.omo/run-continuation/
+.omo/boulder.json
+.omo/drafts/
+.serena/
