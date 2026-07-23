@@ -44,10 +44,10 @@ ros2 launch ros2_autonomous_nav mapping_nav.launch.py &
 LAUNCH_PID=$!
 
 echo "=== Gazebo の準備ができるまで待機中… ==="
-# Dynamic readiness check: wait for /clock (Gazebo publishing sim time)
-# instead of a fixed sleep. Times out after 30s to avoid hanging.
+# Dynamic readiness check: wait for /clock (Gazebo publishing sim time).
+# Use timeout on each ros2 command to prevent hanging on daemon cold-start.
 for i in $(seq 1 30); do
-  if ros2 topic list 2>/dev/null | grep -q '^/clock$'; then
+  if timeout 3 ros2 topic list 2>/dev/null | grep -q '^/clock$'; then
     echo "   Gazebo 準備完了 ($i 秒)"
     break
   fi
