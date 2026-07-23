@@ -20,7 +20,7 @@ def generate_launch_description():
     )
 
     configure_slam = TimerAction(
-        period=5.0,
+        period=2.0,
         actions=[
             ExecuteProcess(
                 cmd=['ros2', 'lifecycle', 'set', '/slam_toolbox', 'configure'],
@@ -30,7 +30,7 @@ def generate_launch_description():
     )
 
     activate_slam = TimerAction(
-        period=10.0,
+        period=5.0,
         actions=[
             ExecuteProcess(
                 cmd=['ros2', 'lifecycle', 'set', '/slam_toolbox', 'activate'],
