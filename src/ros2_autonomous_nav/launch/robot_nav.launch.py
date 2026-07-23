@@ -2,9 +2,11 @@ import os
 import subprocess
 from launch import LaunchDescription
 from launch.actions import (
-    IncludeLaunchDescription, TimerAction, ExecuteProcess, LogInfo
+    IncludeLaunchDescription, TimerAction, ExecuteProcess, LogInfo,
+    DeclareLaunchArgument, OpaqueFunction, SetLaunchConfiguration
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
@@ -20,6 +22,13 @@ def detect_gpu():
         return False
 
 
+WORLDS = {
+    'warehouse': {'sdf': 'warehouse.sdf', 'world_name': 'warehouse', 'spawn': (0, 0, 0.5)},
+    'maze': {'sdf': 'maze.sdf', 'world_name': 'my_custom_world', 'spawn': (-4.0, -4.0, 0.1)},
+    'empty': {'sdf': 'empty.sdf', 'world_name': 'empty', 'spawn': (0, 0, 0.1)},
+}
+
+
 def generate_launch_description():
 
     has_gpu = detect_gpu()
@@ -31,17 +40,32 @@ def generate_launch_description():
     # Pick GPU or CPU URDF
     urdf_name = 'my_robot_gpu.urdf' if has_gpu else 'my_robot_cpu.urdf'
     urdf_file = os.path.join(pkg_share, 'urdf', urdf_name)
-    world_file = os.path.join(pkg_share, 'worlds', 'my_custom_world.sdf')
     nav2_params_file = os.path.join(pkg_share, 'config', 'nav2_params.yaml')
     map_file = os.path.join(pkg_share, 'maps', 'nav_world.yaml')
 
     with open(urdf_file, 'r') as f:
         robot_description = f.read()
 
-    # Gazebo args — headless sensor rendering on CPU mode
-    gz_args = f'-r {world_file}'
-    if not has_gpu:
-        gz_args = f'-r --render-engine ogre2 {world_file}'
+    def _resolve_world(context):
+        world_key = context.launch_configurations['world']
+        entry = WORLDS[world_key]
+        launch_dir = os.path.dirname(os.path.abspath(__file__))
+        pkg_share = os.path.dirname(launch_dir)
+        world_path = os.path.join(pkg_share, 'worlds', entry['sdf'])
+        gz_args = f'-r {world_path}'
+        if not has_gpu:
+            gz_args = f'-r --render-engine ogre2 {world_path}'
+        return [
+            SetLaunchConfiguration('gz_args', gz_args),
+            SetLaunchConfiguration('spawn_x', str(entry['spawn'][0])),
+            SetLaunchConfiguration('spawn_y', str(entry['spawn'][1])),
+            SetLaunchConfiguration('spawn_z', str(entry['spawn'][2])),
+            SetLaunchConfiguration('world_name', entry['world_name']),
+            SetLaunchConfiguration('clock_topic', f'/world/{entry["world_name"]}/clock'),
+        ]
+
+    declare_world_arg = DeclareLaunchArgument('world', default_value='warehouse',
+                                              description='World to load: warehouse, maze, or empty')
 
     # --- Nodes ---
 
@@ -60,7 +84,7 @@ def generate_launch_description():
                 'launch', 'gz_sim.launch.py'
             )
         ),
-        launch_arguments={'gz_args': gz_args}.items()
+        launch_arguments={'gz_args': LaunchConfiguration('gz_args')}.items()
     )
 
     spawn_robot = Node(
@@ -69,7 +93,7 @@ def generate_launch_description():
         arguments=[
             '-name', 'my_robot',
             '-topic', '/robot_description',
-            '-x', '-4.0', '-y', '-4.0', '-z', '0.1',
+            '-x', LaunchConfiguration('spawn_x'), '-y', LaunchConfiguration('spawn_y'), '-z', LaunchConfiguration('spawn_z'),
         ],
         output='screen'
     )
@@ -78,7 +102,7 @@ def generate_launch_description():
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
-            '/world/my_custom_world/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+            [LaunchConfiguration('clock_topic'), '@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
             '/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
             '/odom@nav_msgs/msg/Odometry@gz.msgs.Odometry',
             '/joint_states@sensor_msgs/msg/JointState@gz.msgs.Model',
@@ -86,7 +110,7 @@ def generate_launch_description():
             '/tf@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V',
         ],
         remappings=[
-            ('/world/my_custom_world/clock', '/clock'),
+            (LaunchConfiguration('clock_topic'), '/clock'),
         ],
         parameters=[{'use_sim_time': True}],
         output='screen'
@@ -152,6 +176,8 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        declare_world_arg,
+        OpaqueFunction(function=_resolve_world),
         LogInfo(msg=f'=== Running in {mode} mode ({urdf_name}) ==='),
         robot_state_publisher,
         gazebo,
