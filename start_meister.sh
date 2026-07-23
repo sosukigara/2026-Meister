@@ -49,22 +49,20 @@ cleanup() {
 }
 trap cleanup SIGINT SIGTERM EXIT
 
-# Force NVIDIA GPU for OGRE-Next (Gazebo 3D rendering)
-# Prevents fallback to Mesa llvmpipe software renderer
-export __GLX_VENDOR_LIBRARY_NAME=nvidia
-
 echo "=== Gazebo + SLAM + Nav2 を起動します ==="
 echo "=== World: $WORLD ==="
 ros2 launch ros2_autonomous_nav mapping_nav.launch.py "world:=$WORLD" &
 LAUNCH_PID=$!
 
 echo "=== Gazebo の準備ができるまで待機中… ==="
-# Dynamic readiness check: wait for /clock (Gazebo publishing sim time).
-# Use timeout on each ros2 command to prevent hanging on daemon cold-start.
-for i in $(seq 1 30); do
+echo "   (最大60秒待機。初回はシェーダコンパイルに時間がかかります)"
+for i in $(seq 1 60); do
   if timeout 3 ros2 topic list 2>/dev/null | grep -q '^/clock$'; then
     echo "   Gazebo 準備完了 ($i 秒)"
     break
+  fi
+  if [ $((i % 10)) -eq 0 ]; then
+    echo "   待機中… ${i}秒経過"
   fi
   sleep 1
 done
