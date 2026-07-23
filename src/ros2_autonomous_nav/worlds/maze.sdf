@@ -1,0 +1,307 @@
+<?xml version="1.0"?>
+<sdf version="1.10">
+  <world name="my_custom_world">
+
+    <physics name="1ms" type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+    </physics>
+
+    <plugin filename="gz-sim-physics-system"
+            name="gz::sim::systems::Physics"/>
+    <plugin filename="gz-sim-user-commands-system"
+            name="gz::sim::systems::UserCommands"/>
+    <plugin filename="gz-sim-scene-broadcaster-system"
+            name="gz::sim::systems::SceneBroadcaster"/>
+    <plugin filename="gz-sim-sensors-system"
+            name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.95 0.95 0.95 1</diffuse>
+      <specular>0.25 0.25 0.25 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <!-- Ground plane -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <ambient>0.75 0.75 0.78 1</ambient>
+            <diffuse>0.75 0.75 0.78 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- =============================================================== -->
+    <!--   Walled maze: ~10x10 m enclosure with internal rooms            -->
+    <!--   Same world as ros_05_slam_mapping for map consistency          -->
+    <!-- =============================================================== -->
+
+    <!-- Outer wall: NORTH -->
+    <model name="wall_n">
+      <static>true</static>
+      <pose>0 5 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><box><size>10.2 0.2 0.6</size></box></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><box><size>10.2 0.2 0.6</size></box></geometry>
+          <material>
+            <ambient>0.55 0.55 0.60 1</ambient>
+            <diffuse>0.55 0.55 0.60 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Outer wall: SOUTH -->
+    <model name="wall_s">
+      <static>true</static>
+      <pose>0 -5 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><box><size>10.2 0.2 0.6</size></box></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><box><size>10.2 0.2 0.6</size></box></geometry>
+          <material>
+            <ambient>0.55 0.55 0.60 1</ambient>
+            <diffuse>0.55 0.55 0.60 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Outer wall: EAST -->
+    <model name="wall_e">
+      <static>true</static>
+      <pose>5 0 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><box><size>0.2 10.2 0.6</size></box></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><box><size>0.2 10.2 0.6</size></box></geometry>
+          <material>
+            <ambient>0.55 0.55 0.60 1</ambient>
+            <diffuse>0.55 0.55 0.60 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Outer wall: WEST -->
+    <model name="wall_w">
+      <static>true</static>
+      <pose>-5 0 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><box><size>0.2 10.2 0.6</size></box></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><box><size>0.2 10.2 0.6</size></box></geometry>
+          <material>
+            <ambient>0.55 0.55 0.60 1</ambient>
+            <diffuse>0.55 0.55 0.60 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Internal walls -->
+    <model name="wall_i1">
+      <static>true</static>
+      <pose>-1.5 -3.0 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><box><size>0.15 4.0 0.6</size></box></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><box><size>0.15 4.0 0.6</size></box></geometry>
+          <material>
+            <ambient>0.60 0.58 0.55 1</ambient>
+            <diffuse>0.60 0.58 0.55 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_i2">
+      <static>true</static>
+      <pose>1.5 2.75 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><box><size>0.15 4.5 0.6</size></box></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><box><size>0.15 4.5 0.6</size></box></geometry>
+          <material>
+            <ambient>0.60 0.58 0.55 1</ambient>
+            <diffuse>0.60 0.58 0.55 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_i3">
+      <static>true</static>
+      <pose>-3.75 1.5 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><box><size>2.5 0.15 0.6</size></box></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><box><size>2.5 0.15 0.6</size></box></geometry>
+          <material>
+            <ambient>0.60 0.58 0.55 1</ambient>
+            <diffuse>0.60 0.58 0.55 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="wall_i4">
+      <static>true</static>
+      <pose>3.5 -1.5 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><box><size>3.0 0.15 0.6</size></box></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><box><size>3.0 0.15 0.6</size></box></geometry>
+          <material>
+            <ambient>0.60 0.58 0.55 1</ambient>
+            <diffuse>0.60 0.58 0.55 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Obstacles -->
+    <model name="pillar_a">
+      <static>true</static>
+      <pose>-3.0 -3.0 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><cylinder><radius>0.25</radius><length>0.6</length></cylinder></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>0.25</radius><length>0.6</length></cylinder></geometry>
+          <material>
+            <ambient>0.70 0.45 0.25 1</ambient>
+            <diffuse>0.70 0.45 0.25 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="pillar_b">
+      <static>true</static>
+      <pose>3.0 3.0 0.3 0 0 0</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><cylinder><radius>0.25</radius><length>0.6</length></cylinder></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><cylinder><radius>0.25</radius><length>0.6</length></cylinder></geometry>
+          <material>
+            <ambient>0.70 0.45 0.25 1</ambient>
+            <diffuse>0.70 0.45 0.25 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="crate_1">
+      <static>true</static>
+      <pose>-3.0 3.2 0.2 0 0 0.3</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><box><size>0.5 0.5 0.4</size></box></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><box><size>0.5 0.5 0.4</size></box></geometry>
+          <material>
+            <ambient>0.55 0.38 0.22 1</ambient>
+            <diffuse>0.55 0.38 0.22 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="crate_2">
+      <static>true</static>
+      <pose>3.7 -3.7 0.2 0 0 -0.5</pose>
+      <link name="link">
+        <collision name="c">
+          <geometry><box><size>0.6 0.4 0.4</size></box></geometry>
+        </collision>
+        <visual name="v">
+          <geometry><box><size>0.6 0.4 0.4</size></box></geometry>
+          <material>
+            <ambient>0.55 0.38 0.22 1</ambient>
+            <diffuse>0.55 0.38 0.22 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Nav2 goal markers — colored cylinders to mark waypoints visually -->
+    <model name="goal_marker_A">
+      <static>true</static>
+      <pose>3.5 3.5 0.01 0 0 0</pose>
+      <link name="link">
+        <visual name="v">
+          <geometry><cylinder><radius>0.15</radius><length>0.02</length></cylinder></geometry>
+          <material>
+            <ambient>0.1 0.8 0.2 1</ambient>
+            <diffuse>0.1 0.8 0.2 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="goal_marker_B">
+      <static>true</static>
+      <pose>-3.5 -3.5 0.01 0 0 0</pose>
+      <link name="link">
+        <visual name="v">
+          <geometry><cylinder><radius>0.15</radius><length>0.02</length></cylinder></geometry>
+          <material>
+            <ambient>0.8 0.1 0.2 1</ambient>
+            <diffuse>0.8 0.1 0.2 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+  </world>
+</sdf>
