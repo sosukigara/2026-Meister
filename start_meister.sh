@@ -49,6 +49,10 @@ cleanup() {
 }
 trap cleanup SIGINT SIGTERM EXIT
 
+# Force NVIDIA GPU for OGRE-Next (Gazebo 3D rendering)
+# Prevents fallback to Mesa llvmpipe software renderer
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+
 echo "=== Gazebo + SLAM + Nav2 を起動します ==="
 echo "=== World: $WORLD ==="
 ros2 launch ros2_autonomous_nav mapping_nav.launch.py "world:=$WORLD" &
