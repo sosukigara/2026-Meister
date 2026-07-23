@@ -1,16 +1,30 @@
 #!/bin/bash
 # ==========================================
-# Meister ROS 2 起動スクリプト
+# Meistar ROS 2 起動スクリプト
 # 使い方: ./start_meister.sh
 # ==========================================
+set -eo pipefail
 
-WORKSPACE=/home/so/Meister
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+WORKSPACE_ROOT=$(cd "$SCRIPT_DIR" && pwd)
 
-cd "$WORKSPACE"
+cd "$WORKSPACE_ROOT"
+
 echo "=== ビルド中… ==="
 colcon build --symlink-install --packages-select ros2_autonomous_nav meistar_description
 
-source /opt/ros/jazzy/setup.bash
+ROS_SETUP=""
+for _dir in /opt/ros/*/; do
+  if [ -f "${_dir}setup.bash" ]; then
+    ROS_SETUP="${_dir}setup.bash"
+    break
+  fi
+done
+if [ -z "$ROS_SETUP" ]; then
+  echo "ERROR: ROS 2 setup.bash not found under /opt/ros/" >&2
+  exit 1
+fi
+source "$ROS_SETUP"
 source install/setup.bash
 
 cleanup() {
@@ -31,7 +45,7 @@ LAUNCH_PID=$!
 
 echo "=== RViz を起動します ==="
 sleep 15
-"$WORKSPACE/src/ros2_autonomous_nav/rviz.sh" &
+"$WORKSPACE_ROOT/src/ros2_autonomous_nav/rviz.sh" &
 
 echo "------------------------------------------"
 echo "起動完了！"
