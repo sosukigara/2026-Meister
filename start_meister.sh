@@ -5,6 +5,16 @@
 # ==========================================
 set -eo pipefail
 
+# World selection: positional arg, default warehouse
+WORLD="${1:-warehouse}"
+case "$WORLD" in
+    warehouse|maze|empty) ;;
+    *)
+        echo "Usage: $0 [warehouse|maze|empty]"
+        exit 1
+        ;;
+esac
+
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 WORKSPACE_ROOT=$(cd "$SCRIPT_DIR" && pwd)
 
@@ -40,7 +50,8 @@ cleanup() {
 trap cleanup SIGINT SIGTERM EXIT
 
 echo "=== Gazebo + SLAM + Nav2 を起動します ==="
-ros2 launch ros2_autonomous_nav mapping_nav.launch.py &
+echo "=== World: $WORLD ==="
+ros2 launch ros2_autonomous_nav mapping_nav.launch.py "world:=$WORLD" &
 LAUNCH_PID=$!
 
 echo "=== Gazebo の準備ができるまで待機中… ==="
