@@ -89,19 +89,19 @@ controller_server:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: true
       min_vel_x: 0.0
-      min_vel_y: -1.0
-      max_vel_x: 1.0
-      max_vel_y: 0.5
-      max_vel_theta: 1.0
+      min_vel_y: 0.0
+      max_vel_x: 0.5
+      max_vel_y: 0.0
+      max_vel_theta: 0.8
       min_speed_xy: 0.0
-      max_speed_xy: 1.0
+      max_speed_xy: 0.5
       min_speed_theta: 0.0
-      acc_lim_x: 5.0
-      acc_lim_y: 5.0
-      acc_lim_theta: 3.2
-      decel_lim_x: -5.0
-      decel_lim_y: -5.0
-      decel_lim_theta: -3.2
+      acc_lim_x: 2.5
+      acc_lim_y: 0.0
+      acc_lim_theta: 1.5
+      decel_lim_x: -2.5
+      decel_lim_y: 0.0
+      decel_lim_theta: -1.5
       vx_samples: 20
       vy_samples: 20
       vtheta_samples: 20
@@ -116,9 +116,9 @@ controller_server:
       critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
       BaseObstacle.scale: 2.0
       PathAlign.scale: 32.0
-      PathAlign.forward_point_distance: 0.1
+      PathAlign.forward_point_distance: 0.5
       GoalAlign.scale: 24.0
-      GoalAlign.forward_point_distance: 0.1
+      GoalAlign.forward_point_distance: 0.5
       PathDist.scale: 32.0
       GoalDist.scale: 24.0
       RotateToGoal.scale: 32.0
@@ -165,10 +165,10 @@ velocity_smoother:
     smoothing_frequency: 40.0
     scale_velocities: false
     feedback: "OPEN_LOOP"
-    max_velocity: [1.0, 1.0, 2.0]
-    min_velocity: [-1.0, -1.0, -2.0]
-    max_accel: [5.0, 5.0, 4.0]
-    max_decel: [-5.0, -5.0, -4.0]
+    max_velocity: [0.5, 0.0, 0.8]
+    min_velocity: [-0.5, 0.0, -0.8]
+    max_accel: [2.5, 0.0, 1.5]
+    max_decel: [-2.5, 0.0, -1.5]
     odom_topic: odom
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
