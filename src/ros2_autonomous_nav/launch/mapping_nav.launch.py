@@ -22,14 +22,12 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(os.path.join(pkg_nav, 'launch', 'slam.launch.py'))
     )
 
-    # 4. Navigation (Nav2) - Delay to wait for SLAM
-    navigation = TimerAction(
-        period=15.0,
-        actions=[
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(os.path.join(pkg_nav, 'launch', 'navigation.launch.py'))
-            )
-        ]
+    # 4. Navigation (Nav2) — starts immediately alongside SLAM/Gazebo
+    # Nav2 nodes are lifecycle-managed; they start unconfigured and wait.
+    # lifecycle_manager discovers them via bond_timeout=10.0.
+    # No artificial delay needed — overlap is handled by lifecycle transitions.
+    navigation = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(pkg_nav, 'launch', 'navigation.launch.py'))
     )
 
     return LaunchDescription([

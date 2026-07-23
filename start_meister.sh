@@ -43,8 +43,18 @@ echo "=== Gazebo + SLAM + Nav2 を起動します ==="
 ros2 launch ros2_autonomous_nav mapping_nav.launch.py &
 LAUNCH_PID=$!
 
+echo "=== Gazebo の準備ができるまで待機中… ==="
+# Dynamic readiness check: wait for /clock (Gazebo publishing sim time)
+# instead of a fixed sleep. Times out after 30s to avoid hanging.
+for i in $(seq 1 30); do
+  if ros2 topic list 2>/dev/null | grep -q '^/clock$'; then
+    echo "   Gazebo 準備完了 ($i 秒)"
+    break
+  fi
+  sleep 1
+done
+
 echo "=== RViz を起動します ==="
-sleep 15
 "$WORKSPACE_ROOT/src/ros2_autonomous_nav/rviz.sh" &
 
 echo "------------------------------------------"
