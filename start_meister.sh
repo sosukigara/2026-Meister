@@ -41,6 +41,9 @@ source install/setup.bash
 # Default UDP multicast discovery fails on machines with VPN (tun0)
 export GZ_IP=127.0.0.1
 
+# Force ROS 2 DDS to localhost only (same reason: VPN breaks multicast)
+export ROS_LOCALHOST_ONLY=1
+
 cleanup() {
     echo ""
     echo "システムを終了しています..."
