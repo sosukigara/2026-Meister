@@ -37,6 +37,10 @@ fi
 source "$ROS_SETUP"
 source install/setup.bash
 
+# Force Gazebo transport over TCP localhost
+# Default UDP multicast discovery fails on machines with VPN (tun0)
+export GZ_IP=127.0.0.1
+
 cleanup() {
     echo ""
     echo "システムを終了しています..."
@@ -55,8 +59,8 @@ ros2 launch ros2_autonomous_nav mapping_nav.launch.py "world:=$WORLD" &
 LAUNCH_PID=$!
 
 echo "=== Gazebo の準備ができるまで待機中… ==="
-echo "   (最大60秒待機。初回はシェーダコンパイルに時間がかかります)"
-for i in $(seq 1 60); do
+echo "   (最大90秒待機。初回はシェーダコンパイルに時間がかかります)"
+for i in $(seq 1 90); do
   if timeout 3 ros2 topic list 2>/dev/null | grep -q '^/clock$'; then
     echo "   Gazebo 準備完了 ($i 秒)"
     break
