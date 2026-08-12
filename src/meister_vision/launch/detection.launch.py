@@ -4,14 +4,23 @@
     ros2 launch meister_vision detection.launch.py
     ros2 launch meister_vision detection.launch.py image_topic:=/camera/image_raw \
         conf_threshold:=0.3 model_path:=$HOME/models/yolov8n.onnx
+    ros2 launch meister_vision detection.launch.py start_rviz:=true \
+        rviz_config:=src/meister_vision/rviz/detection.rviz
 """
+import os
+
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
+from launch import conditions
 from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
+    default_rviz = os.path.join(
+        get_package_share_directory("meister_vision"), "rviz", "detection.rviz")
+
     return LaunchDescription([
         DeclareLaunchArgument(
             "model_path", default_value="",
@@ -31,6 +40,12 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "rate", default_value="10.0",
             description="最大処理レート [Hz]"),
+        DeclareLaunchArgument(
+            "start_rviz", default_value="false",
+            description="rviz2 を起動して検出画像を表示するか"),
+        DeclareLaunchArgument(
+            "rviz_config", default_value=default_rviz,
+            description="rviz2 設定ファイルのパス"),
 
         Node(
             package="meister_vision",
@@ -45,5 +60,13 @@ def generate_launch_description():
                 "publish_annotated": LaunchConfiguration("publish_annotated"),
                 "rate": LaunchConfiguration("rate"),
             }],
+        ),
+        Node(
+            package="rviz2",
+            executable="rviz2",
+            name="rviz2",
+            arguments=["-d", LaunchConfiguration("rviz_config")],
+            condition=conditions.IfCondition(
+                LaunchConfiguration("start_rviz")),
         ),
     ])
