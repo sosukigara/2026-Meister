@@ -21,6 +21,8 @@ from meister_vision.yolo_detector import (  # noqa: E402
     COCO_CLASSES, Detection, YOLODetector, letterbox, nms,
     resolve_model_path,
 )
+from meister_vision.detection_node import _bgr_from_image_msg  # noqa: E402
+from sensor_msgs.msg import Image as ImageMsg  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
@@ -215,3 +217,65 @@ class TestFullPipeline:
                         (0, 0, 0), 1, cv2.LINE_AA)
         # 描画しても画像が破壊されないこと (shape 維持)
         assert image.shape == (480, 640, 3)
+
+
+# ---------------------------------------------------------------------------
+# (d) sensor_msgs/Image → BGR 変換 (usb_cam 等の実エンコーディング対応)
+# ---------------------------------------------------------------------------
+
+def _make_image_msg(bgr: np.ndarray, encoding: str) -> ImageMsg:
+    """BGR ndarray を指定エンコーディングの ImageMsg に変換する。"""
+    msg = ImageMsg()
+    msg.height, msg.width = bgr.shape[:2]
+    msg.encoding = encoding
+    if encoding == "bgr8":
+        data = bgr
+    elif encoding == "rgb8":
+        data = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
+    elif encoding == "yuv422_yuy2":
+        data = cv2.cvtColor(bgr, cv2.COLOR_BGR2YUV_YUY2)
+    else:
+        raise ValueError(f"テスト未対応エンコーディング: {encoding}")
+    msg.step = data.shape[1] * data.shape[2] if data.ndim == 3 else data.shape[1]
+    msg.data = np.ascontiguousarray(data).tobytes()
+    return msg
+
+
+class TestImageConversion:
+    def test_bgr8_roundtrip(self):
+        """bgr8 はそのまま返る。"""
+        bgr = np.zeros((480, 640, 3), dtype=np.uint8)
+        bgr[:, :, 0] = 200
+        bgr[:, :, 1] = 100
+        bgr[:, :, 2] = 50
+        out = _bgr_from_image_msg(_make_image_msg(bgr, "bgr8"))
+        np.testing.assert_array_equal(out, bgr)
+
+    def test_rgb8_converted_to_bgr(self):
+        """rgb8 はチャンネルが入れ替わる。"""
+        bgr = np.zeros((10, 10, 3), dtype=np.uint8)
+        bgr[:, :, 0] = 200  # B
+        bgr[:, :, 2] = 50   # R
+        out = _bgr_from_image_msg(_make_image_msg(bgr, "rgb8"))
+        np.testing.assert_array_equal(out, bgr)
+
+    def test_yuv422_yuy2_converted_to_bgr(self):
+        """usb_cam の yuv422_yuy2 が BGR に変換される。"""
+        bgr = np.zeros((16, 16, 3), dtype=np.uint8)
+        bgr[:, :, 0] = 200  # B
+        bgr[:, :, 1] = 100  # G
+        bgr[:, :, 2] = 50   # R
+        out = _bgr_from_image_msg(_make_image_msg(bgr, "yuv422_yuy2"))
+        assert out.shape == bgr.shape
+        assert out.dtype == np.uint8
+        # 可逆性はないが、完全に壊れていないこと (分散が0でない)
+        assert out.std() > 0
+        # 色相の大まかな傾向: 青成分が赤成分より大きい
+        assert out[:, :, 0].mean() > out[:, :, 2].mean()
+
+    def test_unsupported_encoding_raises(self):
+        """未対応エンコーディングは ValueError を送出する。"""
+        msg = _make_image_msg(np.zeros((8, 8, 3), dtype=np.uint8), "bgr8")
+        msg.encoding = "invalid_xyz"
+        with pytest.raises(ValueError):
+            _bgr_from_image_msg(msg)
