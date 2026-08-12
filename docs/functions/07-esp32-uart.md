@@ -1,0 +1,16 @@
+# 機能分解: ESP32 ↔ PC UART 通信
+
+> 要件: [features/07-esp32-uart.md](../features/07-esp32-uart.md) | 設計: [design/07-esp32-uart.md](../design/07-esp32-uart.md) | 作成日: 2026-08-12
+
+## 機能（このコンポーネントがすること）
+
+- **高レイヤー（PC / ROS 2）から指令を受け取る**: モータ速度・ステアリング舵角・アームサーボ角度・グリッパー開閉
+- **測定値を高レイヤーへ返す**: エンコーダ値・サーボ状態・センサ情報・エラー状態
+- PWM 信号を生成して駆動モータを制御する
+- シリアルバス（UART）でステアリング・アームのサーボを制御する
+- PC ↔ ESP32 間の UART 双方向通信を確立する
+
+## 関連リンク
+
+- 要件: [features/07-esp32-uart.md](../features/07-esp32-uart.md)
+- 設計: [design/07-esp32-uart.md](../design/07-esp32-uart.md)

@@ -2,6 +2,7 @@
 
 > 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 計画中
 > 設計: [design/10-auto-control.md](../design/10-auto-control.md)
+> 機能分解: [functions/10-auto-control.md](../functions/10-auto-control.md)
 
 ## 概要
 

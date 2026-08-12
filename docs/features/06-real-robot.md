@@ -2,6 +2,7 @@
 
 > 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 計画中
 > 設計: [design/06-real-robot.md](../design/06-real-robot.md)
+> 機能分解: [functions/06-real-robot.md](../functions/06-real-robot.md)
 
 ## 概要
 

@@ -2,6 +2,7 @@
 
 > 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 実装済み
 > 設計: [design/03-slam.md](../design/03-slam.md)
+> 機能分解: [functions/03-slam.md](../functions/03-slam.md)
 
 ## 概要
 
