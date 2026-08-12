@@ -3,6 +3,7 @@
 > 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 実装済み
 > 設計: [design/04-navigation.md](../design/04-navigation.md)
 > 機能分解: [functions/04-navigation.md](../functions/04-navigation.md)
+> 関連ゴール: [G1](../やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G3](../やりたいこと.md#g3-手動操縦も可能)
 
 ## 概要
 

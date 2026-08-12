@@ -1,6 +1,7 @@
 # 機能分解: 4軸アーム + カメラ + 画像認識 + 自動把持
 
 > 要件: [features/09-object-grasping.md](../features/09-object-grasping.md) | 設計: [design/09-object-grasping.md](../design/09-object-grasping.md) | 作成日: 2026-08-12
+> 関連ゴール: [G2](../やりたいこと.md#g2-自動でアームでものを回収)
 
 ## 機能（このコンポーネントがすること）
 

@@ -1,6 +1,7 @@
 # 機能分解: ロボットモデル・シミュレーション
 
 > 要件: [features/02-robot-model.md](../features/02-robot-model.md) | 設計: [design/02-robot-model.md](../design/02-robot-model.md) | 作成日: 2026-08-12
+> 関連ゴール: [G1](../やりたいこと.md#g1-ロッカーボギーロボット自動走行)
 
 ## 機能（このコンポーネントがすること）
 
