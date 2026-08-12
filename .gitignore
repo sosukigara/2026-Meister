@@ -6,3 +6,15 @@ log/
 .omo/drafts/
 .serena/
 .opencode/
+
+# PlatformIO build artifacts (firmware/)
+firmware/.pio/
+
+# ONNX model files (downloaded, ~12MB each)
+*.onnx
+
+# Python bytecode
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
