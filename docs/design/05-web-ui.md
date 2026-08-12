@@ -13,3 +13,9 @@
 - [ ] REST API 仕様（エンドポイントごとのリクエスト/レスポンス/エラーコード）
 - [ ] ナビゲーション状態遷移図（待機 → 巡回中 → 完了/失敗、キャンセル経路）
 - [ ] スレッド構成図（HTTP サーバ / 地図リスナ executor / ナビワーカー）
+
+## 関連ドキュメント
+
+- 機能要件: [features/05-web-ui.md](../features/05-web-ui.md)
+- 機能分解: [functions/05-web-ui.md](../functions/05-web-ui.md)
+- 関連設計: [04-navigation.md](04-navigation.md)（巡回の実行元） / [09-object-grasping.md](09-object-grasping.md)（把持対象の選択 UI として拡張予定）

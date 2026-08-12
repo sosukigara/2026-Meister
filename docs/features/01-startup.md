@@ -2,6 +2,7 @@
 
 > 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 実装済み
 > 設計: [design/01-startup.md](../design/01-startup.md)
+> 機能分解: [functions/01-startup.md](../functions/01-startup.md)
 
 ## 概要
 

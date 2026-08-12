@@ -17,3 +17,9 @@
 - [ ] 駆動系のブロック図（ESP32 PWM → ドライバ → DC モータ、エンコーダ帰還）
 - [ ] 走行モードの実現方式（全輪操舵の前進/斜行/超信地旋回の舵角パターン）
 - [ ] 電源設計（電源容量・配電・電源分離）
+
+## 関連ドキュメント
+
+- 機能要件: [features/08-rocker-bogie.md](../features/08-rocker-bogie.md)
+- 機能分解: [functions/08-rocker-bogie.md](../functions/08-rocker-bogie.md)
+- 関連設計: [07-esp32-uart.md](07-esp32-uart.md)（制御の上位層） / [10-auto-control.md](10-auto-control.md)（自動移動での走行先）

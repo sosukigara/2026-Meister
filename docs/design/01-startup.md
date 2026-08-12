@@ -11,3 +11,9 @@
 
 - [ ] 起動シーケンス図（start_meister.sh → launch 群の依存関係・起動順序）
 - [ ] プロセス管理（cleanup で終了させるプロセスの一覧とシグナル設計）
+
+## 関連ドキュメント
+
+- 機能要件: [features/01-startup.md](../features/01-startup.md)
+- 機能分解: [functions/01-startup.md](../functions/01-startup.md)
+- 関連設計: [02-robot-model.md](02-robot-model.md)（起動対象のモデル定義） / [04-navigation.md](04-navigation.md)（起動対象のナビ）

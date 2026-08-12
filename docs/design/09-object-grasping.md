@@ -18,3 +18,9 @@
 - [ ] 認識パイプライン（カメラ → 検出 → 位置姿勢推定 → 把持計画）
 - [ ] 把持シーケンス状態遷移（検出 → 選択 → 接近/停止 → 把持 → 持ち上げ → 解放）
 - [ ] ハンドアイキャリブレーション手順
+
+## 関連ドキュメント
+
+- 機能要件: [features/09-object-grasping.md](../features/09-object-grasping.md)
+- 機能分解: [functions/09-object-grasping.md](../functions/09-object-grasping.md)
+- 関連設計: [07-esp32-uart.md](07-esp32-uart.md)（アームサーボの制御経路） / [05-web-ui.md](05-web-ui.md)（対象選択 UI） / [10-auto-control.md](10-auto-control.md)（接近把持の移動連携）

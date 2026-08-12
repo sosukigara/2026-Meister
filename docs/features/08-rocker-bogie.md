@@ -2,6 +2,7 @@
 
 > 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 計画中
 > 設計: [design/08-rocker-bogie.md](../design/08-rocker-bogie.md)
+> 機能分解: [functions/08-rocker-bogie.md](../functions/08-rocker-bogie.md)
 
 ## 概要
 

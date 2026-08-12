@@ -2,6 +2,7 @@
 
 > 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 実装済み
 > 設計: [design/02-robot-model.md](../design/02-robot-model.md)
+> 機能分解: [functions/02-robot-model.md](../functions/02-robot-model.md)
 
 ## 概要
 

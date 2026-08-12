@@ -16,3 +16,9 @@
 - [ ] コマンド/フィードバックの種別一覧（モータ速度・舵角・サーボ角度・エンコーダ・状態・エラー）
 - [ ] シーケンス図（PC からの指令送信 → ESP32 応答 → フィードバック受信）
 - [ ] エラー処理設計（フレーム破損・タイムアウト・ESP32 側の異常通知）
+
+## 関連ドキュメント
+
+- 機能要件: [features/07-esp32-uart.md](../features/07-esp32-uart.md)
+- 機能分解: [functions/07-esp32-uart.md](../functions/07-esp32-uart.md)
+- 関連設計: [08-rocker-bogie.md](08-rocker-bogie.md)（モータ/サーボの制御先） / [09-object-grasping.md](09-object-grasping.md)（アームサーボの制御先） / [10-auto-control.md](10-auto-control.md)（cmd_vel の受信経路）
