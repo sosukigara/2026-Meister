@@ -1,6 +1,6 @@
 # 機能: 4軸アーム + カメラ + 画像認識 + 自動把持
 
-> 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 計画中
+> 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 物体検出ベース実装済み（アーム・把持は未）
 > 設計: [design/09-object-grasping.md](../design/09-object-grasping.md)
 > 機能分解: [functions/09-object-grasping.md](../functions/09-object-grasping.md)
 > 関連ゴール: [G2](../やりたいこと.md#g2-自動でアームでものを回収)
@@ -20,14 +20,14 @@
 
 ## 実装済み機能
 
-- （未実装 — 計画中）
+- [x] 物体検出のベース（`meister_vision`: onnxruntime + YOLOv8n ONNX、`image_raw` 購読 → `Detection2DArray` 配信）
+- [x] モデル取得スクリプト（`scripts/download_model.py` で `yolov8n.onnx` をダウンロード）
 
 ## 計画中機能
 
 - [ ] 4軸アーム（肩: DS3225 / 肘・手首・グリッパー: STS3215）を組み立て、ESP32 で制御する
 - [ ] アームの逆運動学（IK）を解き、手先を目標位置に動かせる
 - [ ] 手首のカメラ映像を PC(ROS 2) に取り込む
-- [ ] PC(ROS 2) で**汎用物体検出**を実行する（YOLO 等）
 - [ ] 検出結果を **Web UI に表示**し、**クリック or リスト選択の両対応**で把持対象を選べる
 - [ ] 選択した物体の位置・姿勢を推定し、アームで自動把持する
 - [ ] 把持後の動作（持ち上げ・移動・解放）を自動化する
