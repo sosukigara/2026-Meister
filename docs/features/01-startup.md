@@ -1,6 +1,7 @@
 # 機能: 起動・実行環境
 
 > 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 実装済み
+> 設計: [design/01-startup.md](../design/01-startup.md)
 
 ## 概要
 
@@ -19,8 +20,3 @@
 ## 計画中機能
 
 - （現時点で計画中の機能はありません）
-
-## 仕様化メモ
-
-- 起動シーケンスの詳細（各 launch の依存関係・起動順序）を設計図化する際の起点。
-- `start_meister.sh` と `scripts/start_mapping_nav.sh` の差分整理（旧版の廃止 or 統合）を要検討。
