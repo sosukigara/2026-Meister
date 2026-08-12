@@ -1,7 +1,8 @@
 #!/bin/bash
 # ==========================================
 # Meistar ROS 2 起動スクリプト
-# 使い方: ./start_meister.sh
+# 使い方: ./start_meister.sh [warehouse|maze|empty]
+# 事前に ./build.sh を実行しておくこと
 # ==========================================
 set -eo pipefail
 
@@ -20,8 +21,10 @@ WORKSPACE_ROOT=$(cd "$SCRIPT_DIR" && pwd)
 
 cd "$WORKSPACE_ROOT"
 
-echo "=== ビルド中… ==="
-colcon build --symlink-install --packages-select ros2_autonomous_nav meistar_description meister_web_nav
+if [ ! -f "install/setup.bash" ]; then
+    echo "ERROR: install/setup.bash が見つかりません。先に ./build.sh を実行してください。" >&2
+    exit 1
+fi
 
 ROS_SETUP=""
 for _dir in /opt/ros/*/; do
