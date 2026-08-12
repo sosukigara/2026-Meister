@@ -60,6 +60,8 @@ _ENCODING_INFO = {
     "16UC1": (np.uint16, 1),
     "32FC1": (np.float32, 1),
     "8UC3": (np.uint8, 3),
+    # YUYV 4:2:2: ピクセルあたり 2 バイト (Y0 U Y1 V)
+    "yuv422_yuy2": (np.uint8, 2),
 }
 
 _BOX_COLOR = (0, 255, 0)  # BGR: 緑
@@ -97,6 +99,8 @@ def _bgr_from_image_msg(msg: ImageMsg) -> np.ndarray:
     elif encoding == "rgba8" or encoding == "bgra8":
         arr = cv2.cvtColor(arr, cv2.COLOR_RGBA2BGR
                            if encoding == "rgba8" else cv2.COLOR_BGRA2BGR)
+    elif encoding == "yuv422_yuy2":
+        arr = cv2.cvtColor(arr, cv2.COLOR_YUV2BGR_YUY2)
     return arr
 
 
