@@ -1,6 +1,6 @@
 # 機能: 4軸アーム + カメラ + 画像認識 + 自動把持
 
-> 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 物体検出ベース実装済み（アーム・把持は未）
+> 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 物体検出ベース実装済み・実カメラ確認済み（アーム・把持は未）
 > 設計: [design/09-object-grasping.md](../design/09-object-grasping.md)
 > 機能分解: [functions/09-object-grasping.md](../functions/09-object-grasping.md)
 > 関連ゴール: [G2](../やりたいこと.md#g2-自動でアームでものを回収)
@@ -22,6 +22,8 @@
 
 - [x] 物体検出のベース（`meister_vision`: onnxruntime + YOLOv8n ONNX、`image_raw` 購読 → `Detection2DArray` 配信）
 - [x] モデル取得スクリプト（`scripts/download_model.py` で `yolov8n.onnx` をダウンロード）
+- [x] 実カメラ対応（`yuv422_yuy2` エンコーディング対応、USB カメラで動作確認済み）
+- [x] rviz2 でのリアルタイム監視（`detection.launch.py start_rviz:=true` で検出画像を表示）
 
 ## 計画中機能
 

@@ -24,7 +24,9 @@
   - 配信: `detections`（`vision_msgs/Detection2DArray`、bbox / クラス / 信頼度）
   - 配信: `detection_image`（`sensor_msgs/Image`、検出枠・ラベル描画済み）
 - ノードは既定で最大 10 Hz にレート制限して負荷を軽く保つ。
-- **実装状況**: 物体検出のベース実装済み（PC 側）。アーム / IK / カメラ映像取り込み / 把持は未実装（後続）。
+- **実カメラ対応**: `yuv422_yuy2`（YUYV 4:2:2）エンコーディングに対応。`usb_cam` など一般的な USB カメラの生出力を直接扱える（`_bgr_from_image_msg` の手動変換パス）。
+- **リアルタイム監視**: rviz2 の Image 表示で検出結果を確認できる。`detection.launch.py start_rviz:=true` で検出ノードと rviz2（`rviz/detection.rviz`、`/detection_image` 表示）を一括起動。
+- **実装状況**: 物体検出のベース実装済み（PC 側）・実カメラでの動作確認済み。アーム / IK / カメラ映像取り込み / 把持は未実装（後続）。
 
 ## 設計図化対象
 
