@@ -21,7 +21,7 @@ WORKSPACE_ROOT=$(cd "$SCRIPT_DIR" && pwd)
 cd "$WORKSPACE_ROOT"
 
 echo "=== ビルド中… ==="
-colcon build --symlink-install --packages-select ros2_autonomous_nav meistar_description
+colcon build --symlink-install --packages-select ros2_autonomous_nav meistar_description meister_web_nav
 
 ROS_SETUP=""
 for _dir in /opt/ros/*/; do
@@ -81,6 +81,7 @@ echo "------------------------------------------"
 echo "起動完了！"
 echo "- 手動操作: 別ターミナルで teleop を実行。"
 echo "- 自動移動: RVizで '2D Nav Goal' を指定。"
+echo "- Web UI: http://localhost:8088 で地図上に複数地点を指定して移動できます。"
 echo "終了するには Ctrl+C を押してください。"
 echo "------------------------------------------"
 

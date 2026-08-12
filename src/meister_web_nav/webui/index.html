@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meister Nav</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header>
+  <h1>Meister Web Nav</h1>
+  <div id="status-banner" class="status-idle">起動中...</div>
+</header>
+
+<main>
+  <section id="map-panel">
+    <canvas id="map-canvas"></canvas>
+    <p class="hint">地図をクリックして目的地を追加。ドラッグすると向きを指定できます。</p>
+  </section>
+
+  <aside id="side-panel">
+    <h2>目的地リスト</h2>
+    <ol id="waypoint-list"></ol>
+
+    <div class="button-row">
+      <button id="btn-undo">1つ戻す</button>
+      <button id="btn-clear">全て消す</button>
+    </div>
+    <div class="button-row">
+      <button id="btn-send" class="primary">ルート送信</button>
+      <button id="btn-cancel" class="danger">キャンセル</button>
+    </div>
+  </aside>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>

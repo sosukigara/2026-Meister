@@ -24,6 +24,7 @@
   <exec_depend>nav2_smac_planner</exec_depend>
   <exec_depend>teleop_twist_keyboard</exec_depend>
   <exec_depend>rviz2</exec_depend>
+  <exec_depend>meister_web_nav</exec_depend>
 
   <export>
     <build_type>ament_python</build_type>
