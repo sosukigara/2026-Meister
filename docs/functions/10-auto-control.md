@@ -1,6 +1,7 @@
 # 機能分解: 自動制御（自動移動 → 完全自律）
 
 > 要件: [features/10-auto-control.md](../features/10-auto-control.md) | 設計: [design/10-auto-control.md](../design/10-auto-control.md) | 作成日: 2026-08-12
+> 関連ゴール: [G1](../やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G2](../やりたいこと.md#g2-自動でアームでものを回収)
 
 ## 機能（このコンポーネントがすること）
 

@@ -6,10 +6,11 @@
 
 ## ドキュメント構成
 
-docs は「**何を作るか**」「**何ができるか**」「**どう作るか**」の3層で管理する。各機能は features / functions / design の3ファイルが相互リンクで対応する。
+docs は「**やりたいこと（ゴール）**」「**何を作るか**」「**何ができるか**」「**どう作るか**」の4層で管理する。各機能は features / functions / design の3ファイルが相互リンクで対応し、上位のゴール（[やりたいこと.md](やりたいこと.md)）に紐づく。
 
 | フォルダ | 内容 | 対象 |
 |---|---|---|
+| [やりたいこと.md](やりたいこと.md) | **ゴール** — 最終的に実現したいこと（G1: 自動走行 / G2: アーム回収 / G3: 手動操縦） | 方向性確認 |
 | [features/](features/) | **何を作るか** — 機能の要件（概要・実装済み/計画中機能） | 要件確認・受け入れテスト |
 | [functions/](functions/) | **何ができるか** — 機能分解（コンポーネントが実際にすること） | 機能理解・実装確認 |
 | [design/](design/) | **どう作るか** — 設計メモと設計図化対象（設計図へ深化予定） | 実装・設計レビュー |
@@ -26,18 +27,18 @@ ROS 2 (Jazzy) + Gazebo をベースとした自律移動ロボット制御ソフ
 
 ## 機能一覧
 
-| # | 機能 | 要件 | 機能分解 | 設計 | ステータス |
-|---|---|---|---|---|---|
-| 01 | 起動・実行環境 | [features/01-startup.md](features/01-startup.md) | [functions/01-startup.md](functions/01-startup.md) | [design/01-startup.md](design/01-startup.md) | 実装済み |
-| 02 | ロボットモデル・シミュレーション | [features/02-robot-model.md](features/02-robot-model.md) | [functions/02-robot-model.md](functions/02-robot-model.md) | [design/02-robot-model.md](design/02-robot-model.md) | 実装済み |
-| 03 | SLAM・地図作成 | [features/03-slam.md](features/03-slam.md) | [functions/03-slam.md](functions/03-slam.md) | [design/03-slam.md](design/03-slam.md) | 実装済み |
-| 04 | ナビゲーション | [features/04-navigation.md](features/04-navigation.md) | [functions/04-navigation.md](functions/04-navigation.md) | [design/04-navigation.md](design/04-navigation.md) | 実装済み |
-| 05 | Web UI | [features/05-web-ui.md](features/05-web-ui.md) | [functions/05-web-ui.md](functions/05-web-ui.md) | [design/05-web-ui.md](design/05-web-ui.md) | 実装済み |
-| 06 | 実機対応 | [features/06-real-robot.md](features/06-real-robot.md) | [functions/06-real-robot.md](functions/06-real-robot.md) | [design/06-real-robot.md](design/06-real-robot.md) | 計画中 |
-| 07 | ESP32 ↔ PC UART 通信 | [features/07-esp32-uart.md](features/07-esp32-uart.md) | [functions/07-esp32-uart.md](functions/07-esp32-uart.md) | [design/07-esp32-uart.md](design/07-esp32-uart.md) | 計画中 |
-| 08 | 6輪ロッカーボギー・ステアリング・モータ制御 | [features/08-rocker-bogie.md](features/08-rocker-bogie.md) | [functions/08-rocker-bogie.md](functions/08-rocker-bogie.md) | [design/08-rocker-bogie.md](design/08-rocker-bogie.md) | 計画中 |
-| 09 | 4軸アーム + カメラ + 画像認識 + 自動把持 | [features/09-object-grasping.md](features/09-object-grasping.md) | [functions/09-object-grasping.md](functions/09-object-grasping.md) | [design/09-object-grasping.md](design/09-object-grasping.md) | 計画中 |
-| 10 | 自動制御（自動移動 → 完全自律） | [features/10-auto-control.md](features/10-auto-control.md) | [functions/10-auto-control.md](functions/10-auto-control.md) | [design/10-auto-control.md](design/10-auto-control.md) | 計画中 |
+| # | 機能 | ゴール | 要件 | 機能分解 | 設計 | ステータス |
+|---|---|---|---|---|---|---|
+| 01 | 起動・実行環境 | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G3](やりたいこと.md#g3-手動操縦も可能) | [features/01-startup.md](features/01-startup.md) | [functions/01-startup.md](functions/01-startup.md) | [design/01-startup.md](design/01-startup.md) | 実装済み |
+| 02 | ロボットモデル・シミュレーション | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) | [features/02-robot-model.md](features/02-robot-model.md) | [functions/02-robot-model.md](functions/02-robot-model.md) | [design/02-robot-model.md](design/02-robot-model.md) | 実装済み |
+| 03 | SLAM・地図作成 | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) | [features/03-slam.md](features/03-slam.md) | [functions/03-slam.md](functions/03-slam.md) | [design/03-slam.md](design/03-slam.md) | 実装済み |
+| 04 | ナビゲーション | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G3](やりたいこと.md#g3-手動操縦も可能) | [features/04-navigation.md](features/04-navigation.md) | [functions/04-navigation.md](functions/04-navigation.md) | [design/04-navigation.md](design/04-navigation.md) | 実装済み |
+| 05 | Web UI | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G2](やりたいこと.md#g2-自動でアームでものを回収) | [features/05-web-ui.md](features/05-web-ui.md) | [functions/05-web-ui.md](functions/05-web-ui.md) | [design/05-web-ui.md](design/05-web-ui.md) | 実装済み |
+| 06 | 実機対応 | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) | [features/06-real-robot.md](features/06-real-robot.md) | [functions/06-real-robot.md](functions/06-real-robot.md) | [design/06-real-robot.md](design/06-real-robot.md) | 計画中 |
+| 07 | ESP32 ↔ PC UART 通信 | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G2](やりたいこと.md#g2-自動でアームでものを回収) [G3](やりたいこと.md#g3-手動操縦も可能) | [features/07-esp32-uart.md](features/07-esp32-uart.md) | [functions/07-esp32-uart.md](functions/07-esp32-uart.md) | [design/07-esp32-uart.md](design/07-esp32-uart.md) | 計画中 |
+| 08 | 6輪ロッカーボギー・ステアリング・モータ制御 | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G3](やりたいこと.md#g3-手動操縦も可能) | [features/08-rocker-bogie.md](features/08-rocker-bogie.md) | [functions/08-rocker-bogie.md](functions/08-rocker-bogie.md) | [design/08-rocker-bogie.md](design/08-rocker-bogie.md) | 計画中 |
+| 09 | 4軸アーム + カメラ + 画像認識 + 自動把持 | [G2](やりたいこと.md#g2-自動でアームでものを回収) | [features/09-object-grasping.md](features/09-object-grasping.md) | [functions/09-object-grasping.md](functions/09-object-grasping.md) | [design/09-object-grasping.md](design/09-object-grasping.md) | 計画中 |
+| 10 | 自動制御（自動移動 → 完全自律） | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G2](やりたいこと.md#g2-自動でアームでものを回収) | [features/10-auto-control.md](features/10-auto-control.md) | [functions/10-auto-control.md](functions/10-auto-control.md) | [design/10-auto-control.md](design/10-auto-control.md) | 計画中 |
 
 > features/01-06 はシミュレーション段階の記録。実機のハードウェア構成は features/07-10 を参照。
 

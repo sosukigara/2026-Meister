@@ -3,6 +3,7 @@
 > 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 計画中
 > 設計: [design/07-esp32-uart.md](../design/07-esp32-uart.md)
 > 機能分解: [functions/07-esp32-uart.md](../functions/07-esp32-uart.md)
+> 関連ゴール: [G1](../やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G2](../やりたいこと.md#g2-自動でアームでものを回収) [G3](../やりたいこと.md#g3-手動操縦も可能)
 
 ## 概要
 

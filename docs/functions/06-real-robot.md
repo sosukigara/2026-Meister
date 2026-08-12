@@ -1,6 +1,7 @@
 # 機能分解: 実機対応
 
 > 要件: [features/06-real-robot.md](../features/06-real-robot.md) | 設計: [design/06-real-robot.md](../design/06-real-robot.md) | 作成日: 2026-08-12
+> 関連ゴール: [G1](../やりたいこと.md#g1-ロッカーボギーロボット自動走行)
 
 ## 機能（このコンポーネントがすること）
 

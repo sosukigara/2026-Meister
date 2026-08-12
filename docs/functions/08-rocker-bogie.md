@@ -1,6 +1,7 @@
 # 機能分解: 6輪ロッカーボギー・ステアリング・モータ制御
 
 > 要件: [features/08-rocker-bogie.md](../features/08-rocker-bogie.md) | 設計: [design/08-rocker-bogie.md](../design/08-rocker-bogie.md) | 作成日: 2026-08-12
+> 関連ゴール: [G1](../やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G3](../やりたいこと.md#g3-手動操縦も可能)
 
 ## 機能（このコンポーネントがすること）
 

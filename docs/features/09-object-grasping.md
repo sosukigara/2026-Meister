@@ -3,6 +3,7 @@
 > 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 計画中
 > 設計: [design/09-object-grasping.md](../design/09-object-grasping.md)
 > 機能分解: [functions/09-object-grasping.md](../functions/09-object-grasping.md)
+> 関連ゴール: [G2](../やりたいこと.md#g2-自動でアームでものを回収)
 
 ## 概要
 

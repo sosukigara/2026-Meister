@@ -3,6 +3,7 @@
 > 対象リポジトリ: `sosukigara/2026-Meister` | 作成日: 2026-08-12 | ステータス: 実装済み
 > 設計: [design/05-web-ui.md](../design/05-web-ui.md)
 > 機能分解: [functions/05-web-ui.md](../functions/05-web-ui.md)
+> 関連ゴール: [G1](../やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G2](../やりたいこと.md#g2-自動でアームでものを回収)
 
 ## 概要
 
