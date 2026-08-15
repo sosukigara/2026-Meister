@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
-# kill_ros.sh — ROS / Gazebo 関連プロセスを全て終了させる
+# kill_ros.sh — 指定ドメインの ROS / Gazebo 関連プロセスのみ終了させる
 # 使い方: ./kill_ros.sh
-# 1) SIGINT で graceful 終了 → 2) 残っていれば SIGKILL → 3) ros2 daemon 停止
-# 注意: このマシン上の全ての ROS スタック (Meister / robocon 等) が停止対象
+#   - 対象ドメインは既定で 5 (ROS_DOMAIN_ID 環境変数で上書き可)
+#   - ROS_DOMAIN_ID が一致するプロセスのみ SIGINT → SIGKILL → daemon 停止
+# 注意: 他ドメイン (robocon 等) のスタックには一切触れない
 set -u
+
+TARGET_DOMAIN="${ROS_DOMAIN_ID:-5}"
+export ROS_DOMAIN_ID="$TARGET_DOMAIN"
 
 PATTERNS=(
   "ros-args"
@@ -41,20 +45,33 @@ PATTERNS=(
 )
 
 # 括弧トリックで kill_ros.sh 自身や grep にマッチしないようにする
+# さらに /proc/<pid>/environ で ROS_DOMAIN_ID が一致するプロセスのみ対象にする
+pid_on_target_domain() {
+  local pid="$1"
+  [ -r "/proc/$pid/environ" ] || return 1
+  tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null \
+    | grep -qx "ROS_DOMAIN_ID=$TARGET_DOMAIN"
+}
+
 kill_matches() {
   local sig="$1"
   for p in "${PATTERNS[@]}"; do
-    pkill -"$sig" -f "[${p:0:1}]${p:1}" 2>/dev/null
+    for pid in $(pgrep -f "[${p:0:1}]${p:1}" 2>/dev/null); do
+      if pid_on_target_domain "$pid"; then
+        kill -"$sig" "$pid" 2>/dev/null || true
+      fi
+    done
   done
 }
 
 count_left() {
-  local n=0 c
+  local n=0
   for p in "${PATTERNS[@]}"; do
-    # pgrep -c は0件でも "0" を出力するため、|| echo は不要
-    c=$(pgrep -fc "[${p:0:1}]${p:1}" 2>/dev/null || true)
-    c=${c:-0}
-    n=$((n + c))
+    for pid in $(pgrep -f "[${p:0:1}]${p:1}" 2>/dev/null); do
+      if pid_on_target_domain "$pid"; then
+        n=$((n + 1))
+      fi
+    done
   done
   echo "$n"
 }
@@ -72,9 +89,13 @@ ros2 daemon stop 2>/dev/null || true
 
 left=$(count_left)
 if [ "$left" -eq 0 ]; then
-  echo "==> 全ての ROS 関連プロセスを停止しました"
+  echo "==> domain $TARGET_DOMAIN の ROS 関連プロセスを全て停止しました"
 else
-  echo "==> 警告: $left プロセスが残っています"
+  echo "==> 警告: domain $TARGET_DOMAIN に $left プロセスが残っています"
   pgrep -af "ros2|gz sim|slam_toolbox|web_nav|bridge|component_container" \
-    | grep -v "kill_ros" || true
+    | grep -v "kill_ros" \
+    | while IFS= read -r line; do
+        pid=$(echo "$line" | awk '{print $1}')
+        if pid_on_target_domain "$pid"; then echo "$line"; fi
+      done || true
 fi
