@@ -6,6 +6,7 @@
 set -u
 
 PATTERNS=(
+  "ros-args"
   "ros2 launch"
   "ros2 run"
   "ros2 bag record"
@@ -36,6 +37,7 @@ PATTERNS=(
   "gamepad_command_to_joy"
   "mode_and_goal_manager"
   "monitor_node"
+  "ros2-daemon"
 )
 
 # 括弧トリックで kill_ros.sh 自身や grep にマッチしないようにする
@@ -47,9 +49,12 @@ kill_matches() {
 }
 
 count_left() {
-  local n=0
+  local n=0 c
   for p in "${PATTERNS[@]}"; do
-    n=$((n + $(pgrep -fc "[${p:0:1}]${p:1}" 2>/dev/null || echo 0)))
+    # pgrep -c は0件でも "0" を出力するため、|| echo は不要
+    c=$(pgrep -fc "[${p:0:1}]${p:1}" 2>/dev/null || true)
+    c=${c:-0}
+    n=$((n + c))
   done
   echo "$n"
 }
