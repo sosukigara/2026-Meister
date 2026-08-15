@@ -66,6 +66,10 @@ def make_handler(webui_dir: Path, map_listener, nav_worker):
                     self.send_header('Cache-Control', 'no-store')
                     self.end_headers()
                     self.wfile.write(png)
+            elif path == '/api/pose':
+                pose = map_listener.robot_pose()
+                self._send_json(
+                    {'has_pose': pose is not None, **(pose or {})})
             elif path == '/api/status':
                 self._send_json(nav_worker.status())
             else:
