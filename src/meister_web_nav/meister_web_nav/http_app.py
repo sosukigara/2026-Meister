@@ -3,6 +3,7 @@ import json
 import mimetypes
 from http.server import BaseHTTPRequestHandler
 from pathlib import Path
+from urllib.parse import urlsplit
 
 MAX_BODY_BYTES = 1_000_000
 
@@ -37,13 +38,15 @@ def make_handler(webui_dir: Path, map_listener, nav_worker):
             return json.loads(self.rfile.read(length))
 
         def do_GET(self):
-            if self.path in ('/', '/index.html'):
+            # クエリ文字列 (?t=...) はパス比較から除外する (キャッシュ対策の cache-buster 対応)
+            path = urlsplit(self.path).path
+            if path in ('/', '/index.html'):
                 self._send_file(webui_dir / 'index.html', 'text/html; charset=utf-8')
-            elif self.path == '/app.js':
+            elif path == '/app.js':
                 self._send_file(webui_dir / 'app.js', 'text/javascript; charset=utf-8')
-            elif self.path == '/style.css':
+            elif path == '/style.css':
                 self._send_file(webui_dir / 'style.css', 'text/css; charset=utf-8')
-            elif self.path == '/api/map':
+            elif path == '/api/map':
                 meta = map_listener.metadata()
                 if meta is None:
                     self._send_json({'has_map': False}, status=200)
@@ -51,7 +54,7 @@ def make_handler(webui_dir: Path, map_listener, nav_worker):
                     meta['has_map'] = True
                     meta['image_url'] = '/api/map.png'
                     self._send_json(meta)
-            elif self.path == '/api/map.png':
+            elif path == '/api/map.png':
                 png = map_listener.render_png()
                 if png is None:
                     self.send_response(404)
@@ -63,11 +66,11 @@ def make_handler(webui_dir: Path, map_listener, nav_worker):
                     self.send_header('Cache-Control', 'no-store')
                     self.end_headers()
                     self.wfile.write(png)
-            elif self.path == '/api/status':
+            elif path == '/api/status':
                 self._send_json(nav_worker.status())
             else:
-                mime = mimetypes.guess_type(self.path)[0] or 'application/octet-stream'
-                candidate = webui_dir / self.path.lstrip('/')
+                mime = mimetypes.guess_type(path)[0] or 'application/octet-stream'
+                candidate = webui_dir / path.lstrip('/')
                 try:
                     resolved = candidate.resolve()
                     resolved.relative_to(webui_dir.resolve())
