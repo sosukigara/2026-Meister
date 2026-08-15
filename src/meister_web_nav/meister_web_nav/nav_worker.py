@@ -77,30 +77,30 @@ class NavWorker(threading.Thread):
                 state='sending', waypoint_count=len(poses),
                 message=f'{len(poses)} 地点へのルートを送信中...',
             )
-            accepted = navigator.followWaypoints(poses)
-            if not accepted:
-                self._set_status(state='error', message='ナビゲーション要求が拒否されました')
-                continue
-
+            # followWaypoints は waypoint_follower ノードが必要だが、このスタックには
+            # 含まれていない (RViz が動くのは /navigate_to_pose 直行のため)。
+            # ここでも同じ /navigate_to_pose を地点ごとに順番に呼ぶ方式にする。
             self._set_status(state='navigating', message='移動中...')
-            while not navigator.isTaskComplete():
+            result = None
+            for idx, pose in enumerate(poses):
                 if self._cancel_event.is_set():
-                    navigator.cancelTask()
                     break
-                feedback = navigator.getFeedback()
-                if feedback is not None:
-                    idx = feedback.current_waypoint
-                    self._set_status(
-                        current_waypoint=idx,
-                        message=f'地点 {idx + 1} へ移動中...',
-                    )
+                self._set_status(
+                    current_waypoint=idx,
+                    message=f'地点 {idx + 1} へ移動中...',
+                )
+                navigator.goToPose(pose)
+                while not navigator.isTaskComplete():
+                    if self._cancel_event.is_set():
+                        navigator.cancelTask()
+                        break
+                result = navigator.getResult()
+                if self._cancel_event.is_set() or result != TaskResult.SUCCEEDED:
+                    break
 
-            result = navigator.getResult()
-            if result == TaskResult.SUCCEEDED:
-                self._set_status(state='succeeded', message='到着しました')
-            elif result == TaskResult.CANCELED:
+            if self._cancel_event.is_set():
                 self._set_status(state='canceled', message='キャンセルしました')
-            elif result == TaskResult.FAILED:
-                self._set_status(state='failed', message='ナビゲーションに失敗しました')
+            elif result == TaskResult.SUCCEEDED:
+                self._set_status(state='succeeded', message='全地点に到着しました')
             else:
-                self._set_status(state='idle', message='待機中')
+                self._set_status(state='failed', message='ナビゲーションに失敗しました')
