@@ -53,6 +53,11 @@ export ROS_LOCALHOST_ONLY=1
 # lidar silently publishes no /scan data -> SLAM/Nav2 never start.
 export __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json
 
+# 前回の起動が残っていると gz / Web UI(8088) / rviz が二重起動で競合するため、
+# 先に全ての ROS 関連プロセスを終了してから起動する
+echo "=== 既存の ROS プロセスを終了します ==="
+"$WORKSPACE_ROOT/kill_ros.sh" || true
+
 cleanup() {
     echo ""
     echo "システムを終了しています..."
