@@ -35,6 +35,9 @@
   </joint>
 
   <!-- Gazebo Sensor Plugin -->
+  <!-- gpu_lidar required, the CPU ray sensor (type lidar) emits no data in
+       this gz-sim build, while gpu_lidar works once EGL rendering is fixed.
+       Rendering is forced to the NVIDIA ICD in start_meister.sh. -->
   <gazebo reference="lidar_link">
     <sensor name="lidar" type="gpu_lidar">
       <topic>/scan</topic>

@@ -47,6 +47,12 @@ export GZ_IP=127.0.0.1
 # Force ROS 2 DDS to localhost only (same reason: VPN breaks multicast)
 export ROS_LOCALHOST_ONLY=1
 
+# Force NVIDIA EGL ICD for gz sim rendering.
+# Without this, gz's render engine (required by the lidar sensor) falls back
+# to Mesa EGL on this host, fails ("driver (null)" / dri2 error), and the
+# lidar silently publishes no /scan data -> SLAM/Nav2 never start.
+export __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.json
+
 cleanup() {
     echo ""
     echo "システムを終了しています..."
