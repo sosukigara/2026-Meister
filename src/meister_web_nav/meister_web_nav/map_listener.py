@@ -1,5 +1,6 @@
 """Subscribes to /map and hands out thread-safe snapshots for the HTTP server."""
 import io
+import math
 import threading
 
 import numpy as np
@@ -8,6 +9,7 @@ from PIL import Image
 from rclpy.node import Node
 from rclpy.qos import (QoSDurabilityPolicy, QoSHistoryPolicy, QoSProfile,
                         QoSReliabilityPolicy)
+from tf2_msgs.msg import TFMessage
 
 MAP_QOS = QoSProfile(
     durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
@@ -24,11 +26,39 @@ class MapListener(Node):
         super().__init__('web_nav_map_listener')
         self._lock = threading.Lock()
         self._grid: OccupancyGrid | None = None
+        self._map_odom = None  # latest /tf map->odom (TransformStamped)
+        self._odom_base = None  # latest /tf odom->base_footprint (TransformStamped)
         self.create_subscription(OccupancyGrid, '/map', self._on_map, MAP_QOS)
+        self.create_subscription(TFMessage, '/tf', self._on_tf, 10)
 
     def _on_map(self, msg: OccupancyGrid) -> None:
         with self._lock:
             self._grid = msg
+
+    def _on_tf(self, msg: TFMessage) -> None:
+        """ロボット位置オーバーレイ用に map->odom / odom->base を追跡する。"""
+        for t in msg.transforms:
+            if t.header.frame_id == 'map' and t.child_frame_id == 'odom':
+                with self._lock:
+                    self._map_odom = t
+            elif t.header.frame_id == 'odom' and t.child_frame_id in (
+                    'base_footprint', 'base_link'):
+                with self._lock:
+                    self._odom_base = t
+
+    def robot_pose(self) -> dict | None:
+        """ロボットの地図座標系での位置 {x, y, yaw} を返す (tf 未受信なら None)。"""
+        with self._lock:
+            mo, ob = self._map_odom, self._odom_base
+        if mo is None or ob is None:
+            return None
+        yaw_mo = 2.0 * math.atan2(mo.transform.rotation.z, mo.transform.rotation.w)
+        yaw_ob = 2.0 * math.atan2(ob.transform.rotation.z, ob.transform.rotation.w)
+        tx, ty = ob.transform.translation.x, ob.transform.translation.y
+        # map→base_footprint = map→odom ∘ odom→base_footprint (平面 2D)
+        x = mo.transform.translation.x + math.cos(yaw_mo) * tx - math.sin(yaw_mo) * ty
+        y = mo.transform.translation.y + math.sin(yaw_mo) * tx + math.cos(yaw_mo) * ty
+        return {'x': x, 'y': y, 'yaw': yaw_mo + yaw_ob}
 
     @staticmethod
     def _crop_bounds(grid: OccupancyGrid) -> tuple | None:
