@@ -1,8 +1,9 @@
 import os
 from launch import LaunchDescription
 from launch.actions import (
-    TimerAction, ExecuteProcess, LogInfo
+    TimerAction, ExecuteProcess, LogInfo, DeclareLaunchArgument
 )
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 
@@ -10,6 +11,12 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
 
     pkg_share = get_package_share_directory('ros2_autonomous_nav')
+
+    serial_port_arg = DeclareLaunchArgument(
+        'serial_port', default_value='/dev/ttyUSB0',
+        description='Serial device connected to ESP32 UART (GPIO16/17)')
+
+    serial_port = LaunchConfiguration('serial_port')
 
     # 使用するURDFファイル（実機でもロボットの形状定義は必要）
     # 通常は CPU 用のシンプルなものを使用します
@@ -74,6 +81,18 @@ def generate_launch_description():
     # --- Nav2 Stack ---
     # 実機のオドメトリ (/odom) と地図を元に経路計画と制御を行う
 
+    # /cmd_vel -> ESP32 UART (ステアリング舵角 + モータ PWM フレーム)
+    serial_bridge = Node(
+        package='meister_serial_bridge',
+        executable='serial_bridge',
+        name='serial_bridge',
+        output='screen',
+        parameters=[{
+            'serial_port': serial_port,
+            'baud': 115200,
+        }],
+    )
+
     controller_server = Node(
         package='nav2_controller',
         executable='controller_server',
@@ -124,6 +143,7 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        serial_port_arg,
         LogInfo(msg='=== Starting Real Robot Navigation (use_sim_time: False) ==='),
         LogInfo(msg='Make sure your hardware drivers (LiDAR, Odom, Micro-ROS) are running!'),
 
@@ -131,6 +151,9 @@ def generate_launch_description():
         slam_toolbox,
         configure_slam,
         activate_slam,
+
+        # /cmd_vel -> ESP32 UART (PWM/ステアリング変換)
+        serial_bridge,
 
         # SLAMが安定してからNav2を起動
         TimerAction(period=10.0, actions=[

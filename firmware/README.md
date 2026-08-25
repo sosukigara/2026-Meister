@@ -5,7 +5,7 @@ ROS 2 (Jazzy) ロボット「Meister」の**実機側マイコン層**。
 ESP32 側を PlatformIO + Arduino framework で実装する。
 
 - プロトコル仕様: [docs/design/07-esp32-uart.md](../docs/design/07-esp32-uart.md)
-- PC 側の ROS 2 シリアルブリッジ / モック ESP32 は別 Wave で実装予定（対象外）
+- PC 側の ROS 2 シリアルブリッジ: `src/meister_serial_bridge/` として実装済み。モック ESP32 は別 Wave（対象外）
 
 ## ディレクトリ構成
 

@@ -102,7 +102,7 @@ controller_server:
       use_cost_regulated_linear_velocity_scaling: true
       regulated_linear_scaling_min_radius: 0.9
       regulated_linear_scaling_min_speed: 0.25
-      use_rotate_to_heading: true
+      use_rotate_to_heading: false  # アッカーマン(操舵付き6輪)はその場旋回不可。RPP のカーブ追従で方向修正する
       allow_reversing: false
       rotate_to_heading_min_angle: 0.785
       max_angular_accel: 3.2

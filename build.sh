@@ -29,5 +29,5 @@ WORKERS=$(nproc)
 
 echo "=== ビルド開始 (workers=$WORKERS) ==="
 colcon build --symlink-install --parallel-workers "$WORKERS" \
-    --packages-select meistar_description meister_vision meister_web_nav ros2_autonomous_nav
+    --packages-select meistar_description meister_vision meister_web_nav meister_serial_bridge ros2_autonomous_nav
 echo "=== ビルド完了 ==="
