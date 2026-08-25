@@ -106,6 +106,15 @@ def generate_launch_description():
         parameters=[nav2_params_file],
     )
 
+    # cmd_vel_nav -> cmd_vel のブリッジ (これがないと実機のモータに指令が届かない)
+    velocity_smoother = Node(
+        package='nav2_velocity_smoother',
+        executable='velocity_smoother',
+        name='velocity_smoother',
+        output='screen',
+        parameters=[nav2_params_file],
+    )
+
     lifecycle_manager = Node(
         package='nav2_lifecycle_manager',
         executable='lifecycle_manager',
@@ -117,18 +126,19 @@ def generate_launch_description():
     return LaunchDescription([
         LogInfo(msg='=== Starting Real Robot Navigation (use_sim_time: False) ==='),
         LogInfo(msg='Make sure your hardware drivers (LiDAR, Odom, Micro-ROS) are running!'),
-        
+
         robot_state_publisher,
         slam_toolbox,
         configure_slam,
         activate_slam,
-        
+
         # SLAMが安定してからNav2を起動
         TimerAction(period=10.0, actions=[
             controller_server,
             planner_server,
             behavior_server,
             bt_navigator,
+            velocity_smoother,
             lifecycle_manager,
         ]),
     ])
