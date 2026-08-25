@@ -7,6 +7,10 @@ log/
 .serena/
 .opencode/
 
+# Session work / local artifacts
+.omo/
+.playwright-mcp/
+
 # PlatformIO build artifacts (firmware/)
 firmware/.pio/
 
