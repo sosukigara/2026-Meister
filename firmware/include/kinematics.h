@@ -58,6 +58,8 @@ struct DriveSetpoint {
   int8_t rocker_row = -1;
 };
 
+// 現状 kinematics.cpp の実装は必ず kGeometryNotFilled / kNoSolution を返す。
+// 有効な指令は出ない。Phase 2 まで制御経路に繋がないこと。
 /// 展開できない理由。指令側はこれで FB_ERROR を返す。
 enum class SolveStatus : uint8_t {
   kOk = 0,

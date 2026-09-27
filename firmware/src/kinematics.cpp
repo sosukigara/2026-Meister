@@ -6,6 +6,12 @@
  * 数値が意味を持たない。代わりに「確定していない」ことを明示的に返し、
  * 指令を黙って前方適用しない。推測値で書いた値を確定値として扱うのを避けるため。
  *
+ * ★呼び出し側の禁止★ 現状 Solve() / SolveInverse() は必ず
+ * kGeometryNotFilled か kNoSolution を返し、DriveSetpoint はゼロ初期化される
+ * だけで有効な指令を一切出さない。どこからも呼ばれていないが、
+ * Phase 2 で拘束ソルバを実装するまでこの 2 関数を制御経路に
+ * 繋いではならない。「動く関数」に見えるので最も危険。
+ *
  * ここに実装しているのは 2 つだけ:
  *   1. vy の拒否（D5）— 車体に横方向の自由度がない
  *   2. 幾何が未確定なら kGeometryNotFilled を返す（解なしと区別する）
@@ -32,6 +38,7 @@ bool GeometryIsFilled() {
 
 }  // namespace
 
+// 現在は未実装。制御経路から呼べない（ファイル冒頭を参照）。
 bool TwistIsSupported(const TwistCommand& twist) {
   // 幾何が確定しているかどうかは Solve() の管轄。ここでは指令の
   // 内容だけを見る。両者を混ぜると 2 つの理由が 1 つの判定に戻る。
@@ -47,7 +54,7 @@ SolveStatus Solve(const TwistCommand& twist, const RobotGeometry& geo,
   if (out == nullptr) {
     return SolveStatus::kGeometryNotFilled;
   }
-  // 解を出す前に out を不确定な状態で残さない。row=-1 が「解なし」を表す。
+  // 解を出す前に out を未確定な状態で残さない。row=-1 が「解なし」を表す。
   *out = DriveSetpoint{};
 
   if (twist.vy != 0) {
