@@ -30,17 +30,15 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 
-HEADERS = [
-    'hal/feetech_sts_registers.h', 'hal/bus_protocol.h', 'hal/servo.h',
-    'hal/motor.h', 'hal/ledc_pwm.h', 'hal/pwm_servo.h', 'hal/console_servo.h',
-    'hal/generated_config.h', 'hal/proto_uart.h',
-    'meister_config.h', 'meister_protocol.h', 'command.h', 'kinematics.h',
-    'base_chassis.h', 'arm.h', 'command_dispatch.h', 'feedback.h',
-]
-SOURCES = ['main.cpp', 'meister_protocol.cpp', 'command.cpp', 'kinematics.cpp',
-           'arm.cpp', 'base_chassis.cpp', 'command_dispatch.cpp', 'feedback.cpp',
-           'hal/ledc_pwm.cpp', 'hal/pwm_servo.cpp', 'hal/console_servo.cpp',
-           'hal/motor.cpp', 'hal/proto_uart.cpp', 'hal/bus_protocol.cpp']
+# glob で拾う。固定リストにするとファイル追加時に検査対象から外れる
+# （kinematics.cpp が 4 件の混入を素通りした）。
+def _src(pattern: str) -> list[str]:
+    return sorted(str(p.relative_to(ROOT)) for p in (ROOT / 'firmware').rglob(pattern)
+                  if '.pio' not in p.parts)
+
+
+HEADERS = _src('include/**/*.h')
+SOURCES = _src('src/**/*.cpp')
 DOCS = ['AGENTS.md', 'README.md', 'docs/README.md', 'docs/code-map.md',
         'firmware/README.md', 'config/meister_robot.yaml']
 # docs/ 配下の仕様書は文字化けが最も繰り返されてきた場所なので glob で全部見る
