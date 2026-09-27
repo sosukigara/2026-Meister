@@ -10,7 +10,8 @@ def generate_launch_description():
 
     declare_serial_port = DeclareLaunchArgument(
         'serial_port', default_value='/dev/ttyUSB0',
-        description='Serial device connected to ESP32 UART (GPIO16/17)')
+        description=('Serial device connected to ESP32. esp32dev_usbuart ビルドなら '
+                     'USB/UART0、esp32dev ビルドなら GPIO16/17 配線先のポート。'))
 
     declare_baud = DeclareLaunchArgument(
         'baud', default_value='115200')

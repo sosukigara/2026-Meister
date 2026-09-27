@@ -40,6 +40,40 @@ using namespace meister;
 #define MSTE_UART_TX_PIN 17
 #endif
 
+// ---- プロトコル通信バックエンド（いずれか 1 つ）----
+// 0 (既定): Serial2 (GPIO16/17)。ロボット本体に外部 USB-UART を配線する構成。
+// 1:        UART0 (USB)。配線が不要でベンチ確認ができる構成。ただし UART0 は
+//           コンソールと同一の線なので、このモードではログ出力を無効化する。
+#ifndef MSTE_UART_BACKEND_USB0
+#define MSTE_UART_BACKEND_USB0 0
+#endif
+
+#if MSTE_UART_BACKEND_USB0
+#define MSTE_PROTO_PORT_NAME "usb0"
+#define MSTE_LOG(...) ((void)0)
+#else
+#define MSTE_PROTO_PORT_NAME "serial2"
+#define MSTE_LOG(...) Serial.printf(__VA_ARGS__)
+#endif
+
+/// プロトコル通信に使う UART。バックエンド選択で UART0 / Serial2 が決まる。
+HardwareSerial& ProtoPort() {
+#if MSTE_UART_BACKEND_USB0
+  return Serial;
+#else
+  return Serial2;
+#endif
+}
+
+// ---- フィードバック送信周期 ----
+// FB_STATE（ESP32 -> PC）の送信周期。値は platformio.ini の MSTE_FEEDBACK_HZ で
+// 設定する。100 Hz は実機測定に基づく運用値（115200bps / FB_STATE 17 バイトで
+// 线路使用率 14.8%、測定した折れ点 ~686 Hz に対して十分な余裕がある）。
+// 測定条件と根拠は firmware/README.md「通信周期の測定」を参照。
+#ifndef MSTE_FEEDBACK_HZ
+#define MSTE_FEEDBACK_HZ 100
+#endif
+
 // ---- 駆動モータ PWM ピン（6ch）----
 #ifndef MSTE_MOTOR_PIN0
 #define MSTE_MOTOR_PIN0 25
@@ -306,7 +340,7 @@ class ConsoleServoChannel : public IServoChannel {
     if (tenths > rangeMaxTenths_) {
       tenths = rangeMaxTenths_;
     }
-    Serial.printf("[servo] %-12s angle = %+7.1f deg\n", name_, tenths / 10.0f);
+    MSTE_LOG("[servo] %-12s angle = %+7.1f deg\n", name_, tenths / 10.0f);
     return true;
   }
 
@@ -463,8 +497,8 @@ void onFrameComplete(const uint8_t* data, size_t len) {
   const ParseResult result = ParseFrame(data, len, &frame);
   if (result != ParseResult::kOk) {
     ++sRxErrorCount;
-    Serial.printf("[rx] invalid frame: %s (count=%lu)\n", ParseResultName(result),
-                  static_cast<unsigned long>(sRxErrorCount));
+    MSTE_LOG("[rx] invalid frame: %s (count=%lu)\n", ParseResultName(result),
+             static_cast<unsigned long>(sRxErrorCount));
     return;
   }
 
@@ -500,7 +534,7 @@ void onFrameComplete(const uint8_t* data, size_t len) {
 // 8. フィードバック送信（定周期）
 // ===========================================================================
 void sendFeedbackIfDue() {
-  constexpr uint32_t kIntervalMs = 100;  // 10 Hz
+  constexpr uint32_t kIntervalMs = 1000u / MSTE_FEEDBACK_HZ;  // MSTE_FEEDBACK_HZ [Hz]
   static uint32_t lastSendMs = 0;
   const uint32_t now = millis();
   if (now - lastSendMs < kIntervalMs) {
@@ -520,7 +554,7 @@ void sendFeedbackIfDue() {
     errorFlags |= proto::kFbErrorProtocol;
   }
   const size_t n = proto::EncodeState(buf, sizeof(buf), encoders, 0, errorFlags);
-  Serial2.write(buf, n);
+  ProtoPort().write(buf, n);
 }
 
 }  // namespace
@@ -529,10 +563,14 @@ void sendFeedbackIfDue() {
 // 9. setup / loop（Arduino フレームワークから参照されるためグローバル定義）
 // ===========================================================================
 void setup() {
+#if MSTE_UART_BACKEND_USB0
+  // UART0 をプロトコル線として使う（コンソールは MSTE_LOG で無効化されている）。
+  Serial.begin(MSTE_UART_BAUD);
+#else
   Serial.begin(115200);  // コンソール（UART0）
-
   // プロトコル用 UART（既定: Serial2 = GPIO16/17）
   Serial2.begin(MSTE_UART_BAUD, SERIAL_8N1, MSTE_UART_RX_PIN, MSTE_UART_TX_PIN);
+#endif
 
   for (auto& m : motors) {
     m.begin();
@@ -545,14 +583,15 @@ void setup() {
   }
   gripperServoChannel.begin();
 
-  Serial.println("[meister-esp] boot OK");
-  Serial.printf("[meister-esp] uart=%d baud=%lu\n", 2, static_cast<unsigned long>(MSTE_UART_BAUD));
+  MSTE_LOG("[meister-esp] boot OK\n");
+  MSTE_LOG("[meister-esp] uart=%s baud=%lu\n", MSTE_PROTO_PORT_NAME,
+           static_cast<unsigned long>(MSTE_UART_BAUD));
 }
 
 void loop() {
   // 受信バイトをすべて処理（ノンブロッキング）
-  while (Serial2.available() > 0) {
-    onRxByte(static_cast<uint8_t>(Serial2.read()));
+  while (ProtoPort().available() > 0) {
+    onRxByte(static_cast<uint8_t>(ProtoPort().read()));
   }
   sendFeedbackIfDue();
 }

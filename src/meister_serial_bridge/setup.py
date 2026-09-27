@@ -23,6 +23,7 @@ setup(
     entry_points={
         'console_scripts': [
             'serial_bridge = meister_serial_bridge.serial_bridge_node:main',
+            'meister_comm_check = meister_serial_bridge.comm_check:main',
         ],
     },
 )
