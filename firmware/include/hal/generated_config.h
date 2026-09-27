@@ -83,7 +83,7 @@ constexpr uint32_t kBusInterFrameGapUs = 200;
 constexpr uint8_t  kBusSteeringIds[6] = {1, 2, 3, 4};
 constexpr uint8_t  kBusArmIds[4] = {5, 6, 7, 8};
 
-// ---- バスlittle/big の判定は feetech::Endianness を使う ----
+// ---- バイト順。判定は feetech::Endianness を使う ----
 constexpr bool kBusLittleEndian = true;
 
 // ---- ★未実装★ Phase 2 の計画値。実装には存在しない軸数 ----
