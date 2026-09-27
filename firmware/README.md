@@ -11,16 +11,28 @@ ESP32 側を PlatformIO + Arduino framework で実装する。
 
 ```
 firmware/
-├── platformio.ini              # 環境定義（esp32dev / native）
+├── platformio.ini              # 環境定義（esp32dev / esp32dev_usbuart / native）
 ├── include/
-│   └── meister_protocol.h      # バイナリプロトコル定義（フレーム形式・種別・定数）
+│   ├── meister_config.h        # 設定の唯一の出所（ピン・周期・バックエンド選択）
+│   ├── meister_protocol.h      # バイナリプロトコル定義（フレーム形式・種別・定数）
+│   ├── base_chassis.h          # 足回り（駆動モータ + ステアリング）
+│   ├── arm.h                   # アーム + グリッパー
+│   ├── command_dispatch.h      # 受信フレーム → 各機構
+│   ├── feedback.h              # FB_STATE の定周期送信
+│   └── hal/                    # 機構より下の層（LEDC / サーボ / モータ / バス codec）
 ├── src/
-│   ├── meister_protocol.cpp    # エンコード/デコード実装（Arduino 非依存）
-│   └── main.cpp                # ESP32 本体（UART パース / LEDC PWM / サーボ HAL / フィードバック送信）
+│   ├── main.cpp                # 配線と setup/loop のみ
+│   ├── base_chassis.cpp  arm.cpp  command_dispatch.cpp  feedback.cpp
+│   ├── hal/                    # hal/ の実装（Arduino 依存はここだけ）
+│   └── meister_protocol.cpp    # エンコード/デコード実装（Arduino 非依存）
 └── test/
-    └── test_protocol/
-        └── test_protocol.cpp   # プロトコル層のホスト側ユニットテスト（Unity）
+    ├── test_protocol/          # プロトコル層のホスト側ユニットテスト（Unity）
+    └── test_bus_protocol/      # STS/SCS バス codec のホスト側ユニットテスト
 ```
+
+依存の向きは片方向のみ: `main → command_dispatch → 機構（base_chassis / arm）→ hal`。
+機構のインスタンスは `CommandDispatch` のメンバとして 1 か所で構築されるので、
+翻訳単位をまたぐ静的初期化順に依存しない。
 
 ## プロトコル仕様（バイトレイアウト）
 
@@ -103,6 +115,9 @@ pio run -e esp32dev -t upload           # 実機用（GPIO16/17 経由）
 
 > 既定のピン配置は**未配線のプレースホルダ**。実機配線が決まり次第ここで変更する。
 
+> 同じ値のフォールバックを `include/meister_config.h` にも置いてある。RP2040 を含む
+> 別の環境へ移植するときは `platformio.ini` の `build_flags` 側を直す。
+
 ## 通信確認（ベンチ）
 
 配線なしで PC ⇄ ESP32 の双方向通信を検証する。モータ・サーボは動かさない
@@ -130,7 +145,7 @@ PASS: PC <-> ESP32 通信を確認しました。
   ことの裏取り sekaligus、下行が因果的に動いている証明になる
 
 `enc(placeholder)` は実エンコーダではなく firmware の時間由来ダミー値
-（`sendFeedbackIfDue`）である。エンコーダの検証には使えない。
+（`Feedback::tick`）である。エンコーダの検証には使えない。
 
 `comm_check` は既定で計測開始前に ESP32 を再起動する（`--no-reset` で無効化）。
 受信エラーは再起動でしか消えないため、手順 2 の前提になっている。
