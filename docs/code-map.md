@@ -24,7 +24,7 @@
 │  command_dispatch.*    受信フレーム → 各機構（足回り・アームをメンバで保持）      │
 │  base_chassis.* arm.* feedback.*  機構と FB_STATE 送出                           │
 │  hal/*                 LEDC / サーボ / モータ / プロトコル UART / バス codec     │
-│  meister_config.h      設定の唯一の出所（ピン・周期・バックエンド選択）           │
+│  hal/generated_config.h  YAML から生成した定数表（ピン・周期・バックエンド）  │
 │  meister_protocol.*    プロトコル codec（Arduino 非依存・native で test 可能）  │
 │  [未実装] バスサーボの機構層（HAL の codec は実装済み。機構への接続は未着手）    │
 └───────────────────────────────────────────────────────────────────────────┘
@@ -67,7 +67,8 @@
 | `src/base_chassis.cpp` / `src/arm.cpp` | 50 / 50 | 足回り（モータ 6 + ステアリング 6）、アーム 4 軸 + グリッパー | 静的インスタンスは作らず、初期化リストで構築順を示す |
 | `src/feedback.cpp` | 34 | FB_STATE の定周期送出 | 送信間隔は `config::kFeedbackIntervalMs` |
 | `src/hal/*.cpp` | 25〜61 | LEDC ラッパ / PWM サーボ / コンソールサーボ / モータ / プロトコル UART | 2.x と 3.x の API 差はここに閉じている |
-| `include/meister_config.h` | 337 | 設定の唯一の出所（ピン・周期・バックエンド選択） | 機構はこの定数表を読む |
+| `include/hal/generated_config.h` | 生成物 | `config/meister_robot.yaml` から `tools/gen_config.py` で生成 | 機構はこの定数表を読む |
+| `include/meister_config.h` | 手書き | `MSTE_*` マクロとバックエンド選択のみ。定数は生成物側にない | 生成物を include する |
 | `include/meister_protocol.h` | 197 | TypeId・軸数・値域・サイズ・Frame 構造・関数宣言 | 変更しない（PC 側 `protocol.py` とバイト単位で一致させる） |
 | `src/meister_protocol.cpp` | 178 | エンコード / デコード / チェックサム | Arduino 非依存 |
 | `test/test_protocol/` `test/test_bus_protocol/` | — | Unity テスト（`pio test -e native`、38 cases） | 両方とも Arduino 非依存 |
