@@ -147,6 +147,8 @@ def gen_header(cfg) -> str:
         f'constexpr bool kKinematicsGeometryFilled = '
         f'{"true" if cfg["kinematics"]["geometry_filled"] else "false"};',
         f'constexpr float kWheelRadius = {cfg["kinematics"]["wheel_radius"]};',
+        f'constexpr float kMaxLinearMmPerSec = '
+        f'{cfg["kinematics"]["max_linear_mm_per_sec"]};',
         '',
         '// ---- バス（★要確認★ 実物無し・データシート未取得）----',
         f'constexpr bool     kBusEnabled    = {"true" if bus["enabled"] else "false"};',

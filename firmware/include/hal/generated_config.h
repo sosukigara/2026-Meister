@@ -95,6 +95,7 @@ static_assert(kUsedLedcChannels <= kMaxLedcChannels + 1,
 // ---- 運動学 ----
 constexpr bool kKinematicsGeometryFilled = false;
 constexpr float kWheelRadius = 0.05;
+constexpr float kMaxLinearMmPerSec = 800;
 
 // ---- バス（★要確認★ 実物無し・データシート未取得）----
 constexpr bool     kBusEnabled    = false;

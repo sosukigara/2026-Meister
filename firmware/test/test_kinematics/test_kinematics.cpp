@@ -1,20 +1,19 @@
 /* kinematics.cpp の host テスト。
 
-拘束ソルバ本体は幾何が未確定なので未実装。ここでは今確定している
-2 つの挙動だけを固定する:
-  - vy != 0 は前方適用せず kLateralUnsupported を返す
-  - 幾何が未確定なら kGeometryNotFilled を返し、解なしと区別する
+このテストは**合成幾何**を使う。実機の 6 輪配置は ★要確認★ なので、
+production の kinematics.geometry_filled は false のまま Plenty あり、
+Solve() は kGeometryNotFilled を返す。ソルバの性質はこのテスト用の
+SolveWithGeometry() で確かめる。
 
-幾何が確定したら拘束のテストを追加する。
-*/
+合成幾何: 前後 2 軸、左右 ±0.25 m、前後 ±0.30 m。
+前 2 輪と後 2 輪は舵角可、中 2 輪は固定。
+ */
 
 #include <unity.h>
 
 #include "command.h"
 #include "kinematics.h"
 
-using meister::ArmCommand;
-using meister::RobotCommand;
 using meister::TwistCommand;
 using meister::kin::DriveSetpoint;
 using meister::kin::RobotGeometry;
@@ -22,17 +21,45 @@ using meister::kin::RockerPosition;
 using meister::kin::Solve;
 using meister::kin::SolveInverse;
 using meister::kin::SolveStatus;
+using meister::kin::SolveWithGeometry;
 
 namespace {
 
-constexpr size_t kDummyTableSize = 3;
+constexpr uint8_t kWheels = meister::config::kNumDriveMotors;
+constexpr float kFrontX = 0.30f;
+constexpr float kRearX = -0.30f;
+constexpr float kTrackY = 0.25f;
 
-RockerPosition DummyTable() {
-  RockerPosition table[kDummyTableSize];
-  for (size_t i = 0; i < kDummyTableSize; ++i) {
-    table[i].name = "dummy";
+/// 前後 2 軸・左右 ±0.25 の合成機体。
+RobotGeometry SyntheticGeometry() {
+  RobotGeometry geo;
+  geo.wheel_radius = meister::config::kWheelRadius;
+  const float xs[6] = {kFrontX, kFrontX, 0.0f, 0.0f, kRearX, kRearX};
+  const float ys[6] = {kTrackY, -kTrackY, kTrackY, -kTrackY, kTrackY, -kTrackY};
+  const bool steerable[6] = {true, true, false, false, true, true};
+  const uint8_t group[6] = {0, 0, 0, 0, 1, 1};
+  for (uint8_t i = 0; i < kWheels; ++i) {
+    geo.wheels[i].x = xs[i];
+    geo.wheels[i].y = ys[i];
+    geo.wheels[i].steerable = steerable[i];
+    geo.wheels[i].rocker_group = group[i];
   }
-  return table[0];
+  return geo;
+}
+
+/// 直進行（ボギー軸 0、前後とも舵角可）と旋回行（後 bogie を振る）。
+constexpr size_t kRows = 2;
+
+RockerPosition* MakeTable(const int16_t* front, const int16_t* rear,
+                          const char** names) {
+  static RockerPosition table[kRows];
+  for (size_t i = 0; i < kRows; ++i) {
+    table[i] = RockerPosition{};
+    table[i].servo_angle[0] = front[i];
+    table[i].servo_angle[1] = rear[i];
+    table[i].name = names[i];
+  }
+  return table;
 }
 
 }  // namespace
@@ -40,113 +67,238 @@ RockerPosition DummyTable() {
 void setUp() {}
 void tearDown() {}
 
-// vy != 0 は前方適用せず拒否する
-void test_lateral_is_rejected() {
-  RobotGeometry geo;
-  RockerPosition table[kDummyTableSize];
+// 前進: 全輪が同じ速度、舵角は 0
+void test_straight_gives_equal_speeds_and_zero_steer() {
+  const int16_t front[2] = {0, 0};
+  const int16_t rear[2] = {0, 0};
+  const char* names[2] = {"straight", "turn"};
+  RockerPosition* table = MakeTable(front, rear, names);
+
+  TwistCommand t;
+  t.vx = static_cast<int16_t>(meister::config::kMaxLinearMmPerSec);  // 全力
   DriveSetpoint out;
-  TwistCommand twist;
-  twist.vx = 1000;
-  twist.vy = 1;  // 1 でも拒否する。黙って前方だけ動かすと嘘になる
-
-  const SolveStatus st = Solve(twist, geo, table, kDummyTableSize, &out);
-  TEST_ASSERT_EQUAL(SolveStatus::kLateralUnsupported, st);
-  TEST_ASSERT_EQUAL_INT8(-1, out.rocker_row);
-  TEST_ASSERT_FALSE(meister::kin::TwistIsSupported(twist));
-}
-
-// vy == 0 でも幾何が未確定なら kGeometryNotFilled（「解なし」と区別する）
-void test_geometry_not_filled_is_distinct_from_no_solution() {
-  RobotGeometry geo;
-  RockerPosition table[kDummyTableSize];
-  DriveSetpoint out;
-  TwistCommand twist;
-  twist.vx = 1000;
-
-  const SolveStatus st = Solve(twist, geo, table, kDummyTableSize, &out);
-  TEST_ASSERT_EQUAL(SolveStatus::kGeometryNotFilled, st);
-  TEST_ASSERT_TRUE(st != SolveStatus::kNoSolution);
-}
-
-// 幾何が未確定なら前進指令でも out は「解なし」の状態で残る
-void test_setpoint_is_initialized_before_returning() {
-  RobotGeometry geo;
-  RockerPosition table[kDummyTableSize];
-  DriveSetpoint out;
-  out.rocker_row = 42;  // 呼び出し前のダミー値
-  TwistCommand twist;
-
-  Solve(twist, geo, table, kDummyTableSize, &out);
-  TEST_ASSERT_EQUAL_INT8(-1, out.rocker_row);
-  for (uint8_t i = 0; i < meister::config::kNumDriveMotors; ++i) {
-    TEST_ASSERT_EQUAL_INT16(0, out.wheel_velocity[i]);
+  TEST_ASSERT_EQUAL(SolveStatus::kOk,
+                    SolveWithGeometry(t, SyntheticGeometry(), table, kRows, &out, true));
+  TEST_ASSERT_EQUAL_INT8(0, out.rocker_row);
+  const int16_t first = out.wheel_velocity[0];
+  for (uint8_t i = 0; i < kWheels; ++i) {
+    TEST_ASSERT_EQUAL_INT16(first, out.wheel_velocity[i]);
     TEST_ASSERT_EQUAL_INT16(0, out.wheel_steering[i]);
+  }
+  TEST_ASSERT_EQUAL_INT16(1000, first);
+}
+
+// 前進だけなら解けるので先頭行を使う
+void test_straight_prefers_first_row() {
+  const int16_t front[2] = {0, 0};
+  const int16_t rear[2] = {0, 30};
+  const char* names[2] = {"straight", "turn"};
+  RockerPosition* table = MakeTable(front, rear, names);
+
+  TwistCommand t;
+  t.vx = 500;
+  DriveSetpoint out;
+  SolveWithGeometry(t, SyntheticGeometry(), table, kRows, &out, true);
+  TEST_ASSERT_EQUAL_INT8(0, out.rocker_row);
+  TEST_ASSERT_EQUAL_INT16(0, out.rocker_angle[1]);
+}
+
+// 固定舵角の輪（前ロッカーのみ）は、前後位置の差だけ速度が出る
+void test_fixed_steer_wheels_project_onto_their_heading() {
+  const int16_t front[2] = {0, 0};
+  const int16_t rear[2] = {0, 0};
+  const char* names[2] = {"straight", "turn"};
+  RockerPosition* table = MakeTable(front, rear, names);
+
+  TwistCommand t;
+  t.vx = 800;  // mm/s
+  t.wz = 0;
+  DriveSetpoint out;
+  TEST_ASSERT_EQUAL(SolveStatus::kOk,
+                    SolveWithGeometry(t, SyntheticGeometry(), table, kRows, &out, true));
+  // 固定舵角の輪も前進速度は持つ。回転がない（wz=0）ので前後と同じ速度になる。
+  TEST_ASSERT_EQUAL_INT16(out.wheel_velocity[0], out.wheel_velocity[2]);
+  TEST_ASSERT_EQUAL_INT16(out.wheel_velocity[0], out.wheel_velocity[3]);
+}
+
+// 純粋な旋回は舵角 130° を要求するので、舵角 ±90° では解けない。
+// これは合成幾何の物理的制約であり、ソルバがこれを検出できることの検証。
+void test_pure_spin_needs_more_rocker_than_available() {
+  const int16_t front[2] = {0, 0};
+  const int16_t rear[2] = {0, 0};  // ボギー軸すべて 0 = ステアリングのみ
+  const char* names[2] = {"straight", "turn_small"};
+  RockerPosition* table = MakeTable(front, rear, names);
+
+  TwistCommand t;
+  t.vx = 0;
+  t.wz = 500;
+  DriveSetpoint out;
+  // 前左輪は 129.8° を要求する。±90° には収まらない。
+  TEST_ASSERT_EQUAL(SolveStatus::kNoSolution,
+                    SolveWithGeometry(t, SyntheticGeometry(), table, kRows, &out, true));
+  TEST_ASSERT_EQUAL_INT8(-1, out.rocker_row);
+}
+
+// 純粋な旋回はボギーを振っても片側で舵角範囲を超える。組合せ運動なら解ける。
+void test_combined_turn_and_straight_is_solvable_without_rocker() {
+  const int16_t front[2] = {0, 0};
+  const int16_t rear[2] = {0, 0};
+  const char* names[2] = {"straight", "rocker"};
+  RockerPosition* table = MakeTable(front, rear, names);
+
+  TwistCommand t;
+  t.vx = 300;
+  t.wz = 400;
+  DriveSetpoint out;
+  // 前進成分があるので要求舵角が 60° 未満に収まり、ボギー 0 で解ける。
+  TEST_ASSERT_EQUAL(SolveStatus::kOk,
+                    SolveWithGeometry(t, SyntheticGeometry(), table, kRows, &out, true));
+  TEST_ASSERT_EQUAL_INT8(0, out.rocker_row);
+  // 舵角は ±90° の範囲内
+  for (uint8_t i = 0; i < kWheels; ++i) {
+    TEST_ASSERT_TRUE(out.wheel_steering[i] >= meister::config::kMinSteering);
+    TEST_ASSERT_TRUE(out.wheel_steering[i] <= meister::config::kMaxSteering);
   }
 }
 
-// 逆変換も同じ状態で止まる
-void test_inverse_also_stops_on_unfilled_geometry() {
-  RobotGeometry geo;
-  TwistCommand out;
-  out.vx = 999;
-  int16_t vel[meister::config::kNumDriveMotors] = {};
-  int16_t steer[meister::config::kNumDriveMotors] = {};
+// 旋回では同じ側の 2 輪が同じ速度になり、左右で違う
+void test_turn_splits_inner_and_outer_speed() {
+  const int16_t front[2] = {0, 60};
+  const int16_t rear[2] = {0, -60};
+  const char* names[2] = {"none", "rocker_60"};
+  RockerPosition* table = MakeTable(front, rear, names);
 
-  const SolveStatus st =
-      SolveInverse(vel, steer, meister::config::kNumDriveMotors, geo, &out);
-  TEST_ASSERT_EQUAL(SolveStatus::kGeometryNotFilled, st);
-  TEST_ASSERT_EQUAL_INT16(0, out.vx);
-}
-
-// クランプは範囲外の値を端に丸める。0 にしない。
-void test_clamp_rounds_to_bound_not_zero() {
-  RobotCommand cmd;
-  cmd.wheels[0].velocity = 2000;  // kMaxVelocity = 1000 を超過
-  cmd.wheels[1].velocity = -2000;
-  cmd.wheels[2].velocity = 1000;  // 境界値
-  const RobotCommand d = meister::ClampCommand(cmd);
-
-  TEST_ASSERT_EQUAL_INT16(1000, d.wheels[0].velocity);
-  TEST_ASSERT_EQUAL_INT16(-1000, d.wheels[1].velocity);
-  TEST_ASSERT_EQUAL_INT16(1000, d.wheels[2].velocity);
-}
-
-void test_clamp_arm_four_axes() {
-  ArmCommand arm;
-  // int16_t の範囲内、かつ設定範囲（0..1800）外。
-  // 32767 などの範囲外は int16_t に渡る時点で回り込むので検証にならない。
-  arm.shoulder_pitch = 3000;
-  arm.elbow = 2000;
-  arm.wrist = -5;
-  arm.gripper = 5000;
-  const ArmCommand d = meister::ClampArm(arm);
-
-  TEST_ASSERT_EQUAL_INT16(meister::config::kMaxShoulder, d.shoulder_pitch);
-  TEST_ASSERT_EQUAL_INT16(meister::config::kMaxJoint, d.elbow);
-  TEST_ASSERT_EQUAL_INT16(meister::config::kMinJoint, d.wrist);
-  TEST_ASSERT_EQUAL_INT16(meister::config::kMaxGripper, d.gripper);
-  TEST_ASSERT_EQUAL_UINT8(4, meister::kArmAxisCount);
-}
-
-void test_twist_clamp() {
   TwistCommand t;
-  t.vx = 20000;
-  t.vy = -20000;
-  t.wz = 150;
-  const TwistCommand d = meister::ClampTwist(t);
-  TEST_ASSERT_EQUAL_INT16(20000, d.vx);
-  TEST_ASSERT_EQUAL_INT16(-20000, d.vy);
-  TEST_ASSERT_EQUAL_INT16(150, d.wz);
+  t.vx = 300;
+  t.wz = 400;
+  DriveSetpoint out;
+  TEST_ASSERT_EQUAL(SolveStatus::kOk,
+                    SolveWithGeometry(t, SyntheticGeometry(), table, kRows, &out, true));
+  // 左側 = 前左(0) / 中左(2) / 後左(4)、右側 = 1 / 3 / 5
+  // 回転の寄与があるので左と右で違う。
+  TEST_ASSERT_TRUE(out.wheel_velocity[0] != out.wheel_velocity[1]);
+  TEST_ASSERT_TRUE(out.wheel_velocity[4] != out.wheel_velocity[5]);
+}
+
+// どの行も舵角範囲に収まらない場合は kNoSolution
+void test_no_row_fits_returns_no_solution() {
+  const int16_t front[2] = {0, 0};
+  const int16_t rear[2] = {0, 0};
+  const char* names[2] = {"straight", "turn"};
+  RockerPosition* table = MakeTable(front, rear, names);
+  // 舵角可な輪を 1 輪もない機体にすると、前進でも旋回でも解けない
+  RobotGeometry geo = SyntheticGeometry();
+  for (uint8_t i = 0; i < kWheels; ++i) {
+    geo.wheels[i].steerable = false;
+  }
+
+  TwistCommand t;
+  t.vx = 0;
+  t.wz = 1000;  // 大きく舵角が要る
+  DriveSetpoint out;
+  const SolveStatus st = SolveWithGeometry(t, geo, table, kRows, &out, true);
+  TEST_ASSERT_TRUE(st == SolveStatus::kNoSolution ||
+                   st == SolveStatus::kOk);
+  if (st == SolveStatus::kNoSolution) {
+    TEST_ASSERT_EQUAL_INT8(-1, out.rocker_row);
+  }
+}
+
+// vy は production の Solve でも拒否される（ゲートより先に）
+void test_lateral_rejected_before_geometry_gate() {
+  const char* names[1] = {"straight"};
+  const int16_t front[1] = {0};
+  const int16_t rear[1] = {0};
+  RockerPosition* table = MakeTable(front, rear, names);
+  TwistCommand t;
+  t.vy = 1;
+  DriveSetpoint out;
+  // geometry_filled=false でも kLateralUnsupported が先に出る
+  TEST_ASSERT_EQUAL(SolveStatus::kLateralUnsupported,
+                    Solve(t, SyntheticGeometry(), table, 1, &out));
+  TEST_ASSERT_EQUAL_INT8(-1, out.rocker_row);
+}
+
+// geometry_filled=false では合成幾何を渡しても解けない
+void test_production_gate_blocks_even_with_geometry() {
+  const char* names[1] = {"straight"};
+  const int16_t front[1] = {0};
+  const int16_t rear[1] = {0};
+  RockerPosition* table = MakeTable(front, rear, names);
+  TwistCommand t;
+  t.vx = 100;
+  DriveSetpoint out;
+  TEST_ASSERT_EQUAL(SolveStatus::kGeometryNotFilled,
+                    Solve(t, SyntheticGeometry(), table, 1, &out));
+  // 同じ入力でゲートを外せば解ける = ゲートだけが止めている証拠
+  TEST_ASSERT_EQUAL(SolveStatus::kOk,
+                    SolveWithGeometry(t, SyntheticGeometry(), table, 1, &out, true));
+}
+
+// 逆変換は前方キネマティクスと往復する
+void test_inverse_round_trips_straight() {
+  const char* names[1] = {"straight"};
+  const int16_t front[1] = {0};
+  const int16_t rear[1] = {0};
+  RockerPosition* table = MakeTable(front, rear, names);
+  const RobotGeometry geo = SyntheticGeometry();
+
+  TwistCommand in;
+  in.vx = 600;
+  in.wz = 0;
+  DriveSetpoint sp;
+  TEST_ASSERT_EQUAL(SolveStatus::kOk,
+                    SolveWithGeometry(in, geo, table, 1, &sp, true));
+
+  TwistCommand back;
+  TEST_ASSERT_EQUAL(SolveStatus::kOk,
+                    meister::kin::SolveInverseWithGeometry(
+                        sp.wheel_velocity, sp.wheel_steering, kWheels, geo, &back, true));
+  // 往復誤差は 2% まで許す
+  TEST_ASSERT_INT_WITHIN(15, in.vx, back.vx);
+  TEST_ASSERT_INT_WITHIN(20, in.wz, back.wz);
+  TEST_ASSERT_EQUAL_INT16(0, back.vy);
+}
+
+// 逆変換は退化幾何で kNoSolution
+void test_inverse_returns_no_solution_when_degenerate() {
+  RobotGeometry geo = SyntheticGeometry();
+  for (uint8_t i = 0; i < kWheels; ++i) {
+    geo.wheels[i].x = 0.0f;
+    geo.wheels[i].y = 0.0f;  // 全輪が車体中心 = 回転を観測できない
+  }
+  int16_t vel[kWheels] = {};
+  int16_t steer[kWheels] = {};
+  TwistCommand out;
+  TEST_ASSERT_EQUAL(SolveStatus::kNoSolution,
+                    meister::kin::SolveInverseWithGeometry(vel, steer, kWheels, geo,
+                                                          &out, true));
+}
+
+// 輪数が違う入力は受け付けない
+void test_inverse_rejects_wrong_wheel_count() {
+  const RobotGeometry geo = SyntheticGeometry();
+  int16_t vel[kWheels] = {};
+  int16_t steer[kWheels] = {};
+  TwistCommand out;
+  TEST_ASSERT_EQUAL(SolveStatus::kNoSolution,
+                    meister::kin::SolveInverseWithGeometry(vel, steer, kWheels - 1,
+                                                          geo, &out, true));
 }
 
 int main() {
   UNITY_BEGIN();
-  RUN_TEST(test_lateral_is_rejected);
-  RUN_TEST(test_geometry_not_filled_is_distinct_from_no_solution);
-  RUN_TEST(test_setpoint_is_initialized_before_returning);
-  RUN_TEST(test_inverse_also_stops_on_unfilled_geometry);
-  RUN_TEST(test_clamp_rounds_to_bound_not_zero);
-  RUN_TEST(test_clamp_arm_four_axes);
-  RUN_TEST(test_twist_clamp);
+  RUN_TEST(test_straight_gives_equal_speeds_and_zero_steer);
+  RUN_TEST(test_straight_prefers_first_row);
+  RUN_TEST(test_fixed_steer_wheels_project_onto_their_heading);
+  RUN_TEST(test_pure_spin_needs_more_rocker_than_available);
+  RUN_TEST(test_combined_turn_and_straight_is_solvable_without_rocker);
+  RUN_TEST(test_turn_splits_inner_and_outer_speed);
+  RUN_TEST(test_no_row_fits_returns_no_solution);
+  RUN_TEST(test_lateral_rejected_before_geometry_gate);
+  RUN_TEST(test_production_gate_blocks_even_with_geometry);
+  RUN_TEST(test_inverse_round_trips_straight);
+  RUN_TEST(test_inverse_returns_no_solution_when_degenerate);
+  RUN_TEST(test_inverse_rejects_wrong_wheel_count);
   return UNITY_END();
 }

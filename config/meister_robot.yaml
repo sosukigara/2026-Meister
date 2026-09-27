@@ -112,6 +112,8 @@ kinematics:
   # false の間 kinematics.cpp は拘束を解かず kGeometryNotFilled を返す。
   geometry_filled: false
   wheel_radius: 0.05
+  # 直线速度の上限 [mm/s]。-twist はこれに相対して千分率へ正規化する
+  max_linear_mm_per_sec: 800
   wheels:
     # x, y, steerable（ボギー位置によって舵角が変わるか）, rocker_group
     - {x:  0.30, y:  0.25, steerable: true,  rocker_group: 0}
