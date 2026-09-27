@@ -18,6 +18,9 @@ constexpr uint8_t  kNumDriveMotors    = 6;
 constexpr uint8_t  kNumSteeringServos = 6;
 constexpr uint8_t  kNumArmServos      = 4;
 constexpr uint8_t  kNumGripperServos = 1;
+constexpr uint8_t  kNumShoulderPitch = 1;
+constexpr uint8_t  kNumJoints      = 4;
+constexpr uint8_t  kNumRockerAxes = 4;
 
 constexpr int16_t kMinVelocity = -1000;
 constexpr int16_t kMaxVelocity = 1000;
@@ -29,6 +32,12 @@ constexpr int16_t kMinRocker   = 0;
 constexpr int16_t kMaxRocker   = 1800;
 constexpr int16_t kMinShoulder = 0;
 constexpr int16_t kMaxShoulder = 1800;
+constexpr int16_t kMinGripper = 0;
+constexpr int16_t kMaxGripper = 1800;
+constexpr int16_t kMinJoint   = 0;
+constexpr int16_t kMaxJoint   = 1800;
+constexpr int16_t kMinRockerAngle = 0;
+constexpr int16_t kMaxRockerAngle = 1800;
 
 // ---- UART ----
 constexpr uint32_t kProtoBaud = 115200;
@@ -42,8 +51,10 @@ constexpr int8_t  kMotorDirPins[kNumDriveMotors] = {-1, -1, -1, -1, -1, -1};
 // 既存コードが使う別名。値が重複定義されないよう using で公開する。
 constexpr uint8_t kNumSteerPwm = 6;  // ★Phase 2 で 0 になる
 constexpr uint8_t kNumArmPwm = 4;
+// kNumArmPwm は PWM ピン列の長さであり、バス軸数 (kNumJoints) とは別。
+// Phase 2 でバス化したら PWM 列を再割当する。
 constexpr uint8_t kSteerPins[6] = {4, 5, 15, 18, 19, 21};
-constexpr uint8_t kArmPins[4] = {22, 23, 32, 33};
+constexpr uint8_t kArmPins[kNumArmPwm] = {22, 23, 32, 33};
 constexpr uint8_t kGripperPin = 12;
 constexpr uint8_t kBusTxPin = 25;
 constexpr uint8_t kBusRxPin = 26;
@@ -68,11 +79,14 @@ static_assert(sizeof(kSteerPins) / sizeof(kSteerPins[0]) == kNumSteerPwm,
               "pins.steer_pwm の本数と kNumSteerPwm が不一致");
 static_assert(sizeof(kArmPins) / sizeof(kArmPins[0]) == kNumArmPwm,
               "pins.arm_pwm の本数と kNumArmPwm が不一致");
-// ★既知の不整合★ 現在は 17 チャネルを要求するが LEDC は 16。
-// 17 本目は attach が失敗し、そのサーボだけ動かない（失敗は無言）。
-// Phase 2 でバス化すると モータ6 + PWMサーボ5 = 11 に収まる。
+// ★既知の不整合★ Phase 1 の暫定 PWM 割当は 17 チャネルを要求するが
+// LEDC は 16。17 本目（グリッパー pin=12）は attach が失敗し動かない。
+// 失敗は setup() の [ledc] attached=N failed=M で可視化してある。
+// +1 の許容は「Phase 1 はサーボ未接続」という前提に依存する。
+// Phase 2 でステアリングとアームをバス化すると 6 + 5 = 11 に収まり、
+// この assert は <= kMaxLedcChannels へ戻す。
 static_assert(kUsedLedcChannels <= kMaxLedcChannels + 1,
-              "LEDC budget far over plan; Phase 2 bus-ification brings it to 11");
+              "LEDC 予算が超過。Phase 2 のバス化で 11 に収まる");
 
 // ---- バス（★要確認★ 実物無し・データシート未取得）----
 constexpr bool     kBusEnabled    = false;

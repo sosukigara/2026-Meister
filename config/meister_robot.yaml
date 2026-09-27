@@ -17,14 +17,18 @@ protocol:
   # ESP32 が最新の指令を適用する周期 [Hz]
   control_hz: 100
 
-  # 軸数。プロトコルのフレーム長，从此处的値导出处
+  # 軸数。プロトコルのフレーム長はここから決まる
   axes:
     drive_motors: 6
     steering: 6      # ★Phase 2 で 4 に変更★（BOM のステアリングは 4 個）
+    # Phase 1 の実態（arm.cpp が 4 本の PWM サーボを組み立てる）。
+    # ★Phase 2★ BOM .arm_axes の 4 軸構成（肩 PWM / 肘 / 手首 / グリッパー）へ
+    # 移行する。移行時は pins.arm_pwm_provisional も同時に見直す。
     arm: 4
-    gripper: 1
-    rocker: 4          # pins.rocker_servo の本数
-  
+    shoulder_pitch: 1  # アーム肩（DS サーボ 150kg、PWM）
+    gripper: 1        # 開閉①②を 1 軸（STS3215 バス 2 台）
+    rocker: 4          # ロッカー軸ボギー軸（DS サーボ 150kg）の本数
+
   # 値域（0.1 度単位 / 千分率）
   ranges:
     velocity: [-1000, 1000]
@@ -32,6 +36,8 @@ protocol:
     arm: [0, 1800]
     rocker: [0, 1800]
     shoulder: [0, 1800]
+    gripper: [0, 1800]
+    joint: [0, 1800]    # 肘 / 手首
 
 uart:
   proto_baud: 115200
@@ -52,6 +58,9 @@ pins:
   steer_pwm: [4, 5, 15, 18, 19, 21]
   arm_pwm: [22, 23, 32, 33]
   gripper_pwm: 12
+  # ★暫定★ Phase 2 でバス化したらこの 4 本は空きに戻り、軸数に比例しなくなる。
+  # arm_pwm の長さは axes.arm とは独立に持つ。Phase 2 で再割当する。
+  arm_pwm_provisional: [22, 23, 32, 33]
   bus_tx: 25
   bus_rx: 26
   bus_dir: -1                # アダプタが半二重を持つなら -1 のまま
@@ -81,7 +90,47 @@ bus:
 # BOM からはこの台数が要求されるが、
 # プロトコルはまだ 6ch/4ch のまま。実装に存在しない軸数なので、
 # 実用の軸数とは分離して管理する。
+# BOM にあるがアーム 4 軸に含まれないもの。将来軸を増やすとき用。
+unused_actuators:
+  shoulder_yaw_sts3215: 1  # 肩位置角。四:Parallel 軸に含めていない
+
 planned:
   steering_count: 4     # BOM のステアリングは 4 個
   arm_bus_count: 3      # 肩方位角 / 肘 / 手首
   gripper_count: 2      # 開閉① / 開閉②
+
+# 運動学（Twist → 各輪の舵角・速度）
+# docs/superpowers/specs/2026-09-27-command-and-kinematics-design.md の D1/D3。
+# 車体座標: 原点は車体中心、+x が前方、+y が左、単位 m。
+#
+# ★要確認★ 以下の値は機構設計から求めた**暫定値**。実機の図面か計測で
+# 確定するまでは kinematics.cpp を書かないこと。拘束ソルバが正しい
+# 幾何を解いても、数値が入らなければ解は意味を持たない。
+# （今回見つけた「kGripperPin = 0」「無言の attach failures」と同じ型。）
+kinematics:
+  wheel_radius: 0.05
+  wheels:
+    # x, y, steerable（ボギー位置によって舵角が変わるか）, rocker_group
+    - {x:  0.30, y:  0.25, steerable: true,  rocker_group: 0}
+    - {x:  0.30, y: -0.25, steerable: true,  rocker_group: 1}
+    - {x:  0.00, y:  0.25, steerable: false, rocker_group: 0}
+    - {x:  0.00, y: -0.25, steerable: false, rocker_group: 1}
+    - {x: -0.30, y:  0.25, steerable: true,  rocker_group: 0}
+    - {x: -0.30, y: -0.25, steerable: true,  rocker_group: 1}
+
+  # ボギー軸の位置表。拘束を解く対象はこの各行。
+  # ★要確認★ 「ロッカー軸ボギー軸 DS サーボ 150kg × 4」の解釈が未確定。
+  # ここでは「前ロッカー左/右・後ロッカー左/右の 4 軸で、左右が独立」と
+  # 仮定している。1 軸 × 4 輪の意味なら表の形が変わる。
+  # servo は [前左, 前右, 後左, 後右] の 4 軸。
+  # steerable は 6 輪の順に、その行で舵角が自由になるか。
+  rocker_positions:
+    - name: straight        # 直進。舵角が解けるのは角度 0 のときだけ
+      servo: [0, 0, 0, 0]
+      steerable: [true, true, false, false, true, true]
+    - name: turn_left       # 左旋回
+      servo: [0, 0, 30, 30]
+      steerable: [true, true, false, false, true, true]
+    - name: turn_right      # 右旋回
+      servo: [0, 0, -30, -30]
+      steerable: [true, true, false, false, true, true]
