@@ -87,7 +87,7 @@ class SerialBridgeNode(Node):
             import serial  # pyserial
             # serial_for_url は 'loop://' 等のテスト用 URL も扱える
             # timeout は「1 バイトも来なかったときの最大待ち時間」だけを持つ。
-            # 読みは in_waiting 分をまとめて抜므로、read(n) が n バイトを待つ
+            # 読みは in_waiting 分をまとめて抜く。read(n) が n バイトを待つ
             # ことによる束ね遅延（p95 39.7 ms）が生じない。
             self._serial = serial.serial_for_url(self._serial_port, self._baud, timeout=0.05)
             self.get_logger().info(f'opened {self._serial_port} @ {self._baud}')
