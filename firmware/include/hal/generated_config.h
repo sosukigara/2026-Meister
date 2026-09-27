@@ -19,7 +19,11 @@ constexpr uint8_t  kNumSteeringServos = 6;
 constexpr uint8_t  kNumArmServos      = 4;
 constexpr uint8_t  kNumGripperServos = 1;
 constexpr uint8_t  kNumShoulderPitch = 1;
-constexpr uint8_t  kNumJoints      = 4;
+// バス軸（肘・手首・グリッパー）。Phase 2 でバスが有効になると
+// 物理のサーボ台数と一致する。現状は PWM のままなので kNumArmServos を使う。
+constexpr uint8_t  kNumJoints      = 4;  // == kNumArmServos（Phase 1）
+static_assert(kNumJoints == kNumArmServos,
+              "Phase 1 ではバス軸と PWM 軸の区別がない。Phase 2 で実装したらこの assert を外す");
 constexpr uint8_t  kNumRockerAxes = 4;
 
 constexpr int16_t kMinVelocity = -1000;
