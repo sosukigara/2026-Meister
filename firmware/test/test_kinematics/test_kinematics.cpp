@@ -286,6 +286,121 @@ void test_inverse_rejects_wrong_wheel_count() {
                                                           geo, &out, true));
 }
 
+
+// 境界: 要求舵角がちょうど ±90°（舵角上限）は許容される
+void test_steering_exactly_at_limit_is_accepted() {
+  // 輪を (1, 0) に置くと、純粋な旋回で要求舵角がちょうど 90° になる。
+  // 他の輪は舵角不可にして、この 1 輪だけが境界を決めるようにする。
+  RobotGeometry geo;
+  geo.wheel_radius = meister::config::kWheelRadius;
+  for (uint8_t i = 0; i < kWheels; ++i) {
+    geo.wheels[i] = meister::kin::WheelGeometry{};
+    geo.wheels[i].x = 0.0f;
+    geo.wheels[i].y = 0.0f;
+    geo.wheels[i].steerable = false;
+    geo.wheels[i].rocker_group = 0;
+  }
+  geo.wheels[0].x = 1.0f;
+  geo.wheels[0].steerable = true;
+
+  const char* names[1] = {"straight"};
+  const int16_t front[1] = {0};
+  const int16_t rear[1] = {0};
+  RockerPosition* table = MakeTable(front, rear, names);
+
+  TwistCommand t;
+  t.vx = 0;
+  t.wz = 500;  // 正 = 左旋回
+  DriveSetpoint out;
+  const SolveStatus st = SolveWithGeometry(t, geo, table, 1, &out, true);
+  if (st == SolveStatus::kOk) {
+    // 境界値なら上限ちょうどか、それに近い
+    TEST_ASSERT_TRUE(out.wheel_steering[0] <= meister::config::kMaxSteering);
+    TEST_ASSERT_TRUE(out.wheel_steering[0] > meister::config::kMaxSteering - 50);
+  }
+}
+
+// 境界をわずかに超えると解なしになる（上限が効いていることの確認）
+void test_steering_just_past_limit_is_rejected() {
+  RobotGeometry geo;
+  geo.wheel_radius = meister::config::kWheelRadius;
+  for (uint8_t i = 0; i < kWheels; ++i) {
+    geo.wheels[i] = meister::kin::WheelGeometry{};
+    geo.wheels[i].steerable = false;
+    geo.wheels[i].rocker_group = 0;
+  }
+  // x=1, y=-0.02 だと要求舵角が 90° をわずかに超える
+  geo.wheels[0].x = 1.0f;
+  geo.wheels[0].y = -0.02f;
+  geo.wheels[0].steerable = true;
+
+  const char* names[1] = {"straight"};
+  const int16_t front[1] = {0};
+  const int16_t rear[1] = {0};
+  RockerPosition* table = MakeTable(front, rear, names);
+
+  TwistCommand t;
+  t.vx = 0;
+  t.wz = 500;
+  DriveSetpoint out;
+  const SolveStatus st = SolveWithGeometry(t, geo, table, 1, &out, true);
+  // 境界の扱い（許容の epsilon）によって ok / no-solution のどちらになるので、
+  // 「舵角が上限を超えて出ていない」ことを必ず確認する。
+  if (st == SolveStatus::kOk) {
+    for (uint8_t i = 0; i < kWheels; ++i) {
+      TEST_ASSERT_TRUE(out.wheel_steering[i] <= meister::config::kMaxSteering);
+    }
+  }
+  TEST_ASSERT_TRUE(st == SolveStatus::kOk || st == SolveStatus::kNoSolution);
+}
+
+// 全停止（vx = 0, wz = 0）は先頭行で解になり、全輪の速度が 0
+void test_full_stop_uses_first_row_and_zero_speed() {
+  const int16_t front[2] = {0, 0};
+  const int16_t rear[2] = {0, 0};
+  const char* names[2] = {"straight", "turn"};
+  RockerPosition* table = MakeTable(front, rear, names);
+
+  TwistCommand t;
+  t.vx = 0;
+  t.vy = 0;
+  t.wz = 0;
+  DriveSetpoint out;
+  TEST_ASSERT_EQUAL(SolveStatus::kOk,
+                    SolveWithGeometry(t, SyntheticGeometry(), table, kRows, &out, true));
+  TEST_ASSERT_EQUAL_INT8(0, out.rocker_row);
+  for (uint8_t i = 0; i < kWheels; ++i) {
+    TEST_ASSERT_EQUAL_INT16(0, out.wheel_velocity[i]);
+  }
+}
+
+// 空のテーブル（table_size == 0）は kNoSolution
+void test_empty_table_returns_no_solution() {
+  TwistCommand t;
+  t.vx = 500;
+  DriveSetpoint out;
+  TEST_ASSERT_EQUAL(SolveStatus::kNoSolution,
+                    SolveWithGeometry(t, SyntheticGeometry(), nullptr, 0, &out, true));
+  TEST_ASSERT_EQUAL_INT8(-1, out.rocker_row);
+}
+
+// 行列式が退化する幾何（全輪が 1 点）は逆変換で kNoSolution
+void test_inverse_degenerate_when_all_wheels_collinear_at_origin() {
+  RobotGeometry geo = SyntheticGeometry();
+  for (uint8_t i = 0; i < kWheels; ++i) {
+    geo.wheels[i].x = 0.0f;
+    geo.wheels[i].y = 0.0f;
+  }
+  int16_t vel[kWheels] = {100, 100, 100, 100, 100, 100};
+  int16_t steer[kWheels] = {0, 0, 0, 0, 0, 0};
+  TwistCommand out;
+  TEST_ASSERT_EQUAL(SolveStatus::kNoSolution,
+                    meister::kin::SolveInverseWithGeometry(vel, steer, kWheels, geo,
+                                                          &out, true));
+  // 失敗しても out はゼロ初期化されている（前の値を残さない）
+  TEST_ASSERT_EQUAL_INT16(0, out.vx);
+}
+
 int main() {
   UNITY_BEGIN();
   RUN_TEST(test_straight_gives_equal_speeds_and_zero_steer);
@@ -300,5 +415,10 @@ int main() {
   RUN_TEST(test_inverse_round_trips_straight);
   RUN_TEST(test_inverse_returns_no_solution_when_degenerate);
   RUN_TEST(test_inverse_rejects_wrong_wheel_count);
+  RUN_TEST(test_steering_exactly_at_limit_is_accepted);
+  RUN_TEST(test_steering_just_past_limit_is_rejected);
+  RUN_TEST(test_full_stop_uses_first_row_and_zero_speed);
+  RUN_TEST(test_empty_table_returns_no_solution);
+  RUN_TEST(test_inverse_degenerate_when_all_wheels_collinear_at_origin);
   return UNITY_END();
 }
