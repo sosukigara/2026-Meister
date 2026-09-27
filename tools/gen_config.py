@@ -143,6 +143,11 @@ def gen_header(cfg) -> str:
         'static_assert(kUsedLedcChannels <= kMaxLedcChannels + 1,',
         '              "LEDC 予算が超過。Phase 2 のバス化で 11 に収まる");',
         '',
+        '// ---- 運動学 ----',
+        f'constexpr bool kKinematicsGeometryFilled = '
+        f'{"true" if cfg["kinematics"]["geometry_filled"] else "false"};',
+        f'constexpr float kWheelRadius = {cfg["kinematics"]["wheel_radius"]};',
+        '',
         '// ---- バス（★要確認★ 実物無し・データシート未取得）----',
         f'constexpr bool     kBusEnabled    = {"true" if bus["enabled"] else "false"};',
         f'constexpr uint32_t kBusBaud       = {bus["baud"]};',

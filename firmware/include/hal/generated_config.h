@@ -92,6 +92,10 @@ static_assert(sizeof(kArmPins) / sizeof(kArmPins[0]) == kNumArmPwm,
 static_assert(kUsedLedcChannels <= kMaxLedcChannels + 1,
               "LEDC 予算が超過。Phase 2 のバス化で 11 に収まる");
 
+// ---- 運動学 ----
+constexpr bool kKinematicsGeometryFilled = false;
+constexpr float kWheelRadius = 0.05;
+
 // ---- バス（★要確認★ 実物無し・データシート未取得）----
 constexpr bool     kBusEnabled    = false;
 constexpr uint32_t kBusBaud       = 1000000;
