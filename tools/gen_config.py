@@ -134,7 +134,7 @@ def gen_header(cfg) -> str:
         f'constexpr uint8_t  kBusSteeringIds[{axes["steering"]}] = {_array(ids["steering"])};',
         f'constexpr uint8_t  kBusArmIds[{axes["arm"]}] = {_array(ids["arm"][: axes["arm"]])};',
         '',
-        '// ---- バスlittle/big の判定は feetech::Endianness を使う ----',
+        '// ---- バイト順。判定は feetech::Endianness を使う ----',
         f'constexpr bool kBusLittleEndian = {"true" if bus["endianness"] == "little" else "false"};',
         '',
         '// ---- ★未実装★ Phase 2 の計画値。実装には存在しない軸数 ----',
