@@ -34,6 +34,13 @@ MAX_STEERING = 900
 MIN_ARM_ANGLE = 0
 MAX_ARM_ANGLE = 1800
 
+# FB_STATE の error_flags ビット（firmware/include/meister_protocol.h の
+# FbErrorFlags と同値）。
+FB_ERROR_MOTOR = 0x01     # モータ系エラー
+FB_ERROR_SERVO = 0x02     # サーボ系エラー
+FB_ERROR_SENSOR = 0x04    # センサ系エラー
+FB_ERROR_PROTOCOL = 0x08  # プロトコルエラー（フレーム破損等）
+
 _PAYLOAD_SIZES = {
     TYPE_MOTOR_VELOCITY: NUM_DRIVE_MOTORS * 2,
     TYPE_STEERING_ANGLE: NUM_STEERING_SERVOS * 2,
@@ -97,6 +104,15 @@ def encode_arm_angle(angle: list[int]) -> bytes:
 def encode_gripper(cmd: int) -> bytes:
     """CMD_GRIPPER フレームを生成する (0=閉 1=開 2=停止)。"""
     return _frame(TYPE_GRIPPER, bytes((_clamp(int(cmd), 0, 2),)))
+
+
+def encode_state(encoders: list[int], state: int, error_flags: int) -> bytes:
+    """FB_STATE フレームを生成する (エンコーダ 6ch + state + error_flags)。"""
+    if len(encoders) != NUM_DRIVE_MOTORS:
+        raise ValueError(f"expected {NUM_DRIVE_MOTORS} values, got {len(encoders)}")
+    payload = struct.pack("<6h", *(int(e) for e in encoders))
+    payload += bytes((int(state) & 0xFF, int(error_flags) & 0xFF))
+    return _frame(TYPE_FB_STATE, payload)
 
 
 @dataclass

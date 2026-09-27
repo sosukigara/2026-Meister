@@ -10,6 +10,7 @@ ROS 2 の /cmd_vel (target velocity) を受信し、ステアリング舵角 (CM
 from __future__ import annotations
 
 import threading
+import time
 
 import rclpy
 from rclpy.node import Node
@@ -26,6 +27,7 @@ from meister_serial_bridge.protocol import (
 )
 
 NUM_CHANNELS = 6
+RX_POLL_S = 0.001  # 受信待ちのポーリング間隔 [秒]
 
 
 class SerialBridgeNode(Node):
@@ -83,7 +85,7 @@ class SerialBridgeNode(Node):
         try:
             import serial  # pyserial
             # serial_for_url は 'loop://' 等のテスト用 URL も扱える
-            self._serial = serial.serial_for_url(self._serial_port, self._baud, timeout=0.1)
+            self._serial = serial.serial_for_url(self._serial_port, self._baud, timeout=0)
             self.get_logger().info(f'opened {self._serial_port} @ {self._baud}')
         except Exception as exc:  # ポート未接続でも起動は継続 (リトライする)
             self._serial = None
@@ -148,20 +150,25 @@ class SerialBridgeNode(Node):
     # ------------------------------------------------------------------
     def _rx_loop(self) -> None:
         while rclpy.ok():
-            serial = self._serial
-            if serial is None:
+            link = self._serial
+            if link is None:
                 self._open_serial()
                 if self._serial is None:
-                    import time as _time
-                    _time.sleep(2.0)
+                    time.sleep(2.0)
                     continue
+                link = self._serial
+            # read(n) は n バイトそろうか timeout するまでブロックする。そのまま
+            # 読むと受信が数フレーム束ねになり、/esp32/state の到着間隔が乱れる。
+            # 受信バッファに残っている分だけを読む。
             try:
-                data = serial.read(64)
+                data = link.read(link.in_waiting) if link.in_waiting else b''
             except Exception:
-                import time as _time
-                _time.sleep(0.5)
+                self.get_logger().warn('serial read failed; reopening...')
+                self._serial = None
+                time.sleep(0.5)
                 continue
             if not data:
+                time.sleep(RX_POLL_S)
                 continue
             for frame in self._parser.feed(data):
                 self.get_logger().debug(
