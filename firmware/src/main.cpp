@@ -74,6 +74,13 @@ HardwareSerial& ProtoPort() {
 #define MSTE_FEEDBACK_HZ 100
 #endif
 
+// 送信間隔は 1000 / MSTE_FEEDBACK_HZ（整数ミリ秒）で決まる。1000 の約数でない値を
+// 指定すると切り捨てで設定より高い Hz になり、「設定値どおりに動いていない」状態
+// を無警告で生むためコンパイルで落とす。
+static_assert(1000 % MSTE_FEEDBACK_HZ == 0,
+              "MSTE_FEEDBACK_HZ must divide 1000 (1000 % HZ == 0); "
+              "e.g. 50/100/125/200/250/500 -- 1000/HZ is integer milliseconds");
+
 // ---- 駆動モータ PWM ピン（6ch）----
 #ifndef MSTE_MOTOR_PIN0
 #define MSTE_MOTOR_PIN0 25

@@ -13,7 +13,9 @@ setup(
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', glob('launch/*.launch.py')),
     ],
-    install_requires=['setuptools'],
+    # pyserial は package.xml の <exec_depend>python3-serial</exec_depend> に対応する。
+    # comm_check / feedback_hz_measure / serial_bridge が import する。
+    install_requires=['setuptools', 'pyserial'],
     zip_safe=True,
     maintainer='so',
     maintainer_email='s25089@tokyo.kosen-ac.jp',
@@ -24,6 +26,7 @@ setup(
         'console_scripts': [
             'serial_bridge = meister_serial_bridge.serial_bridge_node:main',
             'meister_comm_check = meister_serial_bridge.comm_check:main',
+            'meister_hz_measure = meister_serial_bridge.feedback_hz_measure:main',
         ],
     },
 )
