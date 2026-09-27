@@ -77,6 +77,18 @@ SolveStatus Solve(const TwistCommand& twist, const RobotGeometry& geo,
                   const RockerPosition* table, size_t table_size,
                   DriveSetpoint* out);
 
+/// Solve() の本体。幾何回が埋まったかを引数で取る。
+///
+/// 通常の制御経路は Solve() を使うこと（そちらが設定の
+/// kinematics.geometry_filled で門を��る）。この関数は host テストが
+/// 合成幾何でソルバの性質を検証するためだけに公開している。
+SolveStatus SolveWithGeometry(const TwistCommand& twist, const RobotGeometry& geo,
+                              const RockerPosition* table, size_t table_size,
+                              DriveSetpoint* out, bool geometry_filled);
+
+/// 直線速度の上限 [mm/s]。twist を千分率へ正規化する基準。
+float MaxLinearMmPerSec();
+
 /// 逆変換。各輪の実測から車体速度を推定する。
 ///
 /// **オドメトリは Nav2（PC 側）が担当する。** ここで使うのは
@@ -85,6 +97,12 @@ SolveStatus Solve(const TwistCommand& twist, const RobotGeometry& geo,
 SolveStatus SolveInverse(const int16_t* wheel_velocity,
                          const int16_t* wheel_steering, size_t count,
                          const RobotGeometry& geo, TwistCommand* out);
+
+/// SolveInverse() の本体。host テストが合成幾何で使うためだけに公開。
+SolveStatus SolveInverseWithGeometry(const int16_t* wheel_velocity,
+                                     const int16_t* wheel_steering, size_t count,
+                                     const RobotGeometry& geo, TwistCommand* out,
+                                     bool geometry_filled);
 
 /// 現在の姿勢で車体に垂直な横方向の速度指令が成立するか。
 /// SupportsLateralMotion() が false の機械では常に false を返す。
