@@ -42,7 +42,13 @@ SOURCES = ['main.cpp', 'meister_protocol.cpp', 'command.cpp', 'kinematics.cpp',
            'hal/ledc_pwm.cpp', 'hal/pwm_servo.cpp', 'hal/console_servo.cpp',
            'hal/motor.cpp', 'hal/proto_uart.cpp', 'hal/bus_protocol.cpp']
 DOCS = ['AGENTS.md', 'README.md', 'docs/README.md', 'docs/code-map.md',
-        'firmware/README.md']
+        'firmware/README.md', 'config/meister_robot.yaml']
+# docs/ 配下の仕様書は文字化けが最も繰り返されてきた場所なので glob で全部見る
+DOCS += sorted(p.relative_to(ROOT) for d in
+               ('docs/design', 'docs/features', 'docs/functions',
+                'docs/superpowers/specs')
+               for p in (ROOT / d).glob('*.md'))
+TOOLS = sorted(p.relative_to(ROOT) for p in (ROOT / 'tools').glob('*.py'))
 
 MIXED = re.compile(r'[ぁ-ゖァ-ヺ一-鿿][A-Za-z]{3,}')
 
@@ -66,7 +72,7 @@ def scan_text(paths) -> int:
                 if 0xAC00 <= ord(ch) <= 0xD7AF:
                     print(f'  NG   {path.name}:{i} U+{ord(ch):04X} ハングル')
                     bad += 1
-                elif ch == '�':
+                elif ch == '\ufffd':
                     print(f'  NG   {path.name}:{i} U+FFFD 置換文字')
                     bad += 1
             for tok in tokens:
@@ -132,8 +138,7 @@ def main() -> int:
     rc += scan_text(
         [ROOT / 'firmware' / 'include' / h for h in HEADERS]
         + [ROOT / 'firmware' / 'src' / s for s in SOURCES]
-        + [ROOT / d for d in DOCS]
-        + sorted((ROOT / 'docs' / 'superpowers' / 'specs').glob('*.md'))
+        + [ROOT / d for d in DOCS + TOOLS]
     )
     if opts.config:
         print('== 3) 生成物と YAML の整合 ==')
