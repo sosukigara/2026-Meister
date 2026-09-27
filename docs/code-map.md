@@ -7,7 +7,7 @@
 
 ## 1. 全体像
 
-半分散型アーキテクチャ。**实时性が必要な制御は ESP32、認識・判断は PC (ROS 2)。**
+半分散型アーキテクチャ。**リアルタイム性が必要な制御は ESP32、認識・判断は PC (ROS 2)。**
 
 ```
 ┌──────────────────────── PC (Ubuntu / ROS 2 Jazzy) ────────────────────────┐
@@ -20,9 +20,13 @@
                                  │  115200 bps・固定長バイナリ・XOR チェックサム
 ┌────────────────────────────────┴──────────────────────────────────────────┐
 │  firmware/  (ESP32-WROOM-32, PlatformIO + Arduino)                          │
-│  main.cpp        setup/loop・配線（現状: 606 行に全部入り = 要分割）         │
-│  meister_protocol.*  プロトコル codec（Arduino 非依存・native で test 可能）  │
-│  [未実装] バスサーボ HAL（PWM サーボ / DS サーボ / STS3215 の 3 系統）       │
+│  main.cpp              setup/loop と配線のみ（47 行）                            │
+│  command_dispatch.*    受信フレーム → 各機構（足回り・アームをメンバで保持）      │
+│  base_chassis.* arm.* feedback.*  機構と FB_STATE 送出                           │
+│  hal/*                 LEDC / サーボ / モータ / プロトコル UART / バス codec     │
+│  meister_config.h      設定の唯一の出所（ピン・周期・バックエンド選択）           │
+│  meister_protocol.*    プロトコル codec（Arduino 非依存・native で test 可能）  │
+│  [未実装] バスサーボの機構層（HAL の codec は実装済み。機構への接続は未着手）    │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -43,7 +47,7 @@
 | ファイル | 役割 | 備考 |
 |---|---|---|
 | `protocol.py` | **フレーム codec（C++ 版とバイト単位で同じ）** | `encode_*` / `FrameParser`。Python 側で唯一のプロトコル定義。rclpy 非依存なので単体で import できる |
-| `kinematics.py` | `Twist` → (舵角, 速度) の変換 | 純粋関数。`test_kinematics.py` で覆盖 |
+| `kinematics.py` | `Twist` → (舵角, 速度) の変換 | 純粋関数。`test_kinematics.py` でカバー |
 | `serial_bridge_node.py` | ROS ノード本体。`/cmd_vel` 購読 → フレーム送信、`/esp32/state` 配信、`cmd_timeout` ウォッチドッグ | 実機排他的に UART を持つ |
 | `comm_check.py` | ベンチ確認 CLI（`ros2 run … meister_comm_check`） | uplink / downlink / err_flag の 3 手順。ROS 非依存 |
 | `feedback_hz_measure.py` | FB_STATE 周期の実測 CLI | フレーム数・エラーフラグ・欠落を検証。ROS 非依存 |
@@ -54,25 +58,27 @@
 
 ## 3. firmware（`firmware/`）
 
-### 現状（2026-09-27）
+### 現状（2026-09-27・分割後）
 
-| ファイル | 行数 | 役割 | 問題点 |
+| ファイル | 行数 | 役割 | 備考 |
 |---|---|---|---|
-| `src/main.cpp` | 606 | **全部入り**: ピン定義 / LEDC ラッパ / モータ / サーボ / 受信 FSM / ディスパッチ / フィードバック / setup・loop | 9 セクションが 1 個の匿名 namespace に入っている。1 ファイルを変更すると全部にheeler影響 |
-| `include/meister_protocol.h` | 197 | TypeId・軸数・値域・サイズ・Frame 構造・関数宣言 | 1 ファイルに全部入り |
-| `src/meister_protocol.cpp` | 178 | エンコード / デコード / チェックサム | Arduino 非依存（良い） |
-| `test/test_protocol/` | 249 | Unity テスト（`pio test -e native`） | — |
+| `src/main.cpp` | 47 | setup/loop と配線のみ | Arduino 依存は `#ifdef ARDUINO` でガード |
+| `src/command_dispatch.cpp` | 112 | 受信 FSM（ヘッダ→種別→ペイロード→チェックサム）と機構への振り分け | 足回り・アームをメンバで保持 |
+| `src/base_chassis.cpp` / `src/arm.cpp` | 50 / 50 | 足回り（モータ 6 + ステアリング 6）、アーム 4 軸 + グリッパー | 静的インスタンスは作らず、初期化リストで構築順を示す |
+| `src/feedback.cpp` | 34 | FB_STATE の定周期送出 | 送信間隔は `config::kFeedbackIntervalMs` |
+| `src/hal/*.cpp` | 25〜61 | LEDC ラッパ / PWM サーボ / コンソールサーボ / モータ / プロトコル UART | 2.x と 3.x の API 差はここに閉じている |
+| `include/meister_config.h` | 337 | 設定の唯一の出所（ピン・周期・バックエンド選択） | 機構はこの定数表を読む |
+| `include/meister_protocol.h` | 197 | TypeId・軸数・値域・サイズ・Frame 構造・関数宣言 | 変更しない（PC 側 `protocol.py` とバイト単位で一致させる） |
+| `src/meister_protocol.cpp` | 178 | エンコード / デコード / チェックサム | Arduino 非依存 |
+| `test/test_protocol/` `test/test_bus_protocol/` | — | Unity テスト（`pio test -e native`、38 cases） | 両方とも Arduino 非依存 |
 
-### ピン割当は二重定義になっている（要解消）
+### ピン割当の二重定義は解消済み
 
-| 場所 | 内容 |
-|---|---|
-| `platformio.ini` の `build_flags` | `MSTE_MOTOR_PIN0..5` `MSTE_STEER_PIN0..5` `MSTE_ARM_PIN0..3` `MSTE_GRIPPER_PIN` `MSTE_UART_RX_PIN/TX_PIN` `MSTE_FEEDBACK_HZ` … |
-| `firmware/src/main.cpp:33-135` | 同名マクロの `#ifndef` フォールバック（既定値を 2 箇所に書く） |
+`platformio.ini` の `build_flags` が `-D` を与え、`include/meister_config.h` が
+フォールバックと定数表（`kMotorPins` / `kSteerPins` / `kArmPins` / `kGripperPin`）を持つ。
+`src/` は MSTE_* マクロを一切参照しない。
 
-**どちらを変更しても片方が残る。** 設定の唯一の出所を作る（→ `include/meister_config.h`）のが重构の第一段階。
-
-### 構造の計画（2026-09-27 合意、以下順で実施）
+### 構造の計画（2026-09-27 合意。`main.cpp` の分割と `meister_config.h` の集約は実施済み）
 
 ```
 firmware/
@@ -122,7 +128,7 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 | アーム肩（方位角）/ 先端（肘・手首）/ 開閉①② | STS3215 12V | 1 + 2 + 2 | バス |
 
 > 現プロトコルは `steering 6ch` / `arm 4ch` / `gripper 1ch` で BOM と不一致。
-> 軸数は **`meister_config.h` の定数から導出する**方針にして、実物のigt 確認後に
+> 軸数は **`meister_config.h` の定数から導出する**方針にして、実物の確認後に
 > 1 箇所の変更で済むようにする（`protocol.h` / `protocol.py` / テストは追従）。
 
 ---
@@ -131,7 +137,7 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 
 | 対象 | コマンド | 現状 |
 |---|---|---|
-| firmware プロトコル | `cd firmware && pio test -e native` | 15 cases |
+| firmware プロトコル / バス codec | `cd firmware && pio test -e native` | 38 cases |
 | bridge (Python) | `cd src/meister_serial_bridge && PYTHONPATH=. python3 -m pytest test/` | 22 cases |
 | firmware ビルド | `cd firmware && pio run -e esp32dev -e esp32dev_usbuart` | 2 env |
 | 全体ビルド | `./build.sh` | 5 packages |
@@ -144,7 +150,7 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 
 | 場所 | 役割 |
 |---|---|
-| `firmware/platformio.ini` | ビルド env・`MSTE_*` マクロ（→ `meister_config.h` へ集約予定） |
+| `firmware/platformio.ini` | ビルド env と `MSTE_*` の指定（値は `include/meister_config.h` が既定値として持つ） |
 | `src/meistar_description/config/*.yaml` | URDF / Nav2 パラメータ / ブリッジ（ros_gz 用。シリアル設定は**含まない**） |
 | `build.sh` / `start_meister.sh` / `kill_ros.sh` | ビルドと起動。`start_meister.sh:44-48` は VPN 環境のマルチキャスト障害回避で `ROS_LOCALHOST_ONLY=1` を設定（**子プロセスのみ**。別ターミナルの `ros2` CLI には継承されない） |
 | `docs/{features,functions,design}/NN-*.md` | 4 層ドキュメント（やりたいこと → features → functions → design） |
@@ -153,8 +159,33 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 
 ## 6. 設定変更時のチェックリスト
 
-- `firmware/platformio.ini` の `MSTE_*` を変える → `src/main.cpp` のフォールバックも変える（**二重定義**。`meister_config.h` 導入後はこの 2 箇所の分割が不要になる）
+- `firmware/platformio.ini` の `MSTE_*` を変える → `include/meister_config.h` のフォールバックも変える（`src/` はマクロを直接参照しない）
 - プロトコルの軸数を変える → `firmware/include/meister_protocol.h` **と** `src/meister_serial_bridge/meister_serial_bridge/protocol.py` **と** 両方のテストの期望値を変える
 - ピン番号を変える → `pio run -e esp32dev -e esp32dev_usbuart`（両 env 都要）と実機 `comm_check`
 - Python のみの変更 → `pytest`。C++ 変更 → `pio test -e native`
 - 実機挙動を変更 → `comm_check` 3 手順（uplink / downlink / err_flag）
+
+## 7. 通信周期の決定（2026-09-27 合意）
+
+| 対象 | 周期 | 実装 | 根拠 |
+|---|---|---|---|
+| PC → ESP32 指令 | 到着時（Nav2 の 10〜20 Hz） | `_on_cmd_vel` で直ちにフレーム送信 | 同じ値を再送しても情報量が増えない |
+| ESP32 指令適用 | **100 Hz**（10 ms） | `MSTE_CONTROL_HZ`。ESP32 が最新の指令を周期ごとに再適用 | 制御周期。線路使用率は 41% → 15% |
+| ESP32 → PC FB_STATE | **100 Hz** | `MSTE_FEEDBACK_HZ`（実測で決定） | firmware/README.md「通信周期の測定」 |
+| STS 指令（SYNC_WRITE） | 100 Hz 可 | 1 パケットで 9 台に届く ≈0.33 ms | 帯域に余裕 |
+| STS 状態読み戻し | 全体刷新 30〜40 ms | `MSTE_BUS_READ_CHUNK` でラウンドロビン | 半二重の turnaround（0.5〜2 ms/台）が直列に積もるため |
+
+### 未確認値（推測で埋めていない）
+
+| 項目 | 現在の値 | 状態 |
+|---|---|---|
+| `MSTE_BUS_RESP_TIMEOUT_US` | 3000 µs | **データシート未取得** |
+| `MSTE_BUS_INTER_FRAME_GAP_US` | 200 µs | **データシート未取得** |
+| `reg::eprom::*` / `reg::sram::*` のアドレス | 各表の値 | **未照合** |
+| `reg::kStepsPerRev` | 4096 | **未照合**（360° 型かどうか） |
+
+一次情報（Feetech 公式 Python SDK 1.0.0）で確定できたのは命令コード・フレーム
+構造・チェックサム計算 `~(sum(tx[2..L-2])) & 0xFF`・エラービット・ID 範囲のみ。
+web search は全プロバイダ遮断、SDK は protocol 層のみでモデル別レジスタを含まない。
+STS3215 のデータシートで照合し `firmware/include/meister_config.h` と
+`firmware/include/hal/feetech_sts_registers.h` を更新すること。
