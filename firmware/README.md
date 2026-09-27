@@ -68,8 +68,8 @@ firmware/
 出力を読むことはできない。
 
 > `upload_port` / `monitor_port` は ESP32 の `/dev/serial/by-id` パスに固定してある。
-> ポート未指定の `pio run -t upload` で同時接続中の別ボード（M5Stack = ESP32-P4,
-> `/dev/ttyACM0`）へ誤って書き込まないため。別の ESP32 本体に書き込む場合は
+> ポート未指定の `pio run -t upload` で同時接続中の別ボード（ユーザー申告 M5Stack、
+> 実測 ESP32-P4 = `/dev/ttyACM0`）へ誤って書き込むことを防ぐため。別の ESP32 本体に書き込む場合は
 > `platformio.ini` の `[common]` の該当行を変更する。
 
 ## ビルド
