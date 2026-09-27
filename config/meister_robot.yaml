@@ -1,0 +1,87 @@
+# Meister ロボット設定 — 唯一の出所
+#
+# ここを直したら必ず生成し直す:
+#     python3 tools/gen_config.py
+# 生成物（firmware/include/hal/generated_config.h と
+#         src/meister_serial_bridge/generated_config.py）はコミットする。
+# YAML と生成物のズレは tools/check_config.sh で検出する。
+#
+# ★要確認★ の項目は一次情報で未取得の値。記憶で埋めてはいけない。
+# 実物 / データシートで照合できるまで、値を根拠として使わないこと。
+
+version: 1
+
+protocol:
+  # FB_STATE の送信周期 [Hz]。1000 の約数のみ（firmware の static_assert で強制）
+  feedback_hz: 100
+  # ESP32 が最新の指令を適用する周期 [Hz]
+  control_hz: 100
+
+  # 軸数。プロトコルのフレーム長，从此处的値导出处
+  axes:
+    drive_motors: 6
+    steering: 6      # ★Phase 2 で 4 に変更★（BOM のステアリングは 4 個）
+    arm: 4
+    gripper: 1
+    rocker: 4          # pins.rocker_servo の本数
+  
+  # 値域（0.1 度単位 / 千分率）
+  ranges:
+    velocity: [-1000, 1000]
+    steering: [-900, 900]
+    arm: [0, 1800]
+    rocker: [0, 1800]
+    shoulder: [0, 1800]
+
+uart:
+  proto_baud: 115200
+  proto_rx_pin: 16
+  proto_tx_pin: 17
+
+# ピン割当（ESP32-WROOM-32）
+# 除外: 0/2/12/15=ストラップ、6-11=フラッシュ、34-39=入力のみ、1/3=コンソール
+pins:
+# 値は firmware/platformio.ini の MSTE_* から機械的に写した（実機の結線値）。
+# tools/check_pins.py がこの一致を検証する。変えたいときは
+# platformio.ini も 함께 直すか、Phase 2 の結線時に両方を更新する。
+# ★注意★ GPIO 2 / 12 / 15 はブートストラップピン。ROM がサンプルするのは
+#        リセット時なので動的には問題ないが、実配線時に必ず確認すること。
+#        ここでは platformio.ini の値から変更していない。
+  motor_pwm: [25, 26, 27, 14, 13, 2]
+  motor_dir: [-1, -1, -1, -1, -1, -1]          # -1 = 未接続（PWM のみ）
+  steer_pwm: [4, 5, 15, 18, 19, 21]
+  arm_pwm: [22, 23, 32, 33]
+  gripper_pwm: 12
+  bus_tx: 25
+  bus_rx: 26
+  bus_dir: -1                # アダプタが半二重を持つなら -1 のまま
+
+pwm:
+  motor_freq_hz: 1000
+  motor_resolution: 8
+  servo_freq_hz: 50
+  servo_min_us: 1000
+  servo_max_us: 2000
+
+# ★要確認★ STS3215 シリアルバス。
+# 実物が無く、データシートも未取得（web search 遮断、Feetech SDK は protocol 層のみ）。
+# enabled: false の間は UART を触らない。
+bus:
+  enabled: false
+  baud: 1000000
+  read_chunk: 2          # 1 回の応答で何台読むか。半二重の turnaround で全台同時は 25-40ms
+  resp_timeout_us: 3000  # ★未取得★ 実運用の最大は 9 台 SYNC_WRITE の 26B ≒ 260us
+  inter_frame_gap_us: 200  # ★未取得★
+  endianness: little      # ★未取得★ STS3215 がどちら側かは未照合
+  servo_ids:
+    steering: [1, 2, 3, 4]
+    arm: [5, 6, 7, 8, 9]
+
+# ★未実装★ Phase 2 でプロトコルを再設計したときの差分。
+# BOM からはこの台数が要求されるが、
+# プロトコルはまだ 6ch/4ch のまま。実装に存在しない軸数なので、
+# 実用の軸数とは分離して管理する。
+planned:
+  steering_count: 4     # BOM のステアリングは 4 個
+  arm_bus_count: 3      # 肩方位角 / 肘 / 手首
+  gripper_count: 2      # 開閉① / 開閉②

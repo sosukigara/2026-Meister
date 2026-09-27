@@ -18,6 +18,7 @@
 
 #include <stdint.h>
 
+#include "hal/generated_config.h"
 #include "meister_protocol.h"
 
 // ===========================================================================
@@ -124,7 +125,7 @@ static_assert(1000 % MSTE_CONTROL_HZ == 0,
 #endif
 
 /// 制御ループの周期。指令の適用と 1 回のバス応答をここに割り当てる。
-constexpr uint32_t kControlIntervalUs = 1000000u / MSTE_CONTROL_HZ;
+
 /// 半二重の TX/RX 切替ピン。アダプタ側が面倒を見るなら -1（不使用）
 #ifndef MSTE_BUS_DIR_PIN
 #define MSTE_BUS_DIR_PIN -1
@@ -149,10 +150,9 @@ namespace meister {
 namespace config {
 
 // ---- 通信（ログ表示用。ポートの選択と開始処理は上記 ProtoPort / ProtoPortBegin）----
-constexpr uint32_t kProtoBaud = MSTE_UART_BAUD;
+
 constexpr const char* kProtoPortName = MSTE_PROTO_PORT_NAME;
 /// FB_STATE の送信間隔 [ms]
-constexpr uint32_t kFeedbackIntervalMs = 1000u / MSTE_FEEDBACK_HZ;
 
 // ---- 軸数 ----
 // kNumDriveMotors / kNumArmServos / kNumSteeringServos はプロトコルの定義なので
@@ -162,10 +162,8 @@ constexpr uint32_t kFeedbackIntervalMs = 1000u / MSTE_FEEDBACK_HZ;
 // 揃えた時点で初めてここに定義する。
 
 /// ロッカー軸ボギー軸（DS サーボ 150kg / PWM）
-constexpr uint8_t kNumRocker = 4;
 
 /// アーム肩（DS サーボ 150kg / PWM）
-constexpr uint8_t kNumShoulderPitch = 1;
 
 /// アーム肘・手首・肩方位角（STS3215・バス）
 constexpr uint8_t kNumArmBus = 3;
@@ -176,12 +174,6 @@ constexpr uint8_t kNumGripper = 2;
 // kMinVelocity / kMaxVelocity / kMinSteering / kMaxSteering / kMinArmAngle /
 // kMaxArmAngle もプロトコルの定義なのでここでは持たない。
 // 機構固有の範囲だけをここに置く。
-constexpr int16_t kMinRocker    =     0;
-constexpr int16_t kMaxRocker    =  1800;
-constexpr int16_t kMinShoulder  =     0;
-constexpr int16_t kMaxShoulder  =  1800;
-constexpr int16_t kMinGripper   =     0;
-constexpr int16_t kMaxGripper   =  1800;
 
 // ---- バスサーボの ID 割当（★要確認★ 実機の ID 設定と一致させる）----
 // 1..4 = ステアリング、5..9 = アーム
@@ -272,44 +264,15 @@ constexpr uint8_t ArmId(uint8_t index) {
 #endif
 
 // ---- PWM パラメータ ----
-constexpr uint32_t kMotorFreqHz      = MSTE_MOTOR_PWM_FREQ;  // 駆動モータ PWM [Hz]
-constexpr uint8_t  kMotorResolution = MSTE_PWM_RESOLUTION;  // 駆動モータ PWM 分解能 [bit]
-constexpr uint32_t kServoFreqHz      = 50;    // サーボ PWM = 20ms 周期
-constexpr uint16_t kServoResolution  = 16;
-constexpr uint32_t kServoMinPulseUs  = 1000;
-constexpr uint32_t kServoMaxPulseUs  = 2000;
 
 // ---- いまの配線で機構が読む PWM ピン表 ----
 // ステアリングをバスへ移す計画が進んだら、この表ごと置き換える。
-constexpr uint8_t kNumSteerPwm = 6;  // ステアリング PWM 軸数
-constexpr uint8_t kNumArmPwm   = 4;  // アーム PWM 軸数
 
-constexpr uint8_t kMotorPins[proto::kNumDriveMotors] = {
-    MSTE_MOTOR_PIN0, MSTE_MOTOR_PIN1, MSTE_MOTOR_PIN2,
-    MSTE_MOTOR_PIN3, MSTE_MOTOR_PIN4, MSTE_MOTOR_PIN5,
-};
-constexpr int8_t kMotorDirPins[proto::kNumDriveMotors] = {
-    MSTE_MOTOR_DIR0, MSTE_MOTOR_DIR1, MSTE_MOTOR_DIR2,
-    MSTE_MOTOR_DIR3, MSTE_MOTOR_DIR4, MSTE_MOTOR_DIR5,
-};
-constexpr uint8_t kSteerPins[kNumSteerPwm] = {
-    MSTE_STEER_PIN0, MSTE_STEER_PIN1, MSTE_STEER_PIN2,
-    MSTE_STEER_PIN3, MSTE_STEER_PIN4, MSTE_STEER_PIN5,
-};
-constexpr uint8_t kArmPins[kNumArmPwm] = {
-    MSTE_ARM_PIN0, MSTE_ARM_PIN1, MSTE_ARM_PIN2, MSTE_ARM_PIN3,
-};
-constexpr uint8_t kGripperPin = MSTE_GRIPPER_PIN;
 
 /// LEDC チャネル数の上限。ESP32-WROOM-32 は 16。
 /// モータ 6 + PWM サーボ 5 = 11 で収まる。DIR ピンを使うようになると逼迫する。
-constexpr uint8_t kMaxLedcChannels = 16;
 
 /// 使用する LEDC チャネル数（静的チェック用）
-constexpr uint8_t kUsedLedcChannels =
-    proto::kNumDriveMotors + kNumRocker + kNumShoulderPitch;
-static_assert(kUsedLedcChannels <= kMaxLedcChannels,
-              "LEDC channel budget exceeded (motors + PWM servos > 16)");
 
 }  // namespace config
 }  // namespace meister

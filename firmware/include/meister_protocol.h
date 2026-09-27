@@ -46,6 +46,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "hal/generated_config.h"
+
 namespace meister {
 namespace proto {
 
@@ -69,17 +71,25 @@ enum TypeId : uint8_t {
 
 // ---------------------------------------------------------------------------
 // 台数・値域
+//
+// 値は config/meister_robot.yaml が唯一の出所で、tools/gen_config.py が
+// firmware/include/hal/generated_config.h に生成する。ここでは再定義せず
+// using で参照するだけにして、値が 2 か所に存在しないようにする。
 // ---------------------------------------------------------------------------
-constexpr size_t kNumDriveMotors    = 6;  ///< 駆動モータ数
-constexpr size_t kNumSteeringServos = 6;  ///< ステアリングサーボ数
-constexpr size_t kNumArmServos      = 4;  ///< アームサーボ数
-
-constexpr int16_t kMinVelocity = -1000;   ///< 速度下限（-100.0%）
-constexpr int16_t kMaxVelocity =  1000;   ///< 速度上限（+100.0%）
-constexpr int16_t kMinSteering =  -900;   ///< 舵角下限（-90.0°）
-constexpr int16_t kMaxSteering =   900;   ///< 舵角上限（+90.0°）
-constexpr int16_t kMinArmAngle  =     0;  ///< アーム関節角下限（0.0°）
-constexpr int16_t kMaxArmAngle  =  1800;  ///< アーム関節角上限（180.0°）
+using config::kNumDriveMotors;
+using config::kNumSteeringServos;
+using config::kNumArmServos;
+using config::kNumGripperServos;
+using config::kMinVelocity;
+using config::kMaxVelocity;
+using config::kMinSteering;
+using config::kMaxSteering;
+using config::kMinArmAngle;
+using config::kMaxArmAngle;
+using config::kMinRocker;
+using config::kMaxRocker;
+using config::kMinShoulder;
+using config::kMaxShoulder;
 
 // グリッパー指令値
 enum GripperCommand : uint8_t {

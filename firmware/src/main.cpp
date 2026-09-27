@@ -17,6 +17,7 @@
 
 #include "command_dispatch.h"
 #include "feedback.h"
+#include "hal/ledc_pwm.h"
 #include "hal/proto_uart.h"
 #include "meister_config.h"
 
@@ -32,6 +33,9 @@ void setup() {
   gDispatch.begin();
 
   MSTE_LOG("[meister-esp] boot OK\n");
+  MSTE_LOG("[ledc] attached=%u failed=%u\n",
+           meister::hal::ledc::attached_count(),
+           meister::hal::ledc::failed_count());
   MSTE_LOG("[meister-esp] uart=%s baud=%lu\n", meister::config::kProtoPortName,
            static_cast<unsigned long>(meister::config::kProtoBaud));
 }

@@ -17,6 +17,12 @@ namespace ledc {
 bool attach(uint8_t pin, uint32_t freq, uint8_t resolutionBits);
 
 /// デューティ比を書き込む。attach されていない pin は黙って無視される
+/// attach に成功した回数
+uint16_t attached_count();
+
+/// attach に失敗した回数（0 でないのは異常）
+uint16_t failed_count();
+
 void write(uint8_t pin, uint32_t duty);
 
 }  // namespace ledc
