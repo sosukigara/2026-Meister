@@ -25,7 +25,7 @@ namespace {
 ///
 /// YAML の kinematics 節に実測値（図面または計測）が入るまで false。
 /// tools/gen_config.py が kinematics.geometry_filled として出すので、
-/// ここでは生成定数を見るだけにして値をコードに_duplication しない。
+/// ここでは生成定数を見るだけにして値をコードに重複定義しない。
 bool GeometryIsFilled() {
   return config::kKinematicsGeometryFilled;
 }
@@ -33,10 +33,9 @@ bool GeometryIsFilled() {
 }  // namespace
 
 bool TwistIsSupported(const TwistCommand& twist) {
-  if (twist.vy != 0) {
-    return false;  // 車体に横方向の自由度がない
-  }
-  return GeometryIsFilled();
+  // 幾何が確定しているかどうかは Solve() の管轄。ここでは指令の
+  // 内容だけを見る。両者を混ぜると 2 つの理由が 1 つの判定に戻る。
+  return twist.vy == 0;
 }
 
 SolveStatus Solve(const TwistCommand& twist, const RobotGeometry& geo,
@@ -58,14 +57,14 @@ SolveStatus Solve(const TwistCommand& twist, const RobotGeometry& geo,
   }
   if (!GeometryIsFilled()) {
     // 拘束を解く前に確定させる。推測値で解くと、機構に合う数値に
-    // 見えるので誤った舵角が実際に出厂する。
+    // 見えるので誤った舵角が実際に出荷される。
     return SolveStatus::kGeometryNotFilled;
   }
   // ★TODO(Phase 2)★ 拘束ソルバ本体。
   // 1. twist の大きさと方向から rocker_positions の行を選ぶ
   // 2. 各輪の接地点速度 v_i = (vx - w*yi, vy + w*xi) を求める
   // 3. steerable な輪は v_i の方向に車輪を向ける（no-slip）
-  // 4. 固定された輪は速度のみ customizable
+  // 4. 固定された輪は速度のみを決める
   return SolveStatus::kNoSolution;
 }
 
