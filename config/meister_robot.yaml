@@ -108,6 +108,9 @@ planned:
 # 幾何を解いても、数値が入らなければ解は意味を持たない。
 # （今回見つけた「kGripperPin = 0」「無言の attach failures」と同じ型。）
 kinematics:
+  # 幾何係数が実測値（図面または計測）で確定したか。
+  # false の間 kinematics.cpp は拘束を解かず kGeometryNotFilled を返す。
+  geometry_filled: false
   wheel_radius: 0.05
   wheels:
     # x, y, steerable（ボギー位置によって舵角が変わるか）, rocker_group
