@@ -9,10 +9,12 @@ ROS 2 の /cmd_vel (target velocity) を受信し、ステアリング舵角 (CM
 
 from __future__ import annotations
 
+import signal
 import threading
 import time
 
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Int16MultiArray
@@ -27,7 +29,6 @@ from meister_serial_bridge.protocol import (
 )
 
 NUM_CHANNELS = 6
-RX_POLL_S = 0.001  # 受信待ちのポーリング間隔 [秒]
 
 
 class SerialBridgeNode(Node):
@@ -85,7 +86,10 @@ class SerialBridgeNode(Node):
         try:
             import serial  # pyserial
             # serial_for_url は 'loop://' 等のテスト用 URL も扱える
-            self._serial = serial.serial_for_url(self._serial_port, self._baud, timeout=0)
+            # timeout は「1 バイトも来なかったときの最大待ち時間」だけを持つ。
+            # 読みは in_waiting 分をまとめて抜므로、read(n) が n バイトを待つ
+            # ことによる束ね遅延（p95 39.7 ms）が生じない。
+            self._serial = serial.serial_for_url(self._serial_port, self._baud, timeout=0.05)
             self.get_logger().info(f'opened {self._serial_port} @ {self._baud}')
         except Exception as exc:  # ポート未接続でも起動は継続 (リトライする)
             self._serial = None
@@ -161,14 +165,14 @@ class SerialBridgeNode(Node):
             # 読むと受信が数フレーム束ねになり、/esp32/state の到着間隔が乱れる。
             # 受信バッファに残っている分だけを読む。
             try:
-                data = link.read(link.in_waiting) if link.in_waiting else b''
+                # 1 バイトで即返る。データが溜まっているときは溜まった分を一気に抜く。
+                data = link.read(link.in_waiting or 1)
             except Exception:
                 self.get_logger().warn('serial read failed; reopening...')
                 self._serial = None
                 time.sleep(0.5)
                 continue
             if not data:
-                time.sleep(RX_POLL_S)
                 continue
             for frame in self._parser.feed(data):
                 self.get_logger().debug(
@@ -188,15 +192,27 @@ class SerialBridgeNode(Node):
                     )
 
 
+def _on_sigterm(signum, frame) -> None:
+    """SIGTERM を KeyboardInterrupt に変換する。
+
+    既定では SIGTERM で即終了し、main() の finally（停止フレーム送信）に
+    届かない。ROS が落ちたときに速度 0 を送れないのはロボット側の最後の
+    安全網を失うことになるため、Ctrl-C と同じ経路を通す。
+    """
+    raise KeyboardInterrupt
+
+
 def main(args=None) -> None:
     rclpy.init(args=args)
+    signal.signal(signal.SIGTERM, _on_sigterm)
     node = SerialBridgeNode()
     try:
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
         # 終了時に停止させてから閉じる
+        node.get_logger().info('sending stop frames (steering=0, velocity=0)')
         try:
             node._write_frames([
                 encode_steering_angle([0] * NUM_CHANNELS),

@@ -68,6 +68,23 @@ ESP32 ファームウェアのベース実装（[firmware/](../../firmware/)）�
       `kFbErrorProtocol` で通知する。指令途絶は PC 側ブリッジの `cmd_timeout` ウォッチドッグ
       （0.5 秒で速度 0 送出）で処理する。FB_ERROR（`0x82`）は種別定義のみで未送信
 
+## 既知の制約
+
+- **本機の RMW は Cyclone DDS でマルチキャスト探索が効かない**。同一ホスト内でも
+  `ros2 node list` / `ros2 topic list` が空になることがある。ROS 2 グラフを観測する
+  ときは `ROS_LOCALHOST_ONLY=1` を付け、`ros2` CLI には `--no-daemon` を付ける。
+- **`MSTE_FEEDBACK_HZ` は 1000 の約数のみ**（50 / 100 / 125 / 200 / 250 / 500 / 1000）。
+  送信間隔が `1000 / MSTE_FEEDBACK_HZ`（整数ミリ秒）で決まるため、割り切れない値は
+  「設定値より高い Hz で動く」状態を無警告で生むため `static_assert` で弾く。
+- **FB_STATE の `enc[6]` は時間由来のダミー値**（`sendFeedbackIfDue` の
+  `((now/100)*3 + i*137) % 2000 - 1000`）。実エンコーダは未接続であり、表示値は
+  エンコーダの検証には使えない。
+- **`esp32dev`（Serial2 / GPIO16/17）での実配線動作は未検証**。2026-09-27 時点の通信
+  検証は `esp32dev_usbuart`（UART0 / USB）のみ。
+- **ベンチ測定値は実運用より保守的**。`esp32dev_usbuart` は TX/RX が UART0 を共有する
+  ため、送信が飽和すると `loop()` が `write` に占有されて RX 処理が後回しになる。
+  実運用の `esp32dev` は Serial2 経由の独立线路（full duplex）でこの取り合いが起きない。
+
 ## 関連ドキュメント
 
 - 機能要件: [features/07-esp32-uart.md](../features/07-esp32-uart.md)

@@ -81,7 +81,9 @@ class Feedback:
         return bool(self.error_flags & FB_ERROR_PROTOCOL)
 
     def describe(self) -> str:
-        return (f'enc={list(self.encoders)} '
+        # enc[6] は実エンコーダではなく firmware の時間由来ダミー値
+        # (main.cpp の sendFeedbackIfDue)。誤解を避けるため placeholder と明示する。
+        return (f'enc(placeholder)={list(self.encoders)} '
                 f'state=0x{self.state:02x} error=0x{self.error_flags:02x}')
 
 
