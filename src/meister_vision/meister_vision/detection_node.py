@@ -4,15 +4,16 @@
 vision_msgs/Detection2DArray を配信する。オプションで検出枠を描画した
 画像 (detection_image) も配信する。
 
-レート制限: 既定で 10 Hz に制限し、負荷を軽く保つ。
+レート制限: 既定で 3 Hz に制限し、負荷を軽く保つ。購読者がいない間は推論自体を止める。
 
 パラメータ:
   model_path         (str,  既定: "")   モデルパス。空なら自動解決
   conf_threshold     (float, 既定: 0.25) 信頼度しきい値
   iou_threshold      (float, 既定: 0.45) NMS の IoU しきい値
   image_topic        (str,  既定: "image_raw") 購読する画像トピック
-  publish_annotated  (bool, 既定: true) 描画済み画像を配信するか
-  rate               (float, 既定: 10.0) 最大処理レート [Hz]
+   publish_annotated  (bool, 既定: true) 描画済み画像を配信するか
+   rate               (float, 既定: 3.0) 最大処理レート [Hz]
+   inference_threads  (int,   既定: 2)   ONNX 推論スレッド数
 
 トピック:
   購読:  image_topic         (sensor_msgs/Image)
@@ -115,7 +116,8 @@ class DetectionNode(Node):
         self.declare_parameter("iou_threshold", 0.45)
         self.declare_parameter("image_topic", "image_raw")
         self.declare_parameter("publish_annotated", True)
-        self.declare_parameter("rate", 10.0)
+        self.declare_parameter("rate", 3.0)
+        self.declare_parameter("inference_threads", 2)
 
         model_path = self.get_parameter("model_path").get_parameter_value().string_value or None
         conf_threshold = self.get_parameter("conf_threshold").value
@@ -128,6 +130,8 @@ class DetectionNode(Node):
             model_path=model_path,
             conf_threshold=float(conf_threshold),
             iou_threshold=float(iou_threshold),
+            intra_op_num_threads=int(
+                self.get_parameter("inference_threads").value),
         )
         self.get_logger().info(
             f"モデルを読み込みました: {self._detector.model_path}")
@@ -191,6 +195,10 @@ class DetectionNode(Node):
         return annotated
 
     def _image_callback(self, msg: ImageMsg) -> None:
+        if self._pub_detections.get_subscription_count() == 0 and (
+                not self._publish_annotated
+                or self._pub_annotated.get_subscription_count() == 0):
+            return
         # レート制限: 前回処理から min_interval 未満ならスキップ
         now = time.monotonic()
         if now - self._last_process_time < self._min_interval:
@@ -210,10 +218,9 @@ class DetectionNode(Node):
 
         if self._publish_annotated:
             annotated = self._draw_detections(bgr, detections)
-            if _HAS_CV_BRIDGE:
-                annotated_msg = _BRIDGE.cv2_to_imgmsg(annotated, encoding="bgr8")
-            else:
-                annotated_msg = self._numpy_to_image_msg(annotated, msg)
+            # cv_bridge の cv2_to_imgmsg は実行時に KeyError を起こす環境が
+            # あるため、手動変換に固定する (購読側の imgmsg_to_cv2 は問題なし)
+            annotated_msg = self._numpy_to_image_msg(annotated, msg)
             annotated_msg.header = msg.header
             self._pub_annotated.publish(annotated_msg)
 

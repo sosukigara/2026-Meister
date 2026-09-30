@@ -92,6 +92,18 @@ Visualization Manager:
       Arrow Length: 0.05
       Color: 0; 180; 0
       Alpha: 0.5
+    - Class: rviz_default_plugins/Image
+      Name: Camera Raw
+      Enabled: false
+      Topic:
+        Value: /camera/image_raw
+        Reliability Policy: Best Effort
+    - Class: rviz_default_plugins/Image
+      Name: Detection Image
+      Enabled: true
+      Topic:
+        Value: /detection_image
+        Reliability Policy: Best Effort
   Global Options:
     Fixed Frame: map
     Background Color: 255; 255; 255

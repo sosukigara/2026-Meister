@@ -8,6 +8,7 @@ from launch.substitutions import LaunchConfiguration
 def generate_launch_description():
     pkg_nav = get_package_share_directory('ros2_autonomous_nav')
     pkg_web_nav = get_package_share_directory('meister_web_nav')
+    pkg_vision = get_package_share_directory('meister_vision')
 
     declare_world_arg = DeclareLaunchArgument('world', default_value='warehouse',
                                               description='World to load: warehouse, maze, empty')
@@ -41,11 +42,17 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(os.path.join(pkg_web_nav, 'launch', 'web_nav.launch.py'))
     )
 
+    # 6. Vision (Gazeboロボット目線カメラ+YOLOv8n検出。/camera/image_raw→/detections,/detection_image)
+    vision = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(os.path.join(pkg_vision, 'launch', 'pc_vision.launch.py'))
+    )
+
     return LaunchDescription([
         declare_world_arg,
         robot_state_publisher,
         simulation,
         slam,
         navigation,
-        web_nav
+        web_nav,
+        vision
     ])

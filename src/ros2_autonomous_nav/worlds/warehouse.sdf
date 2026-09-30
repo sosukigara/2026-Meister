@@ -84,5 +84,21 @@
       <pose>5 -3.5 0 0 0 1.57</pose>
     </include>
 
+    <!-- Test chair (COCO class, for vision check, auto-downloads from Fuel) -->
+    <include>
+      <name>test_chair</name>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Chair</uri>
+      <pose>2.5 0.5 0 0 0 0</pose>
+      <static>true</static>
+    </include>
+
+    <!-- Test person (COCO class, for vision check, auto-downloads from Fuel) -->
+    <include>
+      <name>test_person</name>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/Standing person</uri>
+      <pose>3.0 -0.6 0 0 0 0</pose>
+      <static>true</static>
+    </include>
+
   </world>
 </sdf>
