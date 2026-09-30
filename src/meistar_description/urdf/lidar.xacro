@@ -28,10 +28,14 @@
     </visual>
   </gazebo>
 
+  <!-- lidar は base_link の天面 (half-height 0.1) から十分上に離す。
+       すぐ上 (0.15) に置くと水平レイが箱の角を捉えて 0.17m の擬似障害物になり、
+       global_costmap の inflation がロボット自身の開始セルを埋めて
+       "Start occupied" になる。 -->
   <joint name="lidar_joint" type="fixed">
     <parent link="base_link"/>
     <child link="lidar_link"/>
-    <origin xyz="0 0 0.15" rpy="0 0 0"/>
+    <origin xyz="0 0 0.30" rpy="0 0 0"/>
   </joint>
 
   <!-- Gazebo Sensor Plugin -->
