@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'detection_node = meister_vision.detection_node:main',
+            'pc_camera = meister_vision.pc_camera_node:main',
             'download_model = meister_vision.download_model:main',
         ],
     },

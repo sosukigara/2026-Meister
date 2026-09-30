@@ -7,7 +7,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 WORLDS = {
-    'warehouse': {'sdf': 'warehouse.sdf', 'world_name': 'warehouse', 'spawn': (0, 0, 0.5)},
+    'warehouse': {'sdf': 'warehouse.sdf', 'world_name': 'warehouse', 'spawn': (0, 0, 0.1)},
     'maze': {'sdf': 'maze.sdf', 'world_name': 'my_custom_world', 'spawn': (-4.0, -4.0, 0.1)},
     'empty': {'sdf': 'empty.sdf', 'world_name': 'empty', 'spawn': (0, 0, 0.1)},
 }
@@ -57,13 +57,15 @@ def generate_launch_description():
             '/model/meistar_bot/odometry@nav_msgs/msg/Odometry@gz.msgs.Odometry',
             '/joint_states@sensor_msgs/msg/JointState@gz.msgs.Model',
             '/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan',
+            '/camera_image@sensor_msgs/msg/Image@gz.msgs.Image',
             '/model/meistar_bot/tf@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V',
         ],
         remappings=[
             (LaunchConfiguration('clock_topic'), '/clock'),
             ('/model/meistar_bot/cmd_vel', '/cmd_vel'),
             ('/model/meistar_bot/odometry', '/odom'),
-            ('/model/meistar_bot/tf', '/tf')
+            ('/model/meistar_bot/tf', '/tf'),
+            ('/camera_image', '/camera/image_raw'),
         ],
         parameters=[{'use_sim_time': True}],
         output='screen'

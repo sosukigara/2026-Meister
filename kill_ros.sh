@@ -42,6 +42,8 @@ PATTERNS=(
   "mode_and_goal_manager"
   "monitor_node"
   "ros2-daemon"
+  "detection_node"
+  "pc_camera"
 )
 
 # 括弧トリックで kill_ros.sh 自身や grep にマッチしないようにする

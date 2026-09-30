@@ -189,6 +189,7 @@ class YOLODetector:
         conf_threshold: float = 0.25,
         iou_threshold: float = 0.45,
         providers: Optional[List[str]] = None,
+        intra_op_num_threads: int = 2,
     ) -> None:
         self.model_path = model_path or resolve_model_path()
         if not os.path.exists(self.model_path):
@@ -205,8 +206,12 @@ class YOLODetector:
         self._output_name = ""
 
         import onnxruntime as ort
+        sess_options = ort.SessionOptions()
+        sess_options.intra_op_num_threads = max(1, intra_op_num_threads)
+        sess_options.inter_op_num_threads = 1
         self._session = ort.InferenceSession(
             self.model_path,
+            sess_options=sess_options,
             providers=providers or ["CPUExecutionProvider"],
         )
         self._input_name = self._session.get_inputs()[0].name

@@ -68,6 +68,9 @@ cleanup() {
     pkill -f "mapping_nav.launch.py"
     pkill -f "rviz2"
     pkill -f "gz sim"
+    # vision残留で次回起動の画像トピックが二重配信になるため確実に落とす
+    pkill -f "detection_node"
+    pkill -f "pc_camera"
     echo "完了。"
     exit 0
 }
@@ -99,6 +102,8 @@ echo "起動完了！"
 echo "- 手動操作: 別ターミナルで teleop を実行。"
 echo "- 自動移動: RVizで '2D Nav Goal' を指定。"
 echo "- Web UI: http://localhost:8088 で地図上に複数地点を指定して移動できます。"
+echo "- 画像認識: /detection_imageをRVizで確認"
+echo "- ロボット目線カメラ: Gazebo映像を使用 (PCカメラはuse_pc_camera:=trueで切替可)"
 echo "終了するには Ctrl+C を押してください。"
 echo "------------------------------------------"
 
