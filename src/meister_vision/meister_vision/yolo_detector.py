@@ -105,7 +105,7 @@ def nms(
     scores: np.ndarray,
     iou_threshold: float = 0.45,
 ) -> np.ndarray:
-    """純粋な NumPy 実装の貪欲 NMS。
+    """OpenCV の cv2.dnn.NMSBoxes を使った NMS。
 
     Args:
         boxes : (N, 4) の [x1, y1, x2, y2] 配列
@@ -118,36 +118,21 @@ def nms(
     if boxes.size == 0:
         return np.zeros(0, dtype=np.int64)
 
-    boxes = np.asarray(boxes, dtype=np.float64)
-    scores = np.asarray(scores, dtype=np.float64)
+    boxes_xywh = np.empty_like(boxes, dtype=np.float32)
+    boxes_xywh[:, 0] = boxes[:, 0]
+    boxes_xywh[:, 1] = boxes[:, 1]
+    boxes_xywh[:, 2] = boxes[:, 2] - boxes[:, 0]
+    boxes_xywh[:, 3] = boxes[:, 3] - boxes[:, 1]
 
-    # 面積は重複計算を避けるため先に算出
-    areas = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
-    order = np.argsort(-scores)
-
-    keep: List[int] = []
-    while order.size > 0:
-        i = int(order[0])
-        keep.append(i)
-        if order.size == 1:
-            break
-
-        rest = order[1:]
-        # 交差領域の左上/右下
-        xx1 = np.maximum(boxes[i, 0], boxes[rest, 0])
-        yy1 = np.maximum(boxes[i, 1], boxes[rest, 1])
-        xx2 = np.minimum(boxes[i, 2], boxes[rest, 2])
-        yy2 = np.minimum(boxes[i, 3], boxes[rest, 3])
-
-        inter_w = np.maximum(0.0, xx2 - xx1)
-        inter_h = np.maximum(0.0, yy2 - yy1)
-        inter = inter_w * inter_h
-        union = areas[i] + areas[rest] - inter
-        iou = np.where(union > 0.0, inter / union, 0.0)
-
-        order = rest[iou <= iou_threshold]
-
-    return np.asarray(keep, dtype=np.int64)
+    indices = cv2.dnn.NMSBoxes(
+        boxes_xywh.tolist(),
+        scores.tolist(),
+        0.0,
+        iou_threshold,
+    )
+    if len(indices) == 0:
+        return np.zeros(0, dtype=np.int64)
+    return np.asarray(indices, dtype=np.int64).flatten()
 
 
 def resolve_model_path() -> str:
@@ -224,8 +209,8 @@ class YOLODetector:
     ) -> Tuple[np.ndarray, float, int, int]:
         """BGR 画像を (1,3,640,640) float32 の ONNX 入力に変換する。"""
         padded, ratio, pad_w, pad_h = letterbox(image_bgr)
-        blob = padded[:, :, ::-1].transpose(2, 0, 1)[np.newaxis]
-        blob = np.ascontiguousarray(blob, dtype=np.float32) / 255.0
+        blob = cv2.dnn.blobFromImage(
+            padded, 1.0 / 255.0, (INPUT_SIZE, INPUT_SIZE), swapRB=True)
         return blob, ratio, pad_w, pad_h
 
     def _postprocess(
