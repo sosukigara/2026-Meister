@@ -20,7 +20,7 @@
 
 ## 実装済み機能
 
-- [x] 物体検出のベース（`meister_vision`: onnxruntime + YOLOv8n ONNX、`image_raw` 購読 → `Detection2DArray` 配信）
+- [x] 物体検出のベース（`meister_vision`: ONNX Runtime + YOLOv8n ONNX、`image_raw` 購読 → `Detection2DArray` 配信）
 - [x] モデル取得スクリプト（`scripts/download_model.py` で `yolov8n.onnx` をダウンロード）
 - [x] 実カメラ対応（`yuv422_yuy2` エンコーディング対応、USB カメラで動作確認済み）
 - [x] rviz2 でのリアルタイム監視（`detection.launch.py start_rviz:=true` で検出画像を表示）

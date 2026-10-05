@@ -17,8 +17,8 @@
 物体検出のベースを `src/meister_vision/`（ROS2 ament_python パッケージ）として実装済み。
 検出は「認識の置き場所」メモどおり PC / ROS 2 側で実行し、ESP32 は認識処理を持たない。
 
-- **推論エンジン**: onnxruntime + YOLOv8n ONNX（COCO 80クラス）。軽量で torch / ultralytics 非依存。
-- **処理**: letterbox 前処理（640x640）→ onnxruntime 推論 → 純 NumPy 実装の NMS で重複抑制。
+- **推論エンジン**: ONNX Runtime（C++ API）+ YOLOv8n ONNX（COCO 80クラス）。軽量で torch / ultralytics 非依存。
+- **処理**: letterbox 前処理（640x640）→ ONNX Runtime 推論 → `cv::dnn::NMSBoxes` で重複抑制。
 - **トピック**:
   - 購読: `image_raw`（`sensor_msgs/Image`、パラメータで変更可）
   - 配信: `detections`（`vision_msgs/Detection2DArray`、bbox / クラス / 信頼度）

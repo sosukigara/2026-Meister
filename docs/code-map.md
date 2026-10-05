@@ -38,7 +38,7 @@
 |---|---|---|---|
 | `meistar_description` | URDF / spawn / 全システム起動 | `launch/all_system.launch.py` `launch/spawn.launch.py` | — |
 | `ros2_autonomous_nav` | Nav2 / SLAM / `real_robot.launch.py` | 各 `launch/*.launch.py` | meistar_description, meister_serial_bridge |
-| `meister_vision` | YOLOv8n ONNX 検出 → `detections` | `meister_vision/detection_node.py` | — |
+| `meister_vision` | YOLOv8n ONNX 検出 → `detections` | `detection_node` / `hand_landmarks_node` / `pc_camera`（いずれも C++） | OpenCV, ONNX Runtime |
 | `meister_web_nav` | Web UI（地図・現在地・経路） | `meister_web_nav/web_nav_server.py` | meistar_description |
 | `meister_serial_bridge` | **`/cmd_vel` → UART フレーム、`/esp32/state` ← FB_STATE** | `serial_bridge` / `meister_comm_check` / `meister_hz_measure`（いずれも C++） | libserial, firmware の protocol ソース |
 
@@ -62,6 +62,34 @@ Python 版から変えていないので `launch/` と `kill_ros.sh` は無変�
 > `src/meister_protocol.cpp` を `CMakeLists.txt` が相対パスで直接コンパイルする。
 > 軸数を変えるときは `meister_config.h` の定数と firmware のテストだけで済む。
 > PC 側の値域クランプも同じ `generated_config.h` を読むので二重定義は残っていない。
+
+### `meister_vision` 内部（検出基盤）
+
+2026-10-05 に `ament_python` から `ament_cmake` へ移行した。実行ファイル名は
+Python 版から変えていないので `launch/` `start_vision.sh` `kill_ros.sh` は
+無変更で動く。ノードは 3 本（物体検出・手中 keypoint・PC カメラ）。
+
+| ファイル | 役割 | 備考 |
+|---|---|---|
+| `include/.../letterbox.hpp` / `src/letterbox.cpp` | 640 正方形化（灰色 114 で pad） | 偶数丸めは `std::nearbyint`。Python の `round()` に揃える |
+| `include/.../nms.hpp` / `src/nms.cpp` | 重複抑制 | **OpenCV 4.6 の C++ 版は戻り値が void で第 5 引数が out パラメータ**。Python 版と API 形状が違う |
+| `include/.../onnx_session.hpp` / `src/onnx_session.cpp` | ONNX Runtime の薄いラッパ（pimpl） | 1 入出力・静的 rank 4 を強制。`Ort::Env` はプロセス共有 |
+| `include/.../yolo_detector.hpp` / `src/yolo_detector.cpp` | 検出器と後処理（84 要素の格子走査・argmax・xyxy 復元） | NMS に渡す score_threshold は 0.0（conf はここで既に切っている） |
+| `include/.../hand_landmark_detector.hpp` / `src/hand_landmark_detector.cpp` | 手中 keypoint。NCHW / NHWC を shape から推定 | **★要確認★** モデルの一次情報は未取得。契約はヘッダ冒頭に隔離してある |
+| `include/.../image_util.hpp` / `src/image_util.cpp` | `sensor_msgs/Image` ⇄ `cv::Mat`（9 種の encoding） | `cv_bridge` 不使用。未知 encoding は拒否（uint8 のまま読むと静かに壊れる） |
+| `include/.../draw.hpp` / `src/draw.cpp` | 検出枠とラベルの描画 | 入力は破壊しない |
+| `src/detection_node.cpp` | rclcpp ノード `meister_vision`。購読者 0 なら推論を止める | 推定失敗で購読は止めない |
+| `src/hand_landmarks_node.cpp` | rclcpp ノード `hand_landmarks`。検出外れは `hand_timeout_sec` 超過で空配列を **1 度だけ** 配信 | 検出時刻は**処理完了**時刻（推論に時間がかかると猶予を消費する） |
+| `src/pc_camera_node.cpp` | rclcpp ノード `pc_camera`。`cv::VideoCapture` で `/camera/image_raw` を配信 | デバイス不在でも落とさず毎周期エラー + 開き直し |
+| `scripts/download_model.py` | モデルのダウンロード | **Python のまま据え置き**。ネットワーク取得だけで C++ にすると libcurl 依存が増えるだけ |
+
+> `cv_bridge` は使わない。numpy 2.x との ABI 非互換で import できない環境が
+> あり、推測で埋めた変換は静かに壊れるため `image_util.hpp` 1 箇所に閉じた（R2）。
+
+> `hand_landmarks.onnx` は `.gitignore` 済みで**一次情報を取得できていない**。
+> 入力（静的 4 次元・channels==3）と出力 `(1, K, 3)`、`K = 21`、添字順が
+> MediaPipe 21 点想定を前提に置く判断は保留。実モデルから shape と
+> 添字順を実測するまで確定ではない（R4）。
 
 ---
 
@@ -150,6 +178,7 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 |---|---|---|
 | firmware プロトコル / バス codec / 運動学 | `cd firmware && pio test -e native` | 55 cases |
 | bridge (C++, gtest) | `colcon test --packages-select meister_serial_bridge` | 43 cases |
+| vision (C++, gtest) | `colcon test --packages-select meister_vision` | 54 cases（実モデル不要） |
 | firmware ビルド | `cd firmware && pio run -e esp32dev -e esp32dev_usbuart` | 2 env |
 | 全体ビルド | `./build.sh` | 5 packages |
 | 通信の動作確認 | `ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0` | 3 手順 |
