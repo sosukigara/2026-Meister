@@ -73,7 +73,7 @@ enum TypeId : uint8_t {
 // 台数・値域
 //
 // 値は config/meister_robot.yaml が唯一の出所で、tools/gen_config.py が
-// firmware/include/hal/generated_config.h に生成する。ここでは再定義せず
+// firmware/main/include/hal/generated_config.h に生成する。ここでは再定義せず
 // using で参照するだけにして、値が 2 か所に存在しないようにする。
 // ---------------------------------------------------------------------------
 using config::kNumDriveMotors;

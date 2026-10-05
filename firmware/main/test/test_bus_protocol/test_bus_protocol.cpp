@@ -1,7 +1,7 @@
 /*
  * test_bus_protocol.cpp — STS/SCS バス codec のホスト側ユニットテスト（Unity）
  *
- * 実行: `pio test -e native`（firmware/ ディレクトリ内で）
+ * 実行: `pio test -e native`（firmware/main/ ディレクトリ内で）
  *
  * 期待バイト列は Feetech 公式 Python SDK `feetech-servo-sdk` 1.0.0 を
  * 実際に走らせて採った golden。手で算出した値ではない。

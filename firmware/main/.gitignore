@@ -1,0 +1,6 @@
+# PlatformIO ビルド成果物・キャッシュ
+.pio/
+
+# pioarduino（platform = espressif32 無指定）が書く ESP-IDF 用マニフェスト
+src/idf_component.yml
+src/idf_component.yml.orig
