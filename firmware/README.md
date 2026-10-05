@@ -125,8 +125,7 @@ pio run -e esp32dev -t upload           # 実機用（GPIO16/17 経由）
 
 ```bash
 cd firmware && pio run -e esp32dev_usbuart -t upload
-cd ../src/meister_serial_bridge
-python3 -m meister_serial_bridge.comm_check --port /dev/ttyUSB0
+ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0
 ```
 
 ```
@@ -134,7 +133,7 @@ port: /dev/ttyUSB0  (/dev/serial/by-id/usb-Silicon_Labs_CP2102N_...-port0)  baud
   [OK] uplink    enc(placeholder)=[-988, -851, -714, -577, -440, -303] state=0x00 error=0x00
   [OK] downlink  CMD_MOTOR_VELOCITY, CMD_STEERING_ANGLE, CMD_ARM_ANGLE, CMD_GRIPPER -> ... error=0x00
   [OK] err_flag  corrupt frame -> error_flags |= 0x08
-PASS: PC <-> ESP32 通信を確認しました。
+PASS: PC と ESP32 の通信を確認しました。
 ```
 
 - `uplink` — FB_STATE をチェックサム検証付きで受け取れるか（ESP32 → PC）
@@ -164,8 +163,7 @@ ROS 2 経由の動作は `ros2 launch meister_serial_bridge serial_bridge.launch
 ```bash
 cd firmware
 pio run -e esp32dev_usbuart -t upload
-cd ../src/meister_serial_bridge
-python3 -m meister_serial_bridge.feedback_hz_measure \
+ros2 run meister_serial_bridge meister_hz_measure \
     --port /dev/ttyUSB0 --duration 5 --with-commands --expect-hz 100
 ```
 

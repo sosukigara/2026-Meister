@@ -40,19 +40,28 @@
 | `ros2_autonomous_nav` | Nav2 / SLAM / `real_robot.launch.py` | 各 `launch/*.launch.py` | meistar_description, meister_serial_bridge |
 | `meister_vision` | YOLOv8n ONNX 検出 → `detections` | `meister_vision/detection_node.py` | — |
 | `meister_web_nav` | Web UI（地図・現在地・経路） | `meister_web_nav/web_nav_server.py` | meistar_description |
-| `meister_serial_bridge` | **`/cmd_vel` → UART フレーム、`/esp32/state` ← FB_STATE** | `serial_bridge_node.py` / `comm_check.py` / `feedback_hz_measure.py` | — |
+| `meister_serial_bridge` | **`/cmd_vel` → UART フレーム、`/esp32/state` ← FB_STATE** | `serial_bridge` / `meister_comm_check` / `meister_hz_measure`（いずれも C++） | libserial, firmware の protocol ソース |
 
 ### `meister_serial_bridge` 内部（PC 側と ESP32 側の接点。ここ最重要）
 
+2026-10-05 に `ament_python` から `ament_cmake` へ移行した。実行ファイル名は
+Python 版から変えていないので `launch/` と `kill_ros.sh` は無変更で動く。
+
 | ファイル | 役割 | 備考 |
 |---|---|---|
-| `protocol.py` | **フレーム codec（C++ 版とバイト単位で同じ）** | `encode_*` / `FrameParser`。Python 側で唯一のプロトコル定義。rclpy 非依存なので単体で import できる |
-| `kinematics.py` | `Twist` → (舵角, 速度) の変換 | 純粋関数。`test_kinematics.py` でカバー |
-| `serial_bridge_node.py` | ROS ノード本体。`/cmd_vel` 購読 → フレーム送信、`/esp32/state` 配信、`cmd_timeout` ウォッチドッグ | 実機排他的に UART を持つ |
-| `comm_check.py` | ベンチ確認 CLI（`ros2 run … meister_comm_check`） | uplink / downlink / err_flag の 3 手順。ROS 非依存 |
-| `feedback_hz_measure.py` | FB_STATE 周期の実測 CLI | フレーム数・エラーフラグ・欠落を検証。ROS 非依存 |
+| `include/.../frames.hpp` / `src/frames.cpp` | フレーム組み立てと**値域クランプ** | `hal/generated_config.h` の値域を唯一の定義として使う |
+| `include/.../stream_parser.hpp` | 増分パーサ（UART の途中分割に耐える） | `firmware/src/meister_protocol.cpp` の `ParseFrame` を包むだけ |
+| `include/.../serial_io.hpp` | `SerialIo` 抽象（`Read` / `Write` / `Flush` / DTR / RTS） | libserial 1.0.0 には pyserial の `timeout` 相当が無いので引数で渡す |
+| `include/.../kinematics.hpp` | `Twist` → (舵角, 速度) の変換 | 純粋関数。丸めは `std::nearbyint` で Python の `round()`（偶数丸め）に揃える |
+| `include/.../bridge_core.hpp` | ROS 非依存の中核（ウォッチドッグ・再オープン・受信ループ） | `Clock` を注入するので gtest から実時間なしで検証できる |
+| `src/serial_bridge_node.cpp` | rclcpp ノード。`BridgeCore` の薄い適応層だけ | 実機排他的に UART を持つ |
+| `src/comm_check.cpp` + `comm_check_main.cpp` | ベンチ確認 CLI（uplink / downlink / err_flag の 3 手順） | ROS 非依存 |
+| `src/feedback_hz_measure.cpp` + `feedback_hz_measure_main.cpp` | FB_STATE 周期の実測 CLI | ROS 非依存 |
 
-> **`protocol.py` は `firmware/include/meister_protocol.h` とバイト単位で一致していなければならない。**両者の軸数を変えるときは必ず両方直す（`test_protocol.py` / `test_protocol.cpp` が同じ入力で同じ出力を返すことを保証している）。
+> **プロトコルは Python と C++ の二重定義をやめた。**`include/meister_protocol.h` と
+> `src/meister_protocol.cpp` を `CMakeLists.txt` が相対パスで直接コンパイルする。
+> 軸数を変えるときは `meister_config.h` の定数と firmware のテストだけで済む。
+> PC 側の値域クランプも同じ `generated_config.h` を読むので二重定義は残っていない。
 
 ---
 
@@ -67,11 +76,11 @@
 | `src/base_chassis.cpp` / `src/arm.cpp` | 50 / 50 | 足回り（モータ 6 + ステアリング 6）、アーム 4 軸 + グリッパー | 静的インスタンスは作らず、初期化リストで構築順を示す |
 | `src/feedback.cpp` | 34 | FB_STATE の定周期送出 | 送信間隔は `config::kFeedbackIntervalMs` |
 | `src/hal/*.cpp` | 25〜61 | LEDC ラッパ / PWM サーボ / コンソールサーボ / モータ / プロトコル UART | 2.x と 3.x の API 差はここに閉じている |
-| `include/hal/generated_config.h` | 生成物 | `config/meister_robot.yaml` から `tools/gen_config.py` で生成 | 機構はこの定数表を読む |
+| `include/hal/generated_config.h` | 生成物 | `config/meister_robot.yaml` から `tools/gen_config.py` で生成（Python 出力は 2026-10-05 に削除） | firmware と PC 側 bridge がこの 1 本を共有する |
 | `include/meister_config.h` | 手書き | `MSTE_*` マクロとバックエンド選択のみ。定数は生成物側にない | 生成物を include する |
-| `include/meister_protocol.h` | 197 | TypeId・軸数・値域・サイズ・Frame 構造・関数宣言 | 変更しない（PC 側 `protocol.py` とバイト単位で一致させる） |
+| `include/meister_protocol.h` | 197 | TypeId・軸数・値域・サイズ・Frame 構造・関数宣言 | PC 側 bridge が直接コンパイルするので二重定義なし |
 | `src/meister_protocol.cpp` | 178 | エンコード / デコード / チェックサム | Arduino 非依存 |
-| `test/test_protocol/` `test/test_bus_protocol/` | — | Unity テスト（`pio test -e native`、38 cases） | 両方とも Arduino 非依存 |
+| `test/test_protocol/` `test/test_bus_protocol/` `test/test_kinematics/` | — | Unity テスト（`pio test -e native`、55 cases） | 全て Arduino 非依存 |
 
 ### ピン割当の二重定義は解消済み
 
@@ -130,7 +139,8 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 
 > 現プロトコルは `steering 6ch` / `arm 4ch` / `gripper 1ch` で BOM と不一致。
 > 軸数は **`meister_config.h` の定数から導出する**方針にして、実物の確認後に
-> 1 箇所の変更で済むようにする（`protocol.h` / `protocol.py` / テストは追従）。
+> 1 箇所の変更で済むようにする。PC 側も同じ定数表を `generated_config.h`
+> 経由で読むので、`protocol.h` 以外を触る必要は無い。
 
 ---
 
@@ -138,8 +148,8 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 
 | 対象 | コマンド | 現状 |
 |---|---|---|
-| firmware プロトコル / バス codec | `cd firmware && pio test -e native` | 38 cases |
-| bridge (Python) | `cd src/meister_serial_bridge && PYTHONPATH=. python3 -m pytest test/` | 22 cases |
+| firmware プロトコル / バス codec / 運動学 | `cd firmware && pio test -e native` | 55 cases |
+| bridge (C++, gtest) | `colcon test --packages-select meister_serial_bridge` | 43 cases |
 | firmware ビルド | `cd firmware && pio run -e esp32dev -e esp32dev_usbuart` | 2 env |
 | 全体ビルド | `./build.sh` | 5 packages |
 | 通信の動作確認 | `ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0` | 3 手順 |
@@ -161,9 +171,9 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 ## 6. 設定変更時のチェックリスト
 
 - `firmware/platformio.ini` の `MSTE_*` を変える → `include/meister_config.h` のフォールバックも変える（`src/` はマクロを直接参照しない）
-- プロトコルの軸数を変える → `firmware/include/meister_protocol.h` **と** `src/meister_serial_bridge/meister_serial_bridge/protocol.py` **と** 両方のテストの期望値を変える
+- プロトコルの軸数を変える → `config/meister_robot.yaml` を直して `python3 tools/gen_config.py`。生成された `generated_config.h` が firmware と PC 側 bridge の両方に入る
 - ピン番号を変える → `pio run -e esp32dev -e esp32dev_usbuart`（両 env 都要）と実機 `comm_check`
-- Python のみの変更 → `pytest`。C++ 変更 → `pio test -e native`
+- firmware の C++ 変更 → `cd firmware && pio test -e native`。ROS パッケージの C++ 変更 → `colcon test --packages-select <pkg>`
 - 実機挙動を変更 → `comm_check` 3 手順（uplink / downlink / err_flag）
 
 ## 7. 通信周期の決定（2026-09-27 合意）
