@@ -1,8 +1,8 @@
 """ESP32 ⇔ PC 通信のベンチ確認 CLI.
 
 モータやサーボを動かさずに、プロトコル通信が成立しているかを 1 コマンドで検証する。
-firmware の `esp32dev_usbuart` 環境（プロトコル UART = USB/UART0）へ書き込んだ
-ESP32 に対して使う。
+`firmware/main/platformio.ini` の `esp32dev_usbuart` 環境（プロトコル UART = USB/UART0）
+へ書き込んだ ESP32 に対して使う。
 
   1. uplink    ESP32 からの FB_STATE をチェックサム検証付きで受け取れるか
   2. downlink  4 種の有効なコマンドを送り、FB_STATE にプロトコルエラーフラグが
@@ -81,8 +81,8 @@ class Feedback:
         return bool(self.error_flags & FB_ERROR_PROTOCOL)
 
     def describe(self) -> str:
-        # enc[6] は実エンコーダではなく firmware の時間由来ダミー値
-        # (main.cpp の sendFeedbackIfDue)。誤解を避けるため placeholder と明示する。
+        # enc[6] は実エンコーダではなく firmware/main/src/main.cpp の時間由来ダミー値
+        # (sendFeedbackIfDue)。誤解を避けるため placeholder と明示する。
         return (f'enc(placeholder)={list(self.encoders)} '
                 f'state=0x{self.state:02x} error=0x{self.error_flags:02x}')
 

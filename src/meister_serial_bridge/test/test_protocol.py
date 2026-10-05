@@ -1,4 +1,4 @@
-"""protocol.py のテスト: フレーム形式が firmware/include/meister_protocol.h と一致すること。"""
+"""protocol.py のテスト: フレーム形式が firmware/main/include/meister_protocol.h と一致すること。"""
 
 from meister_serial_bridge import protocol as p
 
