@@ -25,9 +25,10 @@ firmware/
 │   ├── base_chassis.cpp  arm.cpp  command_dispatch.cpp  feedback.cpp
 │   ├── hal/                    # hal/ の実装（Arduino 依存はここだけ）
 │   └── meister_protocol.cpp    # エンコード/デコード実装（Arduino 非依存）
-└── test/
-    ├── test_protocol/          # プロトコル層のホスト側ユニットテスト（Unity）
-    └── test_bus_protocol/      # STS/SCS バス codec のホスト側ユニットテスト
+├── test/
+│   ├── test_protocol/          # プロトコル層のホスト側ユニットテスト（Unity）
+│   └── test_bus_protocol/      # STS/SCS バス codec のホスト側ユニットテスト
+└── foc/                       # 別 PlatformIO プロジェクト（下記「MKS ESP32 FOC」参照）
 ```
 
 依存の向きは片方向のみ: `main → command_dispatch → 機構（base_chassis / arm）→ hal`。
@@ -214,6 +215,22 @@ pio test -e native
 
 `pio test -e native` は ESP32 不要で、エンコード/デコードのラウンドトリップ・
 チェックサム検証・不正フレーム（ヘッダ/チェックサム/未知種別/途中切れ）の拒否を検証する。
+
+## `foc/` — 別 PlatformIO プロジェクト
+
+`foc/` は MKS ESP32 FOC V2.0（M1 チャンネル）を SimpleFOC でウィンチとして回すための
+**独立した PlatformIO プロジェクト**。独自の `platformio.ini` と `.pio/` を持ち、
+**本ファームウェアのビルドには含まれない**。MSTE のバイナリプロトコルとは共有するコードが
+なく、`cd firmware && pio run` は `foc/` を読まない。
+
+```bash
+cd firmware/foc
+pio run -e foc_m1 -t upload     # 書き込み
+pio device monitor -b 115200    # C / L / Z / T / W / A / S / ?
+pio test -e native               # コンソール層のホスト側テスト
+```
+
+配線表・コマンド一覧・安全上の注意・要確認値は [`foc/README.md`](foc/README.md) にある。
 
 ## サーボ制御の設計
 
