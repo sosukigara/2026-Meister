@@ -21,7 +21,8 @@ from meister_vision.yolo_detector import (  # noqa: E402
     COCO_CLASSES, Detection, YOLODetector, letterbox, nms,
     resolve_model_path,
 )
-from meister_vision.detection_node import _bgr_from_image_msg  # noqa: E402
+import meister_vision.detection_node as detection_node  # noqa: E402
+from meister_vision.detection_node import ImageConversionError  # noqa: E402
 from sensor_msgs.msg import Image as ImageMsg  # noqa: E402
 
 
@@ -241,31 +242,55 @@ def _make_image_msg(bgr: np.ndarray, encoding: str) -> ImageMsg:
     return msg
 
 
+@pytest.fixture(params=["cv_bridge", "numpy_fallback"])
+def conversion_path(request, monkeypatch):
+    """変換経路 (_HAS_CV_BRIDGE) を固定し、両経路を必ず 1 回ずつテストする。
+
+    numpy 2.x 環境は cv_bridge が使えず、フラグ其自然のままでは
+    手動経路が一度も実行されない。cv_bridge 経路は実体が要るため、
+    その経路を選べない環境では skip する。
+    """
+    if request.param == "cv_bridge":
+        if not detection_node._HAS_CV_BRIDGE:
+            pytest.skip("この環境は cv_bridge が利用できない")
+        expected = True
+    else:
+        monkeypatch.setattr(detection_node, "_HAS_CV_BRIDGE", False)
+        expected = False
+    # 切替が効いていないとテストが無言で意味を失うので確認する。
+    # teardown は monkeypatch が担うので、失敗しても他テストへ漏れない。
+    assert detection_node._HAS_CV_BRIDGE is expected
+    return request.param
+
+
 class TestImageConversion:
-    def test_bgr8_roundtrip(self):
+    def test_bgr8_roundtrip(self, conversion_path):
         """bgr8 はそのまま返る。"""
         bgr = np.zeros((480, 640, 3), dtype=np.uint8)
         bgr[:, :, 0] = 200
         bgr[:, :, 1] = 100
         bgr[:, :, 2] = 50
-        out = _bgr_from_image_msg(_make_image_msg(bgr, "bgr8"))
+        out = detection_node._bgr_from_image_msg(
+            _make_image_msg(bgr, "bgr8"))
         np.testing.assert_array_equal(out, bgr)
 
-    def test_rgb8_converted_to_bgr(self):
+    def test_rgb8_converted_to_bgr(self, conversion_path):
         """rgb8 はチャンネルが入れ替わる。"""
         bgr = np.zeros((10, 10, 3), dtype=np.uint8)
         bgr[:, :, 0] = 200  # B
         bgr[:, :, 2] = 50   # R
-        out = _bgr_from_image_msg(_make_image_msg(bgr, "rgb8"))
+        out = detection_node._bgr_from_image_msg(
+            _make_image_msg(bgr, "rgb8"))
         np.testing.assert_array_equal(out, bgr)
 
-    def test_yuv422_yuy2_converted_to_bgr(self):
+    def test_yuv422_yuy2_converted_to_bgr(self, conversion_path):
         """usb_cam の yuv422_yuy2 が BGR に変換される。"""
         bgr = np.zeros((16, 16, 3), dtype=np.uint8)
         bgr[:, :, 0] = 200  # B
         bgr[:, :, 1] = 100  # G
         bgr[:, :, 2] = 50   # R
-        out = _bgr_from_image_msg(_make_image_msg(bgr, "yuv422_yuy2"))
+        out = detection_node._bgr_from_image_msg(
+            _make_image_msg(bgr, "yuv422_yuy2"))
         assert out.shape == bgr.shape
         assert out.dtype == np.uint8
         # 可逆性はないが、完全に壊れていないこと (分散が0でない)
@@ -273,9 +298,26 @@ class TestImageConversion:
         # 色相の大まかな傾向: 青成分が赤成分より大きい
         assert out[:, :, 0].mean() > out[:, :, 2].mean()
 
-    def test_unsupported_encoding_raises(self):
-        """未対応エンコーディングは ValueError を送出する。"""
+    def test_unsupported_encoding_raises(self, conversion_path):
+        """未対応エンコーディングは ValueError 派生で通知されること。
+
+        cv_bridge 経路は CvBridgeError (TypeError 派生) を素通しする
+        ので、この型が両経路で一致していなければ呼び出し側の
+        except ValueError が経路依存で壊れる。
+        """
         msg = _make_image_msg(np.zeros((8, 8, 3), dtype=np.uint8), "bgr8")
         msg.encoding = "invalid_xyz"
-        with pytest.raises(ValueError):
-            _bgr_from_image_msg(msg)
+        with pytest.raises(ImageConversionError) as excinfo:
+            detection_node._bgr_from_image_msg(msg)
+        assert isinstance(excinfo.value, ValueError)
+        # 何が原因かを文字列から特定できること
+        assert "invalid_xyz" in str(excinfo.value)
+        # 原因連鎖の有無で実際にどちらの経路が走ったか判別できる。
+        # 経路を固定せずに片方だけを死ませても正常系テストは通ってしまう
+        # ため、例外の由来まで見ておく。
+        if conversion_path == "cv_bridge":
+            assert excinfo.value.__cause__ is not None, (
+                "cv_bridge 経路なら元の CvBridgeError が原因として残る")
+        else:
+            assert excinfo.value.__cause__ is None, (
+                "手動経路に cv_bridge の例外は含まれない")

@@ -201,14 +201,19 @@ class YOLODetector:
         )
         self._input_name = self._session.get_inputs()[0].name
         self._output_name = self._session.get_outputs()[0].name
-        # 入力名が images の YOLOv8 モデルは BGR→RGB 変換が必要
-        self._needs_rgb = self._input_name == "images"
+        # 入力名は run() のキーにしか使わない。チャンネル順は名前から
+        # 推測しない (別モデルで静かに壊れるため)。理由は _preprocess 参照。
 
     def _preprocess(
         self, image_bgr: np.ndarray,
     ) -> Tuple[np.ndarray, float, int, int]:
         """BGR 画像を (1,3,640,640) float32 の ONNX 入力に変換する。"""
         padded, ratio, pad_w, pad_h = letterbox(image_bgr)
+        # swapRB=True は無条件の BGR→RGB。チャンネル順は入力名でも入力 shape
+        # でも判定できない (ONNX には RGB/BGR の表現がなく metadata も
+        # channels=3 の数だけ) ので、「Ultralytics は RGB で学習した」という
+        # モデル契約として固定する。名前や shape で推測すると別モデルで
+        # 静かに壊れる。
         blob = cv2.dnn.blobFromImage(
             padded, 1.0 / 255.0, (INPUT_SIZE, INPUT_SIZE), swapRB=True)
         return blob, ratio, pad_w, pad_h
