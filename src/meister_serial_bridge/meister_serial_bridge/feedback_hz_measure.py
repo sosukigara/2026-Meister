@@ -11,8 +11,9 @@
   - `error_flags` のプロトコルエラーフラグが立っていないか（双方向健全性）
   - 受信バイト数と復号フレーム数が整合しているか（欠落の検出）
 
-注意: `MSTE_FEEDBACK_HZ` は 1000 の約数でなければならない（firmware の
-`static_assert` で強制）。200 Hz 以下の値で測ることが推奨。
+注意: `MSTE_FEEDBACK_HZ` は 1000 の約数でなければならない
+(firmware/main/include/meister_config.h の `static_assert` で強制)。200 Hz 以下の値で
+測ることが推奨。
 """
 
 from __future__ import annotations

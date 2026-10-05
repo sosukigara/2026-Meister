@@ -1,6 +1,6 @@
 """Meister UART プロトコル — Python 実装 (PC 側).
 
-firmware/include/meister_protocol.h と同一フォーマットのエンコーダ/パーサ。
+firmware/main/include/meister_protocol.h と同一フォーマットのエンコーダ/パーサ。
 固定長バイナリフレーム + XOR チェックサム、リトルエンディアン。
 
   [0]      ヘッダ     0xA5
@@ -34,7 +34,7 @@ MAX_STEERING = 900
 MIN_ARM_ANGLE = 0
 MAX_ARM_ANGLE = 1800
 
-# FB_STATE の error_flags ビット（firmware/include/meister_protocol.h の
+# FB_STATE の error_flags ビット（firmware/main/include/meister_protocol.h の
 # FbErrorFlags と同値）。
 FB_ERROR_MOTOR = 0x01     # モータ系エラー
 FB_ERROR_SERVO = 0x02     # サーボ系エラー
