@@ -41,15 +41,28 @@ from .yolo_detector import YOLODetector
 _NUMPY_MAJOR = int(np.__version__.split(".")[0])
 if _NUMPY_MAJOR < 2:
     try:
-        from cv_bridge import CvBridge
+        from cv_bridge import CvBridge, CvBridgeError
         _BRIDGE = CvBridge()
+        _CV_BRIDGE_ERROR = CvBridgeError
         _HAS_CV_BRIDGE = True
     except Exception:  # noqa: BLE001
         _BRIDGE = None
+        _CV_BRIDGE_ERROR = ()
         _HAS_CV_BRIDGE = False
 else:
     _BRIDGE = None
+    # 空タプルは例外を一切捕捉しないので、except の型として成立する
+    _CV_BRIDGE_ERROR = ()
     _HAS_CV_BRIDGE = False
+
+
+class ImageConversionError(ValueError):
+    """画像メッセージの変換失敗を表す例外。
+
+    cv_bridge 経路の CvBridgeError は Jazzy では TypeError 派生なので、
+    経路が違うだけで呼び出し側の except が壊れる。ValueError 派生に
+    統一して、経路に依存しない捕捉を可能にする。
+    """
 
 # 手動変換用のエンコーディング → (dtype, channels) マップ
 _ENCODING_INFO = {
@@ -73,9 +86,17 @@ _BOX_THICKNESS = 2
 
 
 def _bgr_from_image_msg(msg: ImageMsg) -> np.ndarray:
-    """sensor_msgs/Image を BGR ndarray に変換する (cv_bridge または手動)。"""
+    """sensor_msgs/Image を BGR ndarray に変換する (cv_bridge または手動)。
+
+    変換できない場合は経路によらず ImageConversionError を送出する。
+    """
     if _HAS_CV_BRIDGE:
-        return _BRIDGE.imgmsg_to_cv2(msg, desired_encoding="bgr8")
+        try:
+            return _BRIDGE.imgmsg_to_cv2(msg, desired_encoding="bgr8")
+        except _CV_BRIDGE_ERROR as exc:
+            # 原因のテキストを残さないと、何が失敗したか切り分けられない
+            raise ImageConversionError(
+                f"画像を変換できません: encoding={msg.encoding} ({exc})") from exc
 
     encoding = msg.encoding
     if encoding in _ENCODING_INFO:
@@ -87,7 +108,7 @@ def _bgr_from_image_msg(msg: ImageMsg) -> np.ndarray:
     elif encoding.endswith("32F"):
         dtype, channels = np.float32, 1
     else:
-        raise ValueError(f"未対応のエンコーディング: {encoding}")
+        raise ImageConversionError(f"未対応のエンコーディング: {encoding}")
 
     arr = np.frombuffer(msg.data, dtype=dtype).reshape(
         msg.height, msg.width, -1)

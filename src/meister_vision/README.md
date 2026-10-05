@@ -31,7 +31,10 @@ src/meister_vision/
 - ROS2 Jazzy (rclpy, sensor_msgs, vision_msgs, cv_bridge)
 - `python3-opencv` (cv2)
 - `python3-numpy`
-- `onnxruntime` (apt に無い場合は pip で導入)
+- `onnxruntime` — **apt には無い**ので pip で導入が必須
+
+`apt-cache policy python3-onnxruntime` は Candidate を出さない (パッケージ不明)。
+そのため `package.xml` に `<exec_depend>` は書かず、pip で入れる:
 
 ```bash
 pip install onnxruntime
