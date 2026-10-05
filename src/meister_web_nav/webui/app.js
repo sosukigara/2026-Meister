@@ -148,15 +148,26 @@ async function loadMap() {
   }
   mapMeta = meta;
   trail = []; // 地図座標が変わり得るため軌跡をリセット
-  canvas.width = meta.width;
-  canvas.height = meta.height;
+  // canvas.width への代入は代入前の値と同じでもビットマップを消す。
+  // 読込に失敗すると地図が白紙のまま固まる。サイズが変わった時だけ代入する。
+  if (canvas.width !== meta.width || canvas.height !== meta.height) {
+    canvas.width = meta.width;
+    canvas.height = meta.height;
+  }
 
   const img = new Image();
   img.onload = () => {
     mapImage = img;
     redraw();
   };
-  img.src = `${meta.image_url}?t=${Date.now()}`;
+  // クエリを付けると URL が毎回変わり、ETag の条件付きリクエストが成立しない。
+  // ETag 前提ならブラウザが自動で If-None-Match を送り、本文なしの 304 を受ける。
+  // 304 は Image() の内部でキャッシュから解決されるので onload は必ず発火し、
+  // 空の本文をエラー扱いしない。mapImage は onload 内でしか代入されないため、
+  // 読込に失敗しても直前の地図は保持される。
+  // サーバは毎回 ETag を返し Cache-Control は no-cache なので、地図が変わって
+  // いない限り 304 が返り本文は転送されない。
+  img.src = meta.image_url;
 }
 
 canvas.addEventListener('pointerdown', (evt) => {
@@ -250,6 +261,9 @@ async function pollPose() {
 }
 
 loadMap();
+// 地図は /map トピックが更新された時だけ変わるので、間隔を縮めても地図は早くならない。
+// ETag が効いた状態でも未更新の 5 秒ごとのコストは条件付きリクエスト 1 回分で、
+// 短くする価値は測定してから決める。
 setInterval(loadMap, 5000);
 setInterval(pollStatus, 1000);
 setInterval(pollPose, 500);
