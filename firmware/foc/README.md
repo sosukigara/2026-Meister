@@ -3,9 +3,9 @@
 A **standalone** PlatformIO project for the MKS ESP32 FOC V2.0 board (channel **M1**)
 driving a BLDC winch with [SimpleFOC](https://simplefoc.cc) 2.2.1.
 
-It is deliberately **not** part of the main `firmware/` MSTE binary-protocol build. It has
-its own `platformio.ini`, its own `.pio/` cache and its own serial command language. Nothing
-in `firmware/src/` imports anything from here.
+It is deliberately **not** part of the sibling `firmware/main/` MSTE binary-protocol build. It
+has its own `platformio.ini`, its own `.pio/` cache and its own serial command language.
+Nothing in `firmware/main/src/` imports anything from here.
 
 The behaviour follows a Japanese article sketch. Where the article and the official MKS
 repository disagree, the **official repository wins** and the discrepancy is listed in
@@ -58,16 +58,17 @@ cd firmware/foc
 pio test -e native
 ```
 
-### Building `foc/` and `../` in the same PlatformIO home
+### Building `foc/` and `main/` in the same PlatformIO home
 
 This project pins `espressif32@6.9.0` (core 2.0.17, `tool-esptoolpy@1.40501.0`) while
-`../platformio.ini` leaves `platform = espressif32` unpinned (pioarduino 55.3.39, core 3.3.9,
+`../main/platformio.ini` leaves `platform = espressif32` unpinned (pioarduino 55.3.39, core 3.3.9,
 `tool-esptoolpy@5.3.0`). Both resolve against the **same** `~/.platformio` package
 directory, so building either one invalidates the other's `tool-esptoolpy` manifest and the
 next build of the other reinstalls it.
 
-Symptom: `pio run -e esp32dev` fails once, immediately after any `espressif32@6.9.0` build,
-with `TypeError` at `platforms/espressif32@src-*/builder/frameworks/arduino.py:531`
+Symptom: `pio run -e esp32dev` run from `firmware/main/` fails once, immediately after any
+`espressif32@6.9.0` build, with `TypeError` at
+`platforms/espressif32@src-*/builder/frameworks/arduino.py:531`
 (`FRAMEWORK_DIR` resolves to `None` while the core is being reinstalled). The second
 `pio run -e esp32dev` succeeds. **✗ 未検証** root cause of the reinstall loop itself.
 
