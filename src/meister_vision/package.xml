@@ -11,11 +11,13 @@
   <exec_depend>sensor_msgs</exec_depend>
   <exec_depend>vision_msgs</exec_depend>
   <exec_depend>cv_bridge</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>python3-numpy</exec_depend>
   <exec_depend>python3-opencv</exec_depend>
 
   <test_depend>pytest</test_depend>
+  <test_depend>vision_msgs</test_depend>
 
   <export>
     <build_type>ament_python</build_type>
