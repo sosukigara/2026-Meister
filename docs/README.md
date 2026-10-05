@@ -50,7 +50,7 @@ Meister/
 ├── start_meister.sh                 # 起動スクリプト（ビルドなし・起動のみ）
 └── src/
     ├── meistar_description/         # ロボットモデル・シミュレーション定義
-    ├── meister_vision/              # 画像認識（onnxruntime YOLO）
+    ├── meister_vision/              # 画像認識（ONNX Runtime + YOLOv8n）
     ├── ros2_autonomous_nav/         # SLAM・ナビゲーションの中核パッケージ
     └── meister_web_nav/             # Web UI（:8088）
 ```

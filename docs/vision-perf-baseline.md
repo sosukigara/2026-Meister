@@ -67,10 +67,15 @@ Orange Pi 5 Max 8GB 実機で以下を測っていない。開発機の値から
 | OS | Ubuntu / x86_64 |
 | ランタイム | `onnxruntime` 1.28.0 / `CPUExecutionProvider` |
 | モデル | `src/meister_vision/models/yolov8n.onnx`（Ultralytics YOLOv8n / COCO 80 クラス） |
-| 入力 | `[1, 3, 640, 640]` float32（`INPUT_SIZE = 640` は `yolo_detector.py:34` で固定） |
-| 出力 | `[1, 84, 8400]`（`end2end:False`。NMS は Python 側の責務） |
+| 入力 | `[1, 3, 640, 640]` float32（入力サイズは `letterbox.hpp` の `kYoloInputSize = 640` で固定） |
+| 出力 | `[1, 84, 8400]`（`end2end:False`。NMS は実行器の責務） |
 | 入力データ | ランダムノイズ画像（**推論時間**の測定であり、検出精度の測定ではない） |
 | 方法 | 事前の暖機 3 回のあとに 15 回の wall clock 平均。`intra_op_num_threads` のみ変更 |
+
+> **この節の数値は移行前の Python 版（onnxruntime 1.28.0）で測った旧基準。**
+> C++ 化で組み込まれた ONNX Runtime は `ros-jazzy-onnxruntime-vendor` の
+> **1.24.3** でバージョンが違う。上の数値を C++ の性能基準として引用しないこと。
+> C++ での再測定は **✗ 未検証**（Orange Pi 5 Max と開発機の双方で未実施）。
 
 ### 2.2 実測結果
 
@@ -88,7 +93,7 @@ Orange Pi 5 Max 8GB 実機で以下を測っていない。開発機の値から
   つまり開発機でも「10 Hz 設定」は実際の達成値になっていない。
 - 4 スレッドでようやく 14.4 Hz の天井に達する。推論 1 本が CPU 4 コア分の
   帯域を食うのが、Nav2 と SLAM と Gazebo と同一 core で競合する理由。
-- NMS は Python 側の純 NumPy 実装で、この測定には**含まれていない**。
+- NMS は C++ 側（`cv::dnn::NMSBoxes`）で、この測定には**含まれていない**。
   実運用では推論時間と NMS 時間と letterbox 時間が加算される。
 
 ### 2.4 Orange Pi 5 Max にそのまま当てはめない理由
@@ -110,6 +115,7 @@ Orange Pi 5 Max 8GB 実機で以下を測っていない。開発機の値から
 
 | 項目 | 判定 |
 |---|---|
+| C++ 化後の推論の遅延（開発機 / Orange Pi） | **✗ 未検証**（ONNX Runtime が 1.28.0 → 1.24.3 に変わっている。2.1 の手順で再測定する） |
 | 開発機での yolov8n の遅延 | **一次情報で実測**（本ファイル 2.2） |
 | 開発機の並列 core 数と RAM の余裕 | **実測**（`lscpu` / `free -m` / providers の一覧） |
 | Orange Pi 5 Max の SoC 構成 | **一次情報で確定**（公式マニュアル v1.2） |
