@@ -15,7 +15,9 @@ setup(
         ('share/' + package_name + '/scripts', glob('scripts/*.py')),
         ('share/' + package_name + '/rviz', glob('rviz/*.rviz')),
     ],
-    install_requires=['setuptools'],
+    # numpy は apt の python3-numpy が主経路。opencv-python は宣言しない:
+    # apt の python3-opencv が同じ cv2 を提供し、pip 版はシステム版を shadow する。
+    install_requires=['setuptools', 'numpy'],
     zip_safe=True,
     maintainer='so',
     maintainer_email='s25089@tokyo.kosen-ac.jp',
@@ -25,6 +27,7 @@ setup(
     entry_points={
         'console_scripts': [
             'detection_node = meister_vision.detection_node:main',
+            'hand_landmarks_node = meister_vision.hand_landmarks_node:main',
             'pc_camera = meister_vision.pc_camera_node:main',
             'download_model = meister_vision.download_model:main',
         ],
