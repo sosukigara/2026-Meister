@@ -1,14 +1,22 @@
 build/
 install/
 log/
-.omo/run-continuation/
-.omo/boulder.json
-.omo/drafts/
 .serena/
 .opencode/
 
 # Session work / local artifacts
-.omo/
+# `.omo/*` (not `.omo/`) is required so git descends into `.omo/` and reads the
+# plans un-exclusion below: git refuses to re-include a path whose parent
+# directory is excluded, so excluding the directory itself would silently keep
+# `.omo/plans/` ignored no matter what follows. Do not collapse these two lines
+# back into `.omo/`.
+.omo/*
+!.omo/plans/
+# Re-applied after the plans un-exclusion: gitignore is last-match-wins, so the
+# children we still want hidden must be listed *after* `!.omo/plans/`.
+.omo/run-continuation/
+.omo/boulder.json
+.omo/drafts/
 .playwright-mcp/
 
 # PlatformIO build artifacts (firmware/)
