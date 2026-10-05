@@ -32,13 +32,20 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 # glob で拾う。固定リストにするとファイル追加時に検査対象から外れる
 # （kinematics.cpp が 4 件の混入を素通りした）。
+CODE_ROOTS = ['firmware'] + sorted(
+    str(p.parent.relative_to(ROOT)) for p in (ROOT / 'src').glob('*')
+    if (p / 'CMakeLists.txt').is_file())
+
+
 def _src(pattern: str) -> list[str]:
-    return sorted(str(p.relative_to(ROOT)) for p in (ROOT / 'firmware').rglob(pattern)
-                  if '.pio' not in p.parts)
+    return sorted(str(p.relative_to(ROOT)) for root in CODE_ROOTS
+                  for p in (ROOT / root).rglob(pattern)
+                  if not {'.pio', 'build'} & set(p.parts))
 
 
-HEADERS = _src('include/**/*.h')
+HEADERS = _src('include/**/*.h') + _src('include/**/*.hpp')
 SOURCES = _src('src/**/*.cpp')
+TESTS = _src('test/**/*.cpp') + _src('test/**/*.hpp')
 DOCS = ['AGENTS.md', 'README.md', 'docs/README.md', 'docs/code-map.md',
         'firmware/README.md', 'config/meister_robot.yaml']
 # docs/ 配下の仕様書は文字化けが最も繰り返されてきた場所なので glob で全部見る
@@ -63,19 +70,20 @@ def scan_text(paths) -> int:
         if not path.is_file():
             continue
         for i, line in enumerate(path.read_text(errors='replace').splitlines(), 1):
+            rel = path.relative_to(ROOT)
             for m in MIXED.finditer(line):
-                print(f'  NG   {path.name}:{i} 連結 {m.group()!r}')
+                print(f'  NG   {rel}:{i} 連結 {m.group()!r}')
                 bad += 1
             for ch in line:
                 if 0xAC00 <= ord(ch) <= 0xD7AF:
-                    print(f'  NG   {path.name}:{i} U+{ord(ch):04X} ハングル')
+                    print(f'  NG   {rel}:{i} U+{ord(ch):04X} ハングル')
                     bad += 1
                 elif ch == '\ufffd':
-                    print(f'  NG   {path.name}:{i} U+FFFD 置換文字')
+                    print(f'  NG   {rel}:{i} U+FFFD 置換文字')
                     bad += 1
             for tok in tokens:
                 if tok in line:
-                    print(f'  NG   {path.name}:{i} blocklist {tok!r}')
+                    print(f'  NG   {rel}:{i} blocklist {tok!r}')
                     bad += 1
     print(f"  {'OK' if bad == 0 else 'NG'}   文字化け residual={bad}")
     return bad
@@ -84,7 +92,7 @@ def scan_text(paths) -> int:
 def scan_structure() -> int:
     bad = 0
     for rel in HEADERS:
-        p = ROOT / 'firmware' / 'include' / rel
+        p = ROOT / rel
         if not p.is_file():
             continue
         text = p.read_text()
@@ -97,7 +105,7 @@ def scan_structure() -> int:
             print(f'  NG   {rel} 名前空間 開{opened} 閉{closed}')
             bad += 1
     for rel in HEADERS:
-        p = ROOT / 'firmware' / 'include' / rel
+        p = ROOT / rel
         if not p.is_file():
             continue
         defs: collections.Counter = collections.Counter()
@@ -134,8 +142,9 @@ def main() -> int:
     rc = scan_structure()
     print('== 2) 文字化け ==')
     rc += scan_text(
-        [ROOT / 'firmware' / 'include' / h for h in HEADERS]
-        + [ROOT / 'firmware' / 'src' / s for s in SOURCES]
+        [ROOT / h for h in HEADERS]
+        + [ROOT / s for s in SOURCES]
+        + [ROOT / t for t in TESTS]
         + [ROOT / d for d in DOCS + TOOLS]
     )
     if opts.config:
