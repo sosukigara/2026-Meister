@@ -1,9 +1,9 @@
 # meister_vision
 
-画像認識の基盤パッケージ (ROS2 ament_python)。機能09「物体把持」の PC 側
+画像認識の基盤パッケージ (ROS2 ament_cmake)。機能09「物体把持」の PC 側
 汎用物体検出レイヤを提供する。
 
-- **推論エンジン**: onnxruntime (torch / ultralytics 非依存)
+- **推論エンジン**: ONNX Runtime (C++ API / torch / ultralytics 非依存)
 - **モデル**: YOLOv8n ONNX (COCO 80クラス、約 12.3 MiB)
 - **処理**: 画像トピック購読 → 検出 → `Detection2DArray` + 描画済み画像を配信
 
@@ -14,30 +14,33 @@
 
 ```
 src/meister_vision/
-├── package.xml / setup.py / setup.cfg
-├── resource/meister_vision      # ament index 用マーカー
-├── meister_vision/
-│   ├── yolo_detector.py         # ONNX YOLOv8n 検出クラス (依存ゼロ)
-│   ├── download_model.py        # モデルダウンロードの実体
-│   └── detection_node.py        # ROS2 ノード
-├── scripts/download_model.py    # ダウンロード用スタンドアロンラッパー
-├── launch/detection.launch.py   # 起動ランチャー
-├── test/test_detector.py        # pytest (letterbox / NMS / 実推論)
-└── README.md
+├── package.xml / CMakeLists.txt
+├── include/meister_vision/
+│   ├── letterbox.hpp            # 640 正方形化的パディング
+│   ├── nms.hpp                  # 重複抑制 (cv::dnn::NMSBoxes)
+│   ├── onnx_session.hpp         # ONNX Runtime の薄いラッパ
+│   ├── yolo_detector.hpp        # 検出器 + 後処理
+│   ├── hand_landmark_detector.hpp
+│   ├── image_util.hpp           # Image <-> cv::Mat
+│   └── draw.hpp                 # 検出枠の描画
+├── src/                         # 上記の実装 + ノード 3 本
+├── scripts/download_model.py    # モデルのダウンロード (Python  据え置き)
+├── launch/                      # 起動ランチャー (Python / launch は Python 専用 API)
+├── models/                      # 実モデル (gitignore 済み)
+└── test/                        # gtest
 ```
+
+`scripts/download_model.py` だけ Python のまま。ネットワーク取得だけで C++ にしても
+libcurl 依存が増えるだけなので、移行対象外にした。
 
 ## 必要な環境
 
-- ROS2 Jazzy (rclpy, sensor_msgs, vision_msgs, cv_bridge)
-- `python3-opencv` (cv2)
-- `python3-numpy`
-- `onnxruntime` — **apt には無い**ので pip で導入が必須
-
-`apt-cache policy python3-onnxruntime` は Candidate を出さない (パッケージ不明)。
-そのため `package.xml` に `<exec_depend>` は書かず、pip で入れる:
+- ROS2 Jazzy (rclcpp, sensor_msgs, vision_msgs, geometry_msgs, ament_index_cpp)
+- OpenCV 4.6 (`libopencv-dev`)
+- ONNX Runtime (`ros-jazzy-onnxruntime-vendor`)
 
 ```bash
-pip install onnxruntime
+sudo apt install libopencv-dev ros-jazzy-onnxruntime-vendor
 ```
 
 ## ビルド
@@ -116,31 +119,40 @@ ros2 run rqt_image_view rqt_image_view
 ## テスト
 
 ```bash
-# ワークスペースルートで (モデルが無ければ自動ダウンロード)
-python3 -m pytest src/meister_vision/test/ -v
+colcon test --packages-select meister_vision
+colcon test-result --all
 ```
 
-> **注意**: ROS Jazzy の `launch_testing` 系 pytest プラグインは pytest 9 と
-> 非互換のため、プラグイン自動ロードを無効にして実行する必要がある環境がある。
+54 ケース。**実モデル不要**で動く純粋関数のみを対象にしている。
 
-```bash
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3 -m pytest src/meister_vision/test/ -v
-```
-
-テスト内容:
-
-- **letterbox 前処理**: 640x640 へのパディングとアスペクト比維持
-- **NMS**: 重なりボックスの抑制・独立ボックスの保持
-- **フルパイプライン**: 合成 stop sign 画像で実モデル検出
+- **letterbox**: 640 正方形化、アスペクト比維持、小画像の拡大
+- **後処理**: cx/cy/w/h → xyxy、letterbox の逆変換、クラス argmax、clamp
+- **NMS**: 重なり抑制・独立ボックス保持・降順
+- **hand landmark**: 入力 layout 推定、decoded 点列、閾値、clip
+- **Image 変換**: 9 種の encoding、step/data の整合、行パディング
 
 ## ノードの内部設計
 
-`YOLODetector` (yolo_detector.py):
+`YoloDetector`:
 
-1. `letterbox()`: アスペクト比を保って 640x640 にリサイズ + 灰色パディング
-2. onnxruntime で推論 (入力 `(1,3,640,640)` float32, 出力 `(1,84,8400)`)
-3. 出力を `[cx, cy, w, h]` + 80クラススコアとしてパース → 元画像座標の xyxy
-4. 純粋 NumPy 実装の `nms()` で重複抑制
+1. `Letterbox()`: アスペクト比を保って 640x640 にリサイズ + 灰色パディング
+2. `OnnxSession` で推論 (入力 `(1,3,640,640)` float32, 出力 `(1,84,8400)`)
+3. `YoloPostprocess()` で `[cx, cy, w, h]` + 80クラススコアを xyxy に復元
+4. `NonMaximumSuppression()` で重複抑制
 
-`cv_bridge` は使える環境なら利用するが、numpy 2.x との ABI 非互換で
-import できない環境では手動のエンコーディング変換にフォールバックする。
+`cv_bridge` は使わない。numpy 2.x との ABI 非互換で import できない環境が
+あり、`image_util.hpp` の手動変換だけを使う。未知の encoding は拒否する
+(uint8 のまま読むとチャンネル数がズレて静かに壊れるため)。
+
+## ★要確認★ のモデル契約
+
+`hand_landmarks.onnx` は .gitignore 済みで一次情報を取得できていない。
+`hand_landmark_detector.hpp` の冒頭に残した前提がそのまま実装，影响する。
+
+- 入力は静的な 4 次元で channels == 3 (NCHW / NHWC のどちらも受理)
+- 出力は `(1, K, 3)`、`K = 21`
+- landmark の並び順は MediaPipe の 21 点想定 (**★要確認★**)
+
+実モデルを取得して出力 shape と添字順を実測で確定するまで、この前提は
+確定的ではない。検出が外れても例外にはせず「手なし」を返すのは Python 版から
+受け継いだ契約。
