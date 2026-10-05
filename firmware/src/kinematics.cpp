@@ -8,7 +8,7 @@
  * kinematics.geometry_filled が false の間、Solve() は必ず kGeometryNotFilled を
  * 返し、指令を一切出力しない。値を確定したら YAML の 1 行を true にするだけで
  * 動き出す。推測値で動かすと、comm_check の 3 手順は PASS したままで配線を誤る。
- * geometry_filled を false のままにして製造cens すること。
+ * geometry_filled を false のままにして製造しないこと。
  */
 #include "kinematics.h"
 
