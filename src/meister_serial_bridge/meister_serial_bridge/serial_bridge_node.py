@@ -2,9 +2,11 @@
 
 ROS 2 の /cmd_vel (target velocity) を受信し、ステアリング舵角 (CMD_STEERING_ANGLE)
 とモータ PWM 速度 (CMD_MOTOR_VELOCITY) フレームに変換して UART 経由で ESP32 へ
-送る。ESP32 からの FB_STATE フィードバックを受信し /esp32/state として配信する。
+送る。/cmd_arm_joint と /cmd_gripper も CMD_ARM_ANGLE / CMD_GRIPPER へ同じ経路で
+変換する。ESP32 からの FB_STATE フィードバックを受信し /esp32/state として配信する。
 
 コマンドが cmd_timeout 秒途絶えたら安全のため速度 0 を送る (ウォッチドッグ)。
+アームは途絶えても停止させない (判断の根拠は _on_watchdog を参照)。
 """
 
 from __future__ import annotations
@@ -17,13 +19,16 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Int16MultiArray
+from std_msgs.msg import Int16MultiArray, UInt8
 
 from meister_serial_bridge.kinematics import twist_to_actuators
 from meister_serial_bridge.protocol import (
+    NUM_ARM_SERVOS,
     TYPE_FB_ERROR,
     TYPE_FB_STATE,
     FrameParser,
+    encode_arm_angle,
+    encode_gripper,
     encode_motor_velocity,
     encode_steering_angle,
 )
@@ -63,11 +68,19 @@ class SerialBridgeNode(Node):
         # ---- 状態 ----
         self._tx_lock = threading.Lock()
         self._last_cmd_time = self.get_clock().now()
+        self._last_arm_time = self.get_clock().now()
         self._zero_sent = False
+        self._arm_idle_logged = False
         self._rx_error_count = 0
 
         # ---- ROS I/F ----
         self._sub = self.create_subscription(Twist, '/cmd_vel', self._on_cmd_vel, 10)
+        # /cmd_vel と同じ cmd_ 規約に揃える。腕とグリッパーは独立購読にする:
+        # 1 本の UART を共有しているので、片方の不通がもう片方を止めない。
+        self._arm_sub = self.create_subscription(
+            Int16MultiArray, '/cmd_arm_joint', self._on_arm_joint, 10)
+        self._gripper_sub = self.create_subscription(
+            UInt8, '/cmd_gripper', self._on_gripper, 10)
         self._state_pub = self.create_publisher(Int16MultiArray, '/esp32/state', 10)
         self._watchdog = self.create_timer(0.1, self._on_watchdog)
         self._rx_thread = threading.Thread(target=self._rx_loop, daemon=True)
@@ -135,8 +148,55 @@ class SerialBridgeNode(Node):
             f'cmd_vel -> steer={steer_tenths / 10.0:.1f}deg vel={vel_permille / 10.0:.1f}%'
         )
 
+    def _on_arm_joint(self, msg: Int16MultiArray) -> None:
+        """関節角 (0.1 度, 4ch) を CMD_ARM_ANGLE にする。
+
+        発行する値は firmware の範囲 0..1800 (0.1 度) を前提とする
+        (hal/generated_config.h の kMinJoint / kMaxJoint)。ノードはクランプ
+        しない: クランプ表を二重に持つと firmware の ClampArm() (command.h)
+        と食い違うとノード側の方が先に効いてしまう (R2/R7)。
+        フレーム境界の保護は encode_arm_angle の責務で、そこが丸める。
+        """
+        if len(msg.data) != NUM_ARM_SERVOS:
+            # 軸数はプロトコルで固定長。数が違うメッセージでコールバックを
+            # 落とすとノードごと死ぬので、無視して警告だけ出す。
+            self.get_logger().warn(
+                f'cmd_arm_joint: expected {NUM_ARM_SERVOS} values, '
+                f'got {len(msg.data)}; ignored',
+                throttle_duration_sec=5.0,
+            )
+            return
+        angles = [int(a) for a in msg.data]
+        self._write_frames([encode_arm_angle(angles)])
+        self._last_arm_time = self.get_clock().now()
+        self._arm_idle_logged = False
+        self.get_logger().debug(
+            f'cmd_arm_joint -> {[a / 10.0 for a in angles]}deg')
+
+    def _on_gripper(self, msg: UInt8) -> None:
+        """0=閉 / 1=開 / 2=停止 を CMD_GRIPPER にする。"""
+        self._write_frames([encode_gripper(msg.data)])
+        self.get_logger().debug(f'cmd_gripper -> {msg.data}')
+
     def _on_watchdog(self) -> None:
-        """cmd_vel が途切れたら速度 0 を送る (1 回だけ)。"""
+        """cmd_vel が途切れたら速度 0 を送る (1 回だけ)。
+
+        アームは停止させず最終指令を保持する。CMD_ARM_ANGLE は絶対位置の
+        目標値 (firmware は arm_.setAngles -> Arm::setAngleTenths) なので、
+        途絶えたときのアームはすでに最終目標で静止している。0 を送ると
+        停止ではなく原点への移動になり、通信断のたびにアームが動き出す。
+        プロトコルにアームの停止命令は無く、0=閉 1=開 2=停止 は
+        グリッパーの値である。保持だけが無害なのでフレームは送らない。
+        保持が始まったことは 1 回だけ警告する（無通信と無指令を区別できる
+        ようにするため。警告が無いのはまだ指令が来ているということだけ）;
+        """
+        if not self._arm_idle_logged:
+            arm_idle = (self.get_clock().now() - self._last_arm_time).nanoseconds * 1e-9
+            if arm_idle >= self._cmd_timeout:
+                self._arm_idle_logged = True
+                self.get_logger().warn(
+                    'arm command timeout -> holding last target',
+                    throttle_duration_sec=5.0)
         if self._zero_sent:
             return
         elapsed = (self.get_clock().now() - self._last_cmd_time).nanoseconds * 1e-9
