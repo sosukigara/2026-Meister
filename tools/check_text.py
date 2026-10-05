@@ -82,7 +82,14 @@ def scan_text(paths) -> int:
                     print(f'  NG   {rel}:{i} U+FFFD 置換文字')
                     bad += 1
             for tok in tokens:
-                if tok in line:
+                # ASCII だけのトークンは単語境界で照合する。部分一致で探すと
+                # -blocklist- の英単語が正当な識別子の部分文字列になって
+                # 全ファイルが赤字になる（実際にそうなった）。
+                if re.fullmatch(r'[A-Za-z0-9_]+', tok):
+                    hit = re.search(rf'\b{re.escape(tok)}\b', line)
+                else:
+                    hit = tok if tok in line else None
+                if hit:
                     print(f'  NG   {rel}:{i} blocklist {tok!r}')
                     bad += 1
     print(f"  {'OK' if bad == 0 else 'NG'}   文字化け residual={bad}")
