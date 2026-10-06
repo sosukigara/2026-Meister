@@ -125,9 +125,10 @@ void FocConsole::serviceTelemetry() {
 
   const uint32_t now = millis();
 
-  // While the open loop runs, expose the measured phase current at 2 Hz so the operator
-  // can see the software chop holding it near kOpenLoopCurrentAmps. '#'-prefixed, so it
-  // stays out of the CSV stream.
+  // While the open loop runs, expose the measured phase current at 2 Hz. There is no
+  // active current limit any more - the 0.5 V open-loop ceiling is what bounds it - so this
+  // is purely so the operator can watch the winding draw. '#'-prefixed, so it stays out of
+  // the CSV stream.
   if (drive_.openLoopActive() && drive_.enabled() &&
       static_cast<int32_t>(now - next_iol_ms_) >= 0) {
     next_iol_ms_ = now + 500;
