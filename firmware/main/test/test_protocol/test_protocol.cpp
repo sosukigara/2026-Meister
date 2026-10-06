@@ -1,7 +1,7 @@
 /*
  * test_protocol.cpp — プロトコル層のホスト側ユニットテスト（Unity）
  *
- * 実行: `pio test -e native`（firmware/ ディレクトリ内で）
+ * 実行: `pio test -e native`（firmware/main/ ディレクトリ内で）
  *
  * カバー範囲:
  *   - 各コマンド種別のエンコード/デコードラウンドトリップ

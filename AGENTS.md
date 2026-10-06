@@ -8,18 +8,18 @@
 
 ## R1. 1 ファイル 1 責務。300 行を超えたら分割を検討する
 
-`firmware/src/main.cpp` は 606 行に 9 セクション（ピン定義 / LEDC ラッパ / モータ /
+`firmware/main/src/main.cpp` は 606 行に 9 セクション（ピン定義 / LEDC ラッパ / モータ /
 サーボ 3 種 / 受信 FSM / ディスパッチ / フィードバック / setup・loop）が同居していた。
 1 機能に変更を掛けると、無関係な箇所まで影響する。
 
 分割の目安:
 
 ```
-firmware/include/hal/     … ハードウェア抽象（Arduino に依存してよい）
-firmware/src/hal/         … 同上、実装
-firmware/include/*.h      … 機構（base_chassis / arm）と設定
-firmware/src/*.cpp        … 同上、実装
-firmware/src/main.cpp     … setup / loop と配線だけ
+firmware/main/include/hal/     … ハードウェア抽象（Arduino に依存してよい）
+firmware/main/src/hal/         … 同上、実装
+firmware/main/include/*.h      … 機構（base_chassis / arm）と設定
+firmware/main/src/*.cpp        … 同上、実装
+firmware/main/src/main.cpp     … setup / loop と配線だけ
 ```
 
 ## R2. 設定値は 1 箇所以外で定義しない
@@ -27,13 +27,13 @@ firmware/src/main.cpp     … setup / loop と配線だけ
 `MSTE_*` の既定値が `platformio.ini` の `build_flags` と `main.cpp` の
 `#ifndef` フォールバックの **2 箇所**にあり、片方だけ直すと不整合が起きていた。
 
-出所は `firmware/include/meister_config.h` に集約する。優先順位は
+出所は `firmware/main/include/meister_config.h` に集約する。優先順位は
 「コンパイル時 `-D` → `meister_config.h` のフォールバック」の 1 経路だけ。
 
 ## R3. 物理定数（ピン / ID / レジスタ）と単位・範囲をコード内に**表で**置く
 
 データシートを見に行くのは 1 回だけにして、规范はコードに残す。
-`firmware/include/hal/feetech_sts_registers.h` がその例で、
+`firmware/main/include/hal/feetech_sts_registers.h` がその例で、
 フレーム構造・命令コード・チェックサム算出・上限サイズを
 出典（SDK のファイル名と行）つきで保有している。
 
@@ -63,7 +63,7 @@ web search が遮断され、SDK にもレジスタマップが入っていな�
 不確実な値を `★要確認★` で隔離するだけでは足りない。**その値が確定するまで、
 機能 pura に发挥しない経路**を用意する。
 
-`firmware/src/kinematics.cpp` の `kGeometryNotFilled` がその例。幾何が埋まるまで
+`firmware/main/src/kinematics.cpp` の `kGeometryNotFilled` がその例。幾何が埋まるまで
 `Solve()` は必ず失敗し、指令は一切出力されない。
 
 理由: 推測値で動くコードを書くと、`meister_comm_check` の 3 手順は **PASS したままで**
@@ -94,10 +94,18 @@ web search が遮断され、SDK にもレジスタマップが入っていな�
 
 ゲートは「ビルドが通った」ではない。
 
+pio 系は `firmware/main/`（pio のプロジェクトルート）を cwd に置く:
+
 ```
+cd firmware/main
 pio run -e esp32dev -e esp32dev_usbuart              # 両 env
 PLATFORMIO_BUILD_FLAGS="-DMSTE_SERVO_DRIVER_DEBUG=1" pio run -e esp32dev
 pio test -e native
+```
+
+`ros2` 系はリポジトリルートを cwd に置く:
+
+```
 python3 -m pytest src/meister_serial_bridge/test/
 ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0
 ```

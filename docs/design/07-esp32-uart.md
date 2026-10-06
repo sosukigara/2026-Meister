@@ -14,8 +14,8 @@
 
 ## 実装済みプロトコル仕様
 
-ESP32 ファームウェアのベース実装（[firmware/](../../firmware/)）に合わせ、以下が確定・実装済み。
-詳細な定数定義は `firmware/include/meister_protocol.h` を参照。
+ESP32 ファームウェアのベース実装（[firmware/main/](../../firmware/main/)）に合わせ、以下が確定・実装済み。
+詳細な定数定義は `firmware/main/include/meister_protocol.h` を参照。
 
 - **フレームフォーマット**: 固定長バイナリ、リトルエンディアン。
   - `[0]` ヘッダ `0xA5`（同期バイト）
@@ -30,7 +30,7 @@ ESP32 ファームウェアのベース実装（[firmware/](../../firmware/)）�
   - `esp32dev_usbuart`: `Serial` = UART0（USB）。配線なしでベンチ確認できる。
     UART0 をコンソールと共有するため、このビルドではログ出力を無効化する
 - **フィードバック周期**: 100 Hz（`MSTE_FEEDBACK_HZ`）。実測に基づく。測定結果は
-  [firmware/README.md](../../firmware/README.md#通信周期の測定) を参照
+  [firmware/main/README.md](../../firmware/main/README.md#通信周期の測定) を参照
 
 ### コマンド（PC → ESP32、下り）
 
@@ -59,7 +59,7 @@ ESP32 ファームウェアのベース実装（[firmware/](../../firmware/)）�
 
 ## 設計図化対象
 
-- [x] フレームフォーマット定義（固定長バイナリ: ヘッダ / 種別 / ペイロード / チェックサム）… 実装済み（`firmware/include/meister_protocol.h`）
+- [x] フレームフォーマット定義（固定長バイナリ: ヘッダ / 種別 / ペイロード / チェックサム）… 実装済み（`firmware/main/include/meister_protocol.h`）
 - [x] コマンド/フィードバックの種別一覧（モータ速度・舵角・サーボ角度・エンコーダ・状態・エラー）… 実装済み
 - [x] シーケンス図（PC からの指令送信 → ESP32 応答 → フィードバック受信）… FB_STATE は
       指令への応答ではなく `MSTE_FEEDBACK_HZ` 周期の定期送信である点も含めて実装・確認済み
