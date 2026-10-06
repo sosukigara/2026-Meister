@@ -17,6 +17,8 @@ enum class Command : uint8_t {
   kTorque,           // T <torque>
   kVelocity,         // W <rev/s>
   kAngle,            // A <rad>
+  kOpenLoop,         // O <rev/s>, sensorless velocity, spin check only
+  kSine,             // N <amp_rps>, TEMP sensorless sine spin check
   kStop,             // S
   kHelp,             // ?
   kError             // unknown verb, missing arg, trailing garbage, non-finite arg

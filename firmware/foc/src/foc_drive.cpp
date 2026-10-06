@@ -20,12 +20,14 @@ bool FocDrive::begin() {
   motor_.linkCurrentSense(&cs_);
 
   // Fast mode has to land before the first sensor read, otherwise init() caches the slow
-  // digital filter for the whole session.
-  if (!board_.setAs5600FastMode()) {
+  // digital filter for the whole session. Its failure is also the sensor-absent signal:
+  // no ACK means nothing to align against, so initFOC() is skipped rather than run blind.
+  sensor_ok_ = board_.setAs5600FastMode();
+  if (!sensor_ok_) {
     Serial.println(F("#ERR AS5600 CONF write failed"));
   }
   sensor_.init(&board_.i2c());
-  motor_.linkSensor(&sensor_);
+  if (sensor_ok_) motor_.linkSensor(&sensor_);
 
   motor_.torque_controller = TorqueControlType::foc_current;
   motor_.controller = MotionControlType::torque;
@@ -50,6 +52,12 @@ bool FocDrive::begin() {
   // init() bakes the limits into the PIDs; initFOC() runs the alignment because
   // zero_electric_angle is still NOT_SET.
   motor_.init();
+  motor_inited_ = true;
+  if (!sensor_ok_) {
+    motor_.disable();
+    Serial.println(F("#NOTE no sensor, closed loop gated. O/N open loop only."));
+    return false;
+  }
   const bool aligned = motor_.initFOC() != 0;
   motor_.disable();
   ready_ = aligned;
@@ -120,8 +128,8 @@ bool FocDrive::setCurrentLimit(float amps) {
   // ceiling until the next init. The limit only bounds the torque mode.
   motor_.current_limit = amps;
   motor_.PID_velocity.limit = amps;
-  if (torque_sp_ > amps) torque_sp_ = amps;
-  if (torque_sp_ < -amps) torque_sp_ = -amps;
+  if (target_ > amps) target_ = amps;
+  if (target_ < -amps) target_ = -amps;
   Serial.print(F("#CUR_LIM "));
   Serial.println(amps, 3);
   return true;
@@ -129,11 +137,12 @@ bool FocDrive::setCurrentLimit(float amps) {
 
 bool FocDrive::commandTorque(float torque) {
   if (!ready_) return false;
+  sine_on_ = false;  // TEMP
+  motor_.voltage_limit = foc_cfg::kVoltageLimitVolts;
   const float limit = motor_.current_limit;
-  torque_sp_ = torque > limit ? limit : (torque < -limit ? -limit : torque);
+  target_ = torque > limit ? limit : (torque < -limit ? -limit : torque);
   motor_.controller = MotionControlType::torque;
   motor_.enable();
-  motor_.move(torque_sp_);
   return true;
 }
 
@@ -141,28 +150,65 @@ bool FocDrive::commandVelocity(float vel_rps) {
   if (!ready_) return false;
   // W 0 is active braking, not a stop. Clearing the velocity integrator first is what the
   // article does to avoid the start-up jerk from a stale wind-up value.
+  sine_on_ = false;  // TEMP
+  motor_.voltage_limit = foc_cfg::kVoltageLimitVolts;
   motor_.controller = MotionControlType::velocity;
   resetVelocityPid();
+  target_ = vel_rps;
   motor_.enable();
-  motor_.move(vel_rps);
   return true;
 }
 
 bool FocDrive::commandAngle(float rad) {
   if (!ready_) return false;
+  sine_on_ = false;  // TEMP
+  motor_.voltage_limit = foc_cfg::kVoltageLimitVolts;
   motor_.controller = MotionControlType::angle;
+  target_ = rad;
   motor_.enable();
-  motor_.move(rad);
+  return true;
+}
+
+bool FocDrive::commandOpenLoopVelocity(float vel_rps) {
+  if (!motor_inited_) return false;
+  sine_on_ = false;  // TEMP
+  motor_.controller = MotionControlType::velocity_openloop;
+  motor_.voltage_limit = foc_cfg::kOpenLoopVoltageVolts;
+  target_ = vel_rps;
+  motor_.enable();
+  return true;
+}
+
+bool FocDrive::commandSine(float amp_rps) {
+  if (!motor_inited_) return false;
+  motor_.controller = MotionControlType::velocity_openloop;
+  motor_.voltage_limit = foc_cfg::kOpenLoopVoltageVolts;
+  sine_amp_ = amp_rps >= 0.0f ? amp_rps : -amp_rps;
+  sine_t0ms_ = millis();
+  sine_on_ = true;
+  motor_.enable();
   return true;
 }
 
 void FocDrive::stop() {
   motor_.disable();
   resetVelocityPid();
-  torque_sp_ = 0.0f;
+  sine_on_ = false;  // TEMP
+  target_ = 0.0f;
 }
 
-void FocDrive::poll() { motor_.move(); }
+void FocDrive::poll() {
+  if (motor_.controller == MotionControlType::velocity_openloop) {
+    if (sine_on_) {  // TEMP
+      const float t = (millis() - sine_t0ms_) * 0.001f;
+      target_ = sine_amp_ * sinf(6.2831853f * foc_cfg::kSineFreqHz * t);
+    }
+    if (motor_.enabled) motor_.move(target_);
+    return;
+  }
+  motor_.loopFOC();
+  if (motor_.enabled) motor_.move(target_);
+}
 
 void FocDrive::resetVelocityPid() {
   const float ramp = motor_.PID_velocity.output_ramp;
