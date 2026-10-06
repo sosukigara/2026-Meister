@@ -98,25 +98,32 @@ second on a bare read.
 | `S` | **STOP.** `motor.disable()` + velocity-PI reset, prints `#STOP`. |
 | `?` | Help plus the safety warnings. |
 
-### Sensorless protection (why it cannot overheat)
+### Sensorless protection (and its hard limit)
 
-An open-loop voltage with no current limit once pushed ~20 A through the 5010
-winding and smoked the wiring. The firmware now caps the energy by construction:
+An open-loop voltage of 2.0 V with no current limit pushed ~20 A through the 5010
+winding and smoked the wiring. The MKS V2.0 example itself calls 2.0 V
+"excessive" and uses 0.5 V for an aircraft motor.
 
-1. `phase_resistance` is set, so SimpleFOC derives the open-loop voltage as
-   `current_limit x phase_resistance` (`BLDCMotor.cpp:622-623`) instead of
-   applying `voltage_limit` raw.
-2. Sensorless runs use `kOpenLoopCurrentAmps` (0.3 A), never the 1.0 A closed-loop
-   limit. 0.3 A into the winding is milliwatts: no meaningful heat even stalled.
-3. Every `O`/`N`/`G` run stops itself after `kOpenLoopTimeoutMs` (10 s,
-   `#TIMEOUT`), and any new `O`/`N`/`G` inside `kOpenLoopCooldownMs` (10 s) is
-   refused (`#BUSY`). Duty never exceeds 50 percent.
-4. `kPhaseResistanceOhms` (0.05) is a safe-leaning lower bound, **not** a
-   measurement. If the motor will not turn on it, do **not** raise anything:
-   measure the winding resistance first (TODO(measure-R)).
+What the firmware does:
 
-Software cannot protect a shorted winding or shorted wiring. Keep the 24 V supply
-current-limited (0.5 A is enough for 0.3 A spin checks) and never leave a
+1. `O`/`N`/`G` run at `kOpenLoopVoltageVolts` (0.5 V), not 2.0 V.
+2. Every run stops itself after `kOpenLoopTimeoutMs` (10 s, `#TIMEOUT`), and a new
+   `O`/`N`/`G` inside `kOpenLoopCooldownMs` (10 s) is refused (`#BUSY`), so duty
+   never exceeds 50 percent.
+
+What the firmware **cannot** do, and why:
+
+- It cannot cap the current. `phase_resistance` is deliberately **not** set:
+  setting it makes SimpleFOC derive the open-loop voltage as
+  `current_limit x phase_resistance` (`BLDCMotor.cpp:622-623`), which for this
+  low-ohm winding is ~0.015 V - below the ESP32 LEDC step (~0.094 V at 24 V) - so
+  the duty rounds to zero and the motor produces no output at all. Using a small
+  current on a low-ohm winding is not achievable through PWM.
+- **The real, only dependable current limit is the bench supply's CC setting.**
+  Set it to 0.5 A before any sensorless run. With CC at 0.5 A the worst case is
+  0.25 W and nothing can overheat, regardless of what the firmware commands.
+
+Software cannot protect a shorted winding or shorted wiring. Never leave a
 sensorless run unattended.
 
 ### Telemetry

@@ -34,10 +34,9 @@ bool FocDrive::begin() {
   motor_.modulation_centered = 0;
 
   motor_.current_limit = foc_cfg::kCurrentLimitAmps;
-  // Set before init(): init() folds current_limit * phase_resistance into the voltage
-  // cap (BLDCMotor.cpp:36-38) and the open-loop modes derive Uq from the same product,
-  // which is what keeps the sensorless current near current_limit by construction.
-  motor_.phase_resistance = foc_cfg::kPhaseResistanceOhms;
+  // phase_resistance is left NOT_SET on purpose. Setting it makes the open-loop modes
+  // derive Uq = current_limit * phase_resistance, which for this low-ohm motor is below
+  // the LEDC resolution and produces no output at all (see foc_config.h).
   motor_.velocity_limit = foc_cfg::kVelocityLimitRps;
   motor_.voltage_limit = foc_cfg::kVoltageLimitVolts;
   motor_.voltage_sensor_align = foc_cfg::kAlignVoltageVolts;
@@ -189,7 +188,9 @@ bool FocDrive::commandOpenLoopVelocity(float vel_rps) {
                              ? user_current_limit_
                              : foc_cfg::kOpenLoopCurrentAmps;
   motor_.voltage_limit = foc_cfg::kOpenLoopVoltageVolts;
-  target_ = vel_rps;
+  // SimpleFOC open-loop targets are rad/s. The command and the UI are in rev/s, so
+  // convert here; without this "O 2" would ask for 2 rad/s (0.32 rev/s) and look stuck.
+  target_ = vel_rps * _2PI;
   openloop_t0ms_ = millis();
   motor_.enable();
   return true;
@@ -206,7 +207,7 @@ bool FocDrive::commandSine(float amp_rps) {
                              ? user_current_limit_
                              : foc_cfg::kOpenLoopCurrentAmps;
   motor_.voltage_limit = foc_cfg::kOpenLoopVoltageVolts;
-  sine_amp_ = amp_rps >= 0.0f ? amp_rps : -amp_rps;
+  sine_amp_ = (amp_rps >= 0.0f ? amp_rps : -amp_rps) * _2PI;  // rev/s -> rad/s
   sine_t0ms_ = millis();
   sine_on_ = true;
   openloop_t0ms_ = sine_t0ms_;

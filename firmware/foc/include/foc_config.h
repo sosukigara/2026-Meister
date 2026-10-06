@@ -55,27 +55,33 @@ constexpr float kGearRatio = 6.0f;   // documented only, no control path consume
 constexpr float kDrumRadiusM = 0.020f;  // documented only, no control path consumes it
 
 constexpr float kCurrentLimitAmps = 1.0f;     // ARTICLE
-// Phase resistance gates the open-loop voltage from inside SimpleFOC:
-// velocityOpenloop/angleOpenloop use Uq = current_limit * phase_resistance
-// (BLDCMotor.cpp:622-623,660-661), so the current physically cannot exceed
-// ~current_limit while this holds. 0.05 ohm is a SAFE-LEANING LOWER bound, not
-// a measurement: with it the cap is 0.05 V / ~1 A for any real winding above
-// 0.05 ohm. TODO(measure-R): measure the 5010 winding and replace this before
-// trusting any load. If the motor will not turn on 0.05 V, DO NOT raise the
-// voltage: measure first.
-constexpr float kPhaseResistanceOhms = 0.05f;
-constexpr float kOpenLoopCurrentAmps = 0.3f;  // sensorless runs at 0.3 A, not 1.0 A:
-                                             // 0.3 A^2 x 0.15 ohm is ~13 mW, no
-                                             // meaningful heat even stalled
+// phase_resistance is deliberately NOT set. Setting it makes SimpleFOC derive the
+// open-loop voltage as Uq = current_limit * phase_resistance
+// (BLDCMotor.cpp:622-623,660-661). For this low-resistance motor that product is
+// ~0.015 V, which is BELOW the ESP32 LEDC resolution at a 24 V supply (one 8-bit
+// step is ~0.094 V), so the duty rounds to zero and the motor gets no output at
+// all - that was the real "it will not spin" cause. It is physically impossible to
+// command a small current on a low-ohm winding through PWM: the only dependable
+// current limit is the bench supply's CC setting. See README "Sensorless
+// protection".
+constexpr float kOpenLoopCurrentAmps = 0.3f;  // advisory only now; the open-loop
+                                              // voltage no longer scales with it.
+                                              // The real cap is the PSU CC.
 constexpr uint32_t kOpenLoopCooldownMs = 10000;  // after any open-loop stop the next
                                                  // O/N/G is refused for 10 s: duty
                                                  // never exceeds 50 percent
-constexpr float kVelocityLimitRps = 130.0f;  // ARTICLE, SimpleFOC native rev/s
+constexpr float kVelocityLimitRps = 20.0f;  // MKS V2.0 example uses 20. SimpleFOC's
+                                           // velocity_limit is rad/s, not rev/s despite
+                                           // this name: it bounds the angle_openloop
+                                           // (G) slew and the closed-loop W ceiling.
 constexpr float kVoltageLimitVolts = 5.0f;   // ARTICLE
-constexpr float kOpenLoopVoltageVolts = 2.0f;  // fallback only: used when
-                                              // phase_resistance is NOT_SET.
-                                              // With kPhaseResistanceOhms set the
-                                              // open loop ignores this cap.
+constexpr float kOpenLoopVoltageVolts = 0.5f;  // MKS V2.0 open-loop example uses
+                                              // 0.5 V and calls 2.0 V "excessive":
+                                              // that 2.0 V is what smoked the wiring.
+                                              // 0.5 V is 2.08% duty at 24 V, above the
+                                              // LEDC resolution, so the motor actually
+                                              // turns. Must be paired with a low PSU
+                                              // CC (0.5 A) - see README.
 constexpr uint32_t kOpenLoopTimeoutMs = 10000;  // open loop always stops itself:
                                                 // bounds the energy even if the
                                                 // current is higher than assumed
