@@ -34,6 +34,10 @@ bool FocDrive::begin() {
   motor_.modulation_centered = 0;
 
   motor_.current_limit = foc_cfg::kCurrentLimitAmps;
+  // Set before init(): init() folds current_limit * phase_resistance into the voltage
+  // cap (BLDCMotor.cpp:36-38) and the open-loop modes derive Uq from the same product,
+  // which is what keeps the sensorless current near current_limit by construction.
+  motor_.phase_resistance = foc_cfg::kPhaseResistanceOhms;
   motor_.velocity_limit = foc_cfg::kVelocityLimitRps;
   motor_.voltage_limit = foc_cfg::kVoltageLimitVolts;
   motor_.voltage_sensor_align = foc_cfg::kAlignVoltageVolts;
@@ -128,6 +132,7 @@ bool FocDrive::setCurrentLimit(float amps) {
   // ceiling until the next init. The limit only bounds the torque mode.
   motor_.current_limit = amps;
   motor_.PID_velocity.limit = amps;
+  user_current_limit_ = amps;
   if (target_ > amps) target_ = amps;
   if (target_ < -amps) target_ = -amps;
   Serial.print(F("#CUR_LIM "));
@@ -138,6 +143,7 @@ bool FocDrive::setCurrentLimit(float amps) {
 bool FocDrive::commandTorque(float torque) {
   if (!ready_) return false;
   sine_on_ = false;  // TEMP
+  motor_.current_limit = user_current_limit_;
   motor_.voltage_limit = foc_cfg::kVoltageLimitVolts;
   const float limit = motor_.current_limit;
   target_ = torque > limit ? limit : (torque < -limit ? -limit : torque);
@@ -151,6 +157,7 @@ bool FocDrive::commandVelocity(float vel_rps) {
   // W 0 is active braking, not a stop. Clearing the velocity integrator first is what the
   // article does to avoid the start-up jerk from a stale wind-up value.
   sine_on_ = false;  // TEMP
+  motor_.current_limit = user_current_limit_;
   motor_.voltage_limit = foc_cfg::kVoltageLimitVolts;
   motor_.controller = MotionControlType::velocity;
   resetVelocityPid();
@@ -162,6 +169,7 @@ bool FocDrive::commandVelocity(float vel_rps) {
 bool FocDrive::commandAngle(float rad) {
   if (!ready_) return false;
   sine_on_ = false;  // TEMP
+  motor_.current_limit = user_current_limit_;
   motor_.voltage_limit = foc_cfg::kVoltageLimitVolts;
   motor_.controller = MotionControlType::angle;
   target_ = rad;
@@ -171,21 +179,55 @@ bool FocDrive::commandAngle(float rad) {
 
 bool FocDrive::commandOpenLoopVelocity(float vel_rps) {
   if (!motor_inited_) return false;
+  if (millis() < openloop_cool_until_) {
+    Serial.println(F("#BUSY cooling, wait"));
+    return false;
+  }
   sine_on_ = false;  // TEMP
   motor_.controller = MotionControlType::velocity_openloop;
+  motor_.current_limit = user_current_limit_ < foc_cfg::kOpenLoopCurrentAmps
+                             ? user_current_limit_
+                             : foc_cfg::kOpenLoopCurrentAmps;
   motor_.voltage_limit = foc_cfg::kOpenLoopVoltageVolts;
   target_ = vel_rps;
+  openloop_t0ms_ = millis();
   motor_.enable();
   return true;
 }
 
 bool FocDrive::commandSine(float amp_rps) {
   if (!motor_inited_) return false;
+  if (millis() < openloop_cool_until_) {
+    Serial.println(F("#BUSY cooling, wait"));
+    return false;
+  }
   motor_.controller = MotionControlType::velocity_openloop;
+  motor_.current_limit = user_current_limit_ < foc_cfg::kOpenLoopCurrentAmps
+                             ? user_current_limit_
+                             : foc_cfg::kOpenLoopCurrentAmps;
   motor_.voltage_limit = foc_cfg::kOpenLoopVoltageVolts;
   sine_amp_ = amp_rps >= 0.0f ? amp_rps : -amp_rps;
   sine_t0ms_ = millis();
   sine_on_ = true;
+  openloop_t0ms_ = sine_t0ms_;
+  motor_.enable();
+  return true;
+}
+
+bool FocDrive::commandAngleOpenLoop(float rad) {
+  if (!motor_inited_) return false;
+  if (millis() < openloop_cool_until_) {
+    Serial.println(F("#BUSY cooling, wait"));
+    return false;
+  }
+  sine_on_ = false;  // TEMP
+  motor_.controller = MotionControlType::angle_openloop;
+  motor_.current_limit = user_current_limit_ < foc_cfg::kOpenLoopCurrentAmps
+                             ? user_current_limit_
+                             : foc_cfg::kOpenLoopCurrentAmps;
+  motor_.voltage_limit = foc_cfg::kOpenLoopVoltageVolts;
+  target_ = rad;
+  openloop_t0ms_ = millis();
   motor_.enable();
   return true;
 }
@@ -194,15 +236,27 @@ void FocDrive::stop() {
   motor_.disable();
   resetVelocityPid();
   sine_on_ = false;  // TEMP
+  openloop_cool_until_ = millis() + foc_cfg::kOpenLoopCooldownMs;
   target_ = 0.0f;
 }
 
 void FocDrive::poll() {
-  if (motor_.controller == MotionControlType::velocity_openloop) {
+  if (motor_.controller == MotionControlType::velocity_openloop ||
+      motor_.controller == MotionControlType::angle_openloop) {  // TEMP G
+    if (motor_.enabled &&
+        millis() - openloop_t0ms_ > foc_cfg::kOpenLoopTimeoutMs) {
+      stop();
+      Serial.println(F("#TIMEOUT open loop stopped"));
+      return;
+    }
     if (sine_on_) {  // TEMP
       const float t = (millis() - sine_t0ms_) * 0.001f;
       target_ = sine_amp_ * sinf(6.2831853f * foc_cfg::kSineFreqHz * t);
     }
+    if (motor_.enabled) motor_.move(target_);
+    return;
+  }
+  if (motor_.controller == MotionControlType::angle_openloop) {  // TEMP G
     if (motor_.enabled) motor_.move(target_);
     return;
   }

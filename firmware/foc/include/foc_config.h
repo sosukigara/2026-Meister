@@ -55,11 +55,30 @@ constexpr float kGearRatio = 6.0f;   // documented only, no control path consume
 constexpr float kDrumRadiusM = 0.020f;  // documented only, no control path consumes it
 
 constexpr float kCurrentLimitAmps = 1.0f;     // ARTICLE
+// Phase resistance gates the open-loop voltage from inside SimpleFOC:
+// velocityOpenloop/angleOpenloop use Uq = current_limit * phase_resistance
+// (BLDCMotor.cpp:622-623,660-661), so the current physically cannot exceed
+// ~current_limit while this holds. 0.05 ohm is a SAFE-LEANING LOWER bound, not
+// a measurement: with it the cap is 0.05 V / ~1 A for any real winding above
+// 0.05 ohm. TODO(measure-R): measure the 5010 winding and replace this before
+// trusting any load. If the motor will not turn on 0.05 V, DO NOT raise the
+// voltage: measure first.
+constexpr float kPhaseResistanceOhms = 0.05f;
+constexpr float kOpenLoopCurrentAmps = 0.3f;  // sensorless runs at 0.3 A, not 1.0 A:
+                                             // 0.3 A^2 x 0.15 ohm is ~13 mW, no
+                                             // meaningful heat even stalled
+constexpr uint32_t kOpenLoopCooldownMs = 10000;  // after any open-loop stop the next
+                                                 // O/N/G is refused for 10 s: duty
+                                                 // never exceeds 50 percent
 constexpr float kVelocityLimitRps = 130.0f;  // ARTICLE, SimpleFOC native rev/s
 constexpr float kVoltageLimitVolts = 5.0f;   // ARTICLE
-constexpr float kOpenLoopVoltageVolts = 2.0f;  // spin check only: enough to turn an
-                                              // unloaded winch, too weak to hurt much
-                                              // when it stalls instead of following
+constexpr float kOpenLoopVoltageVolts = 2.0f;  // fallback only: used when
+                                              // phase_resistance is NOT_SET.
+                                              // With kPhaseResistanceOhms set the
+                                              // open loop ignores this cap.
+constexpr uint32_t kOpenLoopTimeoutMs = 10000;  // open loop always stops itself:
+                                                // bounds the energy even if the
+                                                // current is higher than assumed
 constexpr float kSineFreqHz = 0.25f;  // TEMP: N command sine rate, delete with N
 constexpr float kAlignVoltageVolts = 1.0f;    // ARTICLE, alignment runs with the motor free
 

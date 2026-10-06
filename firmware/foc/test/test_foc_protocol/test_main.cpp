@@ -43,6 +43,7 @@ void test_arg_commands() {
   expectArg("A 1.5708", foc::Command::kAngle, 1.5708f);
   expectArg("O 3", foc::Command::kOpenLoop, 3.0f);
   expectArg("N 2", foc::Command::kSine, 2.0f);  // TEMP
+  expectArg("G 3.14", foc::Command::kAngleOpenLoop, 3.14f);  // TEMP
   expectArg("  W  -12.5  \r", foc::Command::kVelocity, -12.5f);
   expectArg("T 1e2", foc::Command::kTorque, 100.0f);
 }
@@ -60,6 +61,7 @@ void test_unknown_and_malformed() {
   expect("L", foc::Command::kError);
   expect("O", foc::Command::kError);
   expect("N", foc::Command::kError);  // TEMP
+  expect("G", foc::Command::kError);  // TEMP
   expect("W abc", foc::Command::kError);
   expect("T 1.0 junk", foc::Command::kError);  // trailing garbage
   expect("S now", foc::Command::kError);       // trailing garbage on a no-arg verb

@@ -26,19 +26,29 @@ class UI:
         self.port.insert(0, PORT)
         self.port.pack(side=tk.LEFT)
         tk.Button(row, text="connect", command=self.connect).pack(side=tk.LEFT)
-        self.speed = tk.Scale(self.root, from_=-10.0, to=10.0, resolution=0.1,
-                              orient=tk.HORIZONTAL, length=300, label="rev/s (O)")
+        self.speed = tk.Scale(self.root, from_=-3.0, to=3.0, resolution=0.1,
+                              orient=tk.HORIZONTAL, length=300, label="rev/s (O, max 3)")
         self.speed.pack()
         self.speed.bind("<ButtonRelease-1>", lambda _e: self.send_ovel())
+        tk.Label(self.root, text="SAFE: 0.3A cap, 10s auto-stop, 10s cooldown",
+                 fg="dark green").pack()
         brow = tk.Frame(self.root)
         brow.pack()
         tk.Button(brow, text="run O", command=self.send_ovel).pack(side=tk.LEFT)
+        tk.Button(brow, text="0速", command=self.zero).pack(side=tk.LEFT)
         tk.Label(brow, text="sine amp").pack(side=tk.LEFT)
         self.amp = tk.Entry(brow, width=5)
-        self.amp.insert(0, "2")
+        self.amp.insert(0, "1")
         self.amp.pack(side=tk.LEFT)
         tk.Button(brow, text="run N", command=self.send_sine).pack(side=tk.LEFT)
         tk.Button(brow, text="STOP (S)", command=self.stop).pack(side=tk.LEFT)
+        grow = tk.Frame(self.root)  # TEMP G
+        grow.pack()
+        tk.Label(grow, text="angle rad").pack(side=tk.LEFT)
+        self.angle = tk.Entry(grow, width=7)
+        self.angle.insert(0, "3.14")
+        self.angle.pack(side=tk.LEFT)
+        tk.Button(grow, text="go G", command=self.send_angle).pack(side=tk.LEFT)
         self.tele = tk.Label(self.root, text="vel=--- angle=--- mode=--- vq=---",
                              font=("monospace", 11))
         self.tele.pack()
@@ -74,8 +84,15 @@ class UI:
     def send_ovel(self):
         self.send(f"O {self.speed.get():.1f}")
 
+    def zero(self):
+        self.speed.set(0.0)
+        self.send("O 0")
+
     def send_sine(self):
         self.send(f"N {self.amp.get().strip()}")
+
+    def send_angle(self):  # TEMP G
+        self.send(f"G {self.angle.get().strip()}")
 
     def stop(self):
         self.speed.set(0.0)
