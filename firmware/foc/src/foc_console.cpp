@@ -89,7 +89,15 @@ void FocConsole::dispatch(const foc::Request& req) {
       break;
   }
 
-  if (!ok && !drive_.ready()) Serial.println(F("#ERR drive gated, refusing motion"));
+  // ready_ is false whenever initFOC did not run (no encoder), so the generic "gated"
+  // line must only cover commands that actually need the closed loop. Open-loop commands
+  // report their own reason (#BUSY or the drive's own #ERR), and appending this here would
+  // be misleading noise.
+  const bool needs_closed_loop =
+      req.cmd == foc::Command::kTorque || req.cmd == foc::Command::kVelocity ||
+      req.cmd == foc::Command::kAngle || req.cmd == foc::Command::kSetAlignVoltage;
+  if (!ok && needs_closed_loop && !drive_.ready())
+    Serial.println(F("#ERR closed loop gated (no encoder). Use O/N/G sensorless."));
 }
 
 void FocConsole::printHelp() {
