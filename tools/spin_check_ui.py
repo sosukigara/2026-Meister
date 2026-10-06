@@ -1,18 +1,26 @@
-# TEMP spin-check UI for the M0 sensorless firmware (O/N commands only).
-# Delete together with the N command. Opens the serial port (resets the board:
-# motor stops), so connect only with the winch free and the 24 V supply current-limited.
+# TEMP spin-check UI for the M1 sensorless firmware (O/N/G commands only).
+# Delete together with the N and G commands. Opening the serial port resets the board
+# (the motor stops), so connect only with the winch free and the 24 V supply
+# current-limited.
+import glob
 import queue
 import threading
 import tkinter as tk
 
 import serial
 
-import glob
-
 # The ESP32 re-enumerates between ttyUSB0 and ttyUSB1 across replugs, so do not pin one.
 _cands = sorted(glob.glob("/dev/ttyUSB*"))
 PORT = _cands[0] if _cands else "/dev/ttyUSB0"
 BAUD = 115200
+
+SAFETY = (
+    "実行前にベンチ電源のCC(電流制限)を 0.5A にすること。\n"
+    "ファーム側のソフト過電流チョップ(0.5A / #OC)は保険であって保証ではない。\n"
+    "各実行は10秒で自動停止、停止後10秒は再実行を拒否(クールダウン)。\n"
+    "シリアルを開くとESP32がリセットし回転が止まる。回転中に接続しないこと。\n"
+    "速度0は S(停止) を送る。O 0 は DC 注入で発熱するので使わない。"
+)
 
 
 class UI:
@@ -20,45 +28,66 @@ class UI:
         self.ser = None
         self.rx = queue.Queue()
         self.root = tk.Tk()
-        self.root.title("TEMP winch spin check (M0 sensorless)")
-        self.status = tk.Label(self.root, text="disconnected", fg="red")
-        self.status.pack()
+        self.root.title("winch spin check — MKS ESP32 FOC M1 (sensorless)")
+
         row = tk.Frame(self.root)
-        row.pack()
+        row.pack(fill=tk.X, padx=6, pady=4)
         tk.Label(row, text="port").pack(side=tk.LEFT)
         self.port = tk.Entry(row, width=14)
         self.port.insert(0, PORT)
         self.port.pack(side=tk.LEFT)
-        tk.Button(row, text="connect", command=self.connect).pack(side=tk.LEFT)
-        self.speed = tk.Scale(self.root, from_=-3.0, to=3.0, resolution=0.1,
-                              orient=tk.HORIZONTAL, length=300, label="rev/s (O, max 3)")
-        self.speed.pack()
-        self.speed.bind("<ButtonRelease-1>", lambda _e: self.send_ovel())
-        tk.Label(self.root, text="SAFE: 0.3A cap, 10s auto-stop, 10s cooldown",
-                 fg="dark green").pack()
+        tk.Button(row, text="接続", command=self.connect).pack(side=tk.LEFT)
+        self.status = tk.Label(row, text="未接続", fg="red")
+        self.status.pack(side=tk.LEFT)
+
+        tk.Label(self.root, text=SAFETY, fg="dark red", justify=tk.LEFT,
+                 font=("sans-serif", 9)).pack(fill=tk.X, padx=6)
+
+        v = tk.LabelFrame(self.root, text="速度 (O, rev/s)")
+        v.pack(fill=tk.X, padx=6, pady=3)
+        self.speed = tk.Scale(v, from_=-5.0, to=5.0, resolution=0.1,
+                              orient=tk.HORIZONTAL, length=380)
+        self.speed.pack(fill=tk.X)
+        self.speed.bind("<ButtonRelease-1>", lambda _e: self.on_slider())
+        vrow = tk.Frame(v)
+        vrow.pack(fill=tk.X)
+        tk.Label(vrow, text="値").pack(side=tk.LEFT)
+        self.speed_entry = tk.Entry(vrow, width=7)
+        self.speed_entry.insert(0, "1.0")
+        self.speed_entry.pack(side=tk.LEFT)
+        tk.Button(vrow, text="回す (O)", command=self.send_ovel).pack(side=tk.LEFT)
+        tk.Button(vrow, text="0 は停止 (S)", command=self.stop).pack(side=tk.LEFT)
+
+        a = tk.LabelFrame(self.root, text="角度 (G, rad)")
+        a.pack(fill=tk.X, padx=6, pady=3)
+        self.angle = tk.Scale(a, from_=0.0, to=6.28, resolution=0.01,
+                              orient=tk.HORIZONTAL, length=380)
+        self.angle.pack(fill=tk.X)
+        arow = tk.Frame(a)
+        arow.pack(fill=tk.X)
+        tk.Label(arow, text="値").pack(side=tk.LEFT)
+        self.angle_entry = tk.Entry(arow, width=7)
+        self.angle_entry.insert(0, "3.14")
+        self.angle_entry.pack(side=tk.LEFT)
+        tk.Button(arow, text="角度 (G)", command=self.send_angle).pack(side=tk.LEFT)
+
         brow = tk.Frame(self.root)
-        brow.pack()
-        tk.Button(brow, text="run O", command=self.send_ovel).pack(side=tk.LEFT)
-        tk.Button(brow, text="0速", command=self.zero).pack(side=tk.LEFT)
+        brow.pack(fill=tk.X, padx=6, pady=3)
         tk.Label(brow, text="sine amp").pack(side=tk.LEFT)
         self.amp = tk.Entry(brow, width=5)
         self.amp.insert(0, "1")
         self.amp.pack(side=tk.LEFT)
-        tk.Button(brow, text="run N", command=self.send_sine).pack(side=tk.LEFT)
-        tk.Button(brow, text="STOP (S)", command=self.stop).pack(side=tk.LEFT)
-        grow = tk.Frame(self.root)  # TEMP G
-        grow.pack()
-        tk.Label(grow, text="angle rad").pack(side=tk.LEFT)
-        self.angle = tk.Entry(grow, width=7)
-        self.angle.insert(0, "3.14")
-        self.angle.pack(side=tk.LEFT)
-        tk.Button(grow, text="go G", command=self.send_angle).pack(side=tk.LEFT)
-        tk.Button(grow, text="diag D", command=self.send_diag).pack(side=tk.LEFT)  # TEMP D
+        tk.Button(brow, text="サイン (N)", command=self.send_sine).pack(side=tk.LEFT)
+        tk.Button(brow, text="診断 (D)", command=self.send_diag).pack(side=tk.LEFT)
+        tk.Button(brow, text="■ STOP (S)", command=self.stop, fg="white", bg="red",
+                  font=("sans-serif", 11, "bold")).pack(side=tk.RIGHT, ipadx=12)
+
         self.tele = tk.Label(self.root, text="vel=--- angle=--- mode=--- vq=---",
                              font=("monospace", 11))
-        self.tele.pack()
-        self.log = tk.Text(self.root, height=8, width=60)
-        self.log.pack()
+        self.tele.pack(fill=tk.X, padx=6)
+        self.log = tk.Text(self.root, height=10, width=66)
+        self.log.pack(fill=tk.BOTH, expand=True, padx=6, pady=4)
+
         self.root.after(100, self.drain)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
 
@@ -68,7 +97,7 @@ class UI:
         except Exception as e:  # noqa: BLE001 - show it, nothing to recover
             self.log.insert(tk.END, f"connect failed: {e}\n")
             return
-        self.status.config(text="connected (board was reset)", fg="green")
+        self.status.config(text="接続済み (基板はリセットされた)", fg="green")
         threading.Thread(target=self.reader, daemon=True).start()
 
     def reader(self):
@@ -82,28 +111,54 @@ class UI:
 
     def send(self, text):
         if self.ser is None:
-            self.log.insert(tk.END, "not connected\n")
+            self.log.insert(tk.END, "未接続\n")
             return
         self.ser.write((text + "\n").encode())
 
-    def send_ovel(self):
-        self.send(f"O {self.speed.get():.1f}")
+    def _speed_value(self):
+        try:
+            return float(self.speed_entry.get().strip())
+        except ValueError:
+            return self.speed.get()
 
-    def zero(self):
-        self.speed.set(0.0)
-        self.send("O 0")
+    def _angle_value(self):
+        try:
+            r = float(self.angle_entry.get().strip())
+        except ValueError:
+            r = self.angle.get()
+        return max(0.0, min(6.28, r))
+
+    def on_slider(self):
+        self.speed_entry.delete(0, tk.END)
+        self.speed_entry.insert(0, f"{self.speed.get():.1f}")
+        self.send_ovel()
+
+    def send_ovel(self):
+        v = self._speed_value()
+        if abs(v) < 1e-6:
+            self.log.insert(tk.END, "0 = 停止 (S)\n")
+            self.stop()
+            return
+        self.speed.set(v)
+        self.send(f"O {v:.1f}")
+
+    def send_angle(self):
+        r = self._angle_value()
+        self.angle_entry.delete(0, tk.END)
+        self.angle_entry.insert(0, f"{r:.3f}")
+        self.angle.set(r)
+        self.send(f"G {r:.3f}")
 
     def send_sine(self):
         self.send(f"N {self.amp.get().strip()}")
-
-    def send_angle(self):  # TEMP G
-        self.send(f"G {self.angle.get().strip()}")
 
     def send_diag(self):  # TEMP D
         self.send("D")
 
     def stop(self):
         self.speed.set(0.0)
+        self.speed_entry.delete(0, tk.END)
+        self.speed_entry.insert(0, "0.0")
         self.send("S")
 
     def drain(self):
