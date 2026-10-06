@@ -187,9 +187,7 @@ bool FocDrive::commandOpenLoopVelocity(float vel_rps) {
   }
   sine_on_ = false;  // TEMP
   motor_.controller = MotionControlType::velocity_openloop;
-  motor_.current_limit = user_current_limit_ < foc_cfg::kOpenLoopCurrentAmps
-                             ? user_current_limit_
-                             : foc_cfg::kOpenLoopCurrentAmps;
+  motor_.current_limit = user_current_limit_;
   motor_.voltage_limit = foc_cfg::kOpenLoopVoltageVolts;
   // SimpleFOC open-loop targets are rad/s. The command and the UI are in rev/s, so
   // convert here; without this "O 2" would ask for 2 rad/s (0.32 rev/s) and look stuck.
@@ -209,9 +207,7 @@ bool FocDrive::commandSine(float amp_rps) {
     return false;
   }
   motor_.controller = MotionControlType::velocity_openloop;
-  motor_.current_limit = user_current_limit_ < foc_cfg::kOpenLoopCurrentAmps
-                             ? user_current_limit_
-                             : foc_cfg::kOpenLoopCurrentAmps;
+  motor_.current_limit = user_current_limit_;
   motor_.voltage_limit = foc_cfg::kOpenLoopVoltageVolts;
   sine_amp_ = (amp_rps >= 0.0f ? amp_rps : -amp_rps) * _2PI;  // rev/s -> rad/s
   sine_t0ms_ = millis();
@@ -232,9 +228,7 @@ bool FocDrive::commandAngleOpenLoop(float rad) {
   }
   sine_on_ = false;  // TEMP
   motor_.controller = MotionControlType::angle_openloop;
-  motor_.current_limit = user_current_limit_ < foc_cfg::kOpenLoopCurrentAmps
-                             ? user_current_limit_
-                             : foc_cfg::kOpenLoopCurrentAmps;
+  motor_.current_limit = user_current_limit_;
   motor_.voltage_limit = foc_cfg::kOpenLoopVoltageVolts;
   target_ = rad;
   openloop_t0ms_ = millis();
@@ -250,9 +244,7 @@ bool FocDrive::diagnose() {
   }
   sine_on_ = false;  // TEMP
   motor_.controller = MotionControlType::velocity_openloop;
-  motor_.current_limit = user_current_limit_ < foc_cfg::kOpenLoopCurrentAmps
-                             ? user_current_limit_
-                             : foc_cfg::kOpenLoopCurrentAmps;
+  motor_.current_limit = user_current_limit_;
   motor_.voltage_limit = foc_cfg::kOpenLoopVoltageVolts;
   motor_.enable();
   motor_.move(0.0f);
@@ -316,13 +308,11 @@ void FocDrive::poll() {
       target_ = sine_amp_ * sinf(6.2831853f * foc_cfg::kSineFreqHz * t);
     }
     if (motor_.enabled) {
-      // Software over-current limit. SimpleFOC open loop applies a fixed voltage with no
-      // current feedback, so the shunt is the only place to catch a stall. Chop the
-      // voltage while the current is high, restore it with hysteresis once it drops, and
-      // trip if chopping cannot recover within kOpenLoopOcTripMs.
+      // No active current loop: at kOpenLoopVoltageVolts (0.5 V) the winding itself bounds
+      // the current to ~2.8 A (~1.4 W). Just watch for a hard fault - a phase short, or a
+      // shunt reading far above anything 0.5 V can produce - and stop.
       ol_imag_ = readPhaseCurrentMax();
-      if (ol_imag_ > foc_cfg::kOpenLoopCurrentAmps) {
-        motor_.voltage_limit = 0.0f;
+      if (ol_imag_ > foc_cfg::kOpenLoopOcTripAmps) {
         if (!ol_over_) {
           ol_over_ = true;
           ol_over_since_ms_ = millis();
@@ -334,8 +324,7 @@ void FocDrive::poll() {
           Serial.println(F(" A"));
           return;
         }
-      } else if (ol_imag_ < foc_cfg::kOpenLoopCurrentAmps * 0.7f) {
-        motor_.voltage_limit = foc_cfg::kOpenLoopVoltageVolts;
+      } else {
         ol_over_ = false;
       }
       motor_.move(target_);

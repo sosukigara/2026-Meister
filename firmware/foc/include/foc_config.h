@@ -62,15 +62,16 @@ constexpr float kCurrentLimitAmps = 1.0f;     // ARTICLE
 // _PWM_RES_BIT 10, _PWM_RES 1023 -> one step is 24/1023 ~ 0.0235 V), so the duty
 // rounds to zero and the motor gets no output at all - that was the real "it will
 // not spin" cause. See README "Sensorless protection".
-// The open-loop current is instead bounded in software: poll() reads the shunt and
-// chops the voltage whenever the measured phase current exceeds the threshold below.
-constexpr float kOpenLoopCurrentAmps = 0.5f;  // software chop threshold, enforced in
-                                              // FocDrive::poll() with getPhaseCurrents().
-                                              // Match the bench PSU CC to this number.
-constexpr uint32_t kOpenLoopOcTripMs = 500;  // chopping must bring the current back
-                                            // below the threshold within this long, or
-                                            // the drive stops and prints #OC (shorted
-                                            // winding or bad current-sense offset).
+// The open-loop current is bounded by physics, not by a feedback loop: at the 0.5 V ceiling
+// (kOpenLoopVoltageVolts) this winding draws at most ~2.8 A (0.5 V / ~0.18 ohm) ~ 1.4 W.
+// That is why 2.0 V is what smoked the wiring and 0.5 V is safe. An earlier voltage
+// fold-back was removed: it dropped the applied voltage to ~0.05 V, which is only 2 of the
+// 1023 ESP32 LEDC steps, so the rotating field was far too coarse and the rotor just
+// vibrated instead of turning. poll() therefore only trips on a hard fault.
+constexpr float kOpenLoopOcTripAmps = 4.0f;  // hard-fault backstop (a phase short, or a
+                                             // grossly wrong shunt reading). Normal open
+                                             // loop at 0.5 V never reaches this.
+constexpr uint32_t kOpenLoopOcTripMs = 500;  // must stay over the trip this long to stop
 constexpr uint32_t kOpenLoopCooldownMs = 10000;  // after any open-loop stop the next
                                                  // O/N/G is refused for 10 s: duty
                                                  // never exceeds 50 percent
@@ -79,13 +80,12 @@ constexpr float kVelocityLimitRps = 20.0f;  // MKS V2.0 example uses 20. SimpleF
                                            // this name: it bounds the angle_openloop
                                            // (G) slew and the closed-loop W ceiling.
 constexpr float kVoltageLimitVolts = 5.0f;   // ARTICLE
-constexpr float kOpenLoopVoltageVolts = 0.5f;  // MKS V2.0 open-loop example uses
-                                              // 0.5 V and calls 2.0 V "excessive":
-                                              // that 2.0 V is what smoked the wiring.
-                                              // 0.5 V is 2.08% duty at 24 V, above the
-                                              // LEDC resolution, so the motor actually
-                                              // turns. Must be paired with a low PSU
-                                              // CC (0.5 A) - see README.
+constexpr float kOpenLoopVoltageVolts = 0.5f;  // The MKS V2.0 open-loop example value. The
+                                              // open-loop modes apply this as a fixed voltage
+                                              // with no current feedback, so the current is set
+                                              // by the winding: ~4 A at the ~0.13 ohm measured
+                                              // here (see README). 2.0 V is what smoked the
+                                              // wiring - never go back there.
 constexpr uint32_t kOpenLoopTimeoutMs = 10000;  // open loop always stops itself:
                                                 // bounds the energy even if the
                                                 // current is higher than assumed

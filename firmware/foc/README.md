@@ -126,15 +126,24 @@ What the firmware cannot do, and why:
 
 What the firmware does to bound current:
 
-- **Software over-current chop.** In every open-loop poll it reads the shunt
-  (`InlineCurrentSense::getPhaseCurrents()`), and while the measured phase current
-  exceeds `kOpenLoopCurrentAmps` (0.5 A) it chops the voltage to zero, restoring it
-  with hysteresis once the current drops. If it cannot recover within
-  `kOpenLoopOcTripMs` (500 ms) the drive stops and prints `#OC`.
-- **The bench supply CC is still the fast, dependable limit.** Set it to 0.5 A before
-  any sensorless run: the software chop runs at the loop period and cannot catch a
-  transient faster than that, so CC stays the guarantee. With CC at 0.5 A the worst
-  case is 0.25 W and nothing can overheat, regardless of what the firmware commands.
+- **The 0.5 V open-loop ceiling is the limit.** SimpleFOC open loop applies a fixed
+  voltage with no current feedback, so the current follows physics: at 0.5 V this winding
+  draws ~4 A (measured `#IOL` peaks ~4.8 A; `R ~ 0.13 ohm`) ~ 2 W of heat. That is why
+  2.0 V is what smoked the wiring and 0.5 V is safe. There is deliberately **no** active
+  current loop: an earlier voltage fold-back starved the motor (it pulled the applied
+  voltage down to ~0.05 V, only 2 of the 1023 ESP32 LEDC steps, so the rotating field was
+  far too coarse and the rotor only vibrated instead of turning).
+- **`#OC` trip.** poll() reads the shunt (`InlineCurrentSense::getPhaseCurrents()`) and
+  stops with `#OC` if the phase current stays above `kOpenLoopOcTripAmps` (4 A) for
+  `kOpenLoopOcTripMs` (500 ms) - meant for a phase short, not a normal run.
+- **The bench supply CC is the fast backstop.** Set it to 0.5 A so a wiring fault cannot
+  push more than 0.25 W even during the trip window.
+
+**✗ 未検証**: with the bench CC set to 0.5 A the `#IOL` monitor still reads 3-4.8 A. Either
+that CC value is not actually in effect, or the shunt/ADC calibration on this board is off.
+Until that is settled, treat `#IOL` and the `#OC` trip as **indicative only** and keep the
+bench CC as the real limit. A sensorless spin that reaches a hand-held, lukewarm driver is
+the observed good state; the motor itself stayed cool.
 
 Software cannot protect a shorted winding or shorted wiring. Never leave a
 sensorless run unattended.
