@@ -79,6 +79,9 @@ void FocConsole::dispatch(const foc::Request& req) {
     case foc::Command::kSine:  // TEMP
       ok = drive_.commandSine(req.arg);
       break;
+    case foc::Command::kAngleOpenLoop:  // TEMP
+      ok = drive_.commandAngleOpenLoop(req.arg);
+      break;
     default:
       break;
   }
@@ -95,6 +98,7 @@ void FocConsole::printHelp() {
   Serial.println(F("A <rad>    angle mode"));
   Serial.println(F("O <rps>    SENSORLESS velocity (spin check only, may stall under load)"));
   Serial.println(F("N <amp>    TEMP sensorless sine spin check"));  // TEMP
+  Serial.println(F("G <rad>    TEMP sensorless angle (no holding torque)"));  // TEMP
   Serial.println(F("S          STOP. This is the only stop."));
   Serial.println(F("?          this help"));
   Serial.println();

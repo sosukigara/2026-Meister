@@ -8,6 +8,7 @@
 #include <SimpleFOC.h>
 
 #include "foc_board.h"
+#include "foc_config.h"
 
 class FocDrive {
  public:
@@ -28,6 +29,7 @@ class FocDrive {
   bool commandAngle(float rad);
   bool commandOpenLoopVelocity(float vel_rps);
   bool commandSine(float amp_rps);  // TEMP: sensorless sine spin check, delete with N
+  bool commandAngleOpenLoop(float rad);  // TEMP: sensorless angle, delete with G
 
   void stop();
 
@@ -72,6 +74,9 @@ class FocDrive {
   bool sine_on_ = false;   // TEMP: delete with N
   float sine_amp_ = 0.0f;  // TEMP
   uint32_t sine_t0ms_ = 0;  // TEMP
+  uint32_t openloop_t0ms_ = 0;
+  uint32_t openloop_cool_until_ = 0;
+  float user_current_limit_ = foc_cfg::kCurrentLimitAmps;
 };
 
 #endif  // FOC_DRIVE_H

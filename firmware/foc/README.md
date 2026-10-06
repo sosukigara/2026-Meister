@@ -93,8 +93,30 @@ second on a bare read.
 | `A <rad>` | Angle mode. Enables, then `move()`. |
 | `O <rps>` | Sensorless velocity (spin check only). Works without encoder; may stall under load. |
 | `N <amp>` | TEMP sensorless sine spin check at `kSineFreqHz`. Delete with the N command. |
+| `G <rad>` | TEMP sensorless angle (no holding torque, may skip under load). |
 | `S` | **STOP.** `motor.disable()` + velocity-PI reset, prints `#STOP`. |
 | `?` | Help plus the safety warnings. |
+
+### Sensorless protection (why it cannot overheat)
+
+An open-loop voltage with no current limit once pushed ~20 A through the 5010
+winding and smoked the wiring. The firmware now caps the energy by construction:
+
+1. `phase_resistance` is set, so SimpleFOC derives the open-loop voltage as
+   `current_limit x phase_resistance` (`BLDCMotor.cpp:622-623`) instead of
+   applying `voltage_limit` raw.
+2. Sensorless runs use `kOpenLoopCurrentAmps` (0.3 A), never the 1.0 A closed-loop
+   limit. 0.3 A into the winding is milliwatts: no meaningful heat even stalled.
+3. Every `O`/`N`/`G` run stops itself after `kOpenLoopTimeoutMs` (10 s,
+   `#TIMEOUT`), and any new `O`/`N`/`G` inside `kOpenLoopCooldownMs` (10 s) is
+   refused (`#BUSY`). Duty never exceeds 50 percent.
+4. `kPhaseResistanceOhms` (0.05) is a safe-leaning lower bound, **not** a
+   measurement. If the motor will not turn on it, do **not** raise anything:
+   measure the winding resistance first (TODO(measure-R)).
+
+Software cannot protect a shorted winding or shorted wiring. Keep the 24 V supply
+current-limited (0.5 A is enough for 0.3 A spin checks) and never leave a
+sensorless run unattended.
 
 ### Telemetry
 
@@ -106,7 +128,7 @@ second on a bare read.
 ```
 
 `mode` is the SimpleFOC `MotionControlType` value: `0` torque, `1` velocity, `2` angle,
-`3` sensorless velocity (`O`/`N`).
+`3` sensorless velocity (`O`/`N`), `4` sensorless angle (`G`).
 A row is ~70 bytes, so 100 Hz uses ~7000 B/s of the 11520 B/s the link carries. Logging is
 off while the motor is disabled (`kTelemetryWhileDisabled = false`) so the line stays free
 for the one-shot reports the operator needs.
