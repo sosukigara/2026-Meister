@@ -94,6 +94,7 @@ second on a bare read.
 | `O <rps>` | Sensorless velocity (spin check only). Works without encoder; may stall under load. |
 | `N <amp>` | TEMP sensorless sine spin check at `kSineFreqHz`. Delete with the N command. |
 | `G <rad>` | TEMP sensorless angle (no holding torque, may skip under load). |
+| `D` | TEMP winding/driver diagnosis: energises phases at the open-loop cap and prints `#DIAG` shunt currents. |
 | `S` | **STOP.** `motor.disable()` + velocity-PI reset, prints `#STOP`. |
 | `?` | Help plus the safety warnings. |
 

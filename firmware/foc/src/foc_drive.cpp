@@ -232,6 +232,45 @@ bool FocDrive::commandAngleOpenLoop(float rad) {
   return true;
 }
 
+bool FocDrive::diagnose() {
+  if (!motor_inited_) return false;
+  if (board_.undervoltage()) {
+    Serial.println(F("#ERR undervoltage, diagnosis refused"));
+    return false;
+  }
+  sine_on_ = false;  // TEMP
+  motor_.controller = MotionControlType::velocity_openloop;
+  motor_.current_limit = user_current_limit_ < foc_cfg::kOpenLoopCurrentAmps
+                             ? user_current_limit_
+                             : foc_cfg::kOpenLoopCurrentAmps;
+  motor_.voltage_limit = foc_cfg::kOpenLoopVoltageVolts;
+  motor_.enable();
+  motor_.move(0.0f);
+  float ia = 0.0f, ib = 0.0f;
+  constexpr int kSamples = 100;
+  for (int i = 0; i < kSamples; ++i) {
+    const PhaseCurrent_s c = cs_.getPhaseCurrents();
+    ia += c.a;
+    ib += c.b;
+    delay(2);
+  }
+  motor_.disable();
+  ia /= kSamples;
+  ib /= kSamples;
+  const float ma = ia >= 0.0f ? ia : -ia;
+  const float mb = ib >= 0.0f ? ib : -ib;
+  Serial.print(F("#DIAG ia_a="));
+  Serial.print(ia, 3);
+  Serial.print(F(" ib_a="));
+  Serial.print(ib, 3);
+  if (ma < 0.02f && mb < 0.02f) {
+    Serial.println(F(" OPEN (winding open or driver dead)"));
+  } else {
+    Serial.println(F(" CURRENT FLOWS (winding alive, voltage too weak)"));
+  }
+  return true;
+}
+
 void FocDrive::stop() {
   motor_.disable();
   resetVelocityPid();

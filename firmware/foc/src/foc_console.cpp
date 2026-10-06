@@ -39,6 +39,9 @@ void FocConsole::dispatch(const foc::Request& req) {
       // calibrate() reports its own #CAL_OK / #CAL_FAIL, so nothing is printed here.
       drive_.calibrate();
       return;
+    case foc::Command::kDiagnose:  // TEMP D
+      drive_.diagnose();
+      return;
     default:
       break;
   }

@@ -29,6 +29,7 @@ Command verbOf(char c) {
     case 'O': return Command::kOpenLoop;
     case 'N': return Command::kSine;
     case 'G': return Command::kAngleOpenLoop;
+    case 'D': return Command::kDiagnose;
     case 'S': return Command::kStop;
     case '?': return Command::kHelp;
     default: return Command::kError;
