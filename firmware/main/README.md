@@ -4,30 +4,33 @@ ROS 2 (Jazzy) ロボット「Meister」の**実機側マイコン層**。
 半分散型アーキテクチャ（PC = ナビ・画像認識 / ESP32 = リアルタイム PWM 制御）の
 ESP32 側を PlatformIO + Arduino framework で実装する。
 
-- プロトコル仕様: [docs/design/07-esp32-uart.md](../docs/design/07-esp32-uart.md)
+- プロトコル仕様: [docs/design/07-esp32-uart.md](../../docs/design/07-esp32-uart.md)
 - PC 側の ROS 2 シリアルブリッジ: `src/meister_serial_bridge/` として実装済み。モック ESP32 は別 Wave（対象外）
 
 ## ディレクトリ構成
 
 ```
 firmware/
-├── platformio.ini              # 環境定義（esp32dev / esp32dev_usbuart / native）
-├── include/
-│   ├── meister_config.h        # 設定の唯一の出所（ピン・周期・バックエンド選択）
-│   ├── meister_protocol.h      # バイナリプロトコル定義（フレーム形式・種別・定数）
-│   ├── base_chassis.h          # 足回り（駆動モータ + ステアリング）
-│   ├── arm.h                   # アーム + グリッパー
-│   ├── command_dispatch.h      # 受信フレーム → 各機構
-│   ├── feedback.h              # FB_STATE の定周期送信
-│   └── hal/                    # 機構より下の層（LEDC / サーボ / モータ / バス codec）
-├── src/
-│   ├── main.cpp                # 配線と setup/loop のみ
-│   ├── base_chassis.cpp  arm.cpp  command_dispatch.cpp  feedback.cpp
-│   ├── hal/                    # hal/ の実装（Arduino 依存はここだけ）
-│   └── meister_protocol.cpp    # エンコード/デコード実装（Arduino 非依存）
-└── test/
-    ├── test_protocol/          # プロトコル層のホスト側ユニットテスト（Unity）
-    └── test_bus_protocol/      # STS/SCS バス codec のホスト側ユニットテスト
+├── main/                       # 本プロジェクト（ESP32 バイナリプロトコル）
+│   ├── platformio.ini          # 環境定義（esp32dev / esp32dev_usbuart / native）
+│   ├── include/
+│   │   ├── meister_config.h    # 設定の唯一の出所（ピン・周期・バックエンド選択）
+│   │   ├── meister_protocol.h  # バイナリプロトコル定義（フレーム形式・種別・定数）
+│   │   ├── base_chassis.h      # 足回り（駆動モータ + ステアリング）
+│   │   ├── arm.h               # アーム + グリッパー
+│   │   ├── command_dispatch.h  # 受信フレーム → 各機構
+│   │   ├── feedback.h          # FB_STATE の定周期送信
+│   │   └── hal/                # 機構より下の層（LEDC / サーボ / モータ / バス codec）
+│   ├── src/
+│   │   ├── main.cpp            # 配線と setup/loop のみ
+│   │   ├── base_chassis.cpp  arm.cpp  command_dispatch.cpp  feedback.cpp
+│   │   ├── hal/                # hal/ の実装（Arduino 依存はここだけ）
+│   │   └── meister_protocol.cpp  # エンコード/デコード実装（Arduino 非依存）
+│   └── test/
+│       ├── test_protocol/      # プロトコル層のホスト側ユニットテスト（Unity）
+│       ├── test_kinematics/    # キネマティクスの純関数（native）
+│       └── test_bus_protocol/  # STS/SCS バス codec のホスト側ユニットテスト
+└── foc/                        # 別 PlatformIO プロジェクト（下記「MKS ESP32 FOC」参照）
 ```
 
 依存の向きは片方向のみ: `main → command_dispatch → 機構（base_chassis / arm）→ hal`。
@@ -87,7 +90,7 @@ firmware/
 ## ビルド
 
 ```bash
-cd firmware
+cd firmware/main
 pio run -e esp32dev -e esp32dev_usbuart
 ```
 
@@ -124,7 +127,7 @@ pio run -e esp32dev -t upload           # 実機用（GPIO16/17 経由）
 （送る指令は全 0 とグリッパー停止のみ）。
 
 ```bash
-cd firmware && pio run -e esp32dev_usbuart -t upload
+cd firmware/main && pio run -e esp32dev_usbuart -t upload
 ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0
 ```
 
@@ -161,7 +164,7 @@ ROS 2 経由の動作は `ros2 launch meister_serial_bridge serial_bridge.launch
 再現手順（`platformio.ini` の `MSTE_FEEDBACK_HZ` を書き換えてビルド・書き込み、測り直す）:
 
 ```bash
-cd firmware
+cd firmware/main
 pio run -e esp32dev_usbuart -t upload
 ros2 run meister_serial_bridge meister_hz_measure \
     --port /dev/ttyUSB0 --duration 5 --with-commands --expect-hz 100
@@ -206,12 +209,28 @@ ros2 run meister_serial_bridge meister_hz_measure \
 プロトコル層（`meister_protocol.*`）は Arduino 非依存のため、ホスト側でテストできる。
 
 ```bash
-cd firmware
+cd firmware/main
 pio test -e native
 ```
 
 `pio test -e native` は ESP32 不要で、エンコード/デコードのラウンドトリップ・
 チェックサム検証・不正フレーム（ヘッダ/チェックサム/未知種別/途中切れ）の拒否を検証する。
+
+## `firmware/foc/` — 別 PlatformIO プロジェクト
+
+`firmware/foc/` は MKS ESP32 FOC V2.0（M1 チャンネル）を SimpleFOC でウィンチとして回すための
+**独立した PlatformIO プロジェクト**。独自の `platformio.ini` と `.pio/` を持ち、
+**本ファームウェアのビルドには含まれない**。MSTE のバイナリプロトコルとは共有するコードが
+なく、`cd firmware/main && pio run` は `firmware/foc/` を読まない。
+
+```bash
+cd firmware/foc
+pio run -e foc_m1 -t upload     # 書き込み
+pio device monitor -b 115200    # C / L / Z / T / W / A / S / ?
+pio test -e native               # コンソール層のホスト側テスト
+```
+
+配線表・コマンド一覧・安全上の注意・要確認値は [`firmware/foc/README.md`](../foc/README.md) にある。
 
 ## サーボ制御の設計
 

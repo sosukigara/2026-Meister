@@ -18,7 +18,7 @@ ESP32 (モータ・サーボ PWM 制御, センサ入力)
 
 ## 実装済み機能
 
-- [x] `firmware/` の PlatformIO プロジェクト作成（Arduino framework、esp32dev / native 環境）
+- [x] `firmware/main/` の PlatformIO プロジェクト作成（Arduino framework、esp32dev / native 環境）
 - [x] バイナリプロトコル定義（固定長フレーム + XOR チェックサム、コマンド 4 種 / フィードバック 2 種）
 - [x] モータ PWM・サーボ制御のベース（LEDC PWM、駆動モータ 6ch / ステアリング 6ch / アーム 4ch / グリッパー 1ch）
 - [x] コンパイル検証（`pio run`）

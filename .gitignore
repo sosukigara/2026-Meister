@@ -19,8 +19,8 @@ log/
 .omo/drafts/
 .playwright-mcp/
 
-# PlatformIO build artifacts (firmware/)
-firmware/.pio/
+# PlatformIO build artifacts (firmware/main/, firmware/foc/)
+firmware/*/.pio/
 
 # ONNX model files (downloaded, ~12MB each)
 *.onnx
