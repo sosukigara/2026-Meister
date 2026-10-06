@@ -29,6 +29,7 @@ void expectArg(const char* line, foc::Command want, float want_arg) {
 
 void test_no_arg_commands() {
   expectNoArg("C", foc::Command::kCalibrate);
+  expectNoArg("D", foc::Command::kDiagnose);  // TEMP
   expectNoArg("S", foc::Command::kStop);
   expectNoArg("?", foc::Command::kHelp);
   expectNoArg("c", foc::Command::kError);  // verbs are case sensitive

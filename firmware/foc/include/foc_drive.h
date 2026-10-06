@@ -29,7 +29,11 @@ class FocDrive {
   bool commandAngle(float rad);
   bool commandOpenLoopVelocity(float vel_rps);
   bool commandSine(float amp_rps);  // TEMP: sensorless sine spin check, delete with N
-  bool commandAngleOpenLoop(float rad);  // TEMP: sensorless angle, delete with G
+  bool commandAngleOpenLoop(float rad);
+
+  // TEMP D: energise the phases at the open-loop cap and report the shunt
+  // currents. Tells an open winding apart from a too-weak voltage.
+  bool diagnose();  // TEMP: sensorless angle, delete with G
 
   void stop();
 

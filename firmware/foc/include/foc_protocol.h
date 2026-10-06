@@ -20,6 +20,7 @@ enum class Command : uint8_t {
   kOpenLoop,         // O <rev/s>, sensorless velocity, spin check only
   kSine,             // N <amp_rps>, TEMP sensorless sine spin check
   kAngleOpenLoop,    // G <rad>, TEMP sensorless angle, spin check only
+  kDiagnose,         // D, TEMP winding/driver current check, no arg
   kStop,             // S
   kHelp,             // ?
   kError             // unknown verb, missing arg, trailing garbage, non-finite arg

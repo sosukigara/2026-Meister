@@ -49,6 +49,7 @@ class UI:
         self.angle.insert(0, "3.14")
         self.angle.pack(side=tk.LEFT)
         tk.Button(grow, text="go G", command=self.send_angle).pack(side=tk.LEFT)
+        tk.Button(grow, text="diag D", command=self.send_diag).pack(side=tk.LEFT)  # TEMP D
         self.tele = tk.Label(self.root, text="vel=--- angle=--- mode=--- vq=---",
                              font=("monospace", 11))
         self.tele.pack()
@@ -93,6 +94,9 @@ class UI:
 
     def send_angle(self):  # TEMP G
         self.send(f"G {self.angle.get().strip()}")
+
+    def send_diag(self):  # TEMP D
+        self.send("D")
 
     def stop(self):
         self.speed.set(0.0)
