@@ -50,7 +50,7 @@ class FocDrive {
   // Sensorless fallback: open-loop shaft_angle is simulated, so the spin check still
   // shows motion without touching the dead I2C bus.
   float angleForTelemetry() { return sensor_ok_ ? sensor_.getAngle() : motor_.shaft_angle; }
-  float shaftVelocityRps() const { return motor_.shaft_velocity; }
+  float shaftVelocityRps() const { return motor_.shaft_velocity / _2PI; }
   float currentQ() const { return motor_.current.q; }
   float currentD() const { return motor_.current.d; }
   float voltageQ() const { return motor_.voltage.q; }

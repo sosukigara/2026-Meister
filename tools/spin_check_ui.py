@@ -7,7 +7,11 @@ import tkinter as tk
 
 import serial
 
-PORT = "/dev/ttyUSB1"
+import glob
+
+# The ESP32 re-enumerates between ttyUSB0 and ttyUSB1 across replugs, so do not pin one.
+_cands = sorted(glob.glob("/dev/ttyUSB*"))
+PORT = _cands[0] if _cands else "/dev/ttyUSB0"
 BAUD = 115200
 
 
