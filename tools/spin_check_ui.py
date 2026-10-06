@@ -7,7 +7,7 @@ import tkinter as tk
 
 import serial
 
-PORT = "/dev/ttyUSB0"
+PORT = "/dev/ttyUSB1"
 BAUD = 115200
 
 
