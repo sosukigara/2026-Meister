@@ -26,6 +26,8 @@ class FocDrive {
   bool commandTorque(float torque);
   bool commandVelocity(float vel_rps);
   bool commandAngle(float rad);
+  bool commandOpenLoopVelocity(float vel_rps);
+  bool commandSine(float amp_rps);  // TEMP: sensorless sine spin check, delete with N
 
   void stop();
 
@@ -39,6 +41,9 @@ class FocDrive {
 
   // Sensor::getAngle() is non-const in SimpleFOC 2.2.1, so this getter cannot be const.
   float shaftAngleRad() { return sensor_.getAngle(); }
+  // Sensorless fallback: open-loop shaft_angle is simulated, so the spin check still
+  // shows motion without touching the dead I2C bus.
+  float angleForTelemetry() { return sensor_ok_ ? sensor_.getAngle() : motor_.shaft_angle; }
   float shaftVelocityRps() const { return motor_.shaft_velocity; }
   float currentQ() const { return motor_.current.q; }
   float currentD() const { return motor_.current.d; }
@@ -61,7 +66,12 @@ class FocDrive {
   BLDCMotor motor_;
 
   bool ready_ = false;
-  float torque_sp_ = 0.0f;
+  bool sensor_ok_ = false;
+  bool motor_inited_ = false;
+  float target_ = 0.0f;
+  bool sine_on_ = false;   // TEMP: delete with N
+  float sine_amp_ = 0.0f;  // TEMP
+  uint32_t sine_t0ms_ = 0;  // TEMP
 };
 
 #endif  // FOC_DRIVE_H

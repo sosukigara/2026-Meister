@@ -26,6 +26,8 @@ Command verbOf(char c) {
     case 'T': return Command::kTorque;
     case 'W': return Command::kVelocity;
     case 'A': return Command::kAngle;
+    case 'O': return Command::kOpenLoop;
+    case 'N': return Command::kSine;
     case 'S': return Command::kStop;
     case '?': return Command::kHelp;
     default: return Command::kError;
@@ -34,7 +36,8 @@ Command verbOf(char c) {
 
 bool takesArgument(Command c) {
   return c == Command::kSetCurrentLimit || c == Command::kSetAlignVoltage ||
-         c == Command::kTorque || c == Command::kVelocity || c == Command::kAngle;
+         c == Command::kTorque || c == Command::kVelocity || c == Command::kAngle ||
+         c == Command::kOpenLoop || c == Command::kSine;
 }
 
 }  // namespace

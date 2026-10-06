@@ -73,6 +73,12 @@ void FocConsole::dispatch(const foc::Request& req) {
     case foc::Command::kAngle:
       ok = drive_.commandAngle(req.arg);
       break;
+    case foc::Command::kOpenLoop:
+      ok = drive_.commandOpenLoopVelocity(req.arg);
+      break;
+    case foc::Command::kSine:  // TEMP
+      ok = drive_.commandSine(req.arg);
+      break;
     default:
       break;
   }
@@ -87,6 +93,8 @@ void FocConsole::printHelp() {
   Serial.println(F("T <torque> torque mode"));
   Serial.println(F("W <rps>    velocity mode. W 0 = ACTIVE BRAKING"));
   Serial.println(F("A <rad>    angle mode"));
+  Serial.println(F("O <rps>    SENSORLESS velocity (spin check only, may stall under load)"));
+  Serial.println(F("N <amp>    TEMP sensorless sine spin check"));  // TEMP
   Serial.println(F("S          STOP. This is the only stop."));
   Serial.println(F("?          this help"));
   Serial.println();
@@ -107,7 +115,7 @@ void FocConsole::serviceTelemetry() {
   if (!drive_.enabled() && !foc_cfg::kTelemetryWhileDisabled) return;
 
   char row[foc::kCsvRowCap];
-  foc::formatCsvRow(row, sizeof(row), now * 0.001f, drive_.shaftAngleRad(),
+  foc::formatCsvRow(row, sizeof(row), now * 0.001f, drive_.angleForTelemetry(),
                     drive_.shaftVelocityRps(), drive_.currentQ(), drive_.modeCode(),
                     drive_.currentD(), drive_.voltageQ(), drive_.voltageD());
   Serial.println(row);
