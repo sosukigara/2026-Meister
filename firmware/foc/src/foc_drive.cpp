@@ -177,7 +177,10 @@ bool FocDrive::commandAngle(float rad) {
 }
 
 bool FocDrive::commandOpenLoopVelocity(float vel_rps) {
-  if (!motor_inited_) return false;
+  if (!motor_inited_) {
+    Serial.println(F("#ERR open loop needs motor init (24V?)"));
+    return false;
+  }
   if (millis() < openloop_cool_until_) {
     Serial.println(F("#BUSY cooling, wait"));
     return false;
@@ -197,7 +200,10 @@ bool FocDrive::commandOpenLoopVelocity(float vel_rps) {
 }
 
 bool FocDrive::commandSine(float amp_rps) {
-  if (!motor_inited_) return false;
+  if (!motor_inited_) {
+    Serial.println(F("#ERR open loop needs motor init (24V?)"));
+    return false;
+  }
   if (millis() < openloop_cool_until_) {
     Serial.println(F("#BUSY cooling, wait"));
     return false;
@@ -216,7 +222,10 @@ bool FocDrive::commandSine(float amp_rps) {
 }
 
 bool FocDrive::commandAngleOpenLoop(float rad) {
-  if (!motor_inited_) return false;
+  if (!motor_inited_) {
+    Serial.println(F("#ERR open loop needs motor init (24V?)"));
+    return false;
+  }
   if (millis() < openloop_cool_until_) {
     Serial.println(F("#BUSY cooling, wait"));
     return false;
