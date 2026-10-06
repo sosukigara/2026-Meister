@@ -124,6 +124,18 @@ void FocConsole::serviceTelemetry() {
   drive_.poll();
 
   const uint32_t now = millis();
+
+  // While the open loop runs, expose the measured phase current at 2 Hz so the operator
+  // can see the software chop holding it near kOpenLoopCurrentAmps. '#'-prefixed, so it
+  // stays out of the CSV stream.
+  if (drive_.openLoopActive() && drive_.enabled() &&
+      static_cast<int32_t>(now - next_iol_ms_) >= 0) {
+    next_iol_ms_ = now + 500;
+    Serial.print(F("#IOL "));
+    Serial.print(drive_.openLoopCurrentAmps(), 2);
+    Serial.println(F(" A"));
+  }
+
   if (static_cast<int32_t>(now - next_telemetry_ms_) < 0) return;
   next_telemetry_ms_ = now + foc_cfg::kTelemetryPeriodMs;
 

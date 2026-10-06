@@ -41,6 +41,10 @@ class FocDrive {
   void poll();
 
   bool enabled() const { return motor_.enabled != 0; }
+  bool openLoopActive() const {
+    return motor_.controller == MotionControlType::velocity_openloop ||
+           motor_.controller == MotionControlType::angle_openloop;
+  }
   uint8_t modeCode() const { return static_cast<uint8_t>(motor_.controller); }
   float currentLimitAmps() const { return motor_.current_limit; }
   float zeroElecRad() const { return motor_.zero_electric_angle; }
@@ -51,6 +55,8 @@ class FocDrive {
   // shows motion without touching the dead I2C bus.
   float angleForTelemetry() { return sensor_ok_ ? sensor_.getAngle() : motor_.shaft_angle; }
   float shaftVelocityRps() const { return motor_.shaft_velocity / _2PI; }
+  // Peak measured phase current of the last open-loop poll cycle. Telemetry-only.
+  float openLoopCurrentAmps() const { return ol_imag_; }
   float currentQ() const { return motor_.current.q; }
   float currentD() const { return motor_.current.d; }
   float voltageQ() const { return motor_.voltage.q; }
@@ -64,6 +70,9 @@ class FocDrive {
  private:
   void applyGains();
   void reportZeroElec(const char* tag);
+  // max(|ia|, |ib|, |ia+ib|) from the shunt. ic is not wired on this board, so it is
+  // recovered from ia+ib+ic=0.
+  float readPhaseCurrentMax();
 
   FocBoard& board_;
   BLDCDriver3PWM driver_;
@@ -81,6 +90,9 @@ class FocDrive {
   uint32_t openloop_t0ms_ = 0;
   uint32_t openloop_cool_until_ = 0;
   float user_current_limit_ = foc_cfg::kCurrentLimitAmps;
+  bool ol_over_ = false;
+  uint32_t ol_over_since_ms_ = 0;
+  float ol_imag_ = 0.0f;
 };
 
 #endif  // FOC_DRIVE_H

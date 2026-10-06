@@ -46,7 +46,8 @@ if (_isset(phase_resistance)) Uq = current_limit * phase_resistance;
 Uq = current_limit(0.3 A) × phase_resistance(0.05 Ω) = 0.015 V
 ```
 
-となる。24 V 供給での ESP32 LEDC (8 bit) の 1 ステップは `24 / 255 ≈ 0.094 V`。
+となる。24 V 供給での ESP32 LEDC は **10 bit**（`esp32_ledc_mcu.cpp` の
+`_PWM_RES_BIT 10`, `_PWM_RES 1023`）なので 1 ステップは `24 / 1023 ≈ 0.0235 V`。
 **0.015 V は最小ステップ未満なのでデューティが 0 に丸められ、出力が一切出ない。**
 端子電圧 0 V・診断電流 ~0 A・無回転はすべてこれ1つで説明できた。ハードは正常だった。
 

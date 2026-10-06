@@ -58,15 +58,19 @@ constexpr float kCurrentLimitAmps = 1.0f;     // ARTICLE
 // phase_resistance is deliberately NOT set. Setting it makes SimpleFOC derive the
 // open-loop voltage as Uq = current_limit * phase_resistance
 // (BLDCMotor.cpp:622-623,660-661). For this low-resistance motor that product is
-// ~0.015 V, which is BELOW the ESP32 LEDC resolution at a 24 V supply (one 8-bit
-// step is ~0.094 V), so the duty rounds to zero and the motor gets no output at
-// all - that was the real "it will not spin" cause. It is physically impossible to
-// command a small current on a low-ohm winding through PWM: the only dependable
-// current limit is the bench supply's CC setting. See README "Sensorless
-// protection".
-constexpr float kOpenLoopCurrentAmps = 0.3f;  // advisory only now; the open-loop
-                                              // voltage no longer scales with it.
-                                              // The real cap is the PSU CC.
+// ~0.015 V, which is BELOW the ESP32 LEDC resolution at a 24 V supply (10-bit:
+// _PWM_RES_BIT 10, _PWM_RES 1023 -> one step is 24/1023 ~ 0.0235 V), so the duty
+// rounds to zero and the motor gets no output at all - that was the real "it will
+// not spin" cause. See README "Sensorless protection".
+// The open-loop current is instead bounded in software: poll() reads the shunt and
+// chops the voltage whenever the measured phase current exceeds the threshold below.
+constexpr float kOpenLoopCurrentAmps = 0.5f;  // software chop threshold, enforced in
+                                              // FocDrive::poll() with getPhaseCurrents().
+                                              // Match the bench PSU CC to this number.
+constexpr uint32_t kOpenLoopOcTripMs = 500;  // chopping must bring the current back
+                                            // below the threshold within this long, or
+                                            // the drive stops and prints #OC (shorted
+                                            // winding or bad current-sense offset).
 constexpr uint32_t kOpenLoopCooldownMs = 10000;  // after any open-loop stop the next
                                                  // O/N/G is refused for 10 s: duty
                                                  // never exceeds 50 percent
