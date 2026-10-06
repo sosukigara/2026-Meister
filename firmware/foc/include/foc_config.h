@@ -15,9 +15,9 @@
 
 namespace foc_cfg {
 
-constexpr int kDriverPinA = 32;    // MKSREPO  BLDCDriver3PWM(32, 33, 25, 12), M0 driver1
-constexpr int kDriverPinB = 33;    // MKSREPO
-constexpr int kDriverPinC = 25;    // MKSREPO
+constexpr int kDriverPinA = 26;    // MKSREPO  BLDCDriver3PWM(26, 27, 14, 12), M1
+constexpr int kDriverPinB = 27;    // MKSREPO
+constexpr int kDriverPinC = 14;    // MKSREPO
 constexpr int kDriverEnable = 12;  // MKSREPO  M1 gate driver ENABLE
                                   // GPIO12 is an ESP32 strapping pin: hold it in the
                                   // bootloader state with a pull-DOWN or nothing. Never
@@ -28,12 +28,12 @@ constexpr float kSupplyVolts = 24.0f;  // ARTICLE / bench PSU. The official exam
 
 constexpr float kShuntOhms = 0.01f;      // MKSREPO  InlineCurrentSense(0.01f, 50.0f, 35, 34)
 constexpr float kCurrentSenseGain = 50.0f;  // MKSREPO
-constexpr int kCurrentSensePinA = 39;    // MKSREPO  M0 InlineCurrentSense(0.01, 50.0, 39, 36)
-constexpr int kCurrentSensePinB = 36;    // MKSREPO
+constexpr int kCurrentSensePinA = 35;    // MKSREPO  M1 InlineCurrentSense(0.01, 50.0, 35, 34)
+constexpr int kCurrentSensePinB = 34;    // MKSREPO
 
-constexpr int kI2cBusIndex = 0;      // MKSREPO  TwoWire(0) for M0. M1 uses TwoWire(1).
-constexpr int kI2cSdaPin = 19;       // MKSREPO  M0 begin(19, 18, 400000UL)
-constexpr int kI2cSclPin = 18;        // MKSREPO
+constexpr int kI2cBusIndex = 1;      // MKSREPO  TwoWire(1) for M1. M0 uses TwoWire(0).
+constexpr int kI2cSdaPin = 23;       // MKSREPO  M1 begin(23, 5, 400000UL)
+constexpr int kI2cSclPin = 5;        // MKSREPO
 constexpr uint32_t kI2cClockHz = 400000UL;  // MKSREPO
 
 // AS5600 fast mode. The CONF register is volatile, so this write must be repeated on
