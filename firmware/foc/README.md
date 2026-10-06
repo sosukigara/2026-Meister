@@ -11,6 +11,9 @@ The behaviour follows a Japanese article sketch. Where the article and the offic
 repository disagree, the **official repository wins** and the discrepancy is listed in
 [未確認](#未確認--要確認) below.
 
+Bring-up history (why it would not spin, why it once overheated, what the safety
+guards do and do not guarantee): [docs/bringup_notes.md](docs/bringup_notes.md).
+
 ## Versions
 
 | Package | Pin | Why |
@@ -175,6 +178,9 @@ for the one-shot reports the operator needs.
   and only breaks things. Not called anywhere in this project.
 - **No `cs.linkDriver()`.** It does not exist in 2.2.1; `cs.init()` followed by
   `motor.linkCurrentSense(&cs)` is the whole sequence.
+- **`iq_a` / `id_a` read 0.000 in sensorless mode by design.** `poll()` deliberately skips
+  `motor_.loopFOC()` for `velocity_openloop` / `angle_openloop`, so `motor_.current` is never
+  refreshed. A zero current column is a telemetry artifact, not a stall.
 - **Limit changes come in pairs.** `BLDCMotor::init()` copies `current_limit` into
   `PID_velocity.limit` for non-voltage torque control (`BLDCMotor.cpp:53-58`). Writing only
   `current_limit` leaves the velocity loop on the old ceiling until the next `init()`.
