@@ -114,17 +114,27 @@ What the firmware does:
    `O`/`N`/`G` inside `kOpenLoopCooldownMs` (10 s) is refused (`#BUSY`), so duty
    never exceeds 50 percent.
 
-What the firmware **cannot** do, and why:
+What the firmware cannot do, and why:
 
-- It cannot cap the current. `phase_resistance` is deliberately **not** set:
-  setting it makes SimpleFOC derive the open-loop voltage as
-  `current_limit x phase_resistance` (`BLDCMotor.cpp:622-623`), which for this
-  low-ohm winding is ~0.015 V - below the ESP32 LEDC step (~0.094 V at 24 V) - so
-  the duty rounds to zero and the motor produces no output at all. Using a small
-  current on a low-ohm winding is not achievable through PWM.
-- **The real, only dependable current limit is the bench supply's CC setting.**
-  Set it to 0.5 A before any sensorless run. With CC at 0.5 A the worst case is
-  0.25 W and nothing can overheat, regardless of what the firmware commands.
+- It cannot use SimpleFOC's built-in current control in open loop. `phase_resistance`
+  is deliberately **not** set: setting it makes SimpleFOC derive the open-loop voltage
+  as `current_limit x phase_resistance` (`BLDCMotor.cpp:622-623`), which for this
+  low-ohm winding is ~0.015 V - below the ESP32 LEDC step (10-bit, `24/1023` ~ 0.0235 V
+  at 24 V) - so the duty rounds to zero and the motor produces no output at all. True
+  FOC current control (`foc_current`) does limit current but needs the rotor angle,
+  i.e. the encoder, so it is unavailable sensorless.
+
+What the firmware does to bound current:
+
+- **Software over-current chop.** In every open-loop poll it reads the shunt
+  (`InlineCurrentSense::getPhaseCurrents()`), and while the measured phase current
+  exceeds `kOpenLoopCurrentAmps` (0.5 A) it chops the voltage to zero, restoring it
+  with hysteresis once the current drops. If it cannot recover within
+  `kOpenLoopOcTripMs` (500 ms) the drive stops and prints `#OC`.
+- **The bench supply CC is still the fast, dependable limit.** Set it to 0.5 A before
+  any sensorless run: the software chop runs at the loop period and cannot catch a
+  transient faster than that, so CC stays the guarantee. With CC at 0.5 A the worst
+  case is 0.25 W and nothing can overheat, regardless of what the firmware commands.
 
 Software cannot protect a shorted winding or shorted wiring. Never leave a
 sensorless run unattended.

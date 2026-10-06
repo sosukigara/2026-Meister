@@ -287,6 +287,19 @@ void FocDrive::stop() {
   sine_on_ = false;  // TEMP
   openloop_cool_until_ = millis() + foc_cfg::kOpenLoopCooldownMs;
   target_ = 0.0f;
+  ol_over_ = false;
+  ol_imag_ = 0.0f;
+  motor_.voltage_limit = foc_cfg::kVoltageLimitVolts;
+}
+
+float FocDrive::readPhaseCurrentMax() {
+  const PhaseCurrent_s c = cs_.getPhaseCurrents();
+  const float ia = c.a >= 0.0f ? c.a : -c.a;
+  const float ib = c.b >= 0.0f ? c.b : -c.b;
+  const float icv = c.a + c.b;  // ic is not wired; ia+ib+ic=0 recovers it
+  const float ic = icv >= 0.0f ? icv : -icv;
+  const float m = ia > ib ? ia : ib;
+  return ic > m ? ic : m;
 }
 
 void FocDrive::poll() {
@@ -302,11 +315,31 @@ void FocDrive::poll() {
       const float t = (millis() - sine_t0ms_) * 0.001f;
       target_ = sine_amp_ * sinf(6.2831853f * foc_cfg::kSineFreqHz * t);
     }
-    if (motor_.enabled) motor_.move(target_);
-    return;
-  }
-  if (motor_.controller == MotionControlType::angle_openloop) {  // TEMP G
-    if (motor_.enabled) motor_.move(target_);
+    if (motor_.enabled) {
+      // Software over-current limit. SimpleFOC open loop applies a fixed voltage with no
+      // current feedback, so the shunt is the only place to catch a stall. Chop the
+      // voltage while the current is high, restore it with hysteresis once it drops, and
+      // trip if chopping cannot recover within kOpenLoopOcTripMs.
+      ol_imag_ = readPhaseCurrentMax();
+      if (ol_imag_ > foc_cfg::kOpenLoopCurrentAmps) {
+        motor_.voltage_limit = 0.0f;
+        if (!ol_over_) {
+          ol_over_ = true;
+          ol_over_since_ms_ = millis();
+        } else if (millis() - ol_over_since_ms_ > foc_cfg::kOpenLoopOcTripMs) {
+          const float seen = ol_imag_;
+          stop();
+          Serial.print(F("#OC overcurrent trip, I="));
+          Serial.print(seen, 2);
+          Serial.println(F(" A"));
+          return;
+        }
+      } else if (ol_imag_ < foc_cfg::kOpenLoopCurrentAmps * 0.7f) {
+        motor_.voltage_limit = foc_cfg::kOpenLoopVoltageVolts;
+        ol_over_ = false;
+      }
+      motor_.move(target_);
+    }
     return;
   }
   motor_.loopFOC();

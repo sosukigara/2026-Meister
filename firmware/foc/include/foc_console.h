@@ -24,6 +24,7 @@ class FocConsole {
   FocDrive& drive_;
   FocBoard& board_;
   uint32_t next_telemetry_ms_ = 0;
+  uint32_t next_iol_ms_ = 0;
 };
 
 #endif  // FOC_CONSOLE_H
