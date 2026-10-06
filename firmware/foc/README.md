@@ -109,7 +109,7 @@ winding and smoked the wiring. The MKS V2.0 example itself calls 2.0 V
 
 What the firmware does:
 
-1. `O`/`N`/`G` run at `kOpenLoopVoltageVolts` (0.5 V), not 2.0 V.
+1. `O`/`N`/`G` run at `kOpenLoopVoltageVolts` (1.0 V), not 2.0 V.
 2. Every run stops itself after `kOpenLoopTimeoutMs` (10 s, `#TIMEOUT`), and a new
    `O`/`N`/`G` inside `kOpenLoopCooldownMs` (10 s) is refused (`#BUSY`), so duty
    never exceeds 50 percent.
@@ -126,24 +126,27 @@ What the firmware cannot do, and why:
 
 What the firmware does to bound current:
 
-- **The 0.5 V open-loop ceiling is the limit.** SimpleFOC open loop applies a fixed
-  voltage with no current feedback, so the current follows physics: at 0.5 V this winding
-  draws ~4 A (measured `#IOL` peaks ~4.8 A; `R ~ 0.13 ohm`) ~ 2 W of heat. That is why
-  2.0 V is what smoked the wiring and 0.5 V is safe. There is deliberately **no** active
-  current loop: an earlier voltage fold-back starved the motor (it pulled the applied
-  voltage down to ~0.05 V, only 2 of the 1023 ESP32 LEDC steps, so the rotating field was
-  far too coarse and the rotor only vibrated instead of turning).
+- **The 1.0 V open-loop ceiling is the limit.** SimpleFOC open loop applies a fixed
+  voltage with no current feedback, so the current follows physics: at 1.0 V this winding
+  draws ~7.7 A (`1.0 V / ~0.13 ohm`; `#IOL` reads ~8 A) ~ 8 W of heat, and at the previous
+  0.5 V it drew ~3.9 A ~ 1.9 W. That is why 2.0 V (~31 W) is what smoked the wiring. There
+  is deliberately **no** active current loop: an earlier voltage fold-back starved the motor
+  (it pulled the applied voltage down to ~0.05 V, only 2 of the 1023 ESP32 LEDC steps, so
+  the rotating field was far too coarse and the rotor only vibrated instead of turning).
+  1.0 V is a short-burst value; do not run it continuously without the encoder.
 - **`#OC` trip.** poll() reads the shunt (`InlineCurrentSense::getPhaseCurrents()`) and
   stops with `#OC` if the phase current stays above `kOpenLoopOcTripAmps` (4 A) for
   `kOpenLoopOcTripMs` (500 ms) - meant for a phase short, not a normal run.
-- **The bench supply CC is the fast backstop.** Set it to 0.5 A so a wiring fault cannot
-  push more than 0.25 W even during the trip window.
+- **The bench supply CC bounds the *supply* current, not the winding current.** At 1.0 V the
+  PWM duty is only ~4 %, so the phase current is ~25x the DC input current: a 0.5 A CC only
+  bites at ~12 A of phase current. It protects the wiring and the supply, but it is **not** a
+  winding-heat limit at this voltage - the winding heat is `V^2 / R`.
 
-**✗ 未検証**: with the bench CC set to 0.5 A the `#IOL` monitor still reads 3-4.8 A. Either
-that CC value is not actually in effect, or the shunt/ADC calibration on this board is off.
-Until that is settled, treat `#IOL` and the `#OC` trip as **indicative only** and keep the
-bench CC as the real limit. A sensorless spin that reaches a hand-held, lukewarm driver is
-the observed good state; the motor itself stayed cool.
+**✗ 未検証**: the `#IOL` monitor reads ~8 A at 1.0 V, consistent with `1.0 V / ~0.13 ohm`, so
+the shunt is believed good; but `R ~ 0.13 ohm` was inferred from those same readings and has
+not been independently measured. Until it is, treat `#IOL` and the `#OC` trip as
+**indicative only**. A sensorless spin that leaves the motor cool and the driver lukewarm is
+the observed good state at 0.5 V.
 
 Software cannot protect a shorted winding or shorted wiring. Never leave a
 sensorless run unattended.
