@@ -1,6 +1,6 @@
-# MKS ESP32 FOC V2.0 winch driver (channel M0)
+# MKS ESP32 FOC V2.0 winch driver (channel M1)
 
-A **standalone** PlatformIO project for the MKS ESP32 FOC V2.0 board (channel **M0**)
+A **standalone** PlatformIO project for the MKS ESP32 FOC V2.0 board (channel **M1**)
 driving a BLDC winch with [SimpleFOC](https://simplefoc.cc) 2.2.1.
 
 It is deliberately **not** part of the sibling `firmware/main/` MSTE binary-protocol build. It
@@ -24,16 +24,16 @@ repository disagree, the **official repository wins** and the discrepancy is lis
 Every value below is defined exactly once, in `include/foc_config.h`, with a provenance tag.
 Source: `github.com/makerbase-motor/MKS-ESP32FOC`, branch `MKS-ESP32-FOC-V2.0`, dir
 `Test Code/`, files `11_close_loop_velocity_example*.ino` and
-`12_close_loop_position_example*.ino` (channel M0/M1 pair). The article values match M1;
+`12_close_loop_position_example*.ino` (channel M1). The article values match M1;
 
 | Signal | Value | Source |
 |---|---|---|
-| Motor phase PWM A / B / C | GPIO 32 / 33 / 25 | MKSREPO (M0) |
+| Motor phase PWM A / B / C | GPIO 26 / 27 / 14 | MKSREPO (M1) |
 | Driver enable (ENABLE) | GPIO 12 | MKSREPO |
-| Current sense A / B | GPIO 39 / 36 | MKSREPO (M0) |
+| Current sense A / B | GPIO 35 / 34 | MKSREPO (M1) |
 | Shunt / gain | 0.01 Ω / 50.0 | MKSREPO |
-| I2C SDA / SCL / clock | GPIO 19 / 18 / 400 kHz | MKSREPO (M0) |
-| I2C bus index | 0 (`TwoWire(0)`) | MKSREPO (M0) |
+| I2C SDA / SCL / clock | GPIO 23 / 5 / 400 kHz | MKSREPO (M1) |
+| I2C bus index | 1 (`TwoWire(1)`) | MKSREPO (M1) |
 | AS5600 address | 0x36 | SimpleFOC `sensors/MagneticSensorI2C.cpp:5` |
 | VIN sense | GPIO 13, `mV * 8.5 / 1000` | MKSREPO |
 | Motor | 5010 360KV, **7** pole pairs | MKSREPO |
@@ -195,7 +195,7 @@ bench-checked before the firmware is trusted with load.
 | Value | In config as | Why it is unconfirmed |
 |---|---|---|
 | Undervoltage threshold | `kUndervoltageVolts = 20.0f` | The official example uses 11.1 V because it targets a 12 V pack. This build feeds 24 V, so the official number would never trip. 20.0 V is a reasoned pick, **not** measured. The gate currently only refuses to run while the supply reads below it. **✗ 未検証**: no 24 V bench measurement yet. |
-| I2C bus index | `kI2cBusIndex = 0` | The official M0 example uses `TwoWire(0)`. **✗ 未検証**: bench check pending. |
+| I2C bus index | `kI2cBusIndex = 1` | The official M1 example uses `TwoWire(1)`. **✗ 未検証**: bench check pending. |
 | Motor pole pairs | `kPolePairs = 7` | Taken from the official example, not measured from the motor that is actually fitted. **✗ 未検証**. |
 | `zero_elec` healthy window | 3.12 – 3.42 rad | The article's observation for this motor, not independently reproduced. Only used for the boot note; the firmware never clamps on it. |
 
