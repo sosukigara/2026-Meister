@@ -47,7 +47,9 @@ ROS 2 (Jazzy) + Gazebo をベースとした自律移動ロボット制御ソフ
 ```
 Meister/
 ├── build.sh                         # ビルドスクリプト（4パッケージ並列）
-├── start_meister.sh                 # 起動スクリプト（ビルドなし・起動のみ）
+├── launch.sh                        # 全体起動（Gazebo + SLAM + Nav2 + Web UI）
+├── launch_vision.sh                 # 画像認識だけ起動（PC カメラ）
+├── kill.sh                          # domain 5 の ROS / Gazebo プロセスを終了
 └── src/
     ├── meistar_description/         # ロボットモデル・シミュレーション定義
     ├── meister_vision/              # 画像認識（ONNX Runtime + YOLOv8n）

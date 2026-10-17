@@ -1,11 +1,11 @@
 #!/bin/bash
 # 画像認識だけを起動する。Gazebo / SLAM / Nav2 / Web UI は起動しない。
-# start_meister.sh と同じ pc_vision.launch.py 経路を使うため、ここに出る検出結果は
+# launch.sh と同じ pc_vision.launch.py 経路を使うため、ここに出る検出結果は
 # 本運と同一ノード・同一パラメータのものになる (カメラだけが PC 内蔵に変わる)。
 #
-# 使い方: ./start_vision.sh
+# 使い方: ./launch_vision.sh
 # 上書きは環境変数で:
-#   DEVICE=/dev/video1 RATE=10.0 THREADS=4 CONF=0.3 ./start_vision.sh
+#   DEVICE=/dev/video1 RATE=10.0 THREADS=4 CONF=0.3 ./launch_vision.sh
 set -eo pipefail
 
 DEVICE="${DEVICE:-/dev/video0}"
@@ -35,7 +35,7 @@ fi
 source "$ROS_SETUP"
 source install/setup.bash
 
-# kill_ros.sh と同じ規則で、ROS_DOMAIN_ID が一致する PID だけを消す。
+# kill.sh と同じ規則で、ROS_DOMAIN_ID が一致する PID だけを消す。
 # 別ドメイン (robocon 等) のスタックを巻き込まないため。
 export ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-5}"
 export ROS_LOCALHOST_ONLY=1
