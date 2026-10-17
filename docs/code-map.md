@@ -39,7 +39,7 @@
 | `meistar_description` | URDF / spawn / 全システム起動 | `launch/all_system.launch.py` `launch/spawn.launch.py` | — |
 | `ros2_autonomous_nav` | Nav2 / SLAM / `real_robot.launch.py` | 各 `launch/*.launch.py` | meistar_description, meister_serial_bridge |
 | `meister_vision` | YOLOv8n ONNX 検出 → `detections` | `detection_node` / `hand_landmarks_node` / `pc_camera`（いずれも C++） | OpenCV, ONNX Runtime |
-| `meister_web_nav` | Web UI（地図・現在地・経路） | `meister_web_nav/web_nav_server.py` | meistar_description |
+| `meister_web_nav` | Web UI（地図・現在地・経路） | `web_nav_server`（C++） | meistar_description |
 | `meister_serial_bridge` | **`/cmd_vel` → UART フレーム、`/esp32/state` ← FB_STATE** | `serial_bridge` / `meister_comm_check` / `meister_hz_measure`（いずれも C++） | libserial, firmware の protocol ソース |
 
 ### `meister_serial_bridge` 内部（PC 側と ESP32 側の接点。ここ最重要）
@@ -62,6 +62,22 @@ Python 版から変えていないので `launch/` と `kill.sh` は無変更で
 > `src/meister_protocol.cpp` を `CMakeLists.txt` が相対パスで直接コンパイルする。
 > 軸数を変えるときは `meister_config.h` の定数と firmware のテストだけで済む。
 > PC 側の値域クランプも同じ `generated_config.h` を読むので二重定義は残っていない。
+
+### `meister_web_nav` 内部（Web UI サーバー）
+
+2026-10-17 に `ament_python` から `ament_cmake` へ移行した。実行ファイル名は
+Python 版から変えていないので `launch/web_nav.launch.py` は無変更で動く。
+
+| ファイル | 役割 | 備考 |
+|---|---|---|
+| `include/.../map_cache.hpp` / `src/map_cache.cpp` | 地図の crop・PNG エンコード・ETag 用の版管理 | OpenCV の `imencode` で PNG 化。crop は既知セルの 5% 余白（最低 2） |
+| `include/.../ports.hpp` | ROS 非依存の口（`MapSource` / `NavSink` / `Waypoint`） | gtest の stub が本物の `MapCache`/`MetadataOf` を再利用する |
+| `include/.../map_listener.hpp` / `src/map_listener.cpp` | rclcpp ノード。`/map`・`/tf` を購読し、`MapSource` を満たす | `MetadataOf` は `map_cache.cpp` 側に一箇所 |
+| `include/.../nav_worker.hpp` / `src/nav_worker.cpp` | Nav2 action client を内包するワーカー | `nav2_msgs::action::NavigateToPose` を C++ で直接叩く |
+| `include/.../http_app.hpp` / `src/http_app.cpp` | httplib ルーティング・ conditional GET・ JSON 解析 | ETag は quoted 形式、weak 比較、multi-header 対応 |
+| `src/web_nav_server.cpp` | エントリポイント。MapListener と NavWorker を束ねる | bind `127.0.0.1:8088`、起動メッセージ `[meister_web_nav] Web UI ready at http://localhost:8088` |
+| `test/test_map_cache.cpp` `test/test_http_app.cpp` `test/test_map_listener.cpp` | gtest | ROS 非依存。MapCache/ETag/metadata の契約を固定 |
+| `launch/web_nav.launch.py` / `webui/*` | 起動と静的資産 | Python のまま据え置き |
 
 ### `meister_vision` 内部（検出基盤）
 
