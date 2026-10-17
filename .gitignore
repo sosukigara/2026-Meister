@@ -3,6 +3,7 @@ install/
 log/
 .serena/
 .opencode/
+.worktrees/
 
 # Session work / local artifacts
 # `.omo/*` (not `.omo/`) is required so git descends into `.omo/` and reads the
