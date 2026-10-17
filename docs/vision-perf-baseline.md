@@ -130,5 +130,5 @@ Orange Pi 5 Max 8GB 実機で以下を測っていない。開発機の値から
 - 機能要件: [features/09-object-grasping.md](features/09-object-grasping.md)
 - 設計: [design/09-object-grasping.md](design/09-object-grasping.md)
 - コードマップ: [code-map.md](code-map.md)
-- 起動スクリプト: `start_meister.sh`（Gazebo と SLAM と Nav2 を起動。
+- 起動スクリプト: `launch.sh`（Gazebo と SLAM と Nav2 を起動。
   vision は `mapping_nav.launch.py` 経由で上がる）

@@ -1,7 +1,7 @@
 #!/bin/bash
 # ==========================================
 # Meistar ROS 2 起動スクリプト
-# 使い方: ./start_meister.sh [warehouse|maze|empty]
+# 使い方: ./launch.sh [warehouse|maze|empty]
 # 事前に ./build.sh を実行しておくこと
 # ==========================================
 set -eo pipefail
@@ -59,7 +59,7 @@ export __EGL_VENDOR_LIBRARY_FILENAMES=/usr/share/glvnd/egl_vendor.d/10_nvidia.js
 # 前回の起動が残っていると gz / Web UI(8088) / rviz が二重起動で競合するため、
 # 先に全ての ROS 関連プロセスを終了してから起動する
 echo "=== 既存の ROS プロセスを終了します ==="
-"$WORKSPACE_ROOT/kill_ros.sh" || true
+"$WORKSPACE_ROOT/kill.sh" || true
 
 cleanup() {
     echo ""

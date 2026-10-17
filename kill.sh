@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# kill_ros.sh — 指定ドメインの ROS / Gazebo 関連プロセスのみ終了させる
-# 使い方: ./kill_ros.sh
+# kill.sh — 指定ドメインの ROS / Gazebo 関連プロセスのみ終了させる
+# 使い方: ./kill.sh
 #   - 対象ドメインは既定で 5 (ROS_DOMAIN_ID 環境変数で上書き可)
 #   - ROS_DOMAIN_ID が一致するプロセスのみ SIGINT → SIGKILL → daemon 停止
 # 注意: 他ドメイン (robocon 等) のスタックには一切触れない
@@ -46,7 +46,7 @@ PATTERNS=(
   "pc_camera"
 )
 
-# 括弧トリックで kill_ros.sh 自身や grep にマッチしないようにする
+# 括弧トリックで kill.sh 自身や grep にマッチしないようにする
 # さらに /proc/<pid>/environ で ROS_DOMAIN_ID が一致するプロセスのみ対象にする
 pid_on_target_domain() {
   local pid="$1"
@@ -95,7 +95,7 @@ if [ "$left" -eq 0 ]; then
 else
   echo "==> 警告: domain $TARGET_DOMAIN に $left プロセスが残っています"
   pgrep -af "ros2|gz sim|slam_toolbox|web_nav|bridge|component_container" \
-    | grep -v "kill_ros" \
+    | grep -v "kill\.sh" \
     | while IFS= read -r line; do
         pid=$(echo "$line" | awk '{print $1}')
         if pid_on_target_domain "$pid"; then echo "$line"; fi

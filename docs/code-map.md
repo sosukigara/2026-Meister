@@ -45,7 +45,7 @@
 ### `meister_serial_bridge` 内部（PC 側と ESP32 側の接点。ここ最重要）
 
 2026-10-05 に `ament_python` から `ament_cmake` へ移行した。実行ファイル名は
-Python 版から変えていないので `launch/` と `kill_ros.sh` は無変更で動く。
+Python 版から変えていないので `launch/` と `kill.sh` は無変更で動く。
 
 | ファイル | 役割 | 備考 |
 |---|---|---|
@@ -66,7 +66,7 @@ Python 版から変えていないので `launch/` と `kill_ros.sh` は無変�
 ### `meister_vision` 内部（検出基盤）
 
 2026-10-05 に `ament_python` から `ament_cmake` へ移行した。実行ファイル名は
-Python 版から変えていないので `launch/` `start_vision.sh` `kill_ros.sh` は
+Python 版から変えていないので `launch/` `launch_vision.sh` `kill.sh` は
 無変更で動く。ノードは 3 本（物体検出・手中 keypoint・PC カメラ）。
 
 | ファイル | 役割 | 備考 |
@@ -195,7 +195,7 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 |---|---|
 | `firmware/main/platformio.ini` | ビルド env と `MSTE_*` の指定（値は `firmware/main/include/meister_config.h` が既定値として持つ） |
 | `src/meistar_description/config/*.yaml` | URDF / Nav2 パラメータ / ブリッジ（ros_gz 用。シリアル設定は**含まない**） |
-| `build.sh` / `start_meister.sh` / `kill_ros.sh` | ビルドと起動。`start_meister.sh:44-48` は VPN 環境のマルチキャスト障害回避で `ROS_LOCALHOST_ONLY=1` を設定（**子プロセスのみ**。別ターミナルの `ros2` CLI には継承されない） |
+| `build.sh` / `launch.sh` / `launch_vision.sh` / `kill.sh` | ビルドと起動。`launch.sh:44-48` は VPN 環境のマルチキャスト障害回避で `ROS_LOCALHOST_ONLY=1` を設定（**子プロセスのみ**。別ターミナルの `ros2` CLI には継承されない） |
 | `docs/{features,functions,design}/NN-*.md` | 4 層ドキュメント（やりたいこと → features → functions → design） |
 
 ---
