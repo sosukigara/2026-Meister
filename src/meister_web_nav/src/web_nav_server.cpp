@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 /// Web UI サーバーの起動と配線。
 ///
-/// 地図は専用 Executor、ナビゲータは NavWorker の専用スレッドで動かし、HTTP は
-/// httplib のスレッドプールに任せる。地図の Node を NavWorker と共有すると、
+/// 地図と認識画像は専用 Executor、ナビゲータは NavWorker の専用スレッドで動かし、
+/// HTTP は httplib のスレッドプールに任せる。地図の Node を NavWorker と共有すると、
 /// worker 側の spin_until_future_complete と Executor が同じ Node を奪い合う。
 #include <chrono>
 #include <filesystem>
@@ -17,6 +17,7 @@
 #include "meister_web_nav/http_app.hpp"
 #include "meister_web_nav/map_listener.hpp"
 #include "meister_web_nav/nav_worker.hpp"
+#include "meister_web_nav/vision_listener.hpp"
 
 namespace {
 
@@ -37,15 +38,18 @@ int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
 
   auto map_listener = std::make_shared<meister_web_nav::MapListener>();
-  rclcpp::executors::SingleThreadedExecutor map_executor;
-  map_executor.add_node(map_listener);
-  std::thread map_thread([&map_executor] { map_executor.spin(); });
+  auto vision_listener = std::make_shared<meister_web_nav::VisionListener>();
+  rclcpp::executors::SingleThreadedExecutor ros_executor;
+  ros_executor.add_node(map_listener);
+  ros_executor.add_node(vision_listener);
+  std::thread ros_thread([&ros_executor] { ros_executor.spin(); });
 
   meister_web_nav::NavWorker nav_worker;
   nav_worker.Start();
 
   httplib::Server server;
-  meister_web_nav::RegisterRoutes(server, WebuiDir(), *map_listener, nav_worker);
+  meister_web_nav::RegisterRoutes(server, WebuiDir(), *map_listener, nav_worker,
+                                  *vision_listener);
 
   // rclcpp の SIGINT ハンドラは rclcpp::ok() を false にしてこのコールバックを呼ぶ。
   // httplib の listen は自分で止まるまで戻らないので、ここで止めないと Ctrl+C の後も
@@ -56,8 +60,8 @@ int main(int argc, char** argv) {
     std::cerr << "[meister_web_nav] " << kBindAddress << ":" << kPort
               << " を listen できない" << std::endl;
     nav_worker.Stop();
-    map_executor.cancel();
-    map_thread.join();
+    ros_executor.cancel();
+    ros_thread.join();
     rclcpp::shutdown();
     return 1;
   }
@@ -68,8 +72,8 @@ int main(int argc, char** argv) {
   server.listen_after_bind();
 
   nav_worker.Stop();
-  map_executor.cancel();
-  map_thread.join();
+  ros_executor.cancel();
+  ros_thread.join();
   rclcpp::shutdown();
   return 0;
 }

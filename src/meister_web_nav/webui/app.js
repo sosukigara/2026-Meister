@@ -1,271 +1,235 @@
+// SPDX-License-Identifier: MIT
+// 画面の組み立てと配線。値の取得は各パネルに任せ、ここは「誰が何を持つか」と
+// 操作の入口だけを決める。
 'use strict';
 
-const canvas = document.getElementById('map-canvas');
-const ctx = canvas.getContext('2d');
-const statusBanner = document.getElementById('status-banner');
-const waypointListEl = document.getElementById('waypoint-list');
-const btnUndo = document.getElementById('btn-undo');
-const btnClear = document.getElementById('btn-clear');
-const btnSend = document.getElementById('btn-send');
-const btnCancel = document.getElementById('btn-cancel');
+import {
+  getJson,
+  onConnectionChange,
+  postJson,
+  secondsSinceLastSuccess,
+} from './js/api.js';
+import { createEventLog } from './js/events.js';
+import { createSignalStrip } from './js/instruments.js';
+import { createMapView } from './js/map_view.js';
+import { BUSY_STATES, createNavStatus, stateLabel, stateTone } from './js/nav_status.js';
+import { createVisionPanel } from './js/vision_panel.js';
+import { createWaypointPanel } from './js/waypoints.js';
+import { degrees, position } from './js/format.js';
 
-let mapMeta = null;
-let mapImage = null;
-let markers = []; // {x, y, yaw} in map frame (meters, radians)
-let robotPose = null; // {x, y, yaw} in map frame (latest /api/pose)
-let trail = []; // recent robot positions in map frame
-let drag = null; // {startX, startY} in canvas pixel coords, while dragging
+const el = (id) => document.getElementById(id);
 
-const DRAG_THRESHOLD_PX = 6;
-const TRAIL_MAX_POINTS = 300;
-const TRAIL_MIN_SPACING = 0.05; // meters: 間引きして点の塊を防ぐ
+const log = createEventLog({
+  listEl: el('event-log'),
+  toastsEl: el('toasts'),
+  clearButton: el('btn-log-clear'),
+});
+const signals = createSignalStrip();
+let busy = false;
 
-function pixelToWorld(px, py) {
-  const { resolution, origin, height } = mapMeta;
-  const x = origin.x + px * resolution;
-  const y = origin.y + (height - py) * resolution;
-  return { x, y };
-}
+const mapView = createMapView({
+  canvas: el('map-canvas'),
+  stage: el('map-stage'),
+  onPlace: (point, yaw) => {
+    waypoints.add({ x: point.x, y: point.y, yaw });
+    log.info(`目的地を追加 (${position(point.x, point.y)} m / 向き ${degrees(yaw)})`);
+  },
+  onNotice: (message) => log.warn(message),
+});
 
-function canvasPointFromEvent(evt) {
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  return {
-    x: (evt.clientX - rect.left) * scaleX,
-    y: (evt.clientY - rect.top) * scaleY,
-  };
-}
+const waypoints = createWaypointPanel({
+  listEl: el('waypoint-list'),
+  emptyEl: el('waypoint-empty'),
+  countEl: el('tour-count'),
+  distanceEl: el('tour-distance'),
+  onHover: (index) => mapView.highlight(index),
+  onCountChange: () => {
+    mapView.setWaypoints(waypoints.list());
+    refreshActions();
+  },
+});
 
-function redraw(previewArrow) {
-  if (!mapImage) return;
-  ctx.drawImage(mapImage, 0, 0, canvas.width, canvas.height);
-
-  drawTrail();
-  markers.forEach((m, i) => drawMarker(m, i + 1));
-  drawRobot();
-
-  if (previewArrow) {
-    drawArrow(previewArrow.startPx, previewArrow.startPy, previewArrow.endPx, previewArrow.endPy, '#4f9dff');
-  }
-}
-
-function drawTrail() {
-  if (trail.length < 2) return;
-  ctx.beginPath();
-  trail.forEach((p, i) => {
-    const { px, py } = worldToPixel(p.x, p.y);
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  });
-  ctx.strokeStyle = 'rgba(63, 169, 255, 0.7)';
-  ctx.lineWidth = 2;
-  ctx.lineJoin = 'round';
-  ctx.lineCap = 'round';
-  ctx.stroke();
-}
-
-function drawRobot() {
-  if (!robotPose) return;
-  const { px, py } = worldToPixel(robotPose.x, robotPose.y);
-  const arrowLen = Math.max(canvas.width, canvas.height) * 0.035;
-  const endPx = px + Math.cos(robotPose.yaw) * arrowLen;
-  const endPy = py - Math.sin(robotPose.yaw) * arrowLen;
-  drawArrow(px, py, endPx, endPy, '#3fa9ff');
-
-  ctx.beginPath();
-  ctx.arc(px, py, 5, 0, Math.PI * 2);
-  ctx.fillStyle = '#3fa9ff';
-  ctx.fill();
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-}
-
-function worldToPixel(x, y) {
-  const { resolution, origin, height } = mapMeta;
-  const px = (x - origin.x) / resolution;
-  const py = height - (y - origin.y) / resolution;
-  return { px, py };
-}
-
-function drawMarker(marker, label) {
-  const { px, py } = worldToPixel(marker.x, marker.y);
-  const arrowLen = Math.max(canvas.width, canvas.height) * 0.04;
-  const endPx = px + Math.cos(marker.yaw) * arrowLen;
-  const endPy = py - Math.sin(marker.yaw) * arrowLen;
-  drawArrow(px, py, endPx, endPy, '#ff9d3e');
-
-  ctx.beginPath();
-  ctx.arc(px, py, 6, 0, Math.PI * 2);
-  ctx.fillStyle = '#ff5c5c';
-  ctx.fill();
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  ctx.fillStyle = '#ffffff';
-  ctx.font = 'bold 12px sans-serif';
-  ctx.fillText(String(label), px + 8, py - 8);
-}
-
-function drawArrow(x1, y1, x2, y2, color) {
-  ctx.beginPath();
-  ctx.moveTo(x1, y1);
-  ctx.lineTo(x2, y2);
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.stroke();
-}
-
-function renderWaypointList() {
-  waypointListEl.innerHTML = '';
-  markers.forEach((m, i) => {
-    const li = document.createElement('li');
-    const label = document.createElement('span');
-    label.textContent = `#${i + 1}  (${m.x.toFixed(2)}, ${m.y.toFixed(2)})`;
-    const del = document.createElement('button');
-    del.textContent = '✕';
-    del.title = '削除';
-    del.addEventListener('click', () => {
-      markers.splice(i, 1);
-      renderWaypointList();
-      redraw();
+const vision = createVisionPanel({
+  imageEl: el('vision-stream'),
+  emptyEl: el('vision-empty'),
+  badgeEl: el('vision-badge'),
+  fpsEl: el('vision-fps'),
+  ageEl: el('vision-age'),
+  sizeEl: el('vision-size'),
+  countEl: el('vision-count'),
+  listEl: el('vision-detections'),
+  sourceEl: el('vision-source'),
+  toggleEl: el('btn-vision-toggle'),
+  onNotice: (message, kind) => (kind === 'error' ? log.error(message) : log.info(message)),
+  onState: (status) => {
+    signals.setVision({
+      value: status.has_frame ? `${status.fps.toFixed(1)} fps` : '—',
+      note: status.monitor ? `検出 ${status.detection_count ?? 0} 件` : '停止中',
+      tone: !status.monitor ? 'idle' : status.has_frame && !status.stale ? 'ok' : 'warn',
     });
-    li.appendChild(label);
-    li.appendChild(del);
-    waypointListEl.appendChild(li);
-  });
-  btnSend.disabled = markers.length === 0;
+  },
+});
+
+const nav = createNavStatus({
+  badgeEl: el('nav-badge'),
+  messageEl: el('nav-message'),
+  onSignal: (status) => {
+    signals.setNav({
+      value: stateLabel(status.state),
+      note: status.nav2_ready ? 'Nav2 準備完了' : 'Nav2 待ち',
+      tone: stateTone(status.state),
+    });
+  },
+  onState: (status) => {
+    busy = BUSY_STATES.has(status.state);
+    refreshActions();
+    document.title = `${status.message} — Meister`;
+    log.info(`航行: ${status.message}`);
+  },
+});
+
+function refreshActions() {
+  const count = waypoints.count();
+  el('btn-send').disabled = count === 0 || busy;
+  el('btn-cancel').disabled = !busy;
+  el('btn-undo').disabled = count === 0 || busy;
+  el('btn-clear').disabled = count === 0 || busy;
 }
 
 async function loadMap() {
-  const res = await fetch('/api/map');
-  const meta = await res.json();
-  if (!meta.has_map) {
-    statusBanner.textContent = '地図を待っています... (/map トピック未受信)';
-    return;
-  }
-  mapMeta = meta;
-  trail = []; // 地図座標が変わり得るため軌跡をリセット
-  // canvas.width への代入は代入前の値と同じでもビットマップを消す。
-  // 読込に失敗すると地図が白紙のまま固まる。サイズが変わった時だけ代入する。
-  if (canvas.width !== meta.width || canvas.height !== meta.height) {
-    canvas.width = meta.width;
-    canvas.height = meta.height;
-  }
-
-  const img = new Image();
-  img.onload = () => {
-    mapImage = img;
-    redraw();
-  };
-  // クエリを付けると URL が毎回変わり、ETag の条件付きリクエストが成立しない。
-  // ETag 前提ならブラウザが自動で If-None-Match を送り、本文なしの 304 を受ける。
-  // 304 は Image() の内部でキャッシュから解決されるので onload は必ず発火し、
-  // 空の本文をエラー扱いしない。mapImage は onload 内でしか代入されないため、
-  // 読込に失敗しても直前の地図は保持される。
-  // サーバは毎回 ETag を返し Cache-Control は no-cache なので、地図が変わって
-  // いない限り 304 が返り本文は転送されない。
-  img.src = meta.image_url;
-}
-
-canvas.addEventListener('pointerdown', (evt) => {
-  if (!mapMeta) return;
-  const p = canvasPointFromEvent(evt);
-  drag = { startPx: p.x, startPy: p.y };
-  canvas.setPointerCapture(evt.pointerId);
-});
-
-canvas.addEventListener('pointermove', (evt) => {
-  if (!drag) return;
-  const p = canvasPointFromEvent(evt);
-  redraw({ startPx: drag.startPx, startPy: drag.startPy, endPx: p.x, endPy: p.y });
-});
-
-canvas.addEventListener('pointerup', (evt) => {
-  if (!drag || !mapMeta) return;
-  const p = canvasPointFromEvent(evt);
-  const dx = p.x - drag.startPx;
-  const dy = p.y - drag.startPy;
-  const dragDistance = Math.hypot(dx, dy);
-
-  const yaw = dragDistance < DRAG_THRESHOLD_PX ? 0 : Math.atan2(-dy, dx);
-  const world = pixelToWorld(drag.startPx, drag.startPy);
-  markers.push({ x: world.x, y: world.y, yaw });
-
-  drag = null;
-  renderWaypointList();
-  redraw();
-});
-
-btnUndo.addEventListener('click', () => {
-  markers.pop();
-  renderWaypointList();
-  redraw();
-});
-
-btnClear.addEventListener('click', () => {
-  markers = [];
-  renderWaypointList();
-  redraw();
-});
-
-btnSend.addEventListener('click', async () => {
-  if (markers.length === 0) return;
-  btnSend.disabled = true;
+  if (document.hidden) return; // 見えていない画面のために地図を運ばない
   try {
-    await fetch('/api/nav', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ waypoints: markers }),
+    const meta = await getJson('/api/map');
+    if (!meta.has_map) {
+      signals.setMap({ value: '—', note: '未受信', tone: 'idle' });
+      el('map-empty').hidden = false;
+      return;
+    }
+    mapView.setMapMeta(meta);
+    el('map-empty').hidden = true;
+    signals.setMap({
+      value: `${meta.width}×${meta.height}`,
+      note: `${meta.resolution} m/px`,
+      tone: 'ok',
     });
-  } finally {
-    btnSend.disabled = markers.length === 0;
-  }
-});
-
-btnCancel.addEventListener('click', () => {
-  fetch('/api/cancel', { method: 'POST' });
-});
-
-async function pollStatus() {
-  try {
-    const res = await fetch('/api/status');
-    const status = await res.json();
-    statusBanner.textContent = status.message || status.state;
-    statusBanner.className = `status-${status.state}`;
-    const busy = status.state === 'sending' || status.state === 'navigating';
-    btnCancel.disabled = !busy;
-  } catch (e) {
-    // server not reachable yet — keep last banner text
+    const image = new Image();
+    image.onload = () => mapView.setImage(image);
+    image.onerror = () => log.warn('地図画像を読み込めませんでした');
+    // クエリを付けると URL が毎回変わり、ETag の条件付きリクエストが成立しない。
+    // サーバーは毎回 ETag と no-cache を返すので、地図が変わっていなければ
+    // ブラウザは 304 を受け取り、本文は転送されない。
+    image.src = meta.image_url;
+  } catch (error) {
+    signals.setMap({ value: '—', note: '未接続', tone: 'bad' });
   }
 }
 
 async function pollPose() {
+  if (document.hidden) return;
   try {
-    const res = await fetch('/api/pose');
-    const pose = await res.json();
-    if (!pose.has_pose) return;
-    robotPose = { x: pose.x, y: pose.y, yaw: pose.yaw };
-
-    const last = trail[trail.length - 1];
-    if (!last || Math.hypot(robotPose.x - last.x, robotPose.y - last.y) >= TRAIL_MIN_SPACING) {
-      trail.push(robotPose);
-      if (trail.length > TRAIL_MAX_POINTS) trail.shift();
+    const pose = await getJson('/api/pose');
+    if (!pose.has_pose) {
+      signals.setPose({ value: '—', note: '未受信', tone: 'idle' });
+      return;
     }
-    redraw();
-  } catch (e) {
-    // server not reachable yet — keep last overlay
+    mapView.setRobot({ x: pose.x, y: pose.y, yaw: pose.yaw });
+    signals.setPose({ value: position(pose.x, pose.y), note: degrees(pose.yaw), tone: 'ok' });
+  } catch (error) {
+    signals.setPose({ value: '—', note: '未接続', tone: 'bad' });
   }
 }
 
+async function sendTour() {
+  const tour = waypoints.list();
+  if (tour.length === 0) return;
+  try {
+    const result = await postJson('/api/nav', { waypoints: tour });
+    log.ok(`${result.count} 地点へのルートを送信しました`);
+  } catch (error) {
+    log.error(`ルートを送信できません: ${error.message}`);
+  }
+}
+
+async function cancelTour() {
+  try {
+    await postJson('/api/cancel');
+    log.warn('停止を要求しました');
+  } catch (error) {
+    log.error(`停止を要求できません: ${error.message}`);
+  }
+}
+
+el('btn-send').addEventListener('click', sendTour);
+el('btn-cancel').addEventListener('click', cancelTour);
+el('btn-undo').addEventListener('click', () => {
+  waypoints.undo();
+  log.info('最後の目的地を消しました');
+});
+el('btn-clear').addEventListener('click', () => {
+  waypoints.clear();
+  log.info('目的地をすべて消しました');
+});
+el('btn-fit').addEventListener('click', () => mapView.fit());
+el('btn-zoom-in').addEventListener('click', () => mapView.zoomBy(1.25));
+el('btn-zoom-out').addEventListener('click', () => mapView.zoomBy(1 / 1.25));
+el('btn-clear-trail').addEventListener('click', () => {
+  mapView.clearTrail();
+  log.info('軌跡を消しました');
+});
+
+const SHORTCUTS = [
+  ['f', () => mapView.fit()],
+  ['z', () => {
+    waypoints.undo();
+    log.info('最後の目的地を消しました');
+  }],
+  ['c', () => {
+    waypoints.clear();
+    log.info('目的地をすべて消しました');
+  }],
+  ['v', () => el('btn-vision-toggle').click()],
+  ['+', () => mapView.zoomBy(1.25)],
+  ['-', () => mapView.zoomBy(1 / 1.25)],
+];
+
+window.addEventListener('keydown', (event) => {
+  if (event.metaKey || event.ctrlKey) return;
+  if (event.target instanceof Element && event.target.closest('input, textarea, select')) {
+    return;
+  }
+  if (event.key === 'Enter') {
+    if (!el('btn-send').disabled) sendTour();
+  } else if (event.key === 'Escape') {
+    if (!el('btn-cancel').disabled) cancelTour();
+  } else {
+    const found = SHORTCUTS.find(([key]) => key === event.key.toLowerCase());
+    if (!found) return;
+    found[1]();
+  }
+  event.preventDefault();
+});
+
+onConnectionChange((online) => {
+  el('offline').hidden = online;
+  if (!online) log.warn('サーバーに接続できません');
+});
+
+setInterval(() => {
+  if (el('offline').hidden) return;
+  const seconds = secondsSinceLastSuccess();
+  el('offline-age').textContent =
+    seconds === null ? 'まだ値がありません' : `最後の受信 ${Math.round(seconds)} 秒前`;
+}, 1000);
+
+refreshActions();
+waypoints.render();
+log.info('画面を初期化しました');
 loadMap();
-// 地図は /map トピックが更新された時だけ変わるので、間隔を縮めても地図は早くならない。
-// ETag が効いた状態でも未更新の 5 秒ごとのコストは条件付きリクエスト 1 回分で、
-// 短くする価値は測定してから決める。
-setInterval(loadMap, 5000);
-setInterval(pollStatus, 1000);
-setInterval(pollPose, 500);
-pollStatus();
 pollPose();
+nav.poll();
+vision.poll();
+// 地図は /map が更新された時だけ変わる。5 秒より短くしても地図は早くならない。
+setInterval(loadMap, 5000);
+setInterval(pollPose, 500);
+setInterval(() => nav.poll(), 1000);
+setInterval(() => vision.poll(), 1000);

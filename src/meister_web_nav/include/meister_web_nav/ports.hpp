@@ -43,6 +43,27 @@ struct NavSink {
   virtual void Cancel() = 0;
 };
 
+/// ストリームに流す 1 フレーム。jpeg は完成品 (境界や長さは HTTP 面が付ける)。
+struct VisionFrame {
+  long seq;
+  std::string jpeg;
+};
+
+struct VisionSource {
+  virtual ~VisionSource() = default;
+
+  /// 認識モニターの状態。monitor / has_frame / stale / fps / detections[*] など。
+  virtual nlohmann::json Status() = 0;
+
+  /// after_seq より新しいフレームを最大 timeout_s 秒待つ。after_seq に -1 を渡すと
+  /// 「いま持っているフレーム」を待たずに返す。無ければ nullopt。
+  virtual std::optional<VisionFrame> Latest(long after_seq, double timeout_s) = 0;
+
+  /// 監視の ON/OFF。ここでは要求を立てるだけで、購読の作成/破棄は executor
+  /// スレッドが行う (HTTP スレッドから購読を触ると executor と競合する)。
+  virtual void SetEnabled(bool enabled) = 0;
+};
+
 }  // namespace meister_web_nav
 
 #endif  // MEISTER_WEB_NAV_PORTS_HPP_

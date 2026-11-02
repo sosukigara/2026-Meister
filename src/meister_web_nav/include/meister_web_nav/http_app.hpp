@@ -29,7 +29,8 @@ bool EtagMatches(const std::optional<std::string>& header, const std::string& et
 /// webui_dir 配下の静的ファイルと /api/* を配信する。地図とナビゲータは port
 /// 経由でしか触らないので、この関数は ROS 無しで test できる。
 void RegisterRoutes(httplib::Server& server, const std::filesystem::path& webui_dir,
-                    MapSource& map_source, NavSink& nav_sink);
+                    MapSource& map_source, NavSink& nav_sink,
+                    VisionSource& vision_source);
 
 }  // namespace meister_web_nav
 
