@@ -3,36 +3,129 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Meister Nav</title>
+<title>Meister 運行コンソール</title>
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-<header>
-  <h1>Meister Web Nav</h1>
-  <div id="status-banner" class="status-idle">起動中...</div>
+<p id="offline" class="offline" hidden role="status" aria-live="polite">
+  サーバーに接続できません — 画面は最後の受信値のままです（<span id="offline-age">—</span>）
+</p>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true"></span>
+    <span class="brand-name">Meister</span>
+    <span class="brand-sub">運行コンソール</span>
+  </div>
+
+  <div id="signals" class="signals">
+    <div class="gauge" id="gauge-map" data-tone="idle">
+      <span class="gauge-label">地図</span>
+      <span class="gauge-value" data-value>—</span>
+      <span class="gauge-note" data-note>待機</span>
+    </div>
+    <div class="gauge" id="gauge-pose" data-tone="idle">
+      <span class="gauge-label">姿勢</span>
+      <span class="gauge-value" data-value>—</span>
+      <span class="gauge-note" data-note>待機</span>
+    </div>
+    <div class="gauge" id="gauge-vision" data-tone="idle">
+      <span class="gauge-label">認識</span>
+      <span class="gauge-value" data-value>—</span>
+      <span class="gauge-note" data-note>待機</span>
+    </div>
+    <div class="gauge" id="gauge-nav" data-tone="idle">
+      <span class="gauge-label">航行</span>
+      <span class="gauge-value" data-value>—</span>
+      <span class="gauge-note" data-note>待機</span>
+    </div>
+  </div>
+
+  <button id="btn-vision-toggle" class="btn btn-quiet" type="button"
+          aria-pressed="true" data-tone="ok">認識モニター ON</button>
 </header>
 
-<main>
-  <section id="map-panel">
-    <canvas id="map-canvas"></canvas>
-    <p class="hint">地図をクリックして目的地を追加。ドラッグすると向きを指定できます。</p>
+<main class="layout">
+  <section class="panel map-panel" aria-label="地図">
+    <div class="panel-head">
+      <h2>地図</h2>
+      <div class="panel-tools">
+        <button id="btn-fit" class="btn btn-quiet" type="button" title="全体表示 (F)">全体</button>
+        <button id="btn-zoom-in" class="btn btn-icon" type="button" title="拡大 (+)">＋</button>
+        <button id="btn-zoom-out" class="btn btn-icon" type="button" title="縮小 (−)">−</button>
+        <button id="btn-clear-trail" class="btn btn-quiet" type="button" title="軌跡を消す">軌跡</button>
+      </div>
+    </div>
+
+    <div class="map-stage" id="map-stage">
+      <canvas id="map-canvas" tabindex="0"
+              aria-label="地図キャンバス。クリックで目的地を追加、ドラッグで向きを指定"></canvas>
+      <p class="map-empty" id="map-empty">地図を待っています…（/map 未受信）</p>
+      <p class="map-hint">クリックで目的地 ／ ドラッグで向き ／ ホイールで拡大 ／ 右ドラッグで移動</p>
+    </div>
+
+    <div class="tour-summary">
+      <span>目的地 <b id="tour-count">0</b> 地点</span>
+      <span>合計 <b id="tour-distance">0.0</b> m</span>
+      <span class="shortcut-note">F 全体 ／ Z 戻す ／ C 全消去 ／ Enter 送信 ／ Esc 停止 ／ V 認識</span>
+    </div>
   </section>
 
-  <aside id="side-panel">
-    <h2>目的地リスト</h2>
-    <ol id="waypoint-list"></ol>
+  <aside class="side">
+    <section class="panel" aria-label="認識モニター">
+      <div class="panel-head">
+        <h2>認識モニター</h2>
+        <span class="badge" id="vision-badge" data-tone="idle">待機</span>
+      </div>
 
-    <div class="button-row">
-      <button id="btn-undo">1つ戻す</button>
-      <button id="btn-clear">全て消す</button>
-    </div>
-    <div class="button-row">
-      <button id="btn-send" class="primary">ルート送信</button>
-      <button id="btn-cancel" class="danger">キャンセル</button>
-    </div>
+      <div class="vision-stage">
+        <img id="vision-stream" alt="物体検出の枠を描いた認識画像" hidden>
+        <p class="vision-empty" id="vision-empty">認識画像を待っています…</p>
+      </div>
+
+      <dl class="vision-stats">
+        <div><dt>フレーム</dt><dd id="vision-fps">—</dd></div>
+        <div><dt>遅延</dt><dd id="vision-age">—</dd></div>
+        <div><dt>解像度</dt><dd id="vision-size">—</dd></div>
+        <div><dt>検出</dt><dd id="vision-count">0 件</dd></div>
+      </dl>
+
+      <ol class="detections" id="vision-detections"></ol>
+      <p class="vision-source" id="vision-source">配信 —</p>
+    </section>
+
+    <section class="panel" aria-label="目的地と航行">
+      <div class="panel-head">
+        <h2>目的地</h2>
+        <span class="badge" id="nav-badge" data-tone="idle">—</span>
+      </div>
+      <p class="nav-message" id="nav-message">—</p>
+
+      <ol class="waypoint-list" id="waypoint-list"></ol>
+      <p class="empty-note" id="waypoint-empty">地図をクリックして目的地を追加します。</p>
+
+      <div class="btn-row">
+        <button id="btn-undo" class="btn" type="button">1つ戻す</button>
+        <button id="btn-clear" class="btn" type="button">全消去</button>
+      </div>
+      <div class="btn-row">
+        <button id="btn-send" class="btn btn-primary" type="button">ルート送信</button>
+        <button id="btn-cancel" class="btn btn-danger" type="button">停止</button>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="イベント">
+      <div class="panel-head">
+        <h2>イベント</h2>
+        <button id="btn-log-clear" class="btn btn-quiet" type="button">消去</button>
+      </div>
+      <ol class="event-log" id="event-log"></ol>
+    </section>
   </aside>
 </main>
 
-<script src="/app.js"></script>
+<div class="toasts" id="toasts" aria-live="polite"></div>
+
+<script type="module" src="/app.js"></script>
 </body>
 </html>

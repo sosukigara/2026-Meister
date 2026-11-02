@@ -109,6 +109,21 @@ Orange Pi 5 Max 8GB 実機で以下を測っていない。開発機の値から
 方向性として「開発機より大きく遅くなる」ことは確実だが、
 何倍になるかは Orange Pi 実機で測るまで書かない。
 
+### 2.5 Web UI 側のコスト（認識モニター。開発機で実測）
+
+| 項目 | 実測 | 出所 |
+|---|---|---|
+| 配信レート | **3.0 fps**（偽 publisher を 3 Hz で送出したときの追従値） | `/api/vision` の `fps` |
+| フレームの古さ | **71 ms** | `/api/vision` の `frame_age_ms` |
+| 1 フレームの JPEG | **19,690 bytes**（640×480・品質 80） | `/api/vision.jpg` の `Content-Length` |
+| MJPEG | 2 秒で 6 フレーム（約 118 KB、境界 `--meisterframe`） | `curl --max-time 2` |
+| 監視 ON/OFF | OFF で購読者 0（推論停止）、ON に戻すと購読者 2 で再開 | 偽 publisher のログ |
+
+JPEG 化は購読コールバックで 1 回だけ行い、`/api/vision.jpg` と MJPEG は同じバイト列を
+共有する（`src/vision_cache.cpp`）。**エンコード時間そのものと CPU 使用率は ✗ 未検証**
+（開発機・Orange Pi 5 Max の双方で未測定）。監視 OFF は購読を外すので、2.1 の推論コスト
+（2 スレッドで 115.6 ms/フレーム）も同時に止まる。
+
 ---
 
 ## 3. この記録で問題視しないこと（未検証の明示）

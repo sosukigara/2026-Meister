@@ -227,6 +227,24 @@ ros2 launch meister_web_nav web_nav.launch.py   # :8088 でブラウザから地
 
 **コミット分割**: 4 コミット（map_cache → map_listener → http_app → web_nav_server + Python 削除）。
 
+**実施記録（2026-10-17）**: `3cd6840 feat(meister_web_nav): migrate Python package to C++
+ROS 2 node` → `7b6ef4a merge: migrate meister_web_nav to C++ (ponytail review)` で完了。
+作業は `.worktrees/src-ponytail-cpp`（`refactor/src-ponytail-cpp`）で行い、レビュー後に main へ
+マージした。計画からの差分:
+
+- 版ハッシュは `std::hash` でも OpenSSL でもなく **FNV-1a 64**（`map_cache.cpp` の 1 関数）。
+- `waitUntilNav2Active` 相当は `bt_navigator/get_state` のポーリング + action server 待ちで実装。
+  ライフサイクル遷移の購読はしていない。
+- スレッドは `MultiThreadedExecutor` ではなく **SingleThreadedExecutor（地図 + 認識）+ NavWorker 専用
+  スレッド**。HTTP は httplib のプール。
+- `test_http_app.py` / `test_map_cache.py` は gtest へ移植（`test_map_listener.cpp` を追加）。
+- **cv_bridge は使わない**（Jazzy の cv_bridge はヘッダ名も API も移行途中で、必要なのは
+  `step` を尊重して `cv::Mat` を張るだけ。`vision_cache.cpp` で encoding と step を自前検査する）。
+
+**追加機能（同日）**: 認識モニター（`/detection_image` の MJPEG 配信・`/detections` の一覧・
+`/api/vision` 状態 JSON・監視 ON/OFF）と UI の計器盤化。設計は
+`docs/design/05-web-ui.md`、実測は `docs/vision-perf-baseline.md` §2.5。
+
 ---
 
 ### Phase 4: 統合・文書

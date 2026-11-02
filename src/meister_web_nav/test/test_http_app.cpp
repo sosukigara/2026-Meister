@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <filesystem>
+#include <fstream>
 #include <memory>
 #include <optional>
 #include <string>
@@ -24,6 +25,7 @@
 #include <nlohmann/json.hpp>
 
 #include "meister_web_nav/http_app.hpp"
+#include "meister_web_nav/http_support.hpp"
 #include "meister_web_nav/map_cache.hpp"
 #include "meister_web_nav/ports.hpp"
 
@@ -116,10 +118,20 @@ class StubNavSink : public NavSink {
   bool canceled = false;
 };
 
+/// この test の関心は地図の ETag 経路なので、認識モニターは空を返すだけにする
+/// (認識の経路は test_vision_routes.cpp が見る)。
+class StubVisionSource : public VisionSource {
+ public:
+  json Status() override { return json{{"monitor", true}, {"has_frame", false}}; }
+  std::optional<VisionFrame> Latest(long, double) override { return std::nullopt; }
+  void SetEnabled(bool) override {}
+};
+
 class HttpServer {
  public:
   HttpServer() {
-    RegisterRoutes(server_, std::filesystem::path(MEISTER_WEBUI_DIR), source_, sink_);
+    RegisterRoutes(server_, std::filesystem::path(MEISTER_WEBUI_DIR), source_, sink_,
+                   vision_);
     port_ = server_.bind_to_any_port("127.0.0.1");
     thread_ = std::thread([this] { server_.listen_after_bind(); });
     client_ = std::make_unique<httplib::Client>("127.0.0.1", port_);
@@ -152,6 +164,7 @@ class HttpServer {
   httplib::Server server_;
   StubMapSource source_;
   StubNavSink sink_;
+  StubVisionSource vision_;
   int port_ = 0;
   std::thread thread_;
   std::unique_ptr<httplib::Client> client_;
@@ -428,6 +441,43 @@ TEST(HttpAppStaticFiles, ServesExplicitAssetsAndRejectsTraversal) {
   // webui_dir の外へ出る経路と、無いファイルは 404。
   EXPECT_EQ(server.Get("/nope.js").status, 404);
   EXPECT_EQ(server.Get("/../AGENTS.md").status, 404);
+}
+
+/// --symlink-install では share 配下の webui の各ファイルがソースツリーを指す
+/// シンボリックリンクになる。canonical 比較で外と判定すると /js/*.js が 404 になり、
+/// ES モジュールの import が全部落ちて画面が組み上がらない。
+TEST(HttpAppStaticFiles, FollowsSymlinkedAssetsUnderTheWebuiRoot) {
+  namespace fs = std::filesystem;
+  const fs::path sandbox =
+      fs::temp_directory_path() /
+      ("meister_web_nav_" +
+       std::string(testing::UnitTest::GetInstance()->current_test_info()->name()));
+  fs::remove_all(sandbox);
+  const fs::path root = sandbox / "share" / "webui";
+  const fs::path source = sandbox / "src" / "webui";
+  fs::create_directories(root / "js");
+  fs::create_directories(source);
+  {
+    std::ofstream out(source / "app.js");
+    out << "export const x = 1;\n";
+  }
+  std::error_code error;
+  fs::create_symlink(source / "app.js", root / "js" / "app.js", error);
+  ASSERT_FALSE(error) << error.message();
+
+  httplib::Response served;
+  served.status = 200;
+  ServeStatic(served, root, "/js/app.js");
+  EXPECT_EQ(served.status, 200);
+  EXPECT_EQ(served.get_header_value("Content-Type"), "text/javascript; charset=utf-8");
+  EXPECT_EQ(served.body, "export const x = 1;\n");
+
+  httplib::Response escaped;
+  escaped.status = 200;
+  ServeStatic(escaped, root, "/js/../../secret.txt");
+  EXPECT_EQ(escaped.status, 404);
+
+  fs::remove_all(sandbox);
 }
 
 }  // namespace
