@@ -3,14 +3,15 @@
 
 #include <algorithm>
 #include <cctype>
-#include <fstream>
-#include <map>
-#include <sstream>
+#include <optional>
 #include <stdexcept>
-#include <system_error>
+#include <string>
 #include <vector>
 
 #include <nlohmann/json.hpp>
+
+#include "meister_web_nav/http_support.hpp"
+#include "meister_web_nav/vision_routes.hpp"
 
 namespace meister_web_nav {
 namespace {
@@ -62,23 +63,6 @@ std::optional<std::string> JoinIfNoneMatch(const httplib::Request& req) {
   return joined;
 }
 
-void SendJson(httplib::Response& res, const json& payload, int status = 200) {
-  res.status = status;
-  res.set_content(payload.dump(), "application/json");
-}
-
-void SendFile(httplib::Response& res, const std::filesystem::path& path,
-              const std::string& content_type) {
-  std::ifstream file(path, std::ios::binary);
-  if (!file) {
-    res.status = 404;
-    return;
-  }
-  std::ostringstream buffer;
-  buffer << file.rdbuf();
-  res.set_content(buffer.str(), content_type);
-}
-
 /// Python 版の float(value) と同じ受容（数値と数値文字列）。型が違うだけで 400 に
 /// すると、旧クライアントが送っていた "1.5" 形式を落とす。
 double ToDouble(const json& value, const char* key) {
@@ -114,36 +98,6 @@ std::string ParseWaypoints(const std::string& body, std::vector<Waypoint>& waypo
     return exc.what();
   }
   return "";
-}
-
-/// target が root の中にあるか。root 自身は「ファイルではない」ので false。
-bool IsInside(const std::filesystem::path& root, const std::filesystem::path& target) {
-  if (target == root) {
-    return false;
-  }
-  const std::string root_str = root.string();
-  const std::string target_str = target.string();
-  return target_str.size() > root_str.size() &&
-         target_str.compare(0, root_str.size(), root_str) == 0 &&
-         target_str[root_str.size()] == '/';
-}
-
-std::string MimeTypeOf(const std::filesystem::path& path) {
-  static const std::map<std::string, std::string> kTypes = {
-      {".css", "text/css; charset=utf-8"},
-      {".html", "text/html; charset=utf-8"},
-      {".ico", "image/x-icon"},
-      {".js", "text/javascript; charset=utf-8"},
-      {".json", "application/json"},
-      {".png", "image/png"},
-      {".svg", "image/svg+xml"},
-      {".txt", "text/plain; charset=utf-8"},
-  };
-  std::string extension = path.extension().string();
-  std::transform(extension.begin(), extension.end(), extension.begin(),
-                 [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-  const auto found = kTypes.find(extension);
-  return found == kTypes.end() ? "application/octet-stream" : found->second;
 }
 
 }  // namespace
@@ -184,7 +138,8 @@ bool EtagMatches(const std::optional<std::string>& header, const std::string& et
 }
 
 void RegisterRoutes(httplib::Server& server, const std::filesystem::path& webui_dir,
-                    MapSource& map_source, NavSink& nav_sink) {
+                    MapSource& map_source, NavSink& nav_sink,
+                    VisionSource& vision_source) {
   // webui_dir を捕まえる lambda は値でコピーする。呼び手は一時オブジェクト
   // (WebuiDir() や std::filesystem::path(MEISTER_WEBUI_DIR)) を渡すので、参照で
   // 捕まえると登録が終わった時点で宙に浮く。
@@ -252,23 +207,13 @@ void RegisterRoutes(httplib::Server& server, const std::filesystem::path& webui_
     SendJson(res, nav_sink.Status());
   });
 
+  RegisterVisionRoutes(server, vision_source);
+
   // 明示した 3 ファイル以外を webui_dir から配る。後から足した asset が 404 に
   // ならないようにする。webui_dir の外へ出る経路は canonical 比較で弾く。
+  // この経路は /.* に一致するので、必ず最後に登録する (httplib は登録順に見る)。
   server.Get(R"(/.*)", [webui_dir](const httplib::Request& req, httplib::Response& res) {
-    std::error_code error;
-    const std::filesystem::path root = std::filesystem::canonical(webui_dir, error);
-    if (error) {
-      res.status = 404;
-      return;
-    }
-    const std::filesystem::path resolved =
-        std::filesystem::weakly_canonical(root / req.path.substr(1), error);
-    if (error || !IsInside(root, resolved) ||
-        !std::filesystem::is_regular_file(resolved, error)) {
-      res.status = 404;
-      return;
-    }
-    SendFile(res, resolved, MimeTypeOf(resolved));
+    ServeStatic(res, webui_dir, req.path);
   });
 
   server.Post("/api/nav",

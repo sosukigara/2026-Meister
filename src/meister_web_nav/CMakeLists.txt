@@ -13,12 +13,14 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(vision_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2_msgs REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
-find_package(OpenCV REQUIRED COMPONENTS core imgcodecs)
+find_package(OpenCV REQUIRED COMPONENTS core imgcodecs imgproc)
 find_package(nlohmann_json REQUIRED)
 find_package(ament_cmake_gtest REQUIRED)
 
@@ -29,9 +31,13 @@ pkg_check_modules(HTTPLIB REQUIRED IMPORTED_TARGET cpp-httplib)
 
 add_library(meister_web_nav_core SHARED
   src/http_app.cpp
+  src/http_support.cpp
   src/map_cache.cpp
   src/map_listener.cpp
   src/nav_worker.cpp
+  src/vision_cache.cpp
+  src/vision_listener.cpp
+  src/vision_routes.cpp
 )
 target_compile_features(meister_web_nav_core PUBLIC cxx_std_17)
 target_include_directories(meister_web_nav_core PUBLIC
@@ -40,7 +46,7 @@ target_include_directories(meister_web_nav_core PUBLIC
 )
 ament_target_dependencies(meister_web_nav_core
   rclcpp rclcpp_action nav_msgs geometry_msgs tf2_msgs lifecycle_msgs nav2_msgs
-  ament_index_cpp)
+  ament_index_cpp sensor_msgs vision_msgs)
 target_link_libraries(meister_web_nav_core
   ${OpenCV_LIBS}
   nlohmann_json::nlohmann_json
@@ -71,17 +77,27 @@ if(BUILD_TESTING)
   ament_add_gtest(test_map_listener test/test_map_listener.cpp)
   target_link_libraries(test_map_listener meister_web_nav_core)
 
+  ament_add_gtest(test_vision_cache test/test_vision_cache.cpp)
+  target_link_libraries(test_vision_cache meister_web_nav_core)
+
   ament_add_gtest(test_http_app test/test_http_app.cpp)
   target_link_libraries(test_http_app meister_web_nav_core)
   # HTTP 面の test は install 前のソースツリーを配る。ROS を起動せずに済ませる。
   target_compile_definitions(test_http_app PRIVATE
     MEISTER_WEBUI_DIR="${CMAKE_CURRENT_SOURCE_DIR}/webui"
   )
+
+  ament_add_gtest(test_vision_routes test/test_vision_routes.cpp)
+  target_link_libraries(test_vision_routes meister_web_nav_core)
+  target_compile_definitions(test_vision_routes PRIVATE
+    MEISTER_WEBUI_DIR="${CMAKE_CURRENT_SOURCE_DIR}/webui"
+  )
 endif()
 
 ament_export_include_directories(include)
 ament_export_libraries(meister_web_nav_core)
-ament_export_dependencies(rclcpp rclcpp_action nav_msgs geometry_msgs tf2_msgs
-  lifecycle_msgs nav2_msgs ament_index_cpp OpenCV nlohmann_json)
+ament_export_dependencies(rclcpp rclcpp_action nav_msgs sensor_msgs vision_msgs
+  geometry_msgs tf2_msgs lifecycle_msgs nav2_msgs ament_index_cpp OpenCV
+  nlohmann_json)
 
 ament_package()
