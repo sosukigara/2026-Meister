@@ -63,6 +63,20 @@ void test_pole_pair_validation() {
   TEST_ASSERT_FALSE(foc::validPolePairs(foc::kMaxPolePairs + 1));
 }
 
+void test_pole_pair_arg_validation() {
+  TEST_ASSERT_FALSE(foc::validPolePairsArg(0.0f));
+  TEST_ASSERT_FALSE(foc::validPolePairsArg(-1.0f));
+  TEST_ASSERT_FALSE(foc::validPolePairsArg(0.5f));
+  TEST_ASSERT_TRUE(foc::validPolePairsArg(1.0f));
+  TEST_ASSERT_TRUE(foc::validPolePairsArg(20.0f));
+  TEST_ASSERT_TRUE(foc::validPolePairsArg(50.0f));
+  TEST_ASSERT_FALSE(foc::validPolePairsArg(51.0f));
+  TEST_ASSERT_FALSE(foc::validPolePairsArg(1e10f));
+  TEST_ASSERT_FALSE(foc::validPolePairsArg(-1e10f));
+  TEST_ASSERT_FALSE(foc::validPolePairsArg(NAN));
+  TEST_ASSERT_FALSE(foc::validPolePairsArg(INFINITY));
+}
+
 void test_cooldown_wraps_at_49_days() {
   // until is in the future across the millis() wrap.
   TEST_ASSERT_TRUE(foc::cooldownActive(0xFFFFFF00u, 0x100u));
@@ -86,6 +100,7 @@ int main() {
   RUN_TEST(test_speed_clamp);
   RUN_TEST(test_angle_clamp);
   RUN_TEST(test_pole_pair_validation);
+  RUN_TEST(test_pole_pair_arg_validation);
   RUN_TEST(test_cooldown_wraps_at_49_days);
   RUN_TEST(test_timeout_wraps_at_49_days);
   return UNITY_END();

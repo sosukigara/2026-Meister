@@ -100,6 +100,15 @@ The code-review pass found five more issues; all fixed:
 5. `?` printed bare lines with commas, violating the `#` one-shot / CSV contract.
    Every help line is now `#HELP ...`.
 
+## Third review (post-merge)
+
+One valid issue was found: `P 1e10` is finite and integral, so the console's floor check
+passed and `static_cast<int>(1e10)` was undefined behavior before `validPolePairs()`
+could reject it. Added `foc::validPolePairsArg(float)` (finite, integral, 1..50) and a
+native test; the console validates the float before the cast. The other advisories were
+already fixed or based on outdated premises (D overcurrent, motion-file split, stop()
+cooldown, unconditional sibling stop, docs path, worktree).
+
 ## Verification
 
 - TDD red: the new native tests failed before the implementation (9 assertion failures:
