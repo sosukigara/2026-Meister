@@ -115,7 +115,7 @@ Python 版から変えていないので `launch/` `launch_vision.sh` `kill.sh` 
 
 ---
 
-## 3. firmware（`firmware/main/`。`firmware/foc/` は別プロジェクト）
+## 3. firmware（`firmware/main/`。`firmware/foc/`（ウィンチ）と `firmware/foc_drive/`（走行）は別プロジェクト）
 
 ### 現状（2026-09-27・分割後）
 
@@ -165,7 +165,8 @@ firmware/
 │       ├── test_protocol/          既存（そのまま）
 │       ├── test_kinematics/        キネマティクスの純関数（native）
 │       └── test_bus_protocol/      新規: バス codec（native）
-└── foc/                      別 PlatformIO プロジェクト（SimpleFOC ウィンチ）
+├── foc/                      別 PlatformIO プロジェクト（SimpleFOC ウィンチ、M1 単ch）
+└── foc_drive/                別 PlatformIO プロジェクト（走行用、3 role × M0/M1、ベンチ版）
 ```
 
 **依存の向き**（必ずこの方向のみ）:
