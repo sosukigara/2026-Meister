@@ -128,8 +128,10 @@ void FocConsole::dispatch(const foc::Request& req) {
       ok = drive(selected_).setAlignVoltage(req.arg);
       break;
     case foc::Command::kSetPolePairs:
-      if (req.arg != std::floor(req.arg)) {
-        Serial.println(F("#ERR P needs an integer"));
+      // Range-check the float before the int cast: finite 1e10 is integral but outside
+      // int range, and casting it would be undefined behavior.
+      if (!foc::validPolePairsArg(req.arg)) {
+        Serial.println(F("#ERR P needs an integer 1-50"));
         return;
       }
       stopBoth(false);

@@ -62,6 +62,14 @@ constexpr bool validPolePairs(int pairs) {
   return pairs >= kMinPolePairs && pairs <= kMaxPolePairs;
 }
 
+// Validate the textual P argument before any int cast. A finite 1e10 passes the integer
+// floor check but is outside int range; casting it is undefined behavior.
+inline bool validPolePairsArg(float pairs) {
+  return std::isfinite(pairs) && pairs == std::floor(pairs) &&
+         pairs >= static_cast<float>(kMinPolePairs) &&
+         pairs <= static_cast<float>(kMaxPolePairs);
+}
+
 // Signed elapsed-time checks. millis() wraps after ~49.7 days; a plain `<` would either
 // wedge the cooldown or let it be bypassed.
 constexpr bool cooldownActive(uint32_t now_ms, uint32_t until_ms) {
