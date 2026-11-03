@@ -1,0 +1,88 @@
+# 実行・テスト・検証コマンド — Meister
+
+> pio 系は `firmware/main/` を cwd にする。ros2 系はリポジトリルートを cwd にする（R6）。詳細な罠は [docs/pitfalls.md](pitfalls.md)。
+
+## 1. 前提
+
+- PlatformIO CLI（`pio`）が使えること。
+- ROS 2 Jazzy が source 済みであること。
+- 実機接続時は `upload_port` / `monitor_port` が `platformio.ini` で by-id 指定されている（別ボード誤書き込み防止）。
+
+## 2. ビルド
+
+```bash
+# 全体ビルド（4 パッケージ並列）
+./build.sh
+
+# ファームウェア（両 env）
+cd firmware/main
+pio run -e esp32dev -e esp32dev_usbuart
+
+# 条件コンパイルの分岐を静かに壊さないため、デバッグフラグでもビルド
+PLATFORMIO_BUILD_FLAGS="-DMSTE_SERVO_DRIVER_DEBUG=1" pio run -e esp32dev
+
+# 書き込み
+cd firmware/main
+pio run -e esp32dev -t upload
+```
+
+## 3. テスト
+
+```bash
+# ファームウェア プロトコル / バス codec（Unity、38 cases）
+cd firmware/main
+pio test -e native
+
+# Python ブリッジ（22 cases）
+cd src/meister_serial_bridge
+PYTHONPATH=. python3 -m pytest test/
+
+# リポジトリルートから
+python3 -m pytest src/meister_serial_bridge/test/
+```
+
+## 4. 実機検証（comm_check）
+
+実機 `comm_check` が 3 手順 PASS するまで commit しない。
+
+```bash
+# リポジトリルート
+ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0
+# 手順: uplink / downlink / err_flag
+
+# FB_STATE 周期の実測
+ros2 run meister_serial_bridge meister_hz_measure --port /dev/ttyUSB0 --expect-hz 100
+```
+
+## 5. 起動
+
+```bash
+# ビルドなしで起動
+./start_meister.sh
+# 停止
+./kill_ros.sh
+```
+
+- `start_meister.sh:44-48` は VPN 環境のマルチキャスト障害回避で `ROS_LOCALHOST_ONLY=1` を設定するが、**子プロセスのみ**。別ターミナルの `ros2` CLI には継承されない。
+
+## 6. 4 通りのビルド（条件コンパイル確認）
+
+1. `pio run -e esp32dev`
+2. `pio run -e esp32dev_usbuart`
+3. `PLATFORMIO_BUILD_FLAGS="-DMSTE_SERVO_DRIVER_DEBUG=1" pio run -e esp32dev`
+4. `pio test -e native`
+
+## 7. 機械チェック
+
+```bash
+# コンパイル / 波括弧の平衡 / 名前空間の開閉 / 識別子の多重定義 / 文字化け
+bash .omo/session-work/check_header.sh
+```
+
+## 8. 設定変更時のチェックリスト
+
+- `platformio.ini` の `MSTE_*` を変える → `meister_config.h` のフォールバックも変える
+- プロトコルの軸数を変える → `meister_protocol.h` **と** `protocol.py` **と** 両方のテストの期望値を変える
+- ピン番号を変える → `pio run -e esp32dev -e esp32dev_usbuart`（両 env）と実機 `comm_check`
+- Python のみの変更 → `pytest`。C++ 変更 → `pio test -e native`
+- 実機挙動を変更 → `comm_check` 3 手順

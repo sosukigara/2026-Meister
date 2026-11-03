@@ -1,191 +1,111 @@
-# AGENTS.md — Meister 開発ルール
+# AGENTS.md — Meister 開発ルール（インデックス）
 
 > 対象リポジトリ: `sosukigara/2026-Meister`
 > 全ルールは 2026-09-27 の開発で実際に踏んだミスを根拠にしている。
-> コードマップは [docs/code-map.md](docs/code-map.md)。
+> **このファイルは最重要インデックス（200〜300 行以内）。詳細は `docs/` を参照。**
+> コードマップ: [docs/code-map.md](docs/code-map.md)。ドキュメント全体の入口: [docs/README.md](docs/README.md)。
 
 ---
 
-## R1. 1 ファイル 1 責務。300 行を超えたら分割を検討する
+## 1. プロジェクトの目的・役割
 
-`firmware/main/src/main.cpp` は 606 行に 9 セクション（ピン定義 / LEDC ラッパ / モータ /
-サーボ 3 種 / 受信 FSM / ディスパッチ / フィードバック / setup・loop）が同居していた。
-1 機能に変更を掛けると、無関係な箇所まで影響する。
+ROS 2 (Jazzy) + Gazebo をベースとした自律移動ロボット制御ソフトウェア。
+シミュレーション（開発用）と実機（計画中）は同じロボットの異なる段階であり、
+シミュレーションは実機開発の前段として機能する。
 
-分割の目安:
+- シミュレーション段階（実装済み）: SLAM による地図作成、Nav2 による自律ナビゲーション、
+  Web UI による遠隔操作（features/01-06）
+- 実機（計画中）: 6輪ロッカーボギー + ESP32 + 4軸アーム + LD-D500 LiDAR。
+  画像認識による自動把持と自動制御を目指す（features/07-10）
 
-```
-firmware/main/include/hal/     … ハードウェア抽象（Arduino に依存してよい）
-firmware/main/src/hal/         … 同上、実装
-firmware/main/include/*.h      … 機構（base_chassis / arm）と設定
-firmware/main/src/*.cpp        … 同上、実装
-firmware/main/src/main.cpp     … setup / loop と配線だけ
-```
+マイコン層（ESP32 ファームウェア）は `firmware/main/`（PlatformIO + Arduino）。
+`firmware/foc/` は別プロジェクト（MKS ESP32 FOC V2.0 ウィンチ）。
 
-## R2. 設定値は 1 箇所以外で定義しない
+ゴール: G1 自動走行 / G2 アーム回収 / G3 手動操縦（[docs/やりたいこと.md](docs/やりたいこと.md)）。
 
-`MSTE_*` の既定値が `platformio.ini` の `build_flags` と `main.cpp` の
-`#ifndef` フォールバックの **2 箇所**にあり、片方だけ直すと不整合が起きていた。
+## 2. 技術スタック
 
-出所は `firmware/main/include/meister_config.h` に集約する。優先順位は
-「コンパイル時 `-D` → `meister_config.h` のフォールバック」の 1 経路だけ。
+| 層 | 技術 |
+|---|---|
+| OS (PC) | Ubuntu |
+| ミドルウェア | ROS 2 Jazzy |
+| シミュレータ | Gazebo (ros_gz) |
+| ビルド (ROS) | colcon |
+| ビルド (FW) | PlatformIO |
+| 言語 | Python 3 / C++17 / YAML |
+| 検出 | ONNX Runtime + YOLOv8n |
+| FW フレームワーク | Arduino (arduino-esp32 2.x/3.x 両対応) |
+| テスト (C++) | Unity (`pio test -e native`) |
+| テスト (Python) | pytest |
 
-## R3. 物理定数（ピン / ID / レジスタ）と単位・範囲をコード内に**表で**置く
+詳細は [docs/coding-standards.md](docs/coding-standards.md) §1-2。
 
-データシートを見に行くのは 1 回だけにして、规范はコードに残す。
-`firmware/main/include/hal/feetech_sts_registers.h` がその例で、
-フレーム構造・命令コード・チェックサム算出・上限サイズを
-出典（SDK のファイル名と行）つきで保有している。
+## 3. 検証・コマンド集（要約）
 
-出典が分かるものだけ確定値として書き、出典が無いものは
-「要確認」節に隔離する（R4）。
+pio 系は `firmware/main/` を cwd、ros2 系はリポジトリルートを cwd にする（R6）。
 
-## R4. 一次情報を取得できない値は、記憶で埋めず隔離してゲートする
-
-web search が遮断され、SDK にもレジスタマップが入っていなかったとき、
-記憶から書いたアドレスを確定値として置くと**誰も気付けないバグ**になる。
-今回は `kReturnDelay = 0` のような「未取得を表す 0」が実アドレスと衝突しうる
-状態を作りかけた。
-
-未取得を表す値は**到達不能な値**（`0xFF` など）にし、
-`kRegisterMapVerified = false` の間は WRITE 命令をゲートする。
-検証済みの項目はファイル冒頭の golden バイト列と突き合わせる。
-
-### 一次情報の取り方（2026-09-27 の実績）
-
-- web search: 全プロバイダ遮断。`web_search` は使えないと前提にする
-- pip: **使える**。`pip download --no-deps feetech-servo-sdk` で公式 SDK を取得できた
-- 取得済みの一次情報は**実際に走らせて** golden を採る。
-  ソースを読むだけだと LENGTH フィールドの定義を 1 バイトずらして理解した
-
-### R4 の延長: 隔離するだけでなく、確定までは**機能を表さない**経路を用意する
-
-不確実な値を `★要確認★` で隔離するだけでは足りない。**その値が確定するまで、
-機能 pura に发挥しない経路**を用意する。
-
-`firmware/main/src/kinematics.cpp` の `kGeometryNotFilled` がその例。幾何が埋まるまで
-`Solve()` は必ず失敗し、指令は一切出力されない。
-
-理由: 推測値で動くコードを書くと、`meister_comm_check` の 3 手順は **PASS したままで**
-配線を誤る。「通信は動く = 機構も動く」わけではない。本次セッションで同じ型が 3 回
-起きた（`kGripperPin = 0`、誤ったピン値、`axes.arm` を 4→2 にして既存経路を壊す）。
-
-**既に動いているものを壊してまで先に進めるのは禁止。** 破壊的変更（C++ / Python /
-検証ツール / テスト / 実機）を 1 コミットで揃えること。途中で push すると、
-`origin/main` が「どれとどれが相互運用できるか分からない」状態になる。
-
-## R5. 編集が reject / 失敗したら、適用済みか `file:line` で確認してから報告する
-
-2026-09-27 に、1 つの編集呼び出しに複数 `PUT` をまとめたところ、行番号
-アンカーの 1 つが「表示されていない」として **呼び出し全体が reject** された。
-その後の再適用で 1 件だけ直し、残り 3 件が未反映のまま「修正済み」と報告した。
-
-鉄則:
-- 編集ツールが reject したら、**通った `PUT` も通っていない**疑いを持つ
-- 報告前に `git diff` または `grep -n` で**該当行が実際に変わったか**見る
-- ファイル全体を書き直す方が、個別 `PUT` を重ねるより安全
-  （行番号が remap されて隣り合う行が重複する事故が 3 回あった）
-
-機械チェックは `.omo/session-work/check_header.sh` にまとめる。
-コンパイル / 波括弧の平衡 / 名前空間の開閉 / 識別子の多重定義 / 文字化けを
-1 コマンドで検証する。
-
-## R6. push 前にレビューを 1 巡させる
-
-ゲートは「ビルドが通った」ではない。
-
-pio 系は `firmware/main/`（pio のプロジェクトルート）を cwd に置く:
-
-```
-cd firmware/main
-pio run -e esp32dev -e esp32dev_usbuart              # 両 env
-PLATFORMIO_BUILD_FLAGS="-DMSTE_SERVO_DRIVER_DEBUG=1" pio run -e esp32dev
-pio test -e native
-```
-
-`ros2` 系はリポジトリルートを cwd に置く:
-
-```
+```bash
+# ビルド
+./build.sh
+cd firmware/main && pio run -e esp32dev -e esp32dev_usbuart
+# テスト
+cd firmware/main && pio test -e native
 python3 -m pytest src/meister_serial_bridge/test/
+# 実機検証
 ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0
+ros2 run meister_serial_bridge meister_hz_measure --port /dev/ttyUSB0 --expect-hz 100
 ```
 
-条件コンパイルの分岐が静かに壊れても既定ビルドは緑のまま通ってしまうので、
-4 通りのビルドを回す。実機 `comm_check` が 3 手順 PASS するまで
-commit しない。
+実機 `comm_check` が 3 手順 PASS するまで commit しない。4 通りのビルドを回す。
+完全版は [docs/commands.md](docs/commands.md)。
 
-レビュー基準は `.omo/session-work/REVIEW.md` に file:line 付きで書き出し、
-判定をそこに残す（コンテキスト圧縮でレビューが中断されないように）。
+## 4. 絶対厳守ルール（NG リスト）
 
-## R7. 破壊的変更は、差分を 1 箇所の設定に集約してから入れる
+1. **1 ファイル 1 責務、300 行超で分割検討**（R1）→ [coding-standards §3](docs/coding-standards.md)
+2. **設定値は 1 箇所以外で定義しない**（R2）→ [coding-standards §4](docs/coding-standards.md)
+3. **物理定数は出典つき表でコード内に置く**（R3）→ [coding-standards §5](docs/coding-standards.md)
+4. **未取得の値は記憶で埋めず隔離しゲートする**（R4）→ [pitfalls P1](docs/pitfalls.md)
+5. **編集 reject 後は適用済みを file:line で確認**（R5）→ [pitfalls P2](docs/pitfalls.md)
+6. **push 前にレビューを 1 巡**（R6）→ [pitfalls P3](docs/pitfalls.md)
+7. **破壊的変更は 1 箇所の設定に集約してから入れる**（R7）→ [pitfalls P4](docs/pitfalls.md)
+8. **レイヤー間依存は片方向**（R8）→ [architecture §2](docs/architecture.md) / [coding-standards §8](docs/coding-standards.md)
+9. **コメントは WHY だけ**（R9）→ [coding-standards §7](docs/coding-standards.md)
+10. **未検証を「問題なし」で終わらせない**（R10）→ [pitfalls P6](docs/pitfalls.md)
+11. **静的初期化順を当てにしない**（R11）→ [pitfalls P5](docs/pitfalls.md)
+12. **コミットはレビュー可能な単位に分ける**（R12）→ [pitfalls P7](docs/pitfalls.md)
 
-プロトコルの軸数を変えると C++ / Python / Unity / pytest / ドキュメント /
-実機リンクを同時に壊す。だから**軸数を `meister_config.h` の定数から導出**させ、
-実物の確認後に 1 箇所の変更で済むようにする。
+追加の NG:
+- `Any` 型の濫用を避ける（型ヒントを付ける）
+- `hal/` は上位を知らない。上位から `hal/*` の内部を呼ばない
+- `src/` は `MSTE_*` マクロを直接参照しない
+- プロトコル軸数変更時は C++ と Python を同時に直す
+- 既に動いているものを壊してまで先に進めるのは禁止
 
-## R8. レイヤー間の依存は片方向
+## 5. Docs へのポインタ
 
-```
-main.cpp → command_dispatch → base_chassis / arm → hal/*
-                              feedback
-hal/bus_protocol ← Arduino 非依存（pio test -e native でテストできる）
-```
+| ファイル | 内容 |
+|---|---|
+| [docs/architecture.md](docs/architecture.md) | 全体設計・モジュール責務・データフロー・設計パターン |
+| [docs/coding-standards.md](docs/coding-standards.md) | 命名・禁止事項・ライブラリ・コメント・テスト配置 |
+| [docs/commands.md](docs/commands.md) | 実行・テスト・検証コマンド |
+| [docs/pitfalls.md](docs/pitfalls.md) | 過去に AI が誤爆した罠・プロジェクト固有の制約 |
+| [docs/task-template.md](docs/task-template.md) | 仕様・タスク定義テンプレート |
+| [docs/code-map.md](docs/code-map.md) | ファイル単位のコードマップ |
+| [docs/README.md](docs/README.md) | ドキュメント全体の入口（4 層） |
 
-`hal/` は上位 (`arm/`, `base_chassis/`, `main.cpp`) を知らない。
+## 6. コードを読んでもわからない暗黙知（抜粋）
 
-## R9. コメントは WHY だけ。装飾と WHAT の書き起こしは禁止
+- プロトコル: `protocol.py` (Python) と `meister_protocol.h` (C++) は**バイト単位で一致**。軸数変更時は両方直す。
+- 通信周期: PC→ESP32 は到着時、ESP32 適用 100 Hz、FB_STATE 100 Hz、STS 読み戻しはラウンドロビン 30〜40 ms。
+- 未確認値: `MSTE_BUS_RESP_TIMEOUT_US=3000µs`、`MSTE_BUS_INTER_FRAME_GAP_US=200µs`、`reg::*` アドレス、`kStepsPerRev=4096` はデータシート未照合。推測で埋めない。
+- web search は全プロバイダ遮断。pip は使える。
+- GPIO12 はストラップピン（グリッパー PWM）。実機配線時に変更推奨。
+- `upload_port` は by-id で明示指定（M5Stack 誤書き込み防止）。
+- `start_meister.sh` の `ROS_LOCALHOST_ONLY=1` は子プロセスのみ。
 
-`AGENTS.md §3`（グローバル）に従い、具体的な判定基準を足す:
-
-- 装飾的な区切り罫 `// =====` をファイル内に増やさない（セクション多了ら
-  ファイル名の `===` だけで足りる）
-- 引数や戻り値を `///` で書き起こさない（シグネチャに既出）。
-  残すのは「**この単位は何か**」「**なぜ固定長か**」「**0 を返すのは何の失敗か**」
-- 「何をするか」のコメントは消して、コードを直す
-
-### 機械で判定できる「AI 感」の基準
-
-`check_header.sh` の文字化けスキャンをレビュー条件に含める:
-
-1. 日本語（かな/漢字/全角）の直後に英単語 3 文字以上が続く綴り
-   （かなの直後にローマ字が連結している状態）
-2. ハングル `[\x{AC00}-\x{D7AF}]`
-3. 置換文字 `U+FFFD`
-
-**注意**: 日本語の漢字も `[\x{4E00}-\x{9FFF}]` に含まれるので、CJK 範囲で
-判定すると正常な日本語が全滅する（`meister_web_nav` で実際に全滅した）。
-判定範囲は上の 3 個に限る。
-
-## R10. 未検証を「問題なし」で終わらせない
-
-レビューで判定できない項目は **「✗ 未検証」** と書く。
-「問題なし」とは書かない。
-
-特に次を区別する:
+## 7. レビュー判定の語彙（R10）
 
 - **一次情報で確定**（出典ファイル名と行が言える）
 - **実測した**（測定条件と数値がある）
 - **要確認**（未取得。`★要確認★` と隔離先を書く）
-- **✗ 未検証**（まだ見ていない）
-
-## R11. 静的初期化順を当てにしない
-
-同一翻訳単位なら宣言順に構築されるので正しいが、**翻訳単位をまたぐと
-静的初期化順序は未規定**になる。分割すると
-「`static Gripper gripper(gripperServoChannel)` が未構築の channel を
-参照で捕捉する」bug が入りうる。これはコンパイルも `pio test` も通り、
-**実機で初めて踏む**。
-
-対策: 静的グローバルをやめて `setup()` 内で 1 か所に aggregate 構築する
-（依存関係がコード上で読めるので可読性も上がる）。
-
-## R12. コミットはレビュー可能な単位に分ける
-
-1 コミットに 1000 行超の refactor + 新 HAL + プロコル変更 + 文書を入れると
-レビューが成立しない。推奨:
-
-1. **pure refactor**（挙動を 1 バイトも変えない。回帰証明になる）
-2. **機能追加**（既存挙動に影響しないフラグで無効化されていているもの）
-3. **文書・ルール**
-
-pure refactor のコミットでは、実機ゲートを通してから commit する。
+- **✗ 未検証**（まだ見ていない。"問題なし" と書かない）
