@@ -8,8 +8,10 @@
 ///   device    (string, /dev/video0) カメラ番号またはデバイスパス
 ///   width     (int,    640)          取得幅
 ///   height    (int,    480)          取得高さ
-///   fps       (double, 15.0)         取得フレームレート
+///   fps       (double, 5.0)          取得フレームレート
 ///   frame_id  (string, camera_link) 配信するフレーム ID
+#include <algorithm>
+#include <chrono>
 #include <memory>
 #include <string>
 
@@ -26,7 +28,7 @@ constexpr char kNodeName[] = "pc_camera";
 constexpr char kTopic[] = "/camera/image_raw";
 constexpr int kDefaultWidth = 640;
 constexpr int kDefaultHeight = 480;
-constexpr double kDefaultFps = 15.0;
+constexpr double kDefaultFps = 5.0;
 
 class PcCameraNode final : public rclcpp::Node {
  public:
@@ -55,33 +57,33 @@ class PcCameraNode final : public rclcpp::Node {
   bool OpenDevice() {
     // VideoCapture は数値インデックスとデバイスパスの両方を受け付ける。
     // 数字だけの文字列は整数に寄せて、バックエンド選択の誤動作を避ける。
-    cv::VideoCapture cap;
     const bool numeric = !device_.empty() &&
                          device_.find_first_not_of("0123456789") ==
                              std::string::npos;
+    // capture_ に直接開く (std::move が VideoCapture を正しく移動しない環境対策)。
     if (numeric) {
-      cap.open(std::stoi(device_));
+      capture_.open(std::stoi(device_), cv::CAP_V4L2);
     } else {
-      cap.open(device_);
+      capture_.open(device_, cv::CAP_V4L2);
     }
-    if (!cap.isOpened()) {
+    if (!capture_.isOpened()) {
+      RCLCPP_ERROR(get_logger(), "open failed (backend=%d)", cv::CAP_V4L2);
       return false;
     }
-    cap.set(cv::CAP_PROP_FRAME_WIDTH, width_);
-    cap.set(cv::CAP_PROP_FRAME_HEIGHT, height_);
+    capture_.set(cv::CAP_PROP_FRAME_WIDTH, width_);
+    capture_.set(cv::CAP_PROP_FRAME_HEIGHT, height_);
     if (fps_ > 0.0) {
-      cap.set(cv::CAP_PROP_FPS, fps_);
+      capture_.set(cv::CAP_PROP_FPS, fps_);
     }
-    capture_ = std::move(cap);
+    // V4L2 の既定キューは 4 枚。読み出しが遅いと 100ms 単位で古いフレームを
+    // 返し、体感ラグになるため常に最新 1 枚だけを保持させる。
+    capture_.set(cv::CAP_PROP_BUFFERSIZE, 1);
     return true;
   }
 
   void OnTimer() {
     if (!capture_.isOpened()) {
-      // 起動時にデバイスが不在でも落とさず待ち受けるため、エラーを出して
-      // 次周期に開き直す。
-      RCLCPP_ERROR(get_logger(), "カメラを開けませんでした: %s、リトライします",
-                   device_.c_str());
+      // 起動時や切断時にデバイスが不在でも落とさず、次周期に開き直す。
       OpenDevice();
       return;
     }
@@ -92,7 +94,20 @@ class PcCameraNode final : public rclcpp::Node {
       return;
     }
     sensor_msgs::msg::Image msg = ImageMsgFromBgr(frame);
-    msg.header.stamp = now();
+    // V4L2 のバッファタイムスタンプ (単調時計) から撮像時刻を復元する。
+    // 取得時刻をそのまま入れると下流の遅延が実際より小さく出る。
+    double age_s = 0.0;
+    const double pos_ms = capture_.get(cv::CAP_PROP_POS_MSEC);
+    if (pos_ms > 0.0) {
+      const double mono_ms = std::chrono::duration<double, std::milli>(
+          std::chrono::steady_clock::now().time_since_epoch()).count();
+      const double candidate = (mono_ms - pos_ms) / 1000.0;
+      // 単調時計でないバックエンドでは巨大な値になる。妥当域だけ採用する。
+      if (candidate >= 0.0 && candidate <= 0.5) {
+        age_s = candidate;
+      }
+    }
+    msg.header.stamp = now() - rclcpp::Duration::from_seconds(age_s);
     msg.header.frame_id = frame_id_;
     pub_->publish(msg);
   }
