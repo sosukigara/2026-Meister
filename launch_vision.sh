@@ -5,14 +5,14 @@
 #
 # 使い方: ./launch_vision.sh
 # 上書きは環境変数で:
-#   DEVICE=/dev/video1 RATE=5.0 CAM_FPS=10.0 THREADS=4 CONF=0.3 ./launch_vision.sh
+#   DEVICE=/dev/video1 RATE=10.0 CAM_FPS=20.0 THREADS=4 CONF=0.3 ./launch_vision.sh
 set -eo pipefail
 
 DEVICE="${DEVICE:-/dev/video0}"
-RATE="${RATE:-5.0}"
+RATE="${RATE:-10.0}"
 # カメラは処理レートより速く回す。同レートだと位相のズレでフレームが
 # 落ちて 5Hz を下回るため、既定は 2 倍。
-CAM_FPS="${CAM_FPS:-10.0}"
+CAM_FPS="${CAM_FPS:-20.0}"
 THREADS="${THREADS:-4}"
 CONF="${CONF:-0.25}"
 
