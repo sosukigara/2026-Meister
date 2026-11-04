@@ -81,12 +81,12 @@ const std::vector<std::string>& CocoClasses() {
 }
 
 std::vector<Detection> YoloPostprocess(const std::vector<float>& output,
-                                       double ratio, int pad_w, int pad_h,
-                                       int image_width, int image_height,
-                                       float conf_threshold,
+                                       int grid_cells, double ratio, int pad_w,
+                                       int pad_h, int image_width,
+                                       int image_height, float conf_threshold,
                                        float iou_threshold) {
   const size_t expected =
-      static_cast<size_t>(kYoloNumClasses + kYoloBBoxCols) * kYoloGridCells;
+      static_cast<size_t>(kYoloNumClasses + kYoloBBoxCols) * grid_cells;
   if (output.size() != expected) {
     throw std::runtime_error("YOLO 出力の形が違う（期待 " +
                              std::to_string(expected) + " 要素, 実際 " +
@@ -104,9 +104,9 @@ std::vector<Detection> YoloPostprocess(const std::vector<float>& output,
 
   // ONNX 出力は [1, 84, 8400]（チャンネル優先）なので、anchor ごとの
   // 値は「チャンネル * kYoloGridCells + anchor」で取り出す。
-  for (int cell = 0; cell < kYoloGridCells; ++cell) {
+  for (int cell = 0; cell < grid_cells; ++cell) {
     const size_t a = static_cast<size_t>(cell);
-    const size_t stride = kYoloGridCells;
+    const size_t stride = static_cast<size_t>(grid_cells);
 
     int best_class = 0;
     float best_score = output[4 * stride + a];
@@ -170,17 +170,30 @@ YoloDetector::YoloDetector(const std::string& model_path, float conf_threshold,
 
   session_ = std::make_shared<OnnxSession>(model_path_, intra_op_threads);
   const std::vector<int64_t>& shape = session_->input_shape();
-  if (shape != std::vector<int64_t>{1, 3, kYoloInputSize, kYoloInputSize}) {
+  // 入力解像度はモデルから取る。640 以外 (320/416/480) も同じ経路で扱える。
+  if (shape.size() != 4 || shape[0] != 1 || shape[1] != 3 ||
+      shape[2] != shape[3]) {
     throw std::runtime_error(
-        "YOLO モデルの入力形が想定と違う。NCHW で " +
-        std::to_string(kYoloInputSize) + " 角を期待した");
+        "YOLO モデルの入力形が想定と違う。NCHW の正方形を期待した");
   }
+  input_size_ = static_cast<int>(shape[2]);
+  if (input_size_ <= 0 || input_size_ % 32 != 0) {
+    throw std::runtime_error("YOLO の入力解像度が 32 の倍数でない: " +
+                             std::to_string(input_size_));
+  }
+  const std::vector<int64_t>& out_shape = session_->output_shape();
+  // 出力は (1, 84, N)。N は入力解像度で変わる (640->8400, 480->4725)。
+  if (out_shape.size() != 3 || out_shape[1] != kYoloNumClasses + kYoloBBoxCols) {
+    throw std::runtime_error(
+        "YOLO の出力形が想定と違う。[1, 84, N] を期待した");
+  }
+  grid_cells_ = static_cast<int>(out_shape[2]);
 }
 
 std::vector<Detection> YoloDetector::Detect(const cv::Mat& image_bgr) const {
   RequireBgr3(image_bgr);
 
-  const LetterboxResult lb = Letterbox(image_bgr, kYoloInputSize, kYoloPadColor);
+  const LetterboxResult lb = Letterbox(image_bgr, input_size_, kYoloPadColor);
 
   // swapRB は無条件の BGR から RGB。チャンネル順は入力名でも入力 shape でも
   // 判らない（ONNX に RGB/BGR の表現が無く metadata もチャンネル数だけ）
@@ -191,15 +204,14 @@ std::vector<Detection> YoloDetector::Detect(const cv::Mat& image_bgr) const {
   // blobFromImage に任せる (約 2ms)。letterbox 済みなので resize は無変換。
   cv::Mat blob_mat;
   cv::dnn::blobFromImage(lb.padded, blob_mat, 1.0 / 255.0,
-                         cv::Size(kYoloInputSize, kYoloInputSize),
-                         cv::Scalar(), /*swapRB=*/true, /*crop=*/false,
-                         CV_32F);
+                         cv::Size(input_size_, input_size_), cv::Scalar(),
+                         /*swapRB=*/true, /*crop=*/false, CV_32F);
   std::vector<float> blob(blob_mat.ptr<float>(),
                           blob_mat.ptr<float>() + blob_mat.total());
 
-  return YoloPostprocess(session_->Run(blob), lb.ratio, lb.pad_w, lb.pad_h,
-                         image_bgr.cols, image_bgr.rows, conf_threshold_,
-                         iou_threshold_);
+  return YoloPostprocess(session_->Run(blob), grid_cells_, lb.ratio, lb.pad_w,
+                         lb.pad_h, image_bgr.cols, image_bgr.rows,
+                         conf_threshold_, iou_threshold_);
 }
 
 std::string ResolveYoloModelPath() {
