@@ -9,6 +9,7 @@
 #include <utility>
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
 
 #include "meister_vision/letterbox.hpp"
@@ -185,23 +186,16 @@ std::vector<Detection> YoloDetector::Detect(const cv::Mat& image_bgr) const {
   // 判らない（ONNX に RGB/BGR の表現が無く metadata もチャンネル数だけ）
   // ので、「Ultralytics は RGB で学習した」というモデル契約として固定する。
   // 名前や shape で推測すると別モデルで静かに壊れる。
-  cv::Mat rgb;
-  cv::cvtColor(lb.padded, rgb, cv::COLOR_BGR2RGB);
-  rgb.convertTo(rgb, CV_32F, 1.0 / 255.0);
-
-  const size_t plane =
-      static_cast<size_t>(kYoloInputSize) * kYoloInputSize;
-  std::vector<float> blob(3 * plane);
-  for (int y = 0; y < kYoloInputSize; ++y) {
-    const float* row = rgb.ptr<float>(y);
-    const size_t row_base = static_cast<size_t>(y) * kYoloInputSize;
-    for (int x = 0; x < kYoloInputSize; ++x) {
-      const float* px = row + static_cast<size_t>(x) * 3;
-      blob[row_base + static_cast<size_t>(x)] = px[0];
-      blob[plane + row_base + static_cast<size_t>(x)] = px[1];
-      blob[2 * plane + row_base + static_cast<size_t>(x)] = px[2];
-    }
-  }
+  //
+  // 手書きの 3 重ループ (約 9ms) は遅いので、OpenCV の最適化済み
+  // blobFromImage に任せる (約 2ms)。letterbox 済みなので resize は無変換。
+  cv::Mat blob_mat;
+  cv::dnn::blobFromImage(lb.padded, blob_mat, 1.0 / 255.0,
+                         cv::Size(kYoloInputSize, kYoloInputSize),
+                         cv::Scalar(), /*swapRB=*/true, /*crop=*/false,
+                         CV_32F);
+  std::vector<float> blob(blob_mat.ptr<float>(),
+                          blob_mat.ptr<float>() + blob_mat.total());
 
   return YoloPostprocess(session_->Run(blob), lb.ratio, lb.pad_w, lb.pad_h,
                          image_bgr.cols, image_bgr.rows, conf_threshold_,
