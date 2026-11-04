@@ -10,12 +10,17 @@
 ///   iou_threshold      (double, 0.45)        NMS の IoU しきい値
 ///   image_topic        (string, "image_raw") 購読する画像トピック
 ///   publish_annotated  (bool,   true)        描画済み画像を配信するか
-///   rate               (double, 3.0)         最大処理レート [Hz]
-///   inference_threads  (int,    2)           ONNX 推論スレッド数
+///   rate               (double, 5.0)         処理レート [Hz]
+///   inference_threads  (int,    4)           ONNX 推論スレッド数
+#include <algorithm>
+#include <atomic>
+#include <chrono>
 #include <cstdio>
 #include <exception>
 #include <memory>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
@@ -63,30 +68,51 @@ class DetectionNode final : public rclcpp::Node {
  public:
   DetectionNode()
       : rclcpp::Node(kNodeName),
-        publish_annotated_(declare_parameter<bool>("publish_annotated", true)),
-        min_interval_(1.0 / declare_parameter<double>("rate", 3.0)) {
+        publish_annotated_(declare_parameter<bool>("publish_annotated", true)) {
     const std::string image_topic =
         declare_parameter<std::string>("image_topic", "image_raw");
+    const double rate = std::max(0.1, declare_parameter<double>("rate", 5.0));
+    const int inference_threads =
+        declare_parameter<int>("inference_threads", 4);
+
     detector_ = std::make_unique<YoloDetector>(
         declare_parameter<std::string>("model_path", ""),
         static_cast<float>(declare_parameter<double>("conf_threshold", 0.25)),
         static_cast<float>(declare_parameter<double>("iou_threshold", 0.45)),
-        declare_parameter<int>("inference_threads", 2));
+        inference_threads);
 
     RCLCPP_INFO(get_logger(), "モデルを読み込みました: %s",
                 detector_->model_path().c_str());
-    RCLCPP_INFO(get_logger(), "画像トピック '%s' を購読開始 (最大 %.2f Hz)",
-                image_topic.c_str(), 1.0 / min_interval_);
+    RCLCPP_INFO(get_logger(), "画像トピック '%s' を購読開始 (%.2f Hz, %d スレッド)",
+                image_topic.c_str(), rate, inference_threads);
 
     pub_detections_ =
         create_publisher<vision_msgs::msg::Detection2DArray>("detections", 10);
     pub_annotated_ =
         create_publisher<sensor_msgs::msg::Image>("detection_image", 10);
+
+    // リアルタイム用 QoS。depth=1 で常に最新フレームだけを保持し、
+    // 古いフレームの処理待ちで遅延が積み上がらないようにする。
+    auto image_qos = rclcpp::QoS(rclcpp::KeepLast(1));
+    image_qos.best_effort();
+    image_qos.durability_volatile();
     sub_image_ = create_subscription<sensor_msgs::msg::Image>(
-        image_topic, 10,
+        image_topic, image_qos,
         [this](sensor_msgs::msg::Image::ConstSharedPtr msg) {
-          OnImage(*msg);
+          OnImage(std::move(msg));
         });
+
+    // 購読コールバックでは推論せず最新フレームだけを保持し、推論は専用
+    // スレッドで一定周期に回す。rclcpp の wall timer はコールバックの
+    // 実行時間ぶん周期が伸びるため、絶対時刻スケジュールの worker を使う。
+    worker_ = std::thread([this, rate]() { WorkerLoop(rate); });
+  }
+
+  ~DetectionNode() override {
+    running_ = false;
+    if (worker_.joinable()) {
+      worker_.join();
+    }
   }
 
  private:
@@ -98,18 +124,43 @@ class DetectionNode final : public rclcpp::Node {
            pub_annotated_->get_subscription_count() > 0;
   }
 
-  void OnImage(const sensor_msgs::msg::Image& msg) {
-    if (!AnyoneListening()) {
-      return;
-    }
-    const rclcpp::Time stamp = now();
-    if (last_process_time_.nanoseconds() != 0 &&
-        (stamp - last_process_time_).seconds() < min_interval_) {
-      return;
-    }
-    last_process_time_ = stamp;
-    ++process_count_;
+  /// 推論はせず、最新フレームへの参照を差し替えるだけ（O(1)）。
+  void OnImage(sensor_msgs::msg::Image::ConstSharedPtr msg) {
+    std::lock_guard<std::mutex> lock(frame_mutex_);
+    latest_frame_ = std::move(msg);
+    has_new_frame_ = true;
+  }
 
+  void WorkerLoop(double rate) {
+    const auto period = std::chrono::duration<double>(1.0 / rate);
+    auto next = std::chrono::steady_clock::now() + period;
+    while (running_) {
+      std::this_thread::sleep_until(next);
+      next += period;
+      // 推論が周期を超えたら基準を今に戻し、遅れを取り戻すために
+      // 連続実行しないようにする。
+      const auto now_tp = std::chrono::steady_clock::now();
+      if (next < now_tp) {
+        next = now_tp + period;
+      }
+      if (!AnyoneListening()) {
+        continue;
+      }
+      sensor_msgs::msg::Image::ConstSharedPtr msg;
+      {
+        std::lock_guard<std::mutex> lock(frame_mutex_);
+        if (!has_new_frame_ || latest_frame_ == nullptr) {
+          continue;
+        }
+        msg = latest_frame_;
+        has_new_frame_ = false;
+      }
+      ProcessFrame(*msg);
+    }
+  }
+
+  void ProcessFrame(const sensor_msgs::msg::Image& msg) {
+    ++process_count_;
     std::vector<Detection> detections;
     cv::Mat bgr;
     try {
@@ -136,13 +187,16 @@ class DetectionNode final : public rclcpp::Node {
   }
 
   bool publish_annotated_;
-  double min_interval_;
-  rclcpp::Time last_process_time_{0, 0, RCL_ROS_TIME};
+  std::mutex frame_mutex_;
+  sensor_msgs::msg::Image::ConstSharedPtr latest_frame_;
+  bool has_new_frame_ = false;
   std::size_t process_count_ = 0;
   std::unique_ptr<YoloDetector> detector_;
   rclcpp::Publisher<vision_msgs::msg::Detection2DArray>::SharedPtr pub_detections_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_annotated_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_image_;
+  std::thread worker_;
+  std::atomic<bool> running_{true};
 };
 
 }  // namespace
