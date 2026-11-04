@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <condition_variable>
 #include <chrono>
 #include <cstdio>
 #include <exception>
@@ -128,7 +129,11 @@ class DetectionNode final : public rclcpp::Node {
   }
 
   ~DetectionNode() override {
-    running_ = false;
+    {
+      std::lock_guard<std::mutex> lock(frame_mutex_);
+      running_ = false;
+    }
+    frame_cv_.notify_all();
     if (worker_.joinable()) {
       worker_.join();
     }
@@ -144,38 +149,46 @@ class DetectionNode final : public rclcpp::Node {
            pub_annotated_->get_subscription_count() > 0;
   }
 
-  /// 推論はせず、最新フレームへの参照を差し替えるだけ（O(1)）。
+  /// 推論はせず、最新フレームへの参照を差し替えてワーカーを起こすだけ（O(1)）。
   void OnImage(sensor_msgs::msg::Image::ConstSharedPtr msg) {
-    std::lock_guard<std::mutex> lock(frame_mutex_);
-    latest_frame_ = std::move(msg);
-    has_new_frame_ = true;
+    {
+      std::lock_guard<std::mutex> lock(frame_mutex_);
+      latest_frame_ = std::move(msg);
+      has_new_frame_ = true;
+    }
+    frame_cv_.notify_one();
   }
 
   void WorkerLoop(double rate) {
-    const auto period = std::chrono::duration<double>(1.0 / rate);
-    auto next = std::chrono::steady_clock::now() + period;
+    const auto period = std::chrono::duration_cast<
+        std::chrono::steady_clock::duration>(
+        std::chrono::duration<double>(1.0 / rate));
+    auto next_allowed = std::chrono::steady_clock::now();
+    std::unique_lock<std::mutex> lock(frame_mutex_);
     while (running_) {
-      std::this_thread::sleep_until(next);
-      next += period;
-      // 推論が周期を超えたら基準を今に戻し、遅れを取り戻すために
-      // 連続実行しないようにする。
-      const auto now_tp = std::chrono::steady_clock::now();
-      if (next < now_tp) {
-        next = now_tp + period;
+      // 固定周期でポーリングすると、カメラと周期が近いときに位相がぶつかって
+      // 半分のフレームを取りこぼす (30Hz 同士で 15Hz になる)。
+      // 到着で起きる方式にして、レート上限だけを守る。
+      frame_cv_.wait(lock, [this]() { return !running_ || has_new_frame_; });
+      if (!running_) {
+        break;
       }
-      if (!AnyoneListening()) {
-        continue;
-      }
-      sensor_msgs::msg::Image::ConstSharedPtr msg;
-      {
-        std::lock_guard<std::mutex> lock(frame_mutex_);
-        if (!has_new_frame_ || latest_frame_ == nullptr) {
+      if (std::chrono::steady_clock::now() < next_allowed) {
+        lock.unlock();
+        std::this_thread::sleep_until(next_allowed);
+        lock.lock();
+        if (!running_ || !has_new_frame_) {
           continue;
         }
-        msg = latest_frame_;
-        has_new_frame_ = false;
       }
-      ProcessFrame(*msg);
+      sensor_msgs::msg::Image::ConstSharedPtr msg = latest_frame_;
+      has_new_frame_ = false;
+      lock.unlock();
+      next_allowed = std::chrono::steady_clock::now() + period;
+      if (AnyoneListening()) {
+        ProcessFrame(*msg);
+      }
+      lock.lock();
     }
   }
 
@@ -229,6 +242,7 @@ class DetectionNode final : public rclcpp::Node {
 
   bool publish_annotated_;
   std::mutex frame_mutex_;
+  std::condition_variable frame_cv_;
   sensor_msgs::msg::Image::ConstSharedPtr latest_frame_;
   bool has_new_frame_ = false;
   std::size_t process_count_ = 0;
