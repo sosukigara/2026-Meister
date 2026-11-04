@@ -13,7 +13,21 @@ class LibSerialIo final : public SerialIo {
  public:
   LibSerialIo(const std::string& path, int baud) {
     port_.Open(path);
-    port_.SetBaudRate(static_cast<LibSerial::BaudRate>(baud));
+    // libserial の BaudRate は termios の speed_t 定数 (B115200 等) であり、
+    // 生の整数 (115200) ではない。int から直接キャストすると "Invalid baud rate" になる。
+    LibSerial::BaudRate br = LibSerial::BaudRate::BAUD_DEFAULT;
+    switch (baud) {
+      case 9600: br = LibSerial::BaudRate::BAUD_9600; break;
+      case 19200: br = LibSerial::BaudRate::BAUD_19200; break;
+      case 38400: br = LibSerial::BaudRate::BAUD_38400; break;
+      case 57600: br = LibSerial::BaudRate::BAUD_57600; break;
+      case 115200: br = LibSerial::BaudRate::BAUD_115200; break;
+      case 230400: br = LibSerial::BaudRate::BAUD_230400; break;
+      case 460800: br = LibSerial::BaudRate::BAUD_460800; break;
+      case 921600: br = LibSerial::BaudRate::BAUD_921600; break;
+      default: break;
+    }
+    port_.SetBaudRate(br);
     // pyserial も open 直後に DTR を assert する。EN 線の制御は呼出側に任せる。
     port_.SetDTR(false);
     port_.SetRTS(false);
@@ -25,11 +39,18 @@ class LibSerialIo final : public SerialIo {
     }
     LibSerial::DataBuffer dbuf;
     if (timeout_ms > 0) {
-      // 1 バイトまで待つ。揃わなければ dataBuffer は空のまま戻る。
-      port_.Read(dbuf, 1, static_cast<std::size_t>(timeout_ms));
+      // 1 バイトまで待つ。揃わなければ ReadTimeout が投げられるので握りつぶす。
+      try {
+        port_.Read(dbuf, 1, static_cast<std::size_t>(timeout_ms));
+      } catch (const LibSerial::ReadTimeout&) {
+        // タイムアウト → まだ何も来ていない
+      }
     }
     // numberOfBytes=0, msTimeout=0 は「溜まっている分をすぐ返す」。
-    port_.Read(dbuf, 0, 0);
+    try {
+      port_.Read(dbuf, 0, 0);
+    } catch (const LibSerial::ReadTimeout&) {
+    }
     const std::size_t n = std::min(max, dbuf.size());
     std::copy(dbuf.begin(), dbuf.begin() + static_cast<std::ptrdiff_t>(n), buf);
     return n;
