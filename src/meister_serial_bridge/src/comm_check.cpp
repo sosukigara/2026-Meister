@@ -1,5 +1,6 @@
 #include "meister_serial_bridge/comm_check.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <thread>
@@ -64,9 +65,21 @@ std::vector<Feedback> CollectFeedback(SerialIo& link, StreamFrameParser& parser,
 }
 
 bool WaitProtocolError(SerialIo& link, StreamFrameParser& parser, double deadline) {
-  for (const auto& fb : CollectFeedback(link, parser, deadline, 32)) {
-    if (fb.HasProtocolError()) {
-      return true;
+  uint8_t buf[256];
+  while (NowSeconds() < deadline) {
+    const std::size_t n = link.Read(buf, sizeof(buf), 2);
+    if (n == 0) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      continue;
+    }
+    std::vector<meister::proto::Frame> frames;
+    parser.Feed(buf, n, &frames);
+    for (const auto& f : frames) {
+      if (f.type != meister::proto::kFbState) continue;
+      const auto fb = DecodeStateFrame(f);
+      if (fb.HasProtocolError()) {
+        return true;
+      }
     }
   }
   return false;
@@ -156,9 +169,12 @@ CheckResult RunCommCheck(const std::string& port, int baud, double timeout_s, bo
   uint8_t broken[proto::kMaxFrameSize];
   const std::size_t good_n = EncodeVelocity(broken, sizeof(broken), Uniform<VelocityArray>(0));
   broken[good_n - 1] ^= 0xFF;
+  std::this_thread::sleep_for(std::chrono::milliseconds(150));
   link->ResetInputBuffer();
+  parser.Clear();
   link->Write(broken, good_n);
   link->Flush();
+  std::this_thread::sleep_for(std::chrono::milliseconds(300));
   if (!WaitProtocolError(*link, parser, NowSeconds() + timeout_s)) {
     throw CommError(
         "意図的に壊したフレームでプロトコルエラーフラグが立ちませんでした。"
