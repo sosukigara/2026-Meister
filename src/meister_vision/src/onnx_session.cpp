@@ -47,6 +47,10 @@ OnnxSession::OnnxSession(const std::string& model_path, int intra_op_threads)
   Ort::SessionOptions options;
   options.SetIntraOpNumThreads(std::max(1, intra_op_threads));
   options.SetInterOpNumThreads(1);
+  options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+  options.EnableMemPattern();
+  options.EnableCpuMemArena();
+  options.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
 
   try {
     impl_->session = std::make_unique<Ort::Session>(
