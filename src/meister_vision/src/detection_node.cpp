@@ -10,10 +10,13 @@
 ///   iou_threshold      (double, 0.45)        NMS の IoU しきい値
 ///   image_topic        (string, "image_raw") 購読する画像トピック
 ///   publish_annotated  (bool,   true)        描画済み画像を配信するか
-///   rate               (double, 5.0)         処理レート [Hz]
+///   rate               (double, 10.0)        処理レート [Hz]
 ///   inference_threads  (int,    4)           ONNX 推論スレッド数
+///   target_class       (int,    -1)          追うクラス (-1 は指定なし)
+///   target_lock_radius (double, 120.0)       同一対象とみなす移動量 [px]
 #include <algorithm>
 #include <atomic>
+#include <chrono>
 #include <chrono>
 #include <cstdio>
 #include <exception>
@@ -33,6 +36,7 @@
 
 #include "meister_vision/draw.hpp"
 #include "meister_vision/image_util.hpp"
+#include "meister_vision/target_selector.hpp"
 #include "meister_vision/yolo_detector.hpp"
 
 namespace meister_vision {
@@ -40,26 +44,31 @@ namespace {
 
 constexpr char kNodeName[] = "meister_vision";
 
+vision_msgs::msg::Detection2D ToDetection2D(
+    const std_msgs::msg::Header& header, const Detection& det) {
+  vision_msgs::msg::Detection2D d2d;
+  d2d.header = header;
+  d2d.id = det.class_name;
+
+  vision_msgs::msg::ObjectHypothesisWithPose hyp;
+  hyp.hypothesis.class_id = std::to_string(det.class_id);
+  hyp.hypothesis.score = det.confidence;
+  d2d.results.push_back(hyp);
+
+  d2d.bbox.center.position.x = (det.x1 + det.x2) / 2.0;
+  d2d.bbox.center.position.y = (det.y1 + det.y2) / 2.0;
+  d2d.bbox.size_x = det.x2 - det.x1;
+  d2d.bbox.size_y = det.y2 - det.y1;
+  return d2d;
+}
+
 vision_msgs::msg::Detection2DArray BuildDetectionArray(
     const sensor_msgs::msg::Image& msg, const std::vector<Detection>& dets) {
   vision_msgs::msg::Detection2DArray array;
   array.header = msg.header;
   array.detections.reserve(dets.size());
   for (const Detection& det : dets) {
-    vision_msgs::msg::Detection2D d2d;
-    d2d.header = msg.header;
-    d2d.id = det.class_name;
-
-    vision_msgs::msg::ObjectHypothesisWithPose hyp;
-    hyp.hypothesis.class_id = std::to_string(det.class_id);
-    hyp.hypothesis.score = det.confidence;
-    d2d.results.push_back(hyp);
-
-    d2d.bbox.center.position.x = (det.x1 + det.x2) / 2.0;
-    d2d.bbox.center.position.y = (det.y1 + det.y2) / 2.0;
-    d2d.bbox.size_x = det.x2 - det.x1;
-    d2d.bbox.size_y = det.y2 - det.y1;
-    array.detections.push_back(d2d);
+    array.detections.push_back(ToDetection2D(msg.header, det));
   }
   return array;
 }
@@ -74,10 +83,17 @@ class DetectionNode final : public rclcpp::Node {
     const double rate = std::max(0.1, declare_parameter<double>("rate", 5.0));
     const int inference_threads =
         declare_parameter<int>("inference_threads", 4);
+    const float conf_threshold =
+        static_cast<float>(declare_parameter<double>("conf_threshold", 0.25));
+    TargetSelectorOptions selector_options;
+    selector_options.target_class = declare_parameter<int>("target_class", -1);
+    selector_options.min_confidence = conf_threshold;
+    selector_options.lock_radius_px =
+        static_cast<float>(declare_parameter<double>("target_lock_radius", 120.0));
+    target_selector_ = std::make_unique<TargetSelector>(selector_options);
 
     detector_ = std::make_unique<YoloDetector>(
-        declare_parameter<std::string>("model_path", ""),
-        static_cast<float>(declare_parameter<double>("conf_threshold", 0.25)),
+        declare_parameter<std::string>("model_path", ""), conf_threshold,
         static_cast<float>(declare_parameter<double>("iou_threshold", 0.45)),
         inference_threads);
 
@@ -90,6 +106,9 @@ class DetectionNode final : public rclcpp::Node {
         create_publisher<vision_msgs::msg::Detection2DArray>("detections", 10);
     pub_annotated_ =
         create_publisher<sensor_msgs::msg::Image>("detection_image", 10);
+    // アーム制御は小さなメッセージだけ見る。depth=1 で古い指令を捨てる。
+    pub_target_ = create_publisher<vision_msgs::msg::Detection2DArray>(
+        "target", rclcpp::QoS(rclcpp::KeepLast(1)));
 
     // リアルタイム用 QoS。depth=1 で常に最新フレームだけを保持し、
     // 古いフレームの処理待ちで遅延が積み上がらないようにする。
@@ -117,7 +136,8 @@ class DetectionNode final : public rclcpp::Node {
 
  private:
   bool AnyoneListening() const {
-    if (pub_detections_->get_subscription_count() > 0) {
+    if (pub_detections_->get_subscription_count() > 0 ||
+        pub_target_->get_subscription_count() > 0) {
       return true;
     }
     return publish_annotated_ &&
@@ -172,8 +192,11 @@ class DetectionNode final : public rclcpp::Node {
     }
 
     pub_detections_->publish(BuildDetectionArray(msg, detections));
+    PublishTarget(msg, detections);
 
-    if (publish_annotated_) {
+    // 描画と 921KB の変換は馬鹿にならない。制御系は detections だけを
+    // 購読するので、見る人がいないときは作らない。
+    if (publish_annotated_ && pub_annotated_->get_subscription_count() > 0) {
       // cv_bridge の cv2_to_imgmsg は実行時に KeyError を起こす環境が
       // あるので、手動変換に固定する（購読側の変換は問題なし）。
       sensor_msgs::msg::Image annotated_msg = ImageMsgFromBgr(
@@ -186,14 +209,34 @@ class DetectionNode final : public rclcpp::Node {
                  detections.size());
   }
 
+  /// アームを向ける 1 個を選んで配信する。該当なしは空配列。
+  void PublishTarget(const sensor_msgs::msg::Image& msg,
+                     const std::vector<Detection>& detections) {
+    const Target target = target_selector_->Select(
+        detections, static_cast<int>(msg.width),
+        static_cast<int>(msg.height));
+    vision_msgs::msg::Detection2DArray out;
+    out.header = msg.header;
+    if (target.valid) {
+      out.detections.push_back(ToDetection2D(msg.header, target.detection));
+    }
+    pub_target_->publish(out);
+
+    RCLCPP_DEBUG(get_logger(),
+                 "target valid=%d locked=%d offset=(%.3f, %.3f)", target.valid,
+                 target.locked, target.offset_x, target.offset_y);
+  }
+
   bool publish_annotated_;
   std::mutex frame_mutex_;
   sensor_msgs::msg::Image::ConstSharedPtr latest_frame_;
   bool has_new_frame_ = false;
   std::size_t process_count_ = 0;
   std::unique_ptr<YoloDetector> detector_;
+  std::unique_ptr<TargetSelector> target_selector_;
   rclcpp::Publisher<vision_msgs::msg::Detection2DArray>::SharedPtr pub_detections_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_annotated_;
+  rclcpp::Publisher<vision_msgs::msg::Detection2DArray>::SharedPtr pub_target_;
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_image_;
   std::thread worker_;
   std::atomic<bool> running_{true};
