@@ -101,14 +101,16 @@ std::vector<Detection> YoloPostprocess(const std::vector<float>& output,
   const double max_w = static_cast<double>(image_width);
   const double max_h = static_cast<double>(image_height);
 
+  // ONNX 出力は [1, 84, 8400]（チャンネル優先）なので、anchor ごとの
+  // 値は「チャンネル * kYoloGridCells + anchor」で取り出す。
   for (int cell = 0; cell < kYoloGridCells; ++cell) {
-    const size_t base =
-        static_cast<size_t>(cell) * (kYoloNumClasses + kYoloBBoxCols);
+    const size_t a = static_cast<size_t>(cell);
+    const size_t stride = kYoloGridCells;
 
     int best_class = 0;
-    float best_score = output[base + kYoloBBoxCols];
+    float best_score = output[4 * stride + a];
     for (int c = 1; c < kYoloNumClasses; ++c) {
-      const float s = output[base + kYoloBBoxCols + c];
+      const float s = output[(4 + c) * stride + a];
       if (s > best_score) {
         best_score = s;
         best_class = c;
@@ -119,10 +121,10 @@ std::vector<Detection> YoloPostprocess(const std::vector<float>& output,
     }
 
     // cx,cy,w,h（640x640 座標）から元画像座標の xyxy へ戻す。
-    const double cx = output[base + 0];
-    const double cy = output[base + 1];
-    const double w = output[base + 2];
-    const double h = output[base + 3];
+    const double cx = output[0 * stride + a];
+    const double cy = output[1 * stride + a];
+    const double w = output[2 * stride + a];
+    const double h = output[3 * stride + a];
 
     Detection det;
     det.class_id = best_class;
