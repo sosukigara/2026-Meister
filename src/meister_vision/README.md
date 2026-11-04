@@ -91,6 +91,7 @@ ros2 launch meister_vision detection.launch.py \
 | 購読 | `image_raw` (パラメータ変更可) | `sensor_msgs/Image` | 入力画像 |
 | 配信 | `detections` | `vision_msgs/Detection2DArray` | 検出結果 (bbox / クラス / 信頼度) |
 | 配信 | `detection_image` | `sensor_msgs/Image` | 検出枠・ラベルを描画した画像 |
+| 配信 | `target` | `vision_msgs/Detection2DArray` | アームを向ける 1 個 (0 または 1 要素) |
 
 `detections` の各要素 (`Detection2D`):
 
@@ -100,7 +101,31 @@ ros2 launch meister_vision detection.launch.py \
 - `bbox.center.position`: 中心座標 (ピクセル)
 - `bbox.size_x` / `bbox.size_y`: 幅 / 高さ
 
-ノードは既定で最大 **10 Hz** にレート制限し、負荷を軽く保つ。
+### `target` — アーム先端カメラの視覚サーボ用
+
+アーム先端カメラで物体中心へ寄せる用途では、毎フレーム別の物体を掴むと
+制御が振動する。`target` は次の規則で 1 個だけを選んで配信する。
+
+1. 前フレームの対象が `target_lock_radius` [px] 以内に残っていれば追従する
+2. 見失ったときだけ画像中心に最も近い候補へ乗り換える
+3. 該当なしは空配列 (要素数 0) を配信する
+
+見失ってすぐ別の物体へ乗り換えるとアームが飛ぶため、既定では 3 フレーム
+(10 Hz で 300 ms) は保持し、その間は空配列を配信する。
+
+パラメータ: `target_class` (追うクラス ID、-1 で指定なし)、
+`target_lock_radius` (既定 120.0 px)、`lock_grace_frames` (既定 3)。
+
+画像中心からの正規化オフセットは次の式で得られる (`w`, `h` は入力画像):
+
+```text
+offset_x = (bbox.center.position.x - w/2) / (w/2)   # 右が正
+offset_y = (bbox.center.position.y - h/2) / (h/2)   # 下が正
+```
+
+ノードは既定で **10 Hz** で処理する (`rate` で変更可)。カメラは処理
+レートより速く回すこと (`camera_fps`、既定 20 Hz)。同レートだと位相の
+ズレでフレームが落ちて目標レートを下回る。
 
 ## 確認方法
 
