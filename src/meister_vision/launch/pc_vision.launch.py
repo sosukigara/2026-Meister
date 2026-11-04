@@ -15,7 +15,7 @@ def generate_launch_description():
             "device", default_value="/dev/video0",
             description="PCカメラのデバイスパス"),
         DeclareLaunchArgument(
-            "camera_fps", default_value="20.0",
+            "camera_fps", default_value="30.0",
             description="PCカメラの配信フレームレート [Hz]"),
         DeclareLaunchArgument(
             "image_topic", default_value="/camera/image_raw",
@@ -27,8 +27,8 @@ def generate_launch_description():
             "iou_threshold", default_value="0.45",
             description="NMS の IoU しきい値"),
         DeclareLaunchArgument(
-            "rate", default_value="10.0",
-            description="最大処理レート [Hz]"),
+            "rate", default_value="30.0",
+            description="最大処理レート [Hz] (推論が追いつく上限で頭打ち)"),
         DeclareLaunchArgument(
             "inference_threads", default_value="4",
             description="ONNX 推論スレッド数"),
