@@ -11,9 +11,11 @@
 ///   fps       (double, 5.0)          取得フレームレート
 ///   frame_id  (string, camera_link) 配信するフレーム ID
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <memory>
 #include <string>
+#include <thread>
 
 #include <opencv2/videoio.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -39,13 +41,20 @@ class PcCameraNode final : public rclcpp::Node {
         height_(declare_parameter<int>("height", kDefaultHeight)),
         fps_(declare_parameter<double>("fps", kDefaultFps)),
         frame_id_(declare_parameter<std::string>("frame_id", "camera_link")) {
-    const double period = fps_ > 0.0 ? 1.0 / fps_ : 1.0 / kDefaultFps;
     pub_ = create_publisher<sensor_msgs::msg::Image>(kTopic, 10);
-    timer_ = create_wall_timer(std::chrono::duration<double>(period),
-                               [this]() { OnTimer(); });
+    // 取得は専用スレッドで回す。タイマー + ブロッキング read だと
+    // 「待ち時間 + 次のフレーム待ち」で周期が倍になり、30fps 指定でも
+    // 15Hz しか出ない。
+    capture_thread_ = std::thread([this]() { CaptureLoop(); });
   }
 
-  ~PcCameraNode() override { CloseCapture(); }
+  ~PcCameraNode() override {
+    running_ = false;
+    if (capture_thread_.joinable()) {
+      capture_thread_.join();
+    }
+    CloseCapture();
+  }
 
  private:
   void CloseCapture() {
@@ -75,24 +84,39 @@ class PcCameraNode final : public rclcpp::Node {
     if (fps_ > 0.0) {
       capture_.set(cv::CAP_PROP_FPS, fps_);
     }
-    // V4L2 の既定キューは 4 枚。読み出しが遅いと 100ms 単位で古いフレームを
-    // 返し、体感ラグになるため常に最新 1 枚だけを保持させる。
-    capture_.set(cv::CAP_PROP_BUFFERSIZE, 1);
+    // V4L2 の既定キューは 4 枚。古いフレームを返さないよう減らしたいが、
+    // 1 枚にするとドライバが空きバッファ待ちで取りこぼし、OpenCV の取得
+    // レートが半分 (30fps 機で 15.6fps) になる。2 枚なら等倍で出て、
+    // 待ちも 1 フレーム分に収まる。
+    capture_.set(cv::CAP_PROP_BUFFERSIZE, 2);
     return true;
   }
 
-  void OnTimer() {
-    if (!capture_.isOpened()) {
-      // 起動時や切断時にデバイスが不在でも落とさず、次周期に開き直す。
-      OpenDevice();
-      return;
+  void CaptureLoop() {
+    while (running_) {
+      if (!capture_.isOpened()) {
+        // 起動時や切断時にデバイスが不在でも落とさず、周期ごとに開き直す。
+        OpenDevice();
+        if (!capture_.isOpened()) {
+          std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        }
+        continue;
+      }
+      cv::Mat frame;
+      if (!capture_.read(frame) || frame.empty()) {
+        RCLCPP_ERROR(get_logger(), "フレーム取得に失敗しました、再接続します");
+        CloseCapture();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        continue;
+      }
+      // レート制限はデバイス側 (CAP_PROP_FPS) に任せる。ソフト側で
+      // 「前回 + 1/fps まで捨てる」と、実フレーム周期との位相ズレで
+      // 半分のフレームを捨ててしまう。
+      PublishFrame(frame);
     }
-    cv::Mat frame;
-    if (!capture_.read(frame) || frame.empty()) {
-      RCLCPP_ERROR(get_logger(), "フレーム取得に失敗しました、再接続します");
-      CloseCapture();
-      return;
-    }
+  }
+
+  void PublishFrame(const cv::Mat& frame) {
     sensor_msgs::msg::Image msg = ImageMsgFromBgr(frame);
     // V4L2 のバッファタイムスタンプ (単調時計) から撮像時刻を復元する。
     // 取得時刻をそのまま入れると下流の遅延が実際より小さく出る。
@@ -119,7 +143,8 @@ class PcCameraNode final : public rclcpp::Node {
   std::string frame_id_;
   cv::VideoCapture capture_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
-  rclcpp::TimerBase::SharedPtr timer_;
+  std::thread capture_thread_;
+  std::atomic<bool> running_{true};
 };
 
 }  // namespace
