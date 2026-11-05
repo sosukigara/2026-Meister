@@ -16,11 +16,11 @@ firmware/
 │   ├── include/
 │   │   ├── meister_config.h    # 設定の唯一の出所（ピン・周期・バックエンド選択）
 │   │   ├── meister_protocol.h  # バイナリプロトコル定義（フレーム形式・種別・定数）
-│   │   ├── base_chassis.h      # 足回り（駆動モータ + ステアリング）
+│   │   ├── base_chassis.h      # 足回り（ステアリング。駆動は foc drive 基板）
 │   │   ├── arm.h               # アーム + グリッパー
 │   │   ├── command_dispatch.h  # 受信フレーム → 各機構
 │   │   ├── feedback.h          # FB_STATE の定周期送信
-│   │   └── hal/                # 機構より下の層（LEDC / サーボ / モータ / バス codec）
+│   │   └── hal/                # 機構より下の層（LEDC / サーボ / バス codec）
 │   ├── src/
 │   │   ├── main.cpp            # 配線と setup/loop のみ
 │   │   ├── base_chassis.cpp  arm.cpp  command_dispatch.cpp  feedback.cpp
@@ -114,8 +114,6 @@ pio run -e esp32dev -t upload           # 実機用（GPIO16/17 経由）
 | `MSTE_UART_RX_PIN` / `MSTE_UART_TX_PIN` | 16 / 17 | プロトコル用 UART（Serial2）ピン |
 | `MSTE_UART_BACKEND_USB0` | 0 | 1 でプロトコル UART を USB/UART0 に切り替える（`esp32dev_usbuart` が設定） |
 | `MSTE_FEEDBACK_HZ` | 100 | FB_STATE の送信周期 [Hz]。**1000 の約数のみ**（`static_assert`）。下記「通信周期の測定」参照 |
-| `MSTE_MOTOR_PIN0..5` | 25,26,27,14,13,2 | 駆動モータ PWM ピン |
-| `MSTE_MOTOR_DIR0..5` | -1 | モータ方向ピン（-1 = 未接続 → PWM のみ） |
 | `MSTE_STEER_PIN0..5` | 4,5,15,18,19,21 | ステアリングサーボ PWM ピン |
 | `MSTE_ARM_PIN0..3` | 22,23,32,33 | アームサーボ PWM ピン |
 | `MSTE_GRIPPER_PIN` | 12 | グリッパーサーボ PWM ピン |
@@ -242,7 +240,7 @@ pio test -e native               # コンソール層のホスト側テスト
 - サーボは `IServoChannel` 抽象（`begin` / `setAngleTenths` / `neutral`）で分離。
   - `PwmServoChannel`: LEDC PWM（50Hz、1000–2000µs）による実サーボ駆動（既定）
   - `ConsoleServoChannel`: デバッグコンソール出力（`MSTE_SERVO_DRIVER_DEBUG` で切替）
-- モータは速度指令（±1000）→ 符号で方向 / 絶対値でデューティ比にマッピング。
+- 駆動モータの PWM 駆動は廃止（foc drive 基板が担う）。CMD_MOTOR_VELOCITY は受理して捨てる。
 - サーボライブラリは採用せず自前の LEDC 駆動で実装（依存を増やさない方針）。
   必要になれば `lib_deps` に ServoESP32 / ESP32Servo を追加して差し替え可能。
 

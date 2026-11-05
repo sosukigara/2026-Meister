@@ -233,26 +233,8 @@ constexpr uint8_t ArmId(uint8_t index) {
 // ★要確認★ バスを UART1 にする場合（既定）と UART0 にする場合で
 // ピン使用が変わる。バスを UART0 にするなら UART1 の 3 本が空く。
 // ----
-/// DC モータの PWM 駆動は廃止（PWM を使うのはサーボだけ）。-1 = 未接続。
-/// 空いた 25/26 は IMU の I2C に使う。実効値は generated_config.h の kMotorPins。
-#ifndef MSTE_MOTOR_PIN0
-#define MSTE_MOTOR_PIN0 -1
-#define MSTE_MOTOR_PIN1 -1
-#define MSTE_MOTOR_PIN2 -1
-#define MSTE_MOTOR_PIN3 -1
-#define MSTE_MOTOR_PIN4 -1
-#define MSTE_MOTOR_PIN5 -1
-#endif
-
-/// モータの向きピン。-1 = 未接続（PWM のみ）
-#ifndef MSTE_MOTOR_DIR0
-#define MSTE_MOTOR_DIR0 -1
-#define MSTE_MOTOR_DIR1 -1
-#define MSTE_MOTOR_DIR2 -1
-#define MSTE_MOTOR_DIR3 -1
-#define MSTE_MOTOR_DIR4 -1
-#define MSTE_MOTOR_DIR5 -1
-#endif
+/// DC モータの PWM 駆動は廃止（駆動は foc drive 基板）。
+/// 空いた 25/26 は IMU の I2C（SDA/SCL）に使う。
 
 /// バス UART の GPIO（MSTE_BUS_UART0=0 のときだけ使う）
 #ifndef MSTE_BUS_TX_PIN
@@ -301,13 +283,7 @@ constexpr uint8_t ArmId(uint8_t index) {
 #define MSTE_GRIPPER_PIN 12
 #endif
 
-/// モータ PWM の周波数 [Hz] と分解能 [bit]
-#ifndef MSTE_MOTOR_PWM_FREQ
-#define MSTE_MOTOR_PWM_FREQ 1000
-#endif
-#ifndef MSTE_PWM_RESOLUTION
-#define MSTE_PWM_RESOLUTION 8
-#endif
+/// サーボ PWM の分解能 [bit]（DC モータ PWM 廃止のため周波数定義は持たない）
 
 // ---- PWM パラメータ ----
 

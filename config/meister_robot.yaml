@@ -49,17 +49,14 @@ uart:
 pins:
 # 値は firmware/main/platformio.ini の MSTE_* から機械的に写した（実機の結線値）。
 # この一致を検証するツールは無い（★未実装★ 手動照合）。
-# firmware/main/include/hal/generated_config.h の kMotorPins / kSteerPins と
-# firmware/main/platformio.ini の MSTE_MOTOR_PIN* / MSTE_STEER_PIN* を突き合わせる。
+# firmware/main/include/hal/generated_config.h の kSteerPins と
+# firmware/main/platformio.ini の MSTE_STEER_PIN* を突き合わせる。
+# 駆動モータの PWM 駆動は廃止（foc drive 基板が担う）。25/26 は IMU の I2C。
 # 変えたいときは
 # firmware/main/platformio.ini も一緒に直すか、Phase 2 の結線時に両方を更新する。
 # ★注意★ GPIO 2 / 12 / 15 はブートストラップピン。ROM がサンプルするのは
 #        リセット時なので動的には問題ないが、実配線時に必ず確認すること。
 #        ここでは firmware/main/platformio.ini の値から変更していない。
-  # DC モータの PWM 駆動は廃止（PWM を使うのはサーボだけ）。-1 = 未接続。
-  # 空いた 25/26 は GY-BNO055 の I2C（SDA/SCL）に使う。
-  motor_pwm: [-1, -1, -1, -1, -1, -1]
-  motor_dir: [-1, -1, -1, -1, -1, -1]          # -1 = 未接続
   steer_pwm: [4, 5, 15, 18, 19, 21]
   arm_pwm: [22, 23, 32, 33]
   gripper_pwm: 12
@@ -71,8 +68,6 @@ pins:
   bus_dir: -1                # アダプタが半二重を持つなら -1 のまま
 
 pwm:
-  motor_freq_hz: 1000
-  motor_resolution: 8
   servo_freq_hz: 50
   servo_min_us: 1000
   servo_max_us: 2000
