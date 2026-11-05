@@ -70,6 +70,7 @@ class FocDrive {
  private:
   void applyGains();
   void reportZeroElec(const char* tag);
+  void reportNeedInit();
   // max(|ia|, |ib|, |ia+ib|) from the shunt. ic is not wired on this board, so it is
   // recovered from ia+ib+ic=0.
   float readPhaseCurrentMax();

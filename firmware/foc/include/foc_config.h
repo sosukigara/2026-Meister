@@ -8,9 +8,11 @@
 //   MKSREPO  github.com/makerbase-motor/MKS-ESP32FOC, branch MKS-ESP32-FOC-V2.0,
 //            dir "Test Code/", files 11_close_loop_velocity_example*.ino and
 //            12_close_loop_position_example*.ino
-//   ARTICLE  the Japanese article sketch this firmware follows
+//   ARTICLE  the Japanese article sketch this firmware follows (5010/24 V era gains)
 //   SIMPLEFOC SimpleFOC 2.2.1 sources read at
 //            firmware/foc/.pio/libdeps/foc_m1/Simple FOC/src
+//   VENDOR    DYS BE4108 reseller spec (dys.hk/product/BE4108.html etc, not a
+//            primary datasheet). R/KV/current below are vendor figures.
 //   TODO      not confirmed by a primary source -> listed in README.md
 
 namespace foc_cfg {
@@ -23,8 +25,9 @@ constexpr int kDriverEnable = 12;  // MKSREPO  M1 gate driver ENABLE
                                   // bootloader state with a pull-DOWN or nothing. Never
                                   // add a pull-up here, the board would enter download
                                   // mode instead of starting the sketch.
-constexpr float kSupplyVolts = 24.0f;  // ARTICLE / bench PSU. The official example targets
-                                       // a 12 V pack, this build runs a 24 V supply.
+constexpr float kSupplyVolts = 12.0f;  // bench PSU. The official example targets
+                                       // a 12 V pack, this build follows it now
+                                       // (was 24 V in the 5010 era).
 
 constexpr float kShuntOhms = 0.01f;      // MKSREPO  InlineCurrentSense(0.01f, 50.0f, 35, 34)
 constexpr float kCurrentSenseGain = 50.0f;  // MKSREPO
@@ -44,33 +47,57 @@ constexpr uint8_t kAs5600ConfFastMask = 0x03; // AS5600 datasheet, CONF bit 0-1
 
 constexpr int kVinSensePin = 13;      // MKSREPO  analogReadMilliVolts(13)
 constexpr float kVinDividerRatio = 8.5f;  // MKSREPO  * 8.5 / 1000
-constexpr float kUndervoltageVolts = 20.0f; // MKSREPO used 11.1 V for a 12 V pack. This
-                                           // build feeds 24 V, so the official value would
-                                           // never trip. TODO(undervoltage): 20.0 V is a
-                                           // reasoned pick, not a measured one. A 24 V
-                                           // bench check must confirm it before use.
+constexpr float kUndervoltageVolts = 10.0f; // MKSREPO used 11.1 V for a 12 V pack
+                                           // (3S LiPo cutoff). That leaves no sag margin
+                                           // on a 12 V bench PSU, so this build gates at
+                                           // 10.0 V instead. TODO(undervoltage): reasoned
+                                           // pick, not measured. A loaded 12 V bench check
+                                           // must confirm it before use.
 
-constexpr int kPolePairs = 7;        // 5010 360KV, MKSREPO example uses 7
-constexpr float kGearRatio = 6.0f;   // documented only, no control path consumes it
+// Motor: DYS BE4108 (sold as "RC BE4108"). Outrunner, Phi46x25, 113 g,
+// 4 mm shaft, stator 41x8 mm, 3-6S. VENDOR dys.hk/product/BE4108.html.
+// Same stator/rotor for all windings, only the winding differs:
+//   KV   R[ohm]  Imax[A]  Pmax[W]
+//   380  0.193   17.2     381
+//   480  0.125   27       599
+//   580  0.098   37       821
+//   720  0.055   30       666
+// R is the vendor "internal resistance" (phase convention unpublished).
+// Change BOTH kMotorKv and kPhaseResistanceVendorOhms together (repo rule R7).
+constexpr int kMotorKv = 580;  // VENDOR. Operator confirmed 580KV. If the bell
+                               // marking differs, change this AND the R below.
+constexpr float kPhaseResistanceVendorOhms = 0.098f;  // VENDOR, 580KV row. Sizing
+                                                      // only, never a control gain.
+// 24N22P -> 11 pole pairs. DYS truncates "Configuration ...NP" on the official
+// page, so this is secondary-source only (SimpleFOC community "Most 4108 motors
+// are 24N22P" + aotenjo 24n22p rewind + MKS Dual FOC BLDCMotor(11) example).
+// TODO(magnets): count the rotor magnets (/2) before trusting closed loop.
+constexpr int kPolePairs = 11;
+constexpr float kGearRatio = 6.0f;     // documented only, no control path consumes it
 constexpr float kDrumRadiusM = 0.020f;  // documented only, no control path consumes it
 
-constexpr float kCurrentLimitAmps = 1.0f;     // ARTICLE
+constexpr float kCurrentLimitAmps = 1.0f;  // closed-loop torque ceiling. Far below
+                                        // both the motor Imax (17-37 A vendor) and the
+                                        // board peak (~6 A/ch), so the first spin
+                                        // stresses neither. ARTICLE value kept.
 // phase_resistance is deliberately NOT set. Setting it makes SimpleFOC derive the
 // open-loop voltage as Uq = current_limit * phase_resistance
-// (BLDCMotor.cpp:622-623,660-661). For this low-resistance motor that product is
-// ~0.015 V, which is BELOW the ESP32 LEDC resolution at a 24 V supply (10-bit:
-// _PWM_RES_BIT 10, _PWM_RES 1023 -> one step is 24/1023 ~ 0.0235 V), so the duty
-// rounds to zero and the motor gets no output at all - that was the real "it will
-// not spin" cause. See README "Sensorless protection".
-// The open-loop current is bounded by physics, not by a feedback loop: at the 1.0 V
-// kOpenLoopVoltageVolts below, this winding draws ~7.7 A (1.0 V / ~0.13 ohm measured) ~ 8 W.
-// That is why 2.0 V is what smoked the wiring. An earlier voltage fold-back was removed: it
-// dropped the applied voltage to ~0.05 V, which is only 2 of the 1023 ESP32 LEDC steps, so
-// the rotating field was far too coarse and the rotor just vibrated instead of turning.
+// (BLDCMotor.cpp:622-623,660-661) instead of using kOpenLoopVoltageVolts below.
+// That product would be 0.19 V (380KV) down to 0.055 V (720KV); the low end is
+// ~5 of the 1023 ESP32 LEDC steps at 12 V (12/1023 ~ 0.0117 V), so the rotating
+// field goes coarse and the rotor vibrates instead of turning. The 5010/24 V era
+// hit the same trap at 0.015 V vs a 0.0235 V step and produced no output at all.
+// The open-loop current is bounded by physics, not by a feedback loop: at the
+// 0.3 V kOpenLoopVoltageVolts below, stall is 0.3/R = 1.55 A (380KV) to 5.45 A
+// (720KV), 0.5-1.6 W. The old 1.0 V would be 5.2-18.2 A / 5-18 W on this motor -
+// never go back there. See README "Sensorless protection".
 // poll() therefore only trips on a hard fault.
-constexpr float kOpenLoopOcTripAmps = 4.0f;  // hard-fault backstop (a phase short, or a
-                                             // grossly wrong shunt reading). Normal open
-                                             // loop at 1.0 V does not reach this.
+constexpr float kOpenLoopOcTripAmps = 4.0f;  // hard-fault backstop (a phase short, a wrong
+                                             // KV selection, or a grossly wrong shunt
+                                             // reading). Normal 0.3 V open loop on the
+                                             // 580KV winding draws ~3.06 A and stays
+                                             // clear; a 720KV motor on the same 0.3 V
+                                             // draws ~5.45 A and trips by design.
 constexpr uint32_t kOpenLoopOcTripMs = 500;  // must stay over the trip this long to stop
 constexpr uint32_t kOpenLoopCooldownMs = 10000;  // after any open-loop stop the next
                                                  // O/N/G is refused for 10 s: duty
@@ -79,33 +106,49 @@ constexpr float kVelocityLimitRps = 20.0f;  // MKS V2.0 example uses 20. SimpleF
                                            // velocity_limit is rad/s, not rev/s despite
                                            // this name: it bounds the angle_openloop
                                            // (G) slew and the closed-loop W ceiling.
-constexpr float kVoltageLimitVolts = 5.0f;   // ARTICLE
-constexpr float kOpenLoopVoltageVolts = 1.0f;  // Raised from the MKS example's 0.5 V to lift the
-                                              // no-load speed ceiling (~3 -> ~6 rev/s, 360KV). The
-                                              // open-loop modes apply this as a fixed voltage with no
-                                              // current feedback, so the current is set by the
-                                              // winding: ~7.7 A stall at the ~0.13 ohm measured here
-                                              // (~8 W). The bench CC (0.5 A) and the 10 s run / 10 s
-                                              // cooldown cap the average. 2.0 V is what smoked the
+constexpr float kVoltageLimitVolts = 2.0f;  // closed-loop saturation backstop. The
+                                        // current PI holds the current, this only caps
+                                        // transients: at 20 rad/s on 580KV, BEMF ~0.33 V
+                                        // plus 1 A * 0.098 ohm ~ 0.1 V = ~0.43 V, so 2 V
+                                        // leaves ~4x headroom. 5 V (5010/24 V era) would
+                                        // be 26-91 A stall on this family if saturated.
+constexpr float kOpenLoopVoltageVolts = 0.3f;  // open-loop modes apply this as a fixed voltage
+                                              // with no current feedback. Stall is 0.3/R:
+                                              // 1.55/2.4/3.06/5.45 A for 380/480/580/720KV.
+                                              // The MKS example's 0.5 V would be 2.6-9.1 A
+                                              // here; 1.0 V (5010 era) would be 5.2-18.2 A.
+                                              // The 10 s run / 10 s cooldown caps the
+                                              // average. 2.0 V is what smoked the 5010
                                               // wiring - never go back there.
 constexpr uint32_t kOpenLoopTimeoutMs = 10000;  // open loop always stops itself:
                                                 // bounds the energy even if the
                                                 // current is higher than assumed
 constexpr float kSineFreqHz = 0.25f;  // TEMP: N command sine rate, delete with N
-constexpr float kAlignVoltageVolts = 1.0f;    // ARTICLE, alignment runs with the motor free
+constexpr float kAlignVoltageVolts = 0.3f;  // alignment bypasses the current loop, so
+                                        // this voltage lands directly as 0.3/R stall
+                                        // (~3.06 A on 580KV). 1.0 V (ARTICLE) would be
+                                        // 5.2-18.2 A on this motor family. If C fails,
+                                        // raise in 0.1 V steps and watch #IOL, never
+                                        // jump to 1 V.
 
+// Gains below are the ARTICLE (5010) starting point. The BE4108 has lower R and
+// higher KV, so the current loop may need less I and the velocity loop a retune.
+// TODO(gains): bench-tune on BE4108 before trusting closed loop with load.
 constexpr float kPidCurrentP = 1.0f;   // ARTICLE
-constexpr float kPidCurrentI = 500.0f; // ARTICLE
-constexpr float kPidVelP = 0.2f;       // ARTICLE
-constexpr float kPidVelI = 2.0f;       // ARTICLE
-constexpr float kPidVelD = 0.0f;       // SIMPLEFOC DEF_PID_VEL_D
-constexpr float kPidAngleP = 8.0f;     // ARTICLE
+constexpr float kPidCurrentI = 500.0f;  // ARTICLE
+constexpr float kPidVelP = 0.2f;        // ARTICLE
+constexpr float kPidVelI = 2.0f;        // ARTICLE
+constexpr float kPidVelD = 0.0f;        // SIMPLEFOC DEF_PID_VEL_D
+constexpr float kPidAngleP = 8.0f;      // ARTICLE
 constexpr float kLpfCurrentTf = 0.002f;  // ARTICLE
 
-// Article's healthy window for this motor's zero_elec. Only used for the boot note,
-// the firmware never clamps or rejects on it.
-constexpr float kZeroElecHealthyMin = 3.12f;  // ARTICLE
-constexpr float kZeroElecHealthyMax = 3.42f;  // ARTICLE
+// BE4108 healthy window for zero_elec: unmeasured. The 3.12-3.42 rad ARTICLE window
+// was for the 5010 and MUST NOT be reused. Until bench data sets these, the boot
+// note always warns (see FocDrive::reportZeroElec). Only used for the note, the
+// firmware never clamps or rejects on it.
+constexpr bool kZeroElecWindowCalibrated = false;
+constexpr float kZeroElecHealthyMin = 0.0f;  // TODO(zero_elec): placeholder
+constexpr float kZeroElecHealthyMax = 0.0f;  // TODO(zero_elec): placeholder
 
 constexpr uint32_t kSerialBaud = 115200;
 constexpr uint32_t kLineTimeoutMs = 20;  // Arduino's 1000 ms default stalls loop() for a
