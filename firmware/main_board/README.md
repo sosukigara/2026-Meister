@@ -95,7 +95,7 @@ GY-BNO055（既定 SDA25/SCL26/ADDR 0x28/20Hz）は `hal/imu_bno055` が NDOF �
 ## ビルド
 
 ```bash
-cd firmware/main
+cd firmware/main_board
 pio run -e esp32dev -e esp32dev_usbuart
 ```
 
@@ -130,7 +130,7 @@ pio run -e esp32dev -t upload           # 実機用（GPIO16/17 経由）
 （送る指令は全 0 とグリッパー停止のみ）。
 
 ```bash
-cd firmware/main && pio run -e esp32dev_usbuart -t upload
+cd firmware/main_board && pio run -e esp32dev_usbuart -t upload
 ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0
 ```
 
@@ -167,7 +167,7 @@ ROS 2 経由の動作は `ros2 launch meister_serial_bridge serial_bridge.launch
 再現手順（`platformio.ini` の `MSTE_FEEDBACK_HZ` を書き換えてビルド・書き込み、測り直す）:
 
 ```bash
-cd firmware/main
+cd firmware/main_board
 pio run -e esp32dev_usbuart -t upload
 ros2 run meister_serial_bridge meister_hz_measure \
     --port /dev/ttyUSB0 --duration 5 --with-commands --expect-hz 100
@@ -212,7 +212,7 @@ ros2 run meister_serial_bridge meister_hz_measure \
 プロトコル層（`meister_protocol.*`）は Arduino 非依存のため、ホスト側でテストできる。
 
 ```bash
-cd firmware/main
+cd firmware/main_board
 pio test -e native
 ```
 
@@ -224,7 +224,7 @@ pio test -e native
 `firmware/foc/` は MKS ESP32 FOC V2.0（M1 チャンネル）を SimpleFOC でウィンチとして回すための
 **独立した PlatformIO プロジェクト**。独自の `platformio.ini` と `.pio/` を持ち、
 **本ファームウェアのビルドには含まれない**。MSTE のバイナリプロトコルとは共有するコードが
-なく、`cd firmware/main && pio run` は `firmware/foc/` を読まない。
+なく、`cd firmware/main_board && pio run` は `firmware/foc/` を読まない。
 
 ```bash
 cd firmware/foc

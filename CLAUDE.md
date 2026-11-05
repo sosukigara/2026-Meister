@@ -5,7 +5,7 @@
 ## プロジェクト
 
 ROS 2 (Jazzy) + Gazebo ベースの自律移動ロボット制御ソフトウェア。シミュレーションと実機は同じロボットの異なる段階。
-マイコン層は `firmware/main/`（ESP32、PlatformIO + Arduino）。`firmware/foc/` は別プロジェクト。
+マイコン層は `firmware/main_board/`（ESP32、PlatformIO + Arduino）。`firmware/foc/` は別プロジェクト。
 
 ## 技術スタック
 
@@ -13,13 +13,13 @@ Ubuntu / ROS 2 Jazzy / Gazebo (ros_gz) / colcon / PlatformIO / Python 3 / C++17 
 
 ## 検証コマンド（cwd に注意）
 
-- pio 系は `firmware/main/` を cwd にする。
+- pio 系は `firmware/main_board/` を cwd にする。
 - ros2 系はリポジトリルートを cwd にする。
 
 ```bash
 ./build.sh
-cd firmware/main && pio run -e esp32dev -e esp32dev_usbuart
-cd firmware/main && pio test -e native
+cd firmware/main_board && pio run -e esp32dev -e esp32dev_usbuart
+cd firmware/main_board && pio test -e native
 python3 -m pytest src/meister_serial_bridge/test/
 ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0
 ```

@@ -147,7 +147,7 @@ as bare lines in the CSV stream.
 
 | Project | Role |
 |---|---|
-| `firmware/main/` | MSTE binary protocol: steering servos, arm, gripper; no FOC |
+| `firmware/main_board/` | MSTE binary protocol: steering servos, arm, gripper; no FOC |
 | `firmware/foc/` | single-channel M1 winch, sensorless bring-up, text console |
 | `firmware/foc_drive/` | this project: 3 axle roles, M0+M1, bench open loop now, AS5600 closed loop later |
 

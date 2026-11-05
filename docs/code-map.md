@@ -19,7 +19,7 @@
                                  │  USB-UART / USB ケーブル
                                  │  115200 bps・固定長バイナリ・XOR チェックサム
 ┌────────────────────────────────┴──────────────────────────────────────────┐
-│  firmware/main/  (ESP32-WROOM-32, PlatformIO + Arduino)                     │
+│  firmware/main_board/  (ESP32-WROOM-32, PlatformIO + Arduino)                     │
 │  main.cpp              setup/loop と配線のみ（47 行）                            │
 │  command_dispatch.*    受信フレーム → 各機構（足回り・アームをメンバで保持）      │
 │  base_chassis.* arm.* feedback.*  機構と FB_STATE 送出                           │
@@ -115,7 +115,7 @@ Python 版から変えていないので `launch/` `launch_vision.sh` `kill.sh` 
 
 ---
 
-## 3. firmware（`firmware/main/`。`firmware/foc/`（ウィンチ）と `firmware/foc_drive/`（走行）は別プロジェクト）
+## 3. firmware（`firmware/main_board/`。`firmware/foc/`（ウィンチ）と `firmware/foc_drive/`（走行）は別プロジェクト）
 
 ### 現状（2026-09-27・分割後）
 
@@ -202,10 +202,10 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 
 | 対象 | コマンド | 現状 |
 |---|---|---|
-| firmware プロトコル / バス codec / 運動学 | `cd firmware/main && pio test -e native` | 55 cases |
+| firmware プロトコル / バス codec / 運動学 | `cd firmware/main_board && pio test -e native` | 55 cases |
 | bridge (C++, gtest) | `colcon test --packages-select meister_serial_bridge` | 43 cases |
 | vision (C++, gtest) | `colcon test --packages-select meister_vision` | 54 cases（実モデル不要） |
-| firmware ビルド | `cd firmware/main && pio run -e esp32dev -e esp32dev_usbuart` | 2 env |
+| firmware ビルド | `cd firmware/main_board && pio run -e esp32dev -e esp32dev_usbuart` | 2 env |
 | 全体ビルド | `./build.sh` | 5 packages |
 | 通信の動作確認 | `ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0` | 3 手順 |
 | FB_STATE 周期の実測 | `ros2 run meister_serial_bridge meister_hz_measure --port /dev/ttyUSB0 --expect-hz 100` | — |
@@ -216,7 +216,7 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 
 | 場所 | 役割 |
 |---|---|
-| `firmware/main/platformio.ini` | ビルド env と `MSTE_*` の指定（値は `firmware/main/include/meister_config.h` が既定値として持つ） |
+| `firmware/main_board/platformio.ini` | ビルド env と `MSTE_*` の指定（値は `firmware/main_board/include/meister_config.h` が既定値として持つ） |
 | `src/meistar_description/config/*.yaml` | URDF / Nav2 パラメータ / ブリッジ（ros_gz 用。シリアル設定は**含まない**） |
 | `build.sh` / `launch.sh` / `launch_vision.sh` / `kill.sh` | ビルドと起動。`launch.sh:44-48` は VPN 環境のマルチキャスト障害回避で `ROS_LOCALHOST_ONLY=1` を設定（**子プロセスのみ**。別ターミナルの `ros2` CLI には継承されない） |
 | `docs/{features,functions,design}/NN-*.md` | 4 層ドキュメント（やりたいこと → features → functions → design） |
@@ -225,7 +225,7 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 
 ## 6. 設定変更時のチェックリスト
 
-- `firmware/main/platformio.ini` の `MSTE_*` を変える → `firmware/main/include/meister_config.h` のフォールバックも変える（`src/` はマクロを直接参照しない）
+- `firmware/main_board/platformio.ini` の `MSTE_*` を変える → `firmware/main_board/include/meister_config.h` のフォールバックも変える（`src/` はマクロを直接参照しない）
 - プロトコルの軸数を変える → `config/meister_robot.yaml` を直して `python3 tools/gen_config.py`。生成された `generated_config.h` が firmware と PC 側 bridge の両方に入る
 - ピン番号を変える → `pio run -e esp32dev -e esp32dev_usbuart`（両 env 都要）と実機 `comm_check`
 - firmware の C++ 変更 → `cd firmware && pio test -e native`。ROS パッケージの C++ 変更 → `colcon test --packages-select <pkg>`
@@ -237,7 +237,7 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 |---|---|---|---|
 | PC → ESP32 指令 | 到着時（Nav2 の 10〜20 Hz） | `_on_cmd_vel` で直ちにフレーム送信 | 同じ値を再送しても情報量が増えない |
 | ESP32 指令適用 | **100 Hz**（10 ms） | `MSTE_CONTROL_HZ`。ESP32 が最新の指令を周期ごとに再適用 | 制御周期。線路使用率は 41% → 15% |
-| ESP32 → PC FB_STATE | **100 Hz** | `MSTE_FEEDBACK_HZ`（実測で決定） | firmware/main/README.md「通信周期の測定」 |
+| ESP32 → PC FB_STATE | **100 Hz** | `MSTE_FEEDBACK_HZ`（実測で決定） | firmware/main_board/README.md「通信周期の測定」 |
 | STS 指令（SYNC_WRITE） | 100 Hz 可 | 1 パケットで 9 台に届く ≈0.33 ms | 帯域に余裕 |
 | STS 状態読み戻し | 全体刷新 30〜40 ms | `MSTE_BUS_READ_CHUNK` でラウンドロビン | 半二重の turnaround（0.5〜2 ms/台）が直列に積もるため |
 
@@ -253,5 +253,5 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 一次情報（Feetech 公式 Python SDK 1.0.0）で確定できたのは命令コード・フレーム
 構造・チェックサム計算 `~(sum(tx[2..L-2])) & 0xFF`・エラービット・ID 範囲のみ。
 web search は全プロバイダ遮断、SDK は protocol 層のみでモデル別レジスタを含まない。
-STS3215 のデータシートで照合し `firmware/main/include/meister_config.h` と
-`firmware/main/include/hal/feetech_sts_registers.h` を更新すること。
+STS3215 のデータシートで照合し `firmware/main_board/include/meister_config.h` と
+`firmware/main_board/include/hal/feetech_sts_registers.h` を更新すること。

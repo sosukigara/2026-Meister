@@ -32,16 +32,16 @@
 - ハードウェア依存は `hal/` に閉じ込める。
 - ディレクトリ目安:
   ```
-  firmware/main/include/hal/   ハードウェア抽象（Arduino 依存 OK）
-  firmware/main/src/hal/       同上、実装
-  firmware/main/include/*.h    機構（base_chassis / arm）と設定
-  firmware/main/src/*.cpp      同上、実装
-  firmware/main/src/main.cpp   setup / loop と配線だけ
+  firmware/main_board/include/hal/   ハードウェア抽象（Arduino 依存 OK）
+  firmware/main_board/src/hal/       同上、実装
+  firmware/main_board/include/*.h    機構（base_chassis / arm）と設定
+  firmware/main_board/src/*.cpp      同上、実装
+  firmware/main_board/src/main.cpp   setup / loop と配線だけ
   ```
 
 ## 4. 設定値は 1 箇所以外で定義しない (R2)
 
-- `MSTE_*` の既定値は `firmware/main/include/meister_config.h` に集約。
+- `MSTE_*` の既定値は `firmware/main_board/include/meister_config.h` に集約。
 - 優先順位は「コンパイル時 `-D` → `meister_config.h` のフォールバック」の **1 経路だけ**。
 - `platformio.ini` の `build_flags` と `meister_config.h` の `#ifndef` フォールバックが両方にある状態で片方だけ直すと不整合が起きる。両方揃える。
 - `src/` は `MSTE_*` マクロを直接参照しない。
@@ -49,7 +49,7 @@
 ## 5. 物理定数（ピン / ID / レジスタ）と単位・範囲 (R3)
 
 - データシートは 1 回だけ見て、規範はコードに残す。
-- `firmware/main/include/hal/feetech_sts_registers.h` が例: フレーム構造・命令コード・チェックサム算出・上限サイズを**出典（SDK のファイル名と行）つき**で保有。
+- `firmware/main_board/include/hal/feetech_sts_registers.h` が例: フレーム構造・命令コード・チェックサム算出・上限サイズを**出典（SDK のファイル名と行）つき**で保有。
 - 出典が分かるものだけ確定値として書き、出典が無いものは「要確認」節に隔離（R4）。
 - ピン割当・値域は `meister_config.h` の表に単位・範囲を併記する。
 
@@ -84,7 +84,7 @@
 
 ## 10. テスト配置と実行
 
-- C++: `firmware/main/test/test_protocol/`, `test/test_bus_protocol/`, `test/test_kinematics/`（Unity、`pio test -e native`）。
+- C++: `firmware/main_board/test/test_protocol/`, `test/test_bus_protocol/`, `test/test_kinematics/`（Unity、`pio test -e native`）。
 - Python: `src/meister_serial_bridge/test/`（pytest）。
 - プロトコル変更時は C++ と Python の両テストの期望値を更新する。
 
