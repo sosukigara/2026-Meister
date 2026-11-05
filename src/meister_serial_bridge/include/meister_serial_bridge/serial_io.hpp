@@ -65,6 +65,26 @@ struct Feedback {
 /// FB_STATE フレームを Feedback に落とす。種別が違えば空の Feedback。
 Feedback DecodeStateFrame(const meister::proto::Frame& frame);
 
+/// FB_IMU 1 フレームのデコード結果。yaw は BNO055 heading 生値（0.1° 単位）。
+struct ImuReport {
+  int16_t yaw_tenths = 0;
+  uint8_t calib = 0;  // CALIB_STAT 生値（sys/gyro/acc/mag 各 2bit）
+};
+
+/// FB_IMU フレームを ImuReport に落とす。種別が違えば空の ImuReport。
+ImuReport DecodeImuFrame(const meister::proto::Frame& frame);
+
+/// yaw のみから作る単位クォータニオン（x=y=0）。
+struct YawQuat {
+  double z = 0.0;
+  double w = 1.0;
+};
+
+/// yaw_tenths（0.1° 単位 0..3600）を yaw のみのクォータニオンに変換する。
+/// ★要確認★ BNO055 heading は時計回り正、ROS は反時計回り正。実機を回して
+/// 符号が逆ならここ 1 か所で反転させる（bench 確認前はそのまま通す）。
+YawQuat YawTenthsToQuat(int16_t yaw_tenths);
+
 /// /dev/serial/by-id の実名を返す。接続が複数あるときに誤接続を見分けるため。
 /// 見つからなければ path をそのまま返す。
 std::string DescribePort(const std::string& path);
