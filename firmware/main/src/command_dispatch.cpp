@@ -67,15 +67,6 @@ void CommandDispatch::onFrameComplete(const uint8_t* data, size_t len) {
   }
 
   switch (frame.type) {
-    case kCmdMotorVelocity: {
-      int16_t velocities[kNumDriveMotors];
-      for (size_t i = 0; i < kNumDriveMotors; ++i) {
-        velocities[i] = FrameGetInt16(frame, i * 2);
-      }
-      chassis_.setVelocities(velocities);
-      break;
-    }
-
     case kCmdSteeringAngle: {
       int16_t angles[kNumSteeringServos];
       for (size_t i = 0; i < kNumSteeringServos; ++i) {
@@ -98,6 +89,8 @@ void CommandDispatch::onFrameComplete(const uint8_t* data, size_t len) {
       arm_.setGripperCommand(static_cast<GripperCommand>(FrameGetU8(frame, 0)));
       break;
 
+    // 駆動は foc drive 基板。CMD_MOTOR_VELOCITY は受理して捨てる
+    //（comm_check の下り手順が全種別送信を前提にしている）。
     default:  // FB_STATE / FB_ERROR など上り方向は受信側では無視
       break;
   }

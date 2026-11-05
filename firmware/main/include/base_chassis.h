@@ -1,7 +1,7 @@
 /*
- * base_chassis.h — 足回り（駆動モータ + ステアリング）
+ * base_chassis.h — 足回り（ステアリングのみ。駆動は foc drive 基板）
  *
- * 機構は自分の実行部（モータ・サーボ）をメンバで持ち、指令は配列で受ける。
+ * 機構は自分の実行部（サーボ）をメンバで持ち、指令は配列で受ける。
  * 静的グローバルは置かない（初期化順を翻訳単位に依存させないため）。
  */
 #pragma once
@@ -9,7 +9,6 @@
 #include <stdint.h>
 
 #include "hal/console_servo.h"
-#include "hal/motor.h"
 #include "hal/pwm_servo.h"
 #include "meister_protocol.h"
 
@@ -27,11 +26,9 @@ class BaseChassis {
   BaseChassis();
 
   void begin();
-  void setVelocities(const int16_t (&velocities)[proto::kNumDriveMotors]);
   void setSteering(const int16_t (&angles)[proto::kNumSteeringServos]);
 
  private:
-  hal::MotorChannel motors_[proto::kNumDriveMotors];
   SteerServoImpl steerServos_[proto::kNumSteeringServos];
 };
 
