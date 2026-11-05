@@ -25,6 +25,7 @@ class ImuReporter {
 
  private:
   uint32_t lastSendMs_ = 0;
+  uint32_t lastRetryMs_ = 0;
   bool ok_ = false;
 };
 
