@@ -17,6 +17,15 @@ THREADS="${THREADS:-4}"
 CONF="${CONF:-0.25}"
 # 1 で rviz2 も起動する (検出画像を RViz で見たいとき)
 RVIZ="${RVIZ:-0}"
+# 推論プロセスの CPU 固定 (taskset)。RK3588 は 0-3 が A55 / 4-7 が A76 で、
+# LITTLE に流れると推論が約 4 倍遅い。空なら固定しない。
+AFFINITY="${AFFINITY:-4-7}"
+# カメラ取得プロセスの CPU 固定。取得・変換は軽いので LITTLE に隔離し、
+# big コアを推論に明け渡す (推論と同居すると取得が詰まる)。
+CAM_AFFINITY="${CAM_AFFINITY:-0-3}"
+# 使う ONNX モデル。空なら既定 (640) を使う。320 モデル例:
+#   MODEL=src/meister_vision/models/yolov8n-320.onnx ./launch_vision.sh
+MODEL="${MODEL:-}"
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 cd "$SCRIPT_DIR"
@@ -75,7 +84,17 @@ trap cleanup SIGINT SIGTERM EXIT
 
 echo "=== 画像認識を起動します ==="
 echo "--- カメラ: $DEVICE ($CAM_FPS Hz) / 処理レート: $RATE Hz / 推論スレッド: $THREADS ---"
-ros2 launch meister_vision pc_vision.launch.py \
+if [ -n "$AFFINITY" ]; then
+    echo "--- CPU affinity: $AFFINITY (big コア固定) ---"
+    TASKSET="taskset -c $AFFINITY"
+else
+    TASKSET=""
+fi
+if [ -n "$MODEL" ]; then
+    echo "--- モデル: $MODEL ---"
+    export MEISTER_VISION_MODEL="$MODEL"
+fi
+$TASKSET ros2 launch meister_vision pc_vision.launch.py \
     use_pc_camera:=true \
     device:="$DEVICE" \
     camera_fps:="$CAM_FPS" \

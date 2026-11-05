@@ -27,7 +27,12 @@ source "$ROS_SETUP"
 WORKERS=$(nproc)
 [ "$WORKERS" -gt 8 ] && WORKERS=8
 
-echo "=== ビルド開始 (workers=$WORKERS) ==="
+# 最適化なし(-O0)だと画像前処理/後処理が数倍遅い。
+# RK3588 の CPU 推論が律速のため既定 Release。下書き用は BUILD_TYPE=Debug で。
+BUILD_TYPE="${BUILD_TYPE:-Release}"
+
+echo "=== ビルド開始 (workers=$WORKERS, type=$BUILD_TYPE) ==="
 colcon build --symlink-install --parallel-workers "$WORKERS" \
+    --cmake-args -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
     --packages-select meistar_description meister_vision meister_web_nav meister_serial_bridge ros2_autonomous_nav
 echo "=== ビルド完了 ==="
