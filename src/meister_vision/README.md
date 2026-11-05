@@ -91,6 +91,7 @@ ros2 launch meister_vision detection.launch.py \
 | 購読 | `image_raw` (パラメータ変更可) | `sensor_msgs/Image` | 入力画像 |
 | 配信 | `detections` | `vision_msgs/Detection2DArray` | 検出結果 (bbox / クラス / 信頼度) |
 | 配信 | `detection_image` | `sensor_msgs/Image` | 検出枠・ラベルを描画した画像 |
+| 配信 | `target` | `vision_msgs/Detection2DArray` | アームを向ける 1 個 (0 または 1 要素) |
 
 `detections` の各要素 (`Detection2D`):
 
@@ -100,7 +101,68 @@ ros2 launch meister_vision detection.launch.py \
 - `bbox.center.position`: 中心座標 (ピクセル)
 - `bbox.size_x` / `bbox.size_y`: 幅 / 高さ
 
-ノードは既定で最大 **10 Hz** にレート制限し、負荷を軽く保つ。
+### `target` — アーム先端カメラの視覚サーボ用
+
+アーム先端カメラで物体中心へ寄せる用途では、毎フレーム別の物体を掴むと
+制御が振動する。`target` は次の規則で 1 個だけを選んで配信する。
+
+1. 前フレームの対象が `target_lock_radius` [px] 以内に残っていれば追従する
+2. 見失ったときだけ画像中心に最も近い候補へ乗り換える
+3. 該当なしは空配列 (要素数 0) を配信する
+
+見失ってすぐ別の物体へ乗り換えるとアームが飛ぶため、既定では 3 フレーム
+(10 Hz で 300 ms) は保持し、その間は空配列を配信する。
+
+パラメータ: `target_class` (追うクラス ID、-1 で指定なし)、
+`target_lock_radius` (既定 120.0 px)、`lock_grace_frames` (既定 3)。
+
+画像中心からの正規化オフセットは次の式で得られる (`w`, `h` は入力画像):
+
+```text
+offset_x = (bbox.center.position.x - w/2) / (w/2)   # 右が正
+offset_y = (bbox.center.position.y - h/2) / (h/2)   # 下が正
+```
+
+ノードは既定で `rate=30 Hz`（上限なし相当）で処理する。実際のレートは
+推論が追いつくところで頭打ちになる。カメラは処理レート以上で回すこと
+(`camera_fps`、既定 30 Hz)。同レートだと位相のズレでフレームが落ちる。
+
+### 実測性能 (開発機 / Ryzen 5 7430U, 4 スレッド)
+
+| 入力 | 1 フレーム | 処理レート | 撮像→配信 | 640 比の再現率 |
+|---|---|---|---|---|
+| **640** (既定) | 41 ms | **18.3 Hz** | 104 ms | 100 % (基準) |
+| 480 | 24 ms | **29.1 Hz** | 60 ms | 68.8 % |
+| 416 | 15 ms | **29.4 Hz** | 54 ms | 62.5 % |
+
+開発機のカメラ (EMEET C960) は 640x480 で 29.5 fps が上限なので、
+480/416 はカメラ側で頭打ちになる。精度を優先するなら 640 のまま、
+速度を優先するなら 480 が現実的な妥協点。
+
+### 別解像度のモデルを作る
+
+`models/` は gitignore 済み。手元で生成する場合:
+
+```bash
+python3 -m venv /tmp/mlenv
+/tmp/mlenv/bin/pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision
+/tmp/mlenv/bin/pip install ultralytics onnx onnxslim
+cd /tmp && /tmp/mlenv/bin/yolo export model=yolov8n.pt format=onnx imgsz=480
+# 生成物を models/ に置き model_path で指定する
+ros2 launch meister_vision pc_vision.launch.py use_pc_camera:=true \
+    model_path:=/path/to/yolov8n_480.onnx
+```
+
+入力解像度と格子数はモデルの入出力形から自動で読むので、コード変更は
+要らない。
+
+### ボトルネック (実測)
+
+- 推論が 1 フレームの約 8 割。CPU 実行プロバイダのみで、GPU / NPU は無い
+- カメラ側の `cv::CAP_PROP_BUFFERSIZE=1` は取得レートを半分にする
+  (30 fps 機で 15.6 fps)。2 にする
+- 固定周期ポーリングはカメラ周期と位相がぶつかると半分を取りこぼす。
+  取得・推論とも「到着駆動 + レート上限」にしてある
 
 ## 確認方法
 

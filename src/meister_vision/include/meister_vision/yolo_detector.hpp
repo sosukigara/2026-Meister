@@ -36,19 +36,22 @@ struct Detection {
   float y2 = 0.0f;
 };
 
-/// YOLOv8 ONNX 出力の 1 予測あたりの要素数と、予測の格子数。
-/// 出力形は (1, 84, 8400) = [4 bbox + 80 クラス]。
+/// YOLOv8 ONNX 出力の 1 予測あたりの要素数。
+/// 出力形は (1, 84, N) = [4 bbox + 80 クラス] で、N は入力解像度で変わる
+/// (640 なら 8400、320 なら 2100)。N はモデルの出力形から取る。
 inline constexpr int kYoloBBoxCols = 4;
 inline constexpr int kYoloNumClasses = 80;
+/// 既定モデル (640 入力) の格子数。テストと既定値の基準。
 inline constexpr int kYoloGridCells = 8400;
 
-/// (1, 84, 8400) の出力を元画像座標の Detection リストに変換する。
+/// (1, 84, grid_cells) の出力を元画像座標の Detection リストに変換する。
 ///
 /// 推論そのものは要らない。gtest からモデル無しで呼べるよう、letterbox の
 /// 逆変換に必要な ratio / pad / 画像サイズを引数で受ける。
+/// grid_cells は入力解像度から決まる (モデル依存) ため引数で渡す。
 std::vector<Detection> YoloPostprocess(
-    const std::vector<float>& output, double ratio, int pad_w, int pad_h,
-    int image_width, int image_height, float conf_threshold,
+    const std::vector<float>& output, int grid_cells, double ratio, int pad_w,
+    int pad_h, int image_width, int image_height, float conf_threshold,
     float iou_threshold);
 
 /// YOLOv8n ONNX モデルを包む検出器。
@@ -68,6 +71,9 @@ class YoloDetector {
   std::string model_path_;
   float conf_threshold_;
   float iou_threshold_;
+  /// 入力解像度 (モデルの入力形から決まる) と出力の格子数。
+  int input_size_ = 640;
+  int grid_cells_ = kYoloGridCells;
   std::shared_ptr<class OnnxSession> session_;
 };
 

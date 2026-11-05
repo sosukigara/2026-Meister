@@ -27,6 +27,7 @@ add_library(meister_vision_core SHARED
   src/hand_landmark_detector.cpp
   src/image_util.cpp
   src/draw.cpp
+  src/target_selector.cpp
 )
 target_compile_definitions(meister_vision_core PRIVATE
   MEISTER_VISION_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
@@ -93,6 +94,9 @@ if(BUILD_TESTING)
 
   ament_add_gtest(test_image_util test/test_image_util.cpp)
   target_link_libraries(test_image_util meister_vision_core)
+
+  ament_add_gtest(test_target_selector test/test_target_selector.cpp)
+  target_link_libraries(test_target_selector meister_vision_core)
 endif()
 
 ament_export_include_directories(include)

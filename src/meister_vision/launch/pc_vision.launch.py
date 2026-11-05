@@ -12,6 +12,12 @@ from launch_ros.actions import Node
 def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument(
+            "device", default_value="/dev/video0",
+            description="PCカメラのデバイスパス"),
+        DeclareLaunchArgument(
+            "camera_fps", default_value="30.0",
+            description="PCカメラの配信フレームレート [Hz]"),
+        DeclareLaunchArgument(
             "image_topic", default_value="/camera/image_raw",
             description="検出ノードが購読する画像トピック名"),
         DeclareLaunchArgument(
@@ -21,11 +27,17 @@ def generate_launch_description():
             "iou_threshold", default_value="0.45",
             description="NMS の IoU しきい値"),
         DeclareLaunchArgument(
-            "rate", default_value="3.0",
-            description="最大処理レート [Hz]"),
+            "rate", default_value="30.0",
+            description="最大処理レート [Hz] (推論が追いつく上限で頭打ち)"),
         DeclareLaunchArgument(
-            "inference_threads", default_value="2",
+            "inference_threads", default_value="4",
             description="ONNX 推論スレッド数"),
+        DeclareLaunchArgument(
+            "target_class", default_value="-1",
+            description="追跡するクラス ID (-1 は指定なし)"),
+        DeclareLaunchArgument(
+            "target_lock_radius", default_value="120.0",
+            description="同一対象とみなす移動量 [px]"),
         DeclareLaunchArgument(
             "use_pc_camera", default_value="false",
             description="PC内蔵カメラを使うか (既定はGazeboロボット目線カメラ)"),
@@ -35,6 +47,10 @@ def generate_launch_description():
             executable="pc_camera",
             name="pc_camera",
             output="screen",
+            parameters=[{
+                "device": LaunchConfiguration("device"),
+                "fps": LaunchConfiguration("camera_fps"),
+            }],
             condition=conditions.IfCondition(
                 LaunchConfiguration("use_pc_camera")),
         ),
@@ -49,6 +65,8 @@ def generate_launch_description():
                 "iou_threshold": LaunchConfiguration("iou_threshold"),
                 "rate": LaunchConfiguration("rate"),
                 "inference_threads": LaunchConfiguration("inference_threads"),
+                "target_class": LaunchConfiguration("target_class"),
+                "target_lock_radius": LaunchConfiguration("target_lock_radius"),
             }],
         ),
     ])

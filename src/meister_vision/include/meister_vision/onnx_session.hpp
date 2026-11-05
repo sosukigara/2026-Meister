@@ -24,6 +24,8 @@ class OnnxSession {
 
   const std::string& model_path() const { return model_path_; }
   const std::vector<int64_t>& input_shape() const { return input_shape_; }
+  /// 出力の形。YOLO の格子数はここから取る (入力解像度で変わる)。
+  const std::vector<int64_t>& output_shape() const { return output_shape_; }
   const std::string& input_name() const { return input_name_; }
   const std::string& output_name() const { return output_name_; }
 
@@ -35,6 +37,7 @@ class OnnxSession {
   struct Impl;
   std::string model_path_;
   std::vector<int64_t> input_shape_;
+  std::vector<int64_t> output_shape_;
   std::string input_name_;
   std::string output_name_;
   std::shared_ptr<Impl> impl_;
