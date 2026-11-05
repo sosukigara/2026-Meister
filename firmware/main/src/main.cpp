@@ -19,18 +19,22 @@
 #include "feedback.h"
 #include "hal/ledc_pwm.h"
 #include "hal/proto_uart.h"
+#include "imu_reporter.h"
 #include "meister_config.h"
+#include "meister_protocol.h"
 
 namespace {
 
 meister::CommandDispatch gDispatch;
 meister::Feedback gFeedback;
+meister::ImuReporter gImu;
 
 }  // namespace
 
 void setup() {
   meister::hal::proto_uart::begin();
   gDispatch.begin();
+  gImu.begin();
 
   MSTE_LOG("[meister-esp] boot OK\n");
   MSTE_LOG("[ledc] attached=%u failed=%u\n",
@@ -45,7 +49,11 @@ void loop() {
   while (meister::hal::proto_uart::available() > 0) {
     gDispatch.feedRxByte(static_cast<uint8_t>(meister::hal::proto_uart::read()));
   }
-  gFeedback.tick(gDispatch.rxErrorFlags());
+  gImu.tick();
+  // IMU 死活は FB_STATE の sensor ビットに畳む（上り種別を増やさない）。
+  const uint8_t errors = static_cast<uint8_t>(
+      gDispatch.rxErrorFlags() | (gImu.ok() ? 0 : meister::proto::kFbErrorSensor));
+  gFeedback.tick(errors);
 }
 
 #endif  // ARDUINO

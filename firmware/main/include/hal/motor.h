@@ -12,7 +12,8 @@ namespace hal {
 
 class MotorChannel {
  public:
-  MotorChannel(uint8_t pwmPin, int8_t dirPin) : pwmPin_(pwmPin), dirPin_(dirPin) {}
+  // pwmPin = kNoPin（-1）で未接続。DC モータ PWM 廃止のため全軸 -1。
+  MotorChannel(int8_t pwmPin, int8_t dirPin) : pwmPin_(pwmPin), dirPin_(dirPin) {}
 
   bool begin();
   /// vel: -1000..+1000（千分率）。符号 → 方向、絶対値 → デューティ比
@@ -21,7 +22,7 @@ class MotorChannel {
 
  private:
   static constexpr int8_t kNoPin = -1;
-  uint8_t pwmPin_;
+  int8_t pwmPin_;
   int8_t dirPin_;
 };
 

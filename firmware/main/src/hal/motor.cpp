@@ -13,7 +13,8 @@ namespace hal {
 
 bool MotorChannel::begin() {
   if (pwmPin_ != kNoPin &&
-      !ledc::attach(pwmPin_, config::kMotorFreqHz, config::kMotorResolution)) {
+      !ledc::attach(static_cast<uint8_t>(pwmPin_), config::kMotorFreqHz,
+                    config::kMotorResolution)) {
     return false;
   }
   if (dirPin_ >= 0) {
@@ -38,7 +39,10 @@ void MotorChannel::setVelocity(int16_t vel) {
   if (dirPin_ >= 0) {
     digitalWrite(dirPin_, forward ? HIGH : LOW);
   }
-  ledc::write(pwmPin_, duty);
+  if (pwmPin_ == kNoPin) {
+    return;  // PWM 未接続（DC モータ PWM 廃止）。指令は受けて捨てる。
+  }
+  ledc::write(static_cast<uint8_t>(pwmPin_), duty);
 }
 
 }  // namespace hal

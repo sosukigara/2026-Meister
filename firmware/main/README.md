@@ -66,6 +66,11 @@ firmware/
 |---|---|---|---|
 | FB_STATE | 0x81 | `int16 enc[6]` + `uint8 state` + `uint8 error_flags` | 17 |
 | FB_ERROR | 0x82 | `uint8 error_code` | 4 |
+| FB_IMU | 0x83 | `int16 yaw` (0.1° 単位 0..3600) + `uint8 calib` (CALIB_STAT 生値) | 6 |
+
+GY-BNO055（既定 SDA25/SCL26/ADDR 0x28/20Hz）は `hal/imu_bno055` が NDOF で読み、
+`imu_reporter` が FB_IMU を送る。PC は `/imu/data`（sensor_msgs/Imu、yaw のみ）に載せる。
+★要確認★ BNO055 heading は時計回り正の想定。実機を回して逆なら `YawTenthsToQuat` で反転。
 
 詳細は `include/meister_protocol.h` 冒頭のコメントを参照。
 
