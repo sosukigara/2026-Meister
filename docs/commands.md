@@ -1,6 +1,6 @@
 # 実行・テスト・検証コマンド — Meister
 
-> pio 系は `firmware/main/` を cwd にする。ros2 系はリポジトリルートを cwd にする（R6）。詳細な罠は [docs/pitfalls.md](pitfalls.md)。
+> pio 系は `firmware/main_board/` を cwd にする。ros2 系はリポジトリルートを cwd にする（R6）。詳細な罠は [docs/pitfalls.md](pitfalls.md)。
 
 ## 1. 前提
 
@@ -15,14 +15,14 @@
 ./build.sh
 
 # ファームウェア（両 env）
-cd firmware/main
+cd firmware/main_board
 pio run -e esp32dev -e esp32dev_usbuart
 
 # 条件コンパイルの分岐を静かに壊さないため、デバッグフラグでもビルド
 PLATFORMIO_BUILD_FLAGS="-DMSTE_SERVO_DRIVER_DEBUG=1" pio run -e esp32dev
 
 # 書き込み
-cd firmware/main
+cd firmware/main_board
 pio run -e esp32dev -t upload
 ```
 
@@ -30,7 +30,7 @@ pio run -e esp32dev -t upload
 
 ```bash
 # ファームウェア プロトコル / バス codec（Unity、38 cases）
-cd firmware/main
+cd firmware/main_board
 pio test -e native
 
 # Python ブリッジ（22 cases）

@@ -20,7 +20,7 @@ log/
 .omo/drafts/
 .playwright-mcp/
 
-# PlatformIO build artifacts (firmware/main/, firmware/foc/, and the shared firmware/.pio)
+# PlatformIO build artifacts (firmware/main_board/, firmware/foc/, and the shared firmware/.pio)
 firmware/*/.pio/
 firmware/.pio/
 
