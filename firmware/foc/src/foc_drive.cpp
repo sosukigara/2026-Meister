@@ -87,13 +87,23 @@ void FocDrive::reportZeroElec(const char* tag) {
   Serial.print(' ');
   Serial.print(motor_.zero_electric_angle, 4);
   Serial.print(F(" rad"));
-  if (motor_.zero_electric_angle >= foc_cfg::kZeroElecHealthyMin &&
-      motor_.zero_electric_angle <= foc_cfg::kZeroElecHealthyMax) {
+  if (!foc_cfg::kZeroElecWindowCalibrated) {
+    Serial.print(F(" (no healthy window yet, verify alignment manually)"));
+  } else if (motor_.zero_electric_angle >= foc_cfg::kZeroElecHealthyMin &&
+             motor_.zero_electric_angle <= foc_cfg::kZeroElecHealthyMax) {
     Serial.print(F(" (in expected range)"));
   } else {
     Serial.print(F(" (OUTSIDE expected range, do not run)"));
   }
   Serial.println();
+}
+
+void FocDrive::reportNeedInit() {
+  // motor_.init() never ran, almost always because begin() gated on undervoltage.
+  // Name the configured supply so a future voltage change cannot strand the hint.
+  Serial.print(F("#ERR open loop needs motor init ("));
+  Serial.print(foc_cfg::kSupplyVolts, 0);
+  Serial.println(F("V? check VIN)"));
 }
 
 bool FocDrive::calibrate() {
@@ -178,7 +188,7 @@ bool FocDrive::commandAngle(float rad) {
 
 bool FocDrive::commandOpenLoopVelocity(float vel_rps) {
   if (!motor_inited_) {
-    Serial.println(F("#ERR open loop needs motor init (24V?)"));
+    reportNeedInit();
     return false;
   }
   if (millis() < openloop_cool_until_) {
@@ -199,7 +209,7 @@ bool FocDrive::commandOpenLoopVelocity(float vel_rps) {
 
 bool FocDrive::commandSine(float amp_rps) {
   if (!motor_inited_) {
-    Serial.println(F("#ERR open loop needs motor init (24V?)"));
+    reportNeedInit();
     return false;
   }
   if (millis() < openloop_cool_until_) {
@@ -219,7 +229,7 @@ bool FocDrive::commandSine(float amp_rps) {
 
 bool FocDrive::commandAngleOpenLoop(float rad) {
   if (!motor_inited_) {
-    Serial.println(F("#ERR open loop needs motor init (24V?)"));
+    reportNeedInit();
     return false;
   }
   if (millis() < openloop_cool_until_) {
@@ -308,9 +318,10 @@ void FocDrive::poll() {
       target_ = sine_amp_ * sinf(6.2831853f * foc_cfg::kSineFreqHz * t);
     }
     if (motor_.enabled) {
-      // No active current loop: at kOpenLoopVoltageVolts (0.5 V) the winding itself bounds
-      // the current to ~2.8 A (~1.4 W). Just watch for a hard fault - a phase short, or a
-      // shunt reading far above anything 0.5 V can produce - and stop.
+      // No active current loop: the winding itself bounds the current to
+      // kOpenLoopVoltageVolts/R (~3.06 A / ~0.9 W on 580KV). Just watch for a hard
+      // fault - a phase short, a wrong KV, or a shunt reading far above what the
+      // open-loop voltage can produce - and stop.
       ol_imag_ = readPhaseCurrentMax();
       if (ol_imag_ > foc_cfg::kOpenLoopOcTripAmps) {
         if (!ol_over_) {

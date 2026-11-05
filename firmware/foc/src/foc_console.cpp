@@ -102,8 +102,10 @@ void FocConsole::dispatch(const foc::Request& req) {
 
 void FocConsole::printHelp() {
   Serial.println(F("C          recalibrate (zero_elec + sensor direction)"));
-  Serial.println(F("L <amps>   current limit, default 1.0"));
-  Serial.println(F("Z <volts>  alignment voltage, default 1.0"));
+  Serial.print(F("L <amps>   current limit, default "));
+  Serial.println(foc_cfg::kCurrentLimitAmps, 1);
+  Serial.print(F("Z <volts>  alignment voltage, default "));
+  Serial.println(foc_cfg::kAlignVoltageVolts, 1);
   Serial.println(F("T <torque> torque mode"));
   Serial.println(F("W <rps>    velocity mode. W 0 = ACTIVE BRAKING"));
   Serial.println(F("A <rad>    angle mode"));
@@ -126,7 +128,7 @@ void FocConsole::serviceTelemetry() {
   const uint32_t now = millis();
 
   // While the open loop runs, expose the measured phase current at 2 Hz. There is no
-  // active current limit any more - the 0.5 V open-loop ceiling is what bounds it - so this
+  // active current limit - the open-loop voltage ceiling is what bounds it - so this
   // is purely so the operator can watch the winding draw. '#'-prefixed, so it stays out of
   // the CSV stream.
   if (drive_.openLoopActive() && drive_.enabled() &&

@@ -39,9 +39,28 @@ Source: `github.com/makerbase-motor/MKS-ESP32FOC`, branch `MKS-ESP32-FOC-V2.0`, 
 | I2C bus index | 1 (`TwoWire(1)`) | MKSREPO (M1) |
 | AS5600 address | 0x36 | SimpleFOC `sensors/MagneticSensorI2C.cpp:5` |
 | VIN sense | GPIO 13, `mV * 8.5 / 1000` | MKSREPO |
-| Motor | 5010 360KV, **7** pole pairs | MKSREPO |
+| Motor | DYS BE4108 ("RC BE4108") **580KV**, **11** pole pairs (24N22P) | VENDOR + community (see below) |
 | Gear ratio / drum radius | 6.0 / 0.020 m | documented only, **no control path consumes them** |
-| Supply | 24.0 V | this build (official example targets a 12 V pack) |
+| Supply | 12.0 V | this build (same as the official example) |
+
+Motor vendor table ([DYS BE4108](https://www.dys.hk/product/BE4108.html), reseller spec,
+not a primary datasheet; R convention unpublished):
+
+| KV | R [Ω] | Imax [A] | Pmax [W] | 0.3 V stall [A] |
+|---|---|---|---|---|
+| 380 | 0.193 | 17.2 | 381 | 1.55 |
+| 480 | 0.125 | 27 | 599 | 2.40 |
+| **580** | **0.098** | **37** | **821** | **3.06** |
+| 720 | 0.055 | 30 | 666 | 5.45 |
+
+Pole pairs: DYS truncates "Configuration ...NP" on the official page, so 11 PP is
+secondary-source only: SimpleFOC community ("Most 4108 motors are 24N22P"
+([thread](https://community.simplefoc.com/t/1st-simplefoc-speed-control-sketch-issue/2953/2))),
+the `BLDCMotor(11)` MKS Dual FOC example for the Angel BE4108
+([thread](https://community.simplefoc.com/t/help-with-mks-dual-foc-plus-v3-2-with-angel-be4108-motor/7404)),
+and a 24n22p BE4108 rewind spec. Count the rotor magnets (/2) before trusting
+closed loop. "BE4018" in chat was a digit transposition; the hardware is BE4108
+(a TSL-D4018 exists but is a different motor: 12N14P, 700/750KV, 34 mm stator).
 
 > **GPIO12 is an ESP32 strapping pin.** Do **not** add a pull-up to it. A pull-up holds
 > the chip in the bootloader and the sketch never starts.
@@ -103,13 +122,14 @@ second on a bare read.
 
 ### Sensorless protection (and its hard limit)
 
-An open-loop voltage of 2.0 V with no current limit pushed ~20 A through the 5010
-winding and smoked the wiring. The MKS V2.0 example itself calls 2.0 V
-"excessive" and uses 0.5 V for an aircraft motor.
+In the 5010/24 V era an open-loop voltage of 2.0 V with no current limit pushed
+~20 A through the winding and smoked the wiring. The MKS V2.0 example itself calls
+2.0 V "excessive" and uses 0.5 V for an aircraft motor. The BE4108 has even lower
+R (0.055-0.193 Ω vendor), so this build runs lower still.
 
 What the firmware does:
 
-1. `O`/`N`/`G` run at `kOpenLoopVoltageVolts` (1.0 V), not 2.0 V.
+1. `O`/`N`/`G` run at `kOpenLoopVoltageVolts` (0.3 V), not 2.0 V.
 2. Every run stops itself after `kOpenLoopTimeoutMs` (10 s, `#TIMEOUT`), and a new
    `O`/`N`/`G` inside `kOpenLoopCooldownMs` (10 s) is refused (`#BUSY`), so duty
    never exceeds 50 percent.
@@ -118,35 +138,37 @@ What the firmware cannot do, and why:
 
 - It cannot use SimpleFOC's built-in current control in open loop. `phase_resistance`
   is deliberately **not** set: setting it makes SimpleFOC derive the open-loop voltage
-  as `current_limit x phase_resistance` (`BLDCMotor.cpp:622-623`), which for this
-  low-ohm winding is ~0.015 V - below the ESP32 LEDC step (10-bit, `24/1023` ~ 0.0235 V
-  at 24 V) - so the duty rounds to zero and the motor produces no output at all. True
-  FOC current control (`foc_current`) does limit current but needs the rotor angle,
-  i.e. the encoder, so it is unavailable sensorless.
+  as `current_limit x phase_resistance` (`BLDCMotor.cpp:622-623`) instead of using the
+  0.3 V ceiling. That product would be 0.19 V (380KV) down to 0.055 V (720KV); the low
+  end is ~5 of the 1023 ESP32 LEDC steps at 12 V (`12/1023` ~ 0.0117 V), so the rotating
+  field goes coarse and the rotor vibrates instead of turning. True FOC current control
+  (`foc_current`) does limit current but needs the rotor angle, i.e. the encoder, so it
+  is unavailable sensorless.
 
 What the firmware does to bound current:
 
-- **The 1.0 V open-loop ceiling is the limit.** SimpleFOC open loop applies a fixed
-  voltage with no current feedback, so the current follows physics: at 1.0 V this winding
-  draws ~7.7 A (`1.0 V / ~0.13 ohm`; `#IOL` reads ~8 A) ~ 8 W of heat, and at the previous
-  0.5 V it drew ~3.9 A ~ 1.9 W. That is why 2.0 V (~31 W) is what smoked the wiring. There
-  is deliberately **no** active current loop: an earlier voltage fold-back starved the motor
-  (it pulled the applied voltage down to ~0.05 V, only 2 of the 1023 ESP32 LEDC steps, so
-  the rotating field was far too coarse and the rotor only vibrated instead of turning).
-  1.0 V is a short-burst value; do not run it continuously without the encoder.
+- **The 0.3 V open-loop ceiling is the limit.** SimpleFOC open loop applies a fixed
+  voltage with no current feedback, so the current follows physics: stall is `0.3/R` =
+  1.55/2.40/3.06/5.45 A for 380/480/580/720KV (~0.5/0.7/0.9/1.6 W). The old 1.0 V would be
+  5.2-18.2 A / 5-18 W on this motor family. There is deliberately **no** active current
+  loop: an earlier voltage fold-back starved the motor (it pulled the applied voltage down
+  to ~0.05 V, only ~4 of the 1023 ESP32 LEDC steps at 12 V, so the rotating field was far
+  too coarse and the rotor only vibrated instead of turning). 0.3 V is a short-burst value;
+  do not run it continuously without the encoder.
 - **`#OC` trip.** poll() reads the shunt (`InlineCurrentSense::getPhaseCurrents()`) and
   stops with `#OC` if the phase current stays above `kOpenLoopOcTripAmps` (4 A) for
-  `kOpenLoopOcTripMs` (500 ms) - meant for a phase short, not a normal run.
-- **The bench supply CC bounds the *supply* current, not the winding current.** At 1.0 V the
-  PWM duty is only ~4 %, so the phase current is ~25x the DC input current: a 0.5 A CC only
-  bites at ~12 A of phase current. It protects the wiring and the supply, but it is **not** a
+  `kOpenLoopOcTripMs` (500 ms) - meant for a phase short or a wrong KV selection, not a
+  normal run. A 720KV motor on the 0.3 V ceiling draws ~5.45 A and trips by design.
+- **The bench supply CC bounds the *supply* current, not the winding current.** At 0.3 V the
+  PWM duty is only ~2.5 %, so the phase current is ~40x the DC input current: a 0.5 A CC only
+  bites at ~20 A of phase current. It protects the wiring and the supply, but it is **not** a
   winding-heat limit at this voltage - the winding heat is `V^2 / R`.
 
-**✗ 未検証**: the `#IOL` monitor reads ~8 A at 1.0 V, consistent with `1.0 V / ~0.13 ohm`, so
-the shunt is believed good; but `R ~ 0.13 ohm` was inferred from those same readings and has
-not been independently measured. Until it is, treat `#IOL` and the `#OC` trip as
-**indicative only**. A sensorless spin that leaves the motor cool and the driver lukewarm is
-the observed good state at 0.5 V.
+**✗ 未検証**: `#IOL` on the BE4108 has not been measured yet. The vendor R (0.098 Ω for
+580KV) is unconfirmed and its phase convention unpublished, so treat `#IOL` and the `#OC`
+trip as **indicative only** until a metered spin (`O` at 0.3 V + `#IOL` + winding-meter R)
+closes the loop. A sensorless spin that leaves the motor cool and the driver lukewarm is
+the good state to look for.
 
 Software cannot protect a shorted winding or shorted wiring. Never leave a
 sensorless run unattended.
@@ -173,8 +195,9 @@ for the one-shot reports the operator needs.
 2. **Stop with `S`. Never with `W 0`** — `W 0` in velocity mode is **active braking**,
    which keeps torque on the phases.
 3. **There is no holding brake.** On power-down the drum coasts.
-4. `init()` and `C` energise the phases for alignment. Keep the 24 V supply
-   **current-limited** while calibrating.
+4. `init()` and `C` energise the phases for alignment. Keep the 12 V supply
+   **current-limited** while calibrating (alignment bypasses the current loop:
+   0.3 V lands as ~3.06 A stall on the 580KV winding).
 5. `L` only bounds the **torque** mode. The velocity loop is bounded by `velocity_limit`,
    the position loop by `velocity_limit` too.
 
@@ -229,10 +252,12 @@ bench-checked before the firmware is trusted with load.
 
 | Value | In config as | Why it is unconfirmed |
 |---|---|---|
-| Undervoltage threshold | `kUndervoltageVolts = 20.0f` | The official example uses 11.1 V because it targets a 12 V pack. This build feeds 24 V, so the official number would never trip. 20.0 V is a reasoned pick, **not** measured. The gate currently only refuses to run while the supply reads below it. **✗ 未検証**: no 24 V bench measurement yet. |
-| I2C bus index | `kI2cBusIndex = 1` | The official M1 example uses `TwoWire(1)`. **✗ 未検証**: bench check pending. |
-| Motor pole pairs | `kPolePairs = 7` | Taken from the official example, not measured from the motor that is actually fitted. **✗ 未検証**. |
-| `zero_elec` healthy window | 3.12 – 3.42 rad | The article's observation for this motor, not independently reproduced. Only used for the boot note; the firmware never clamps on it. |
+| Undervoltage threshold | `kUndervoltageVolts = 10.0f` | The official 11.1 V is a 3S LiPo cutoff with no sag margin on a bench PSU. 10.0 V is a reasoned pick, **not** measured. **✗ 未検証**: no loaded 12 V bench measurement yet. |
+| I2C bus index | `kI2cBusIndex = 1` | The official M1 example uses `TwoWire(1)`. **✗ 未検証**: bench check pending (AS5600 not fitted yet). |
+| Motor pole pairs | `kPolePairs = 11` | Secondary sources only (community 24N22P + `BLDCMotor(11)` example). **★要確認★**: count the rotor magnets (/2). **✗ 未検証**. |
+| Motor KV / R | `kMotorKv = 580`, `kPhaseResistanceVendorOhms = 0.098` | Vendor reseller spec, R phase convention unpublished. **★要確認★**: bell marking + winding-meter R + no-load KV check. **✗ 未検証**. |
+| Closed-loop gains | `kPidCurrent*`, `kPidVel*`, `kPidAngleP` | ARTICLE (5010) values reused as a starting point. BE4108 retune pending. **✗ 未検証**. |
+| `zero_elec` healthy window | `kZeroElecWindowCalibrated = false` | The 3.12–3.42 rad ARTICLE window was for the 5010 and is retired. Bench data must set the BE4108 window. Only used for the boot note; the firmware never clamps on it. |
 
 ## Deliberately not implemented
 
