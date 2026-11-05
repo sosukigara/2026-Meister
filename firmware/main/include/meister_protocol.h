@@ -36,6 +36,7 @@
  * |-------------|------|--------------------------------------------------|-----------|
  * | FB_STATE    | 0x81 | int16 enc[6] + uint8 state + uint8 error_flags  | 17        |
  * | FB_ERROR    | 0x82 | uint8 error_code                                | 4         |
+ * | FB_IMU      | 0x83 | int16 yaw + uint8 calib（yaw は 0.1° 単位 0..3600）| 6 |
  * ============================================================================
  *
  * 値の範囲: 速度/角度は実数値を 10 倍（0.1°）した int16 で送る。
@@ -67,6 +68,7 @@ enum TypeId : uint8_t {
   kCmdGripper        = 0x04,  ///< グリッパー開閉指令
   kFbState           = 0x81,  ///< 状態フィードバック（エンコーダ/状態/エラー）
   kFbError           = 0x82,  ///< エラー通知
+  kFbImu             = 0x83,  ///< IMU 方位（yaw + キャリブ状態）
 };
 
 // ---------------------------------------------------------------------------
@@ -116,6 +118,7 @@ constexpr size_t kPayloadArmAngle      = kNumArmServos * sizeof(int16_t);      /
 constexpr size_t kPayloadGripper       = 1;
 constexpr size_t kPayloadState         = kNumDriveMotors * sizeof(int16_t) + 2; // 14
 constexpr size_t kPayloadError         = 1;
+constexpr size_t kPayloadImu           = sizeof(int16_t) + 1;  // yaw + calib = 3
 
 constexpr size_t kMaxPayloadSize = kPayloadState;             // 14
 constexpr size_t kMaxFrameSize   = 1 + 1 + kMaxPayloadSize + 1;  // 17
@@ -129,6 +132,7 @@ inline constexpr size_t PayloadSize(TypeId type) {
     case kCmdGripper:       return kPayloadGripper;
     case kFbState:          return kPayloadState;
     case kFbError:          return kPayloadError;
+    case kFbImu:            return kPayloadImu;
     default:                return 0;
   }
 }
@@ -191,6 +195,8 @@ size_t EncodeGripper(uint8_t* buf, size_t cap, GripperCommand cmd);
 size_t EncodeState(uint8_t* buf, size_t cap, const int16_t (&encoder)[kNumDriveMotors],
                    uint8_t state, uint8_t errorFlags);
 size_t EncodeError(uint8_t* buf, size_t cap, uint8_t errorCode);
+/// yaw_tenths: BNO055 heading の生値（0.1° 単位 0..3600）。calib: CALIB_STAT 生値。
+size_t EncodeImu(uint8_t* buf, size_t cap, int16_t yawTenths, uint8_t calib);
 
 // ---- デコード・検証 ----
 /// バッファ先頭のフレームを検証・デコードする。

@@ -115,6 +115,19 @@ void test_roundtrip_error_feedback(void) {
   TEST_ASSERT_EQUAL_UINT8(0xAB, proto::FrameGetU8(f, 0));
 }
 
+void test_roundtrip_imu_feedback(void) {
+  uint8_t buf[proto::kMaxFrameSize];
+
+  const size_t n = proto::EncodeImu(buf, sizeof(buf), 900, 0xFF);
+  TEST_ASSERT_EQUAL_UINT(proto::FrameSize(proto::kFbImu), n);
+
+  proto::Frame f;
+  TEST_ASSERT_EQUAL(proto::ParseResult::kOk, proto::ParseFrame(buf, n, &f));
+  TEST_ASSERT_EQUAL(proto::kFbImu, f.type);
+  TEST_ASSERT_EQUAL_INT16(900, proto::FrameGetInt16(f, 0));
+  TEST_ASSERT_EQUAL_UINT8(0xFF, proto::FrameGetU8(f, 2));
+}
+
 // ---------------------------------------------------------------------------
 // チェックサム
 // ---------------------------------------------------------------------------
@@ -233,6 +246,7 @@ int main(void) {
   RUN_TEST(test_roundtrip_gripper);
   RUN_TEST(test_roundtrip_state_feedback);
   RUN_TEST(test_roundtrip_error_feedback);
+  RUN_TEST(test_roundtrip_imu_feedback);
 
   RUN_TEST(test_checksum_valid_frame);
   RUN_TEST(test_checksum_corrupted_payload);
