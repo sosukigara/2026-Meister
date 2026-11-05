@@ -13,6 +13,17 @@ namespace {
 
 /// 静的な 4 次元であることを確かめる。動的軸（負の値）が 1 つでもあれば
 /// 前処理の形を決められないので、ここで落とす。
+/// 静的形 (動的軸なし) であることだけを確かめる。rank は入力 4 / 出力 3 と
+/// 違うため、ここでは縛らない。
+std::vector<int64_t> RequireStatic(const std::vector<int64_t>& shape) {
+  for (const int64_t d : shape) {
+    if (d <= 0) {
+      throw std::runtime_error("ONNX の形に動的軸があります");
+    }
+  }
+  return shape;
+}
+
 std::vector<int64_t> RequireStaticRank4(const std::vector<int64_t>& shape) {
   if (shape.size() != 4) {
     throw std::runtime_error("ONNX 入力は 4 次元である必要があります (rank=" +
@@ -47,6 +58,10 @@ OnnxSession::OnnxSession(const std::string& model_path, int intra_op_threads)
   Ort::SessionOptions options;
   options.SetIntraOpNumThreads(std::max(1, intra_op_threads));
   options.SetInterOpNumThreads(1);
+  options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+  options.EnableMemPattern();
+  options.EnableCpuMemArena();
+  options.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
 
   try {
     impl_->session = std::make_unique<Ort::Session>(
@@ -73,6 +88,8 @@ OnnxSession::OnnxSession(const std::string& model_path, int intra_op_threads)
   const auto type_info = impl_->session->GetInputTypeInfo(0);
   input_shape_ =
       RequireStaticRank4(type_info.GetTensorTypeAndShapeInfo().GetShape());
+  output_shape_ = RequireStatic(
+      impl_->session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape());
 }
 
 std::vector<float> OnnxSession::Run(const std::vector<float>& input) const {

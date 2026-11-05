@@ -20,18 +20,19 @@ std::vector<float> MakeOutput() {
 
 void SetCell(std::vector<float>& out, int cell, double cx, double cy, double w,
              double h, int class_id, float score) {
-  const size_t base = static_cast<size_t>(cell) * kStride;
-  out[base + 0] = static_cast<float>(cx);
-  out[base + 1] = static_cast<float>(cy);
-  out[base + 2] = static_cast<float>(w);
-  out[base + 3] = static_cast<float>(h);
-  out[base + kYoloBBoxCols + class_id] = score;
+  const size_t a = static_cast<size_t>(cell);
+  const size_t stride = kYoloGridCells;
+  out[0 * stride + a] = static_cast<float>(cx);
+  out[1 * stride + a] = static_cast<float>(cy);
+  out[2 * stride + a] = static_cast<float>(w);
+  out[3 * stride + a] = static_cast<float>(h);
+  out[(kYoloBBoxCols + class_id) * stride + a] = score;
 }
 
 /// letterbox が scale 1.0 / pad 0 だった場合として素通しする。
 /// 名前は Run ではなく Decode。gtest の Test::Run と衝突する。
 std::vector<Detection> Decode(const std::vector<float>& out, float conf = 0.25f) {
-  return YoloPostprocess(out, 1.0, 0, 0, 640, 640, conf, 0.45f);
+  return YoloPostprocess(out, kYoloGridCells, 1.0, 0, 0, 640, 640, conf, 0.45f);
 }
 
 TEST(CocoClasses, HasEightyNames) {
@@ -46,7 +47,8 @@ TEST(YoloPostprocess, RejectsWrongElementCount) {
 
 TEST(YoloPostprocess, RejectsNonPositiveRatio) {
   EXPECT_THROW(
-      YoloPostprocess(MakeOutput(), 0.0, 0, 0, 640, 640, 0.25f, 0.45f),
+      YoloPostprocess(MakeOutput(), kYoloGridCells, 0.0, 0, 0, 640, 640, 0.25f,
+                      0.45f),
       std::invalid_argument);
 }
 
@@ -101,7 +103,8 @@ TEST(YoloPostprocess, UndoesLetterboxPadAndScale) {
   std::vector<float> out = MakeOutput();
   SetCell(out, 2, 200.0, 100.0, 50.0, 20.0, 0, 0.5f);
   const std::vector<Detection> dets =
-      YoloPostprocess(out, 0.5, 20, 10, 640, 480, 0.25f, 0.45f);
+      YoloPostprocess(out, kYoloGridCells, 0.5, 20, 10, 640, 480, 0.25f,
+                      0.45f);
   ASSERT_EQ(dets.size(), 1U);
   EXPECT_NEAR((dets[0].x1 + dets[0].x2) / 2.0f, 360.0f, 1e-3);
   EXPECT_NEAR((dets[0].y1 + dets[0].y2) / 2.0f, 180.0f, 1e-3);

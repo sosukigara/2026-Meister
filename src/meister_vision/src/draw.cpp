@@ -45,12 +45,23 @@ cv::Mat DrawDetections(const cv::Mat& bgr,
     const cv::Size text_size =
         cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, kLabelScale,
                         kTextThickness, &baseline);
-    // ラベルを枠の上へ置く。上端を越えるときは枠の上に押し戻す。
-    const int top = std::max(y1 - text_size.height - baseline - kLabelPadX, 0);
-    cv::rectangle(out, cv::Point(x1, top),
-                  cv::Point(x1 + text_size.width + kLabelPadX, y1 - baseline),
+    // ラベルを枠の上へ置く。画像上端を越える枠 (y1 が小さい) では
+    // 枠の内側へ落とす。上に押し戻すと負の y になり描画されない。
+    const int label_h = text_size.height + baseline + 2 * kLabelPadX;
+    int label_top = y1 - label_h;
+    if (label_top < 0) {
+      label_top = y1;
+    }
+    if (label_top + label_h > out.rows) {
+      label_top = out.rows - label_h;
+    }
+    label_top = std::max(label_top, 0);
+    cv::rectangle(out, cv::Point(x1, label_top),
+                  cv::Point(x1 + text_size.width + 2 * kLabelPadX,
+                            label_top + label_h),
                   kTextBg, -1);
-    cv::putText(out, label, cv::Point(x1 + 2, y1 - baseline - 2),
+    cv::putText(out, label,
+                cv::Point(x1 + kLabelPadX, label_top + kLabelPadX + text_size.height),
                 cv::FONT_HERSHEY_SIMPLEX, kLabelScale, kTextColor,
                 kTextThickness, cv::LINE_AA);
   }

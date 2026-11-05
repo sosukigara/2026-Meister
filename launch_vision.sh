@@ -5,13 +5,27 @@
 #
 # 使い方: ./launch_vision.sh
 # 上書きは環境変数で:
-#   DEVICE=/dev/video1 RATE=10.0 THREADS=4 CONF=0.3 ./launch_vision.sh
+#   DEVICE=/dev/video1 RATE=30.0 CAM_FPS=30.0 THREADS=4 CONF=0.3 ./launch_vision.sh
+#   RVIZ=1 ./launch_vision.sh   # RViz でも表示する
 set -eo pipefail
 
 DEVICE="${DEVICE:-/dev/video0}"
-RATE="${RATE:-3.0}"
-THREADS="${THREADS:-2}"
+RATE="${RATE:-30.0}"
+# カメラは処理レート以上で回す。同レートだと位相のズレでフレームが落ちる。
+CAM_FPS="${CAM_FPS:-30.0}"
+THREADS="${THREADS:-4}"
 CONF="${CONF:-0.25}"
+# 1 で rviz2 も起動する (検出画像を RViz で見たいとき)
+RVIZ="${RVIZ:-0}"
+# 推論プロセスの CPU 固定 (taskset)。RK3588 は 0-3 が A55 / 4-7 が A76 で、
+# LITTLE に流れると推論が約 4 倍遅い。空なら固定しない。
+AFFINITY="${AFFINITY:-4-7}"
+# カメラ取得プロセスの CPU 固定。取得・変換は軽いので LITTLE に隔離し、
+# big コアを推論に明け渡す (推論と同居すると取得が詰まる)。
+CAM_AFFINITY="${CAM_AFFINITY:-0-3}"
+# 使う ONNX モデル。空なら既定 (640) を使う。320 モデル例:
+#   MODEL=src/meister_vision/models/yolov8n-320.onnx ./launch_vision.sh
+MODEL="${MODEL:-}"
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 cd "$SCRIPT_DIR"
@@ -61,14 +75,29 @@ cleanup() {
     echo ""
     echo "画像認識を終了しています..."
     kill_vision
+    if [ -n "${RVIZ_PID:-}" ]; then
+        kill "$RVIZ_PID" 2>/dev/null || true
+    fi
     exit 0
 }
 trap cleanup SIGINT SIGTERM EXIT
 
 echo "=== 画像認識を起動します ==="
-echo "--- カメラ: $DEVICE / 処理レート: $RATE Hz / 推論スレッド: $THREADS ---"
-ros2 launch meister_vision pc_vision.launch.py \
+echo "--- カメラ: $DEVICE ($CAM_FPS Hz) / 処理レート: $RATE Hz / 推論スレッド: $THREADS ---"
+if [ -n "$AFFINITY" ]; then
+    echo "--- CPU affinity: $AFFINITY (big コア固定) ---"
+    TASKSET="taskset -c $AFFINITY"
+else
+    TASKSET=""
+fi
+if [ -n "$MODEL" ]; then
+    echo "--- モデル: $MODEL ---"
+    export MEISTER_VISION_MODEL="$MODEL"
+fi
+$TASKSET ros2 launch meister_vision pc_vision.launch.py \
     use_pc_camera:=true \
+    device:="$DEVICE" \
+    camera_fps:="$CAM_FPS" \
     image_topic:=/camera/image_raw \
     rate:="$RATE" \
     inference_threads:="$THREADS" \
@@ -77,6 +106,12 @@ LAUNCH_PID=$!
 
 ros2 run rqt_image_view rqt_image_view /detection_image &
 VIEWER_PID=$!
+
+if [ "$RVIZ" = "1" ]; then
+    RVIZ_CFG="$(ros2 pkg prefix meister_vision)/share/meister_vision/rviz/detection.rviz"
+    rviz2 -d "$RVIZ_CFG" &
+    RVIZ_PID=$!
+fi
 
 # detection_node は購読者が 0 の間は推論を止める設計なので、
 # 窓が開かなかったまま黙って「何も検出されない」状態になるのを防ぐ。
@@ -98,6 +133,9 @@ echo "起動完了！ 枠線とラベル付きの映像が rqt_image_view の窓
 echo "- 検出結果の数値:  ros2 topic echo /detections --once"
 echo "- 実際の処理速度:  ros2 topic hz /detection_image"
 echo "- 元の素映像:      ros2 run rqt_image_view rqt_image_view /camera/image_raw"
+if [ "$RVIZ" = "1" ]; then
+  echo "- RViz:            Detection Image に /detection_image を表示中"
+fi
 echo "終了するには Ctrl+C を押してください。"
 echo "------------------------------------------"
 
