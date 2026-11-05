@@ -124,6 +124,13 @@ size_t EncodeError(uint8_t* buf, size_t cap, uint8_t errorCode) {
   return BuildFrame(buf, cap, kFbError, payload, sizeof(payload));
 }
 
+size_t EncodeImu(uint8_t* buf, size_t cap, int16_t yawTenths, uint8_t calib) {
+  uint8_t payload[kPayloadImu];
+  PutI16(&payload[0], yawTenths);
+  payload[2] = calib;
+  return BuildFrame(buf, cap, kFbImu, payload, sizeof(payload));
+}
+
 // ---------------------------------------------------------------------------
 // デコード・検証
 // ---------------------------------------------------------------------------
