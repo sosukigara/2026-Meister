@@ -134,7 +134,7 @@ WatchdogVerdict BridgeCore::OnWatchdog(double now_s) {
 }
 
 bool BridgeCore::RxOnce(std::vector<Feedback>* states, std::vector<uint8_t>* fb_errors,
-                        int timeout_ms) {
+                        int timeout_ms, std::vector<ImuReport>* imus) {
   const std::shared_ptr<SerialIo> link = CurrentLink();
   if (!link) {
     return false;
@@ -151,6 +151,10 @@ bool BridgeCore::RxOnce(std::vector<Feedback>* states, std::vector<uint8_t>* fb_
       states->push_back(DecodeStateFrame(frame));
     } else if (frame.type == proto::kFbError) {
       fb_errors->push_back(frame.payload[0]);
+    } else if (frame.type == proto::kFbImu) {
+      if (imus) {
+        imus->push_back(DecodeImuFrame(frame));
+      }
     }
   }
   return true;

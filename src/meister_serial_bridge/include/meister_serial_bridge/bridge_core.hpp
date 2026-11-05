@@ -56,10 +56,10 @@ class BridgeCore {
   WatchdogVerdict OnWatchdog(double now_s);
 
   /// 受信バイトを 1 回だけ読んで復号する。states に FB_STATE、fb_errors に
-  /// FB_ERROR のコードを積む。リンクが無ければ false。
-  /// timeout_ms > 0 なら 1 バイト揃うまで待つ。
+  /// FB_ERROR のコード、imus に FB_IMU を積む（imus=nullptr なら捨てる）。
+  /// リンクが無ければ false。timeout_ms > 0 なら 1 バイト揃うまで待つ。
   bool RxOnce(std::vector<Feedback>* states, std::vector<uint8_t>* fb_errors,
-              int timeout_ms);
+              int timeout_ms, std::vector<ImuReport>* imus = nullptr);
 
   /// 開いているリンクを返す。開けない場合は nullptr。
   ///
