@@ -135,7 +135,7 @@ Python 版から変えていないので `launch/` `launch_vision.sh` `kill.sh` 
 ### ピン割当の二重定義は解消済み
 
 `platformio.ini` の `build_flags` が `-D` を与え、`include/meister_config.h` が
-フォールバックと定数表（`kMotorPins` / `kSteerPins` / `kArmPins` / `kGripperPin`）を持つ。
+フォールバックと定数表（`kSteerPins` / `kArmPins` / `kGripperPin`）を持つ（DC モータ駆動は foc 基板へ移管し `kMotorPins` は廃止）。
 `src/` は MSTE_* マクロを一切参照しない。
 
 ### 構造の計画（2026-09-27 合意。`main.cpp` の分割と `meister_config.h` の集約は実施済み）
