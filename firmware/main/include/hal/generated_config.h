@@ -49,7 +49,7 @@ constexpr uint8_t  kProtoRxPin = 16;
 constexpr uint8_t  kProtoTxPin = 17;
 
 // ---- ピン ----
-constexpr uint8_t kMotorPins[kNumDriveMotors] = {25, 26, 27, 14, 13, 2};
+constexpr int8_t  kMotorPins[kNumDriveMotors] = {-1, -1, -1, -1, -1, -1};
 constexpr int8_t  kMotorDirPins[kNumDriveMotors] = {-1, -1, -1, -1, -1, -1};
 
 // 既存コードが使う別名。値が重複定義されないよう using で公開する。
@@ -74,23 +74,18 @@ constexpr uint32_t kServoMaxPulseUs = 2000;
 
 // ---- LEDC ----
 constexpr uint8_t kMaxLedcChannels = 16;  // ESP32-WROOM-32
-// 実際に PWM を割り当てる本数。ピン配列の長さと一致させる。
+// 実際に PWM を割り当てる本数（-1 = 未接続は数えない）。
+constexpr uint8_t kNumMotorPwm = 0;
 constexpr uint8_t kUsedLedcChannels =
-    kNumDriveMotors + kNumSteerPwm + kNumArmPwm + 1;  // +1 = グリッパー
+    kNumMotorPwm + kNumSteerPwm + kNumArmPwm + 1;  // +1 = グリッパー
 static_assert(sizeof(kMotorPins) / sizeof(kMotorPins[0]) == kNumDriveMotors,
               "pins.motor_pwm の本数と axes.drive_motors が不一致");
 static_assert(sizeof(kSteerPins) / sizeof(kSteerPins[0]) == kNumSteerPwm,
               "pins.steer_pwm の本数と kNumSteerPwm が不一致");
 static_assert(sizeof(kArmPins) / sizeof(kArmPins[0]) == kNumArmPwm,
               "pins.arm_pwm の本数と kNumArmPwm が不一致");
-// ★既知の不整合★ Phase 1 の暫定 PWM 割当は 17 チャネルを要求するが
-// LEDC は 16。17 本目（グリッパー pin=12）は attach が失敗し動かない。
-// 失敗は setup() の [ledc] attached=N failed=M で可視化してある。
-// +1 の許容は「Phase 1 はサーボ未接続」という前提に依存する。
-// Phase 2 でステアリングとアームをバス化すると 6 + 5 = 11 に収まり、
-// この assert は <= kMaxLedcChannels へ戻す。
-static_assert(kUsedLedcChannels <= kMaxLedcChannels + 1,
-              "LEDC 予算が超過。Phase 2 のバス化で 11 に収まる");
+static_assert(kUsedLedcChannels <= kMaxLedcChannels,
+              "LEDC 予算が超過");
 
 // ---- 運動学 ----
 constexpr bool kKinematicsGeometryFilled = false;

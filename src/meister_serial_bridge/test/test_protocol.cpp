@@ -171,3 +171,35 @@ TEST(Feedback, IgnoresNonStateFrame) {
   EXPECT_FALSE(fb.HasProtocolError());
   EXPECT_EQ(fb.state, 0u);
 }
+
+TEST(Feedback, DecodesImuFrame) {
+  uint8_t buf[proto::kMaxFrameSize];
+  const auto n = proto::EncodeImu(buf, sizeof(buf), 900, 0xFF);
+  proto::Frame f;
+  ASSERT_EQ(proto::ParseFrame(buf, n, &f), proto::ParseResult::kOk);
+
+  const auto imu = msb::DecodeImuFrame(f);
+  EXPECT_EQ(imu.yaw_tenths, 900);
+  EXPECT_EQ(imu.calib, 0xFF);
+}
+
+TEST(Feedback, IgnoresNonImuFrame) {
+  uint8_t buf[proto::kMaxFrameSize];
+  int16_t encoders[proto::kNumDriveMotors] = {};
+  const auto n = proto::EncodeState(buf, sizeof(buf), encoders, 0, 0);
+  proto::Frame f;
+  ASSERT_EQ(proto::ParseFrame(buf, n, &f), proto::ParseResult::kOk);
+
+  const auto imu = msb::DecodeImuFrame(f);
+  EXPECT_EQ(imu.yaw_tenths, 0);
+}
+
+TEST(Imu, YawTenthsToQuat) {
+  // 0° → 単位クォータニオン、90° → z=sin45°/w=cos45°
+  const auto q0 = msb::YawTenthsToQuat(0);
+  EXPECT_DOUBLE_EQ(q0.z, 0.0);
+  EXPECT_DOUBLE_EQ(q0.w, 1.0);
+  const auto q90 = msb::YawTenthsToQuat(900);
+  EXPECT_NEAR(q90.z, 0.7071067811865476, 1e-9);
+  EXPECT_NEAR(q90.w, 0.7071067811865476, 1e-9);
+}

@@ -227,6 +227,23 @@ TEST(BridgeCore, RxOnceReportsErrorFrames) {
   EXPECT_EQ(errors[0], 0x07);
 }
 
+TEST(BridgeCore, RxOnceDecodesImuFrames) {
+  Harness h;
+  uint8_t buf[proto::kMaxFrameSize];
+  const auto n = proto::EncodeImu(buf, sizeof(buf), 1800, 0xC0);
+  h.esp.InjectRx(buf, n);
+
+  std::vector<msb::Feedback> states;
+  std::vector<uint8_t> errors;
+  std::vector<msb::ImuReport> imus;
+  ASSERT_TRUE(h.core->RxOnce(&states, &errors, 0, &imus));
+  EXPECT_TRUE(states.empty());
+  EXPECT_TRUE(errors.empty());
+  ASSERT_EQ(imus.size(), 1u);
+  EXPECT_EQ(imus[0].yaw_tenths, 1800);
+  EXPECT_EQ(imus[0].calib, 0xC0);
+}
+
 TEST(BridgeCore, RxOnceKeepsPartialFrameAcrossCalls) {
   Harness h;
   int16_t encoders[proto::kNumDriveMotors] = {7, 7, 7, 7, 7, 7};

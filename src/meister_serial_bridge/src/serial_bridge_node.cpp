@@ -8,6 +8,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <geometry_msgs/msg/twist.hpp>
+#include <sensor_msgs/msg/imu.hpp>
 #include <std_msgs/msg/int16_multi_array.hpp>
 #include <std_msgs/msg/u_int8.hpp>
 
@@ -67,6 +68,7 @@ class SerialBridgeNode final : public rclcpp::Node {
         "/cmd_gripper", 10,
         [this](const std_msgs::msg::UInt8& msg) { core_->OnGripper(msg.data); });
     state_pub_ = create_publisher<std_msgs::msg::Int16MultiArray>("/esp32/state", 10);
+    imu_pub_ = create_publisher<sensor_msgs::msg::Imu>("/imu/data", 10);
     watchdog_ = create_wall_timer(std::chrono::milliseconds(100), [this] { OnWatchdog(); });
 
     rx_stop_ = false;
@@ -116,11 +118,13 @@ class SerialBridgeNode final : public rclcpp::Node {
   void RxLoop() {
     std::vector<Feedback> states;
     std::vector<uint8_t> fb_errors;
+    std::vector<ImuReport> imus;
     std::string error;
 
     while (!rx_stop_) {
       states.clear();
       fb_errors.clear();
+      imus.clear();
       error.clear();
       if (!core_->CurrentLink(&error)) {
         // 再試行を待っている間は error が空なので、ログも出さない。
@@ -130,18 +134,36 @@ class SerialBridgeNode final : public rclcpp::Node {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         continue;
       }
-      if (!core_->RxOnce(&states, &fb_errors, kRxTimeoutMs)) {
+      if (!core_->RxOnce(&states, &fb_errors, kRxTimeoutMs, &imus)) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         continue;
       }
       for (const auto& fb : states) {
         PublishState(fb);
       }
+      for (const auto& imu : imus) {
+        PublishImu(imu);
+      }
       for (uint8_t code : fb_errors) {
         RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
                              "ESP32 error frame: code=%u", static_cast<unsigned>(code));
       }
     }
+  }
+
+  void PublishImu(const ImuReport& imu) {
+    // yaw のみ既知。角速度・加速度は送っていないので covariance 先頭を -1（未知）。
+    sensor_msgs::msg::Imu msg;
+    msg.header.stamp = now();
+    msg.header.frame_id = "imu_link";
+    const YawQuat q = YawTenthsToQuat(imu.yaw_tenths);
+    msg.orientation.x = 0.0;
+    msg.orientation.y = 0.0;
+    msg.orientation.z = q.z;
+    msg.orientation.w = q.w;
+    msg.angular_velocity_covariance[0] = -1.0;
+    msg.linear_acceleration_covariance[0] = -1.0;
+    imu_pub_->publish(msg);
   }
 
   void PublishState(const Feedback& fb) {
@@ -163,6 +185,7 @@ class SerialBridgeNode final : public rclcpp::Node {
   rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr arm_sub_;
   rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr gripper_sub_;
   rclcpp::Publisher<std_msgs::msg::Int16MultiArray>::SharedPtr state_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
   rclcpp::TimerBase::SharedPtr watchdog_;
 };
 

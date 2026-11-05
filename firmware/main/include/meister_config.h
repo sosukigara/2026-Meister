@@ -69,6 +69,37 @@ static_assert(1000 % MSTE_FEEDBACK_HZ == 0,
               "e.g. 50/100/125/200/250/500 -- 1000/HZ is integer milliseconds");
 
 // ===========================================================================
+// 2b. IMU（GY-BNO055）方位送信
+// ===========================================================================
+
+/// IMU 機能の有効化。0 の間は I2C を初期化しない（未接続時のハング防止）。
+#ifndef MSTE_ENABLE_IMU
+#define MSTE_ENABLE_IMU 1
+#endif
+
+/// BNO055 の I2C 配線。バス無効中は空いている 25/26 を使う。
+/// バス（UART1 = TX25/RX26）を有効化したらこの 2 本を再割当すること。
+#ifndef MSTE_IMU_SDA_PIN
+#define MSTE_IMU_SDA_PIN 25
+#endif
+#ifndef MSTE_IMU_SCL_PIN
+#define MSTE_IMU_SCL_PIN 26
+#endif
+
+/// BNO055 の I2C アドレス。ADDR=GND で 0x28、VDD で 0x29。
+/// ★要確認★ 実物の ADDR ピン結線と照合すること。
+#ifndef MSTE_IMU_ADDR
+#define MSTE_IMU_ADDR 0x28
+#endif
+
+/// FB_IMU の送信周期 [Hz]。FB_STATE と同じ理由で 1000 の約数のみ。
+#ifndef MSTE_IMU_HZ
+#define MSTE_IMU_HZ 20
+#endif
+static_assert(1000 % MSTE_IMU_HZ == 0,
+              "MSTE_IMU_HZ must divide 1000");
+
+// ===========================================================================
 // 3. STS/SCS シリアルバスサーボ
 // ===========================================================================
 
@@ -154,6 +185,13 @@ namespace config {
 constexpr const char* kProtoPortName = MSTE_PROTO_PORT_NAME;
 /// FB_STATE の送信間隔 [ms]
 
+// ---- IMU（GY-BNO055）。ピンと周期の唯一の出所は上の MSTE_IMU_* ----
+constexpr bool kImuEnabled = MSTE_ENABLE_IMU != 0;
+constexpr uint8_t kImuSdaPin = MSTE_IMU_SDA_PIN;
+constexpr uint8_t kImuSclPin = MSTE_IMU_SCL_PIN;
+constexpr uint8_t kImuAddr = MSTE_IMU_ADDR;
+constexpr uint32_t kImuIntervalMs = 1000u / MSTE_IMU_HZ;
+
 // ---- 軸数 ----
 // kNumDriveMotors / kNumArmServos / kNumSteeringServos はプロトコルの定義なので
 // firmware/main/include/meister_protocol.h が持つ。ここでは重複定義しない。
@@ -195,13 +233,15 @@ constexpr uint8_t ArmId(uint8_t index) {
 // ★要確認★ バスを UART1 にする場合（既定）と UART0 にする場合で
 // ピン使用が変わる。バスを UART0 にするなら UART1 の 3 本が空く。
 // ----
+/// DC モータの PWM 駆動は廃止（PWM を使うのはサーボだけ）。-1 = 未接続。
+/// 空いた 25/26 は IMU の I2C に使う。実効値は generated_config.h の kMotorPins。
 #ifndef MSTE_MOTOR_PIN0
-#define MSTE_MOTOR_PIN0 13
-#define MSTE_MOTOR_PIN1 14
-#define MSTE_MOTOR_PIN2 18
-#define MSTE_MOTOR_PIN3 19
-#define MSTE_MOTOR_PIN4 21
-#define MSTE_MOTOR_PIN5 22
+#define MSTE_MOTOR_PIN0 -1
+#define MSTE_MOTOR_PIN1 -1
+#define MSTE_MOTOR_PIN2 -1
+#define MSTE_MOTOR_PIN3 -1
+#define MSTE_MOTOR_PIN4 -1
+#define MSTE_MOTOR_PIN5 -1
 #endif
 
 /// モータの向きピン。-1 = 未接続（PWM のみ）
@@ -220,6 +260,12 @@ constexpr uint8_t ArmId(uint8_t index) {
 #endif
 #ifndef MSTE_BUS_RX_PIN
 #define MSTE_BUS_RX_PIN 26
+#endif
+
+/// IMU の I2C（既定 SDA25/SCL26）はバス UART1（TX25/RX26）と排他。
+/// 両方 1 にしたらビルド時に落とす（無言の配線衝突を作らない）。
+#if MSTE_ENABLE_IMU && MSTE_ENABLE_BUS_SERVO && !MSTE_BUS_UART0
+#error "MSTE_IMU_* pins (25/26) conflict with bus UART1 (25/26). Reassign IMU pins or use MSTE_BUS_UART0=1."
 #endif
 
 /// PWM サーボのピン。DS サーボ 150kg ×5（ロッカー 4 + 肩 1）
