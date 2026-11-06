@@ -59,8 +59,8 @@ constexpr uint8_t kNumArmPwm = 4;
 constexpr uint8_t kSteerPins[6] = {4, 5, 15, 18, 19, 21};
 constexpr uint8_t kArmPins[kNumArmPwm] = {22, 23, 32, 33};
 constexpr uint8_t kGripperPin = 12;
-constexpr uint8_t kBusTxPin = 25;
-constexpr uint8_t kBusRxPin = 26;
+constexpr uint8_t kBusTxPin = 27;
+constexpr uint8_t kBusRxPin = 13;
 constexpr int8_t  kBusDirPin = -1;
 
 // ---- PWM ----

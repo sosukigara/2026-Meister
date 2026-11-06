@@ -77,8 +77,8 @@ static_assert(1000 % MSTE_FEEDBACK_HZ == 0,
 #define MSTE_ENABLE_IMU 1
 #endif
 
-/// BNO055 の I2C 配線。バス無効中は空いている 25/26 を使う。
-/// バス（UART1 = TX25/RX26）を有効化したらこの 2 本を再割当すること。
+/// BNO055 の I2C 配線。25/26 は他機能と被らない。
+/// バス UART1 は TX27/RX13 へ移設済みのため I2C との衝突はない。
 #ifndef MSTE_IMU_SDA_PIN
 #define MSTE_IMU_SDA_PIN 25
 #endif
@@ -236,18 +236,23 @@ constexpr uint8_t ArmId(uint8_t index) {
 /// DC モータの PWM 駆動は廃止（駆動は foc drive 基板）。
 /// 空いた 25/26 は IMU の I2C（SDA/SCL）に使う。
 
-/// バス UART の GPIO（MSTE_BUS_UART0=0 のときだけ使う）
+/// バス UART の GPIO（MSTE_BUS_UART0=0 のときだけ使う）。
+/// 13/14/27 が完全空きのため TX27/RX13 へ移設（IMU の 25/26 と干渉しない）。
 #ifndef MSTE_BUS_TX_PIN
-#define MSTE_BUS_TX_PIN 25
+#define MSTE_BUS_TX_PIN 27
 #endif
 #ifndef MSTE_BUS_RX_PIN
-#define MSTE_BUS_RX_PIN 26
+#define MSTE_BUS_RX_PIN 13
 #endif
 
-/// IMU の I2C（既定 SDA25/SCL26）はバス UART1（TX25/RX26）と排他。
-/// 両方 1 にしたらビルド時に落とす（無言の配線衝突を作らない）。
-#if MSTE_ENABLE_IMU && MSTE_ENABLE_BUS_SERVO && !MSTE_BUS_UART0
-#error "MSTE_IMU_* pins (25/26) conflict with bus UART1 (25/26). Reassign IMU pins or use MSTE_BUS_UART0=1."
+/// バス UART1 と IMU の I2C が同 GPIO を掴んだらビルド時に落とす
+///（無言の配線衝突を作らない。ピン番号を変えたらこのガードが追従する）。
+#if MSTE_ENABLE_IMU && MSTE_ENABLE_BUS_SERVO && !MSTE_BUS_UART0 && \
+    (MSTE_BUS_TX_PIN == MSTE_IMU_SDA_PIN ||                         \
+     MSTE_BUS_TX_PIN == MSTE_IMU_SCL_PIN ||                         \
+     MSTE_BUS_RX_PIN == MSTE_IMU_SDA_PIN ||                         \
+     MSTE_BUS_RX_PIN == MSTE_IMU_SCL_PIN)
+#error "Bus UART1 pins conflict with IMU I2C pins. Reassign MSTE_BUS_* or MSTE_IMU_*."
 #endif
 
 /// PWM サーボのピン。DS サーボ 150kg ×5（ロッカー 4 + 肩 1）

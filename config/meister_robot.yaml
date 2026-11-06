@@ -63,8 +63,8 @@ pins:
   # ★暫定★ Phase 2 でバス化したらこの 4 本は空きに戻り、軸数に比例しなくなる。
   # arm_pwm の長さは axes.arm とは独立に持つ。Phase 2 で再割当する。
   arm_pwm_provisional: [22, 23, 32, 33]
-  bus_tx: 25
-  bus_rx: 26
+  bus_tx: 27
+  bus_rx: 13
   bus_dir: -1                # アダプタが半二重を持つなら -1 のまま
 
 pwm:
