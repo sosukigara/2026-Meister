@@ -17,7 +17,7 @@
                                │ USB-UART, 115200 bps
                                │ 固定長バイナリ + XOR チェックサム
 ┌──────────────────────────────┴────────────────────────────────────┐
-│  firmware/main/  (ESP32-WROOM-32, PlatformIO + Arduino)            │
+│  firmware/main_board/  (ESP32-WROOM-32, PlatformIO + Arduino)            │
 │  main.cpp  setup/loop と配線のみ                                   │
 │  command_dispatch  受信 FSM → 各機構                               │
 │  base_chassis / arm / feedback  機構と FB_STATE 送出               │
@@ -26,7 +26,7 @@
 ```
 
 - シミュレーション（Gazebo）と実機は**同じロボットの異なる段階**。シミュレーションは実機開発の前段。
-- `firmware/foc/` は別 PlatformIO プロジェクト（MKS ESP32 FOC V2.0 ウィンチ）。`firmware/main/` とは独立。
+- `firmware/foc/` は別 PlatformIO プロジェクト（MKS ESP32 FOC V2.0 ウィンチ）。`firmware/main_board/` とは独立。
 
 ## 2. レイヤーと依存方向（片方向のみ）
 
@@ -82,7 +82,7 @@ hal/bus_protocol ← Arduino 非依存（pio test -e native でテストでき�
 |---|---|---|---|
 | PC → ESP32 指令 | 到着時（10〜20 Hz） | `_on_cmd_vel` で即送信 | 同じ値の再送は情報量が増えない |
 | ESP32 指令適用 | 100 Hz (10 ms) | `MSTE_CONTROL_HZ` | 制御周期。線路使用率 41%→15% |
-| ESP32 → PC FB_STATE | 100 Hz | `MSTE_FEEDBACK_HZ`（実測決定） | `firmware/main/README.md`「通信周期の測定」 |
+| ESP32 → PC FB_STATE | 100 Hz | `MSTE_FEEDBACK_HZ`（実測決定） | `firmware/main_board/README.md`「通信周期の測定」 |
 | STS 指令（SYNC_WRITE） | 100 Hz 可 | 1 パケットで 9 台 | 帯域に余裕 |
 | STS 状態読み戻し | 全体刷新 30〜40 ms | `MSTE_BUS_READ_CHUNK` ラウンドロビン | turnaround が直列に積もる |
 

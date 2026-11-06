@@ -194,7 +194,7 @@ constexpr uint32_t kImuIntervalMs = 1000u / MSTE_IMU_HZ;
 
 // ---- 軸数 ----
 // kNumDriveMotors / kNumArmServos / kNumSteeringServos はプロトコルの定義なので
-// firmware/main/include/meister_protocol.h が持つ。ここでは重複定義しない。
+// firmware/main_board/include/meister_protocol.h が持つ。ここでは重複定義しない。
 
 // ステアリング台数は Phase 2 で proto::kNumSteeringServos を 6→4 に
 // 揃えた時点で初めてここに定義する。
