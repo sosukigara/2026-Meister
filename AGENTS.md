@@ -18,7 +18,7 @@ ROS 2 (Jazzy) + Gazebo をベースとした自律移動ロボット制御ソフ
 - 実機（計画中）: 6輪ロッカーボギー + ESP32 + 4軸アーム + LD-D500 LiDAR。
   画像認識による自動把持と自動制御を目指す（features/07-10）
 
-マイコン層（ESP32 ファームウェア）は `firmware/main/`（PlatformIO + Arduino）。
+マイコン層（ESP32 ファームウェア）は `firmware/main_board/`（PlatformIO + Arduino）。
 `firmware/foc/` は別プロジェクト（MKS ESP32 FOC V2.0 ウィンチ）。
 
 ゴール: G1 自動走行 / G2 アーム回収 / G3 手動操縦（[docs/やりたいこと.md](docs/やりたいこと.md)）。
@@ -42,14 +42,14 @@ ROS 2 (Jazzy) + Gazebo をベースとした自律移動ロボット制御ソフ
 
 ## 3. 検証・コマンド集（要約）
 
-pio 系は `firmware/main/` を cwd、ros2 系はリポジトリルートを cwd にする（R6）。
+pio 系は `firmware/main_board/` を cwd、ros2 系はリポジトリルートを cwd にする（R6）。
 
 ```bash
 # ビルド
 ./build.sh
-cd firmware/main && pio run -e esp32dev -e esp32dev_usbuart
+cd firmware/main_board && pio run -e esp32dev -e esp32dev_usbuart
 # テスト
-cd firmware/main && pio test -e native
+cd firmware/main_board && pio test -e native
 python3 -m pytest src/meister_serial_bridge/test/
 # 実機検証
 ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0

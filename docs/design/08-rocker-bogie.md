@@ -95,7 +95,7 @@ PC (ROS 2)
   [bringup_notes §8](../../firmware/foc/docs/bringup_notes.md)）。
 - **既存のウィンチを壊さない**。`firmware/foc` はウィンチ用として残し、走行用は
   `firmware/foc_drive/` に分けた（R7）。
-- **ビルド環境**: `firmware/foc`（espressif32@6.9.0）と `firmware/main`（pioarduino）を
+- **ビルド環境**: `firmware/foc`（espressif32@6.9.0）と `firmware/main_board`（pioarduino）を
   同じ `~/.platformio` でビルドすると、片方のビルドが他方の `tool-esptoolpy` を
   無効化する（[firmware/foc/README.md](../../firmware/foc/README.md) 既知）。走行用を
   別プロジェクトにするなら `PLATFORMIO_CORE_DIR` を分ける。

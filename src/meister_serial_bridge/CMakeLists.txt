@@ -21,7 +21,7 @@ pkg_check_modules(SERIAL REQUIRED IMPORTED_TARGET libserial)
 # 消したいため、ソースをインクルードするだけに留めて firmware は変更しない
 # （AGENTS.md §0 で firmware は変更対象外）。
 # 参照するのは Arduino 非依存の 2 ファイルだけ。
-set(FIRMWARE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/main")
+set(FIRMWARE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../firmware/main_board")
 
 add_library(meister_proto STATIC
   ${FIRMWARE_DIR}/src/meister_protocol.cpp)
