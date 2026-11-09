@@ -47,15 +47,21 @@ constexpr float kOpenV = 0.3f, kAlignV = 0.3f;  // fixed: 2.13 A measured on
 constexpr float kCurLimA = 1.0f;   // default closed-loop ceiling; L raises it.
 constexpr float kCurMaxA = 3.0f;   // L hard cap: 3 A << 4 A trip, I2R = 1.7 W.
 constexpr float kClVlimV = 12.0f;  // closed-loop ceiling: the FOC current loop
-                                   // (not this) bounds torque. BEMF at the 10 rps
-                                   // test cap is ~6.7 V, so 12 V leaves margin;
-                                   // a saturated fault is caught by the OC trips.
-constexpr float kVelMaxRps = 10.0f;  // test cap: ~600 rpm on the 12 V rail.
+                                   // (not this) bounds torque. The rail caps the
+                                   // speed, and above ~87 rad/s it is exhausted.
+constexpr float kVelMaxRps = 14.0f;  // measured 2026-11-09: ~830 rpm (13.8 rps)
+                                     // is the no-load plateau on the 12 V rail;
+                                     // 16 and 18 rps commands both sat at ~87 rad/s.
 constexpr float kOcOlA = 4.0f;
 constexpr uint32_t kOcOlMs = 500;
 constexpr float kOcClA = 5.0f;
 constexpr uint32_t kOcClMs = 200;
 constexpr float kAdcSatA = 6.47f;  // 0.98 * 6.6 A full scale: unmeasurable = fault.
+// A switching transient hits both shunts at once, so one railed sample proves
+// nothing. The guard has to see the reading persist before it declares the
+// current sense unreadable; 10 ms is far shorter than any real overcurrent the
+// 5 A/200 ms trip would miss.
+constexpr uint32_t kAdcSatMs = 10;
 constexpr uint32_t kRunMs = 10000, kCoolMs = 10000;  // every motion stops itself.
 constexpr uint32_t kSpdMs = 500;  // #SPD telemetry while running.
 constexpr float kRampRps2 = 30.0f;  // velocity-loop accel cap: 0-62.8 rad/s in
@@ -80,6 +86,8 @@ uint32_t t0ms = 0;
 uint32_t cool_until_ms = 0;
 bool over = false;
 uint32_t over_since_ms = 0;
+bool sat = false;
+uint32_t sat_since_ms = 0;
 uint32_t last_spd_ms = 0;
 uint32_t last_health_ms = 0;
 uint8_t nack_count = 0;
@@ -111,8 +119,7 @@ bool as5600FastMode() {
   return i2c.endTransmission(true) == 0;
 }
 
-float phaseMaxA() {
-  const PhaseCurrent_s c = cs.getPhaseCurrents();
+float phaseMax(const PhaseCurrent_s& c) {
   const float ia = c.a >= 0.0f ? c.a : -c.a;
   const float ib = c.b >= 0.0f ? c.b : -c.b;
   const float icv = c.a + c.b;  // ic is not wired; ia+ib+ic=0 recovers it.
@@ -125,6 +132,7 @@ void stop(const __FlashStringHelper* why) {
   motor.disable();
   st::running = false;
   st::over = false;
+  st::sat = false;
   st::nack_count = 0;
   st::vin_low = false;
   st::target = 0.0f;
@@ -209,11 +217,28 @@ void poll() {
   }
   const float trip_a = openloop ? cfg::kOcOlA : cfg::kOcClA;
   const uint32_t trip_ms = openloop ? cfg::kOcOlMs : cfg::kOcClMs;
-  const float imag = phaseMaxA();
+  const PhaseCurrent_s cur = cs.getPhaseCurrents();
+  const float imag = phaseMax(cur);
   if (imag >= cfg::kAdcSatA) {
     // Unmeasurable current: the controller is flying blind (shunt/gain/wiring).
-    stop(F("#OC_SAT current sense at full scale"));
-    return;
+    // One railed sample is a switching transient, so wait for it to persist and
+    // print the sample that tripped: the numbers are the only way to tell the
+    // two apart after the fact.
+    if (!st::sat) {
+      st::sat = true;
+      st::sat_since_ms = now;
+    } else if (now - st::sat_since_ms > cfg::kAdcSatMs) {
+      Serial.print(F("#OC_SAT full scale ia "));
+      Serial.print(cur.a, 2);
+      Serial.print(F(" ib "));
+      Serial.print(cur.b, 2);
+      Serial.print(F(" ic "));
+      Serial.println(cur.a + cur.b, 2);
+      stop(nullptr);
+      return;
+    }
+  } else {
+    st::sat = false;
   }
   if (imag > trip_a) {
     if (!st::over) {
@@ -284,7 +309,10 @@ void onLine(const String& line) {
     Serial.print(F("L [amps] current ceiling 0.1-"));
     Serial.print(cfg::kCurMaxA, 1);
     Serial.println(F(" A (default 1.0)"));
-    Serial.println(F("W <rps> closed-loop velocity, needs C, max 10 rps"));
+    // Printed from the constant so the help cannot drift from the clamp.
+    Serial.print(F("W <rps> closed-loop velocity, needs C, max "));
+    Serial.print(cfg::kVelMaxRps, 0);
+    Serial.println(F(" rps"));
     Serial.println(F("I       probe phase currents once (shunt/amp check)"));
     Serial.println(F("S       stop. O/C need a stopped motor; W retargets live."));
     Serial.println(F("Every motion auto-stops after 10 s."));
