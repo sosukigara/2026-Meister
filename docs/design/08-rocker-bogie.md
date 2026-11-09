@@ -75,6 +75,9 @@ PC (ROS 2)
 
 ### 現行 `firmware/foc_winch` とのギャップ（そのままでは使えない）
 
+> NOTE(2026-11-09): 単軸ウィンチ用 `firmware/foc_winch/` は削除済み（テスト用途は
+> `firmware/foc_test/` に集約）。以下は 2026-11-03 時点のスナップショットとして残す。
+
 > 2026-11-03: 走行用の `firmware/foc_rover/` を追加した（3 role × M0/M1、ベンチ
 > オープンループ、`M/P/V` コマンド、50 Hz 2 行テレメトリ）。AS5600 は未接続なので
 > 閉ループはゲートしたまま。詳細は
@@ -87,7 +90,7 @@ PC (ROS 2)
   10 秒クールダウンに入る。走行には使えない。
 - **起動ごとに `initFOC()`**（`FocDrive::begin()`）。6 モータ分を毎回回すのは時間も
   失敗率も現実的でない → キャリブレーション値を NVS に保存し、ボード ID を持たせる。
-  現状は EEPROM 保存を意図的に未実装（[firmware/foc_winch/README.md](../../firmware/foc_winch/README.md)）。
+  現状は EEPROM 保存を意図的に未実装（[firmware/foc_winch/README.md](../../firmware/foc_rover/README.md)）。
 - **プロトコルはテキスト行でチェックサム無し**。`W 2.0\n` 程度なら実用だが、駆動用は
   誤 1 文字が別指令になりうる。バイナリ + チェックサムか、少なくとも行チェックサムを検討。
 - **低電圧ゲート 20.0 V**（`kUndervoltageVolts`）。24 V バッテリの負荷降下で誤作動しうる。
@@ -97,7 +100,7 @@ PC (ROS 2)
   `firmware/foc_rover/` に分けた（R7）。
 - **ビルド環境**: `firmware/foc_winch`（espressif32@6.9.0）と `firmware/main_board`（pioarduino）を
   同じ `~/.platformio` でビルドすると、片方のビルドが他方の `tool-esptoolpy` を
-  無効化する（[firmware/foc_winch/README.md](../../firmware/foc_winch/README.md) 既知）。走行用を
+  無効化する（[firmware/foc_winch/README.md](../../firmware/foc_rover/README.md) 既知）。走行用を
   別プロジェクトにするなら `PLATFORMIO_CORE_DIR` を分ける。
 
 ### 安全（これが無いと「大丈夫」とは言えない）

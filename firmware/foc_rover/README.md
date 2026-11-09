@@ -1,10 +1,9 @@
 # FOC drive — 3 axle roles × 2 channels (MKS ESP32 FOC V2.0)
 
 One source, three binaries for the 6-wheel rover: **FRONT / MID / REAR**. Each board drives
-the two wheels of one axle (M0 = left, M1 = right). This is a sibling of
-[`../foc_winch/`](../foc_winch/README.md) (the single-channel winch, the one flashed
-for bench spins) and deliberately shares no code
-with it, so the winch's verified behaviour is untouched.
+the two wheels of one axle (M0 = left, M1 = right). This is a sibling of [`../foc_test/`](../foc_test/README.md) (spin-test-only rig)
+and deliberately shares no code with it, so bench experiments cannot leak
+into the rover build.
 
 **Status: bench bring-up. AS5600 is now in use (user 2026-11-09): each channel
 auto-detects its sensor at boot via the CONF write ACK.** The closed-loop path is
@@ -149,13 +148,13 @@ as bare lines in the CSV stream.
 | Project | Role |
 |---|---|
 | `firmware/main_board/` | MSTE binary protocol: steering servos, arm, gripper; no FOC |
-| `firmware/foc_winch/` | single-channel M1 winch, text console, flashed for bench spins |
 | `firmware/foc_rover/` | this project: 3 axle roles, M0+M1, bench open loop now, AS5600 closed loop later |
 | `firmware/foc_test/` | spin-test only: fixed 0.3 V open loop + align, bounded L/W, 10 s auto-stop |
 
-`firmware/foc_winch` is intentionally not modified. The two projects pin the same
-`espressif32@6.9.0`; building them against the same `~/.platformio` still has the
-`tool-esptoolpy` reinstall quirk documented in `../foc_winch/README.md`. Use a separate
+All FOC projects pin the same `espressif32@6.9.0`. Building them against one
+`~/.platformio` can trigger a `tool-esptoolpy` reinstall loop: the first build
+after switching projects fails with a `TypeError` (`FRAMEWORK_DIR` is `None`
+while the core reinstalls) and the second build succeeds. Use a separate
 `PLATFORMIO_CORE_DIR` if that becomes painful.
 
 ## Verification status

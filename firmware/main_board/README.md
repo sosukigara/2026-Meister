@@ -219,21 +219,23 @@ pio test -e native
 `pio test -e native` は ESP32 不要で、エンコード/デコードのラウンドトリップ・
 チェックサム検証・不正フレーム（ヘッダ/チェックサム/未知種別/途中切れ）の拒否を検証する。
 
-## `firmware/foc_winch/` — 別 PlatformIO プロジェクト
+## FOC プロジェクト（別 PlatformIO プロジェクト群）
 
-`firmware/foc_winch/` は MKS ESP32 FOC V2.0（M1 チャンネル）を SimpleFOC でウィンチとして回すための
-**独立した PlatformIO プロジェクト**。独自の `platformio.ini` と `.pio/` を持ち、
-**本ファームウェアのビルドには含まれない**。MSTE のバイナリプロトコルとは共有するコードが
-なく、`cd firmware/main_board && pio run` は `firmware/foc_winch/` を読まない。
+MKS ESP32 FOC V2.0 用の FOC ファームは本ファームウェアとは**独立した PlatformIO
+プロジェクト**（独自の `platformio.ini` と `.pio/` を持つ）。MSTE のバイナリ
+プロトコルとは共有するコードがなく、`cd firmware/main_board && pio run` は
+FOC 側を読まない。
+
+- `firmware/foc_rover/` — 走行用 3 役（FRONT/MID/REAR、本番）
+- `firmware/foc_test/` — 回転テスト専用（ベンチで書き込む方）
 
 ```bash
-cd firmware/foc
-pio run -e foc_m1 -t upload     # 書き込み
-pio device monitor -b 115200    # C / L / Z / T / W / A / S / ?
-pio test -e native               # コンソール層のホスト側テスト
+cd firmware/foc_test
+pio run -e foc_test_m1 -t upload --upload-port /dev/serial/by-id/<board>
+pio device monitor -b 115200    # O / C / L / W / S / ?
 ```
 
-配線表・コマンド一覧・安全上の注意・要確認値は [`firmware/foc_winch/README.md`](../foc_winch/README.md) にある。
+配線表・コマンド一覧・安全上の注意・要確認値は [`firmware/foc_test/README.md`](../foc_test/README.md) にある。
 
 ## サーボ制御の設計
 
