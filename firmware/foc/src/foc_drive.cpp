@@ -298,6 +298,7 @@ void FocDrive::stop() {
   openloop_cool_until_ = millis() + foc_cfg::kOpenLoopCooldownMs;
   target_ = 0.0f;
   ol_over_ = false;
+  cl_over_ = false;
   ol_imag_ = 0.0f;
   motor_.voltage_limit = foc_cfg::kVoltageLimitVolts;
 }
@@ -327,7 +328,7 @@ void FocDrive::poll() {
     }
     if (motor_.enabled) {
       // No active current loop: the winding itself bounds the current to
-      // kOpenLoopVoltageVolts/R (~3.06 A / ~0.9 W on 580KV). Just watch for a hard
+      // kOpenLoopVoltageVolts/R (~1.61 A / ~0.5 W on KV90). Just watch for a hard
       // fault - a phase short, a wrong KV, or a shunt reading far above what the
       // open-loop voltage can produce - and stop.
       ol_imag_ = readPhaseCurrentMax();
@@ -351,7 +352,28 @@ void FocDrive::poll() {
     return;
   }
   motor_.loopFOC();
-  if (motor_.enabled) motor_.move(target_);
+  if (motor_.enabled) {
+    // Closed-loop hard-fault backstop. Normal closed loop never exceeds the 4 A L
+    // ceiling; above 5 A for 200 ms means a shorted winding, a dead shunt (reads 0 A
+    // while the PI saturates Uq at voltage_limit = 5.38 A stall), or a wrong motor.
+    // ADC saturation is unreachable here (5.38 A < 6.6 A full scale) by physics.
+    const float imag = readPhaseCurrentMax();
+    if (imag > foc_cfg::kClosedLoopOcTripAmps) {
+      if (!cl_over_) {
+        cl_over_ = true;
+        cl_over_since_ms_ = millis();
+      } else if (millis() - cl_over_since_ms_ > foc_cfg::kClosedLoopOcTripMs) {
+        stop();
+        Serial.print(F("#OC closed-loop overcurrent trip, I="));
+        Serial.print(imag, 2);
+        Serial.println(F(" A"));
+        return;
+      }
+    } else {
+      cl_over_ = false;
+    }
+    motor_.move(target_);
+  }
 }
 
 void FocDrive::resetVelocityPid() {

@@ -111,6 +111,12 @@ constexpr float kOpenLoopOcTripAmps = 4.0f;  // hard-fault backstop (a phase sho
                                              // low-R motor on the same 0.3 V exceeds
                                              // 4 A and trips by design. 4 A < USER 6 A
                                              // and < 6.6 A ADC full scale.
+// Closed-loop hard trip. Above the 4 A L ceiling (a legitimate 4 A hold never trips:
+// 5 A needs 200 ms persistence) and below ADC saturation. A dead shunt reads 0 A
+// while the PI saturates Uq at voltage_limit (5.38 A stall), so without this the
+// fault current would sit indefinitely under the 6 A envelope.
+constexpr float kClosedLoopOcTripAmps = 5.0f;
+constexpr uint32_t kClosedLoopOcTripMs = 200;
 constexpr uint32_t kOpenLoopOcTripMs = 500;  // must stay over the trip this long to stop
 constexpr uint32_t kOpenLoopCooldownMs = 10000;  // after any open-loop stop the next
                                                  // O/N/G is refused for 10 s: duty

@@ -161,6 +161,9 @@ What the firmware does to bound current:
   stops with `#OC` if the phase current stays above `kOpenLoopOcTripAmps` (4 A) for
   `kOpenLoopOcTripMs` (500 ms) - meant for a phase short or a wrong KV selection, not a
   normal run. A shorted winding on the 0.3 V ceiling exceeds 4 A and trips by design.
+  Closed loop has its own trip: above `kClosedLoopOcTripAmps` (5 A) for
+  `kClosedLoopOcTripMs` (200 ms) — a dead shunt reads 0 A while the PI saturates at
+  `voltage_limit` (5.38 A stall), so without this the fault would sit indefinitely.
 - **The bench supply CC bounds the *supply* current, not the winding current.** At 0.3 V the
   PWM duty is only ~2.5 %, so the phase current is ~40x the DC input current: a 0.5 A CC only
   bites at ~20 A of phase current. It protects the wiring and the supply, but it is **not** a

@@ -93,6 +93,8 @@ class FocDrive {
   float user_current_limit_ = foc_cfg::kCurrentLimitAmps;
   bool ol_over_ = false;
   uint32_t ol_over_since_ms_ = 0;
+  bool cl_over_ = false;
+  uint32_t cl_over_since_ms_ = 0;
   float ol_imag_ = 0.0f;
 };
 
