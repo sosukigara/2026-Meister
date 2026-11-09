@@ -1,6 +1,6 @@
 # 実行・テスト・検証コマンド — Meister
 
-> pio 系は `firmware/main_board/` を cwd にする。ros2 系はリポジトリルートを cwd にする（R6）。詳細な罠は [docs/pitfalls.md](pitfalls.md)。
+> pio 系は `firmware/main_board/` を cwd にする。ros2 系は `ros/` を cwd にする（R6）。詳細な罠は [docs/pitfalls.md](pitfalls.md)。
 
 ## 1. 前提
 
@@ -34,11 +34,11 @@ cd firmware/main_board
 pio test -e native
 
 # Python ブリッジ（22 cases）
-cd src/meister_serial_bridge
+cd ros/src/meister_serial_bridge
 PYTHONPATH=. python3 -m pytest test/
 
 # リポジトリルートから
-python3 -m pytest src/meister_serial_bridge/test/
+python3 -m pytest ros/src/meister_serial_bridge/test/
 ```
 
 ## 4. 実機検証（comm_check）

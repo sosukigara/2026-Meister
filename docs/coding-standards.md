@@ -44,7 +44,7 @@
 - `MSTE_*` の既定値は `firmware/main_board/include/meister_config.h` に集約。
 - 優先順位は「コンパイル時 `-D` → `meister_config.h` のフォールバック」の **1 経路だけ**。
 - `platformio.ini` の `build_flags` と `meister_config.h` の `#ifndef` フォールバックが両方にある状態で片方だけ直すと不整合が起きる。両方揃える。
-- `src/` は `MSTE_*` マクロを直接参照しない。
+- `ros/src/` は `MSTE_*` マクロを直接参照しない。
 
 ## 5. 物理定数（ピン / ID / レジスタ）と単位・範囲 (R3)
 
@@ -85,7 +85,7 @@
 ## 10. テスト配置と実行
 
 - C++: `firmware/main_board/test/test_protocol/`, `test/test_bus_protocol/`, `test/test_kinematics/`（Unity、`pio test -e native`）。
-- Python: `src/meister_serial_bridge/test/`（pytest）。
+- Python: `ros/src/meister_serial_bridge/test/`（pytest）。
 - プロトコル変更時は C++ と Python の両テストの期望値を更新する。
 
 ## 11. コミット単位 (R12)

@@ -215,5 +215,5 @@ kinematics:
 ## 関連
 
 - 設計: [07-esp32-uart.md](07-esp32-uart.md) / [08-rocker-bogie.md](08-rocker-bogie.md) / [09-object-grasping.md](09-object-grasping.md)
-- 設定の唯一の出所: [config/meister_robot.yaml](../../config/meister_robot.yaml)
+- 設定の唯一の出所: [ros/config/meister_robot.yaml](../../ros/config/meister_robot.yaml)
 - コードマップ: [code-map.md](../code-map.md)

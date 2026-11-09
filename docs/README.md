@@ -50,11 +50,14 @@ Meister/
 ├── launch.sh                        # 全体起動（Gazebo + SLAM + Nav2 + Web UI）
 ├── launch_vision.sh                 # 画像認識だけ起動（PC カメラ）
 ├── kill.sh                          # domain 5 の ROS / Gazebo プロセスを終了
-└── src/
-    ├── meistar_description/         # ロボットモデル・シミュレーション定義
-    ├── meister_vision/              # 画像認識（ONNX Runtime + YOLOv8n）
-    ├── ros2_autonomous_nav/         # SLAM・ナビゲーションの中核パッケージ
-    └── meister_web_nav/             # Web UI（:8088）
+└── ros/                            # ROS 2 ワークスペース（colcon はここで実行）
+    ├── src/
+    │   ├── meistar_description/     # ロボットモデル・シミュレーション定義
+    │   ├── meister_vision/          # 画像認識（ONNX Runtime + YOLOv8n）
+    │   ├── ros2_autonomous_nav/     # SLAM・ナビゲーションの中核パッケージ
+    │   └── meister_web_nav/         # Web UI（:8088）
+    └── config/
+        └── meister_robot.yaml       # ロボット設定の唯一の出所（tools/gen_config.py が読む）
 ```
 
 ### 実機構成（計画中）

@@ -66,7 +66,7 @@ Orange Pi 5 Max 8GB 実機で以下を測っていない。開発機の値から
 | 測定機 | **ノートPC** / **AMD Ryzen 5 7430U**（6 core / 12 thread、AVX2、AVX512 は無し） |
 | OS | Ubuntu / x86_64 |
 | ランタイム | `onnxruntime` 1.28.0 / `CPUExecutionProvider` |
-| モデル | `src/meister_vision/models/yolov8n.onnx`（Ultralytics YOLOv8n / COCO 80 クラス） |
+| モデル | `ros/src/meister_vision/models/yolov8n.onnx`（Ultralytics YOLOv8n / COCO 80 クラス） |
 | 入力 | `[1, 3, 640, 640]` float32（入力サイズは `letterbox.hpp` の `kYoloInputSize = 640` で固定） |
 | 出力 | `[1, 84, 8400]`（`end2end:False`。NMS は実行器の責務） |
 | 入力データ | ランダムノイズ画像（**推論時間**の測定であり、検出精度の測定ではない） |

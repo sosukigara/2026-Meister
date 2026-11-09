@@ -32,7 +32,7 @@
 
 ---
 
-## 2. ROS 2 パッケージ（`src/`）
+## 2. ROS 2 パッケージ（`ros/src/`）
 
 | パッケージ | 役割 | エントリポイント | 依存 |
 |---|---|---|---|
@@ -126,7 +126,7 @@ Python 版から変えていないので `launch/` `launch_vision.sh` `kill.sh` 
 | `src/base_chassis.cpp` / `src/arm.cpp` | 50 / 50 | 足回り（モータ 6 + ステアリング 6）、アーム 4 軸 + グリッパー | 静的インスタンスは作らず、初期化リストで構築順を示す |
 | `src/feedback.cpp` | 34 | FB_STATE の定周期送出 | 送信間隔は `config::kFeedbackIntervalMs` |
 | `src/hal/*.cpp` | 25〜61 | LEDC ラッパ / PWM サーボ / コンソールサーボ / モータ / プロトコル UART | 2.x と 3.x の API 差はここに閉じている |
-| `include/hal/generated_config.h` | 生成物 | `config/meister_robot.yaml` から `tools/gen_config.py` で生成（Python 出力は 2026-10-05 に削除） | firmware と PC 側 bridge がこの 1 本を共有する |
+| `include/hal/generated_config.h` | 生成物 | `ros/config/meister_robot.yaml` から `tools/gen_config.py` で生成（Python 出力は 2026-10-05 に削除） | firmware と PC 側 bridge がこの 1 本を共有する |
 | `include/meister_config.h` | 手書き | `MSTE_*` マクロとバックエンド選択のみ。定数は生成物側にない | 生成物を include する |
 | `include/meister_protocol.h` | 197 | TypeId・軸数・値域・サイズ・Frame 構造・関数宣言 | PC 側 bridge が直接コンパイルするので二重定義なし |
 | `src/meister_protocol.cpp` | 178 | エンコード / デコード / チェックサム | Arduino 非依存 |
@@ -225,8 +225,8 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 
 ## 6. 設定変更時のチェックリスト
 
-- `firmware/main_board/platformio.ini` の `MSTE_*` を変える → `firmware/main_board/include/meister_config.h` のフォールバックも変える（`src/` はマクロを直接参照しない）
-- プロトコルの軸数を変える → `config/meister_robot.yaml` を直して `python3 tools/gen_config.py`。生成された `generated_config.h` が firmware と PC 側 bridge の両方に入る
+- `firmware/main_board/platformio.ini` の `MSTE_*` を変える → `firmware/main_board/include/meister_config.h` のフォールバックも変える（`ros/src/` はマクロを直接参照しない）
+- プロトコルの軸数を変える → `ros/config/meister_robot.yaml` を直して `python3 tools/gen_config.py`。生成された `generated_config.h` が firmware と PC 側 bridge の両方に入る
 - ピン番号を変える → `pio run -e esp32dev -e esp32dev_usbuart`（両 env 都要）と実機 `comm_check`
 - firmware の C++ 変更 → `cd firmware && pio test -e native`。ROS パッケージの C++ 変更 → `colcon test --packages-select <pkg>`
 - 実機挙動を変更 → `comm_check` 3 手順（uplink / downlink / err_flag）

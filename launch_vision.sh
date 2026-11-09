@@ -24,14 +24,14 @@ AFFINITY="${AFFINITY:-4-7}"
 # big コアを推論に明け渡す (推論と同居すると取得が詰まる)。
 CAM_AFFINITY="${CAM_AFFINITY:-0-3}"
 # 使う ONNX モデル。空なら既定 (640) を使う。320 モデル例:
-#   MODEL=src/meister_vision/models/yolov8n-320.onnx ./launch_vision.sh
+#   MODEL=ros/src/meister_vision/models/yolov8n-320.onnx ./launch_vision.sh
 MODEL="${MODEL:-}"
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 cd "$SCRIPT_DIR"
 
-if [ ! -f "install/setup.bash" ]; then
-    echo "ERROR: install/setup.bash が見つかりません。先に ./build.sh を実行してください。" >&2
+if [ ! -f "ros/install/setup.bash" ]; then
+    echo "ERROR: ros/install/setup.bash が見つかりません。先に ./build.sh を実行してください。" >&2
     exit 1
 fi
 
@@ -47,7 +47,7 @@ if [ -z "$ROS_SETUP" ]; then
     exit 1
 fi
 source "$ROS_SETUP"
-source install/setup.bash
+source ros/install/setup.bash
 
 # kill.sh と同じ規則で、ROS_DOMAIN_ID が一致する PID だけを消す。
 # 別ドメイン (robocon 等) のスタックを巻き込まないため。

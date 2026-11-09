@@ -2,8 +2,7 @@
 #
 # ここを直したら必ず生成し直す:
 #     python3 tools/gen_config.py
-# 生成物（firmware/main_board/include/hal/generated_config.h と
-#         src/meister_serial_bridge/generated_config.py）はコミットする。
+# 生成物（firmware/main_board/include/hal/generated_config.h）はコミットする。
 # YAML と生成物のズレは tools/gen_config.py --check で検出する。
 #
 # ★要確認★ の項目は一次情報で未取得の値。記憶で埋めてはいけない。

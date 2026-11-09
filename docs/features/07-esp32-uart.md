@@ -22,7 +22,7 @@ ESP32 (モータ・サーボ PWM 制御, センサ入力)
 - [x] バイナリプロトコル定義（固定長フレーム + XOR チェックサム、コマンド 4 種 / フィードバック 2 種）
 - [x] モータ PWM・サーボ制御のベース（LEDC PWM、駆動モータ 6ch / ステアリング 6ch / アーム 4ch / グリッパー 1ch）
 - [x] コンパイル検証（`pio run`）
-- [x] PC 側 ROS 2 シリアルブリッジ（`src/meister_serial_bridge`、`/cmd_vel` → 舵角 + PWM、`/esp32/state` に FB_STATE を配信）
+- [x] PC 側 ROS 2 シリアルブリッジ（`ros/src/meister_serial_bridge`、`/cmd_vel` → 舵角 + PWM、`/esp32/state` に FB_STATE を配信）
 - [x] PC↔ESP32 の双方向通信の実機確認（2026-09-27、USB ケーブルのみで検証できる
       `esp32dev_usbuart` 環境とベンチ確認 CLI `meister_comm_check` を追加）
 

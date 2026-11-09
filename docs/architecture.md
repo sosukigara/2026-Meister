@@ -90,7 +90,7 @@ hal/bus_protocol ← Arduino 非依存（pio test -e native でテストでき�
 
 - **HAL 分離**: ハードウェア依存は `hal/` に閉じ込め、上位は抽象 (`IServoChannel`) を使う。
 - **設定の単一出所**: `meister_config.h`（コンパイル時 `-D` → フォールバックの 1 経路）。
-- **生成物**: `config/meister_robot.yaml` → `tools/gen_config.py` → `hal/generated_config.h`。機構は生成定数表を読む。
+- **生成物**: `ros/config/meister_robot.yaml` → `tools/gen_config.py` → `hal/generated_config.h`。機構は生成定数表を読む。
 - **プロトコルの双方向一致**: C++ `meister_protocol.h` と Python `protocol.py` はバイト単位で一致。軸数変更時は両方直す。
 - **静的グローバル禁止**: `setup()` 内で 1 か所に aggregate 構築（R11）。翻訳単位をまたぐ静的初期化順は未規定。
 - **未確定値のゲート**: `MSTE_ENABLE_BUS_SERVO=0` の間はバスを駆動しない。未取得を表す値は到達不能値（`0xFF`）を使い、`kRegisterMapVerified=false` の間は WRITE をゲート（R4）。
@@ -121,7 +121,7 @@ hal/bus_protocol ← Arduino 非依存（pio test -e native でテストでき�
 
 ## 9. 設定変更時のチェックリスト
 
-- `platformio.ini` の `MSTE_*` を変える → `meister_config.h` のフォールバックも変える（`src/` はマクロを直接参照しない）
+- `platformio.ini` の `MSTE_*` を変える → `meister_config.h` のフォールバックも変える（`ros/src/` はマクロを直接参照しない）
 - プロトコルの軸数を変える → `meister_protocol.h` **と** `protocol.py` **と** 両方のテストの期望値を変える
 - ピン番号を変える → `pio run -e esp32dev -e esp32dev_usbuart`（両 env）と実機 `comm_check`
 - Python のみの変更 → `pytest`。C++ 変更 → `pio test -e native`

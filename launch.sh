@@ -21,8 +21,8 @@ WORKSPACE_ROOT=$(cd "$SCRIPT_DIR" && pwd)
 
 cd "$WORKSPACE_ROOT"
 
-if [ ! -f "install/setup.bash" ]; then
-    echo "ERROR: install/setup.bash が見つかりません。先に ./build.sh を実行してください。" >&2
+if [ ! -f "ros/install/setup.bash" ]; then
+    echo "ERROR: ros/install/setup.bash が見つかりません。先に ./build.sh を実行してください。" >&2
     exit 1
 fi
 
@@ -38,7 +38,7 @@ if [ -z "$ROS_SETUP" ]; then
   exit 1
 fi
 source "$ROS_SETUP"
-source install/setup.bash
+source ros/install/setup.bash
 
 # Force Gazebo transport over TCP localhost
 # Default UDP multicast discovery fails on machines with VPN (tun0)
@@ -95,7 +95,7 @@ for i in $(seq 1 90); do
 done
 
 echo "=== RViz を起動します ==="
-"$WORKSPACE_ROOT/src/ros2_autonomous_nav/rviz.sh" &
+"$WORKSPACE_ROOT/ros/src/ros2_autonomous_nav/rviz.sh" &
 
 echo "------------------------------------------"
 echo "起動完了！"
