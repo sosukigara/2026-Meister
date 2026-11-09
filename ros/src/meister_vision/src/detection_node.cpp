@@ -43,7 +43,7 @@
 namespace meister_vision {
 namespace {
 
-constexpr char kNodeName[] = "meister_vision";
+constexpr char kNodeName[] = "umeonigiri_vision";
 
 vision_msgs::msg::Detection2D ToDetection2D(
     const std_msgs::msg::Header& header, const Detection& det) {

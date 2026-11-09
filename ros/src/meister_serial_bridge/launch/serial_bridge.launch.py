@@ -19,7 +19,7 @@ def generate_launch_description():
     bridge = Node(
         package='meister_serial_bridge',
         executable='serial_bridge',
-        name='serial_bridge',
+        name='umeonigiri_serial_bridge',
         output='screen',
         parameters=[{
             'serial_port': serial_port,

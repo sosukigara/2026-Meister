@@ -7,7 +7,7 @@ def generate_launch_description():
         Node(
             package='meister_web_nav',
             executable='web_nav_server',
-            name='web_nav_server',
+            name='umeonigiri_web_nav_server',
             output='screen',
         ),
     ])

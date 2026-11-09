@@ -45,7 +45,7 @@ def generate_launch_description():
         Node(
             package="meister_vision",
             executable="pc_camera",
-            name="pc_camera",
+            name="umeonigiri_pc_camera",
             output="screen",
             parameters=[{
                 "device": LaunchConfiguration("device"),
@@ -57,7 +57,7 @@ def generate_launch_description():
         Node(
             package="meister_vision",
             executable="detection_node",
-            name="meister_vision",
+            name="umeonigiri_vision",
             output="screen",
             parameters=[{
                 "image_topic": LaunchConfiguration("image_topic"),

@@ -6,7 +6,7 @@
 namespace meister_web_nav {
 namespace {
 
-constexpr char kNodeName[] = "web_nav_vision_listener";
+constexpr char kNodeName[] = "umeonigiri_web_nav_vision_listener";
 constexpr char kImageTopic[] = "detection_image";
 constexpr char kDetectionsTopic[] = "detections";
 constexpr std::chrono::milliseconds kReconcilePeriod{200};

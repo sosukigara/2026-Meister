@@ -50,7 +50,7 @@
 namespace meister_vision {
 namespace {
 
-constexpr char kNodeName[] = "hand_landmarks";
+constexpr char kNodeName[] = "umeonigiri_hand_landmarks";
 
 geometry_msgs::msg::PoseArray BuildPoseArray(
     const sensor_msgs::msg::Image& msg,

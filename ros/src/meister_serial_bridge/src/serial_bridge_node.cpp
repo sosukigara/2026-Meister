@@ -29,7 +29,7 @@ constexpr int kRxTimeoutMs = 0;
 
 class SerialBridgeNode final : public rclcpp::Node {
  public:
-  SerialBridgeNode() : Node("serial_bridge") {
+  SerialBridgeNode() : Node("umeonigiri_serial_bridge") {
     BridgeParams params;
     params.serial_port = declare_parameter<std::string>("serial_port", kDefaultPort);
     params.baud = declare_parameter<int>("baud", kDefaultBaud);
@@ -48,7 +48,7 @@ class SerialBridgeNode final : public rclcpp::Node {
             return std::shared_ptr<SerialIo>(OpenSerialPort(path, baud));
           } catch (const std::exception& e) {
             // ポート未接続でも起動は継続する。RX スレッドが後で再試行する。
-            RCLCPP_ERROR(rclcpp::get_logger("serial_bridge"), "serial open failed: %s",
+            RCLCPP_ERROR(rclcpp::get_logger("umeonigiri_serial_bridge"), "serial open failed: %s",
                          std::string(e.what()).c_str());
             return nullptr;
           }

@@ -61,7 +61,7 @@ bool NavWorker::WaitFor(std::chrono::milliseconds timeout) {
 }
 
 void NavWorker::Run() {
-  node_ = std::make_shared<rclcpp::Node>("web_nav_commander");
+  node_ = std::make_shared<rclcpp::Node>("umeonigiri_web_nav_commander");
   nav_client_ = rclcpp_action::create_client<NavigateToPose>(node_, "navigate_to_pose");
 
   SetStatus({{"message", "Nav2の起動を待っています..."}});

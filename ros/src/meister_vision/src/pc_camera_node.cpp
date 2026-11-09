@@ -26,7 +26,7 @@
 namespace meister_vision {
 namespace {
 
-constexpr char kNodeName[] = "pc_camera";
+constexpr char kNodeName[] = "umeonigiri_pc_camera";
 constexpr char kTopic[] = "/camera/image_raw";
 constexpr int kDefaultWidth = 640;
 constexpr int kDefaultHeight = 480;

@@ -33,7 +33,7 @@ PlanarTransform ComposePose(const PlanarTransform& map_odom,
       map_odom.yaw + odom_base.yaw};
 }
 
-MapListener::MapListener() : rclcpp::Node("web_nav_map_listener") {
+MapListener::MapListener() : rclcpp::Node("umeonigiri_web_nav_map_listener") {
   // Subscription の SharedPtr は Node が保持するので、ここでは捨てる。
   create_subscription<nav_msgs::msg::OccupancyGrid>(
       "/map", MapQos(), [this](nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg) {

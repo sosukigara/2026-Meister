@@ -50,7 +50,7 @@ def generate_launch_description():
         Node(
             package="meister_vision",
             executable="detection_node",
-            name="meister_vision",
+            name="umeonigiri_vision",
             output="screen",
             parameters=[{
                 "model_path": LaunchConfiguration("model_path"),
