@@ -5,10 +5,10 @@ the two wheels of one axle (M0 = left, M1 = right). This is a sibling of
 [`../foc/`](../foc/README.md) (the single-channel winch) and deliberately shares no code
 with it, so the winch's verified behaviour is untouched.
 
-**Status: bench bring-up. AS5600 is not fitted yet, so only the sensorless open-loop
-commands are usable right now.** The closed-loop path is compiled but gated until `C`
-succeeds. Pole pairs are pre-set to 20 (40 magnets). Boot alignment is off: `C` is an
-explicit command.
+**Status: bench bring-up. AS5600 is now in use (user 2026-11-09): each channel
+auto-detects its sensor at boot via the CONF write ACK.** The closed-loop path is
+compiled but gated until `C` succeeds. Pole pairs are pre-set to 20 (40 magnets).
+Boot alignment is off: `C` is an explicit command.
 
 ## What is known / not known
 
@@ -23,7 +23,7 @@ explicit command.
 | Shunt marking | `R010` (10 mΩ) expected | **★要確認★** 実機の刻印。`R001` なら全読みが 10 倍ずれる |
 | ENABLE | M0/M1 share GPIO12 | 一次情報: official example。片 ch だけ disable 不可 |
 | Pole pairs | **20 (40 magnets)** | 二次情報: ODrive コミュニティ 2 件 + 稼働中の ODrive 設定。実機の磁石数は要確認 |
-| AS5600 | not fitted yet | 一時的。付いたら I2C 0/1 で自動検出 |
+| AS5600 | in use since 2026-11-09, M0 = bus 0 (SDA19/SCL18), M1 = bus 1 (SDA23/SCL5) | 起動時に CONF 書込 ACK で自動検出。磁石（径方向着磁）を軸端中心に配置し、ギャップはデータシート推奨範囲でベンチ確認 **★要確認★** |
 | Hall | board supports hall; LA8308 hall wires unknown | **★要確認★** official `8_hallsensor_test` あり |
 
 ## Firmware safety envelope (v0.2)
@@ -167,7 +167,9 @@ as bare lines in the CSV stream.
 
 - [ ] Verify the shunt marking (`R010`) and count the LA8308 magnets (expected 40).
 - [ ] One wheel spins at 0.30 V; record `#IOL`, temperature, and direction.
-- [ ] Fit AS5600, set P, run `C` at 0.30 V. If it fails, `Z 0.40` and retry; do not jump
+- [ ] Mount the AS5600 diametral magnet centered on each shaft end (gap per datasheet),
+      confirm `#ROLE`/`#VIN`/`#SHUNT` at boot with no `#ERR AS5600`, then `P 20`,
+      `C` at 0.30 V. If it fails, `Z 0.40` and retry; do not jump
       to 1.0 V on this low-resistance motor.
 - [ ] Then `L 1.0`, `W 0.5` and raise slowly; `W`/`T`/`A` are deadman commands.
 - [ ] Set per-role `kInvertM0/M1` from the direction test.

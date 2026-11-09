@@ -108,8 +108,10 @@ constexpr float kVinDividerRatio = 8.5f;   // MKSREPO
 
 constexpr int kI2cClockHz = 400000;  // MKSREPO
 
-// AS5600 fast mode. The CONF register is volatile, so this write must be repeated on
-// every boot. CONF 0x07 bit0-1 = SF: 0 = 16x, 1 = 8x, 2 = 4x, 3 = 2x (fastest).
+// AS5600 fast mode (Infineon AS5600 datasheet Fig 21-22: CONF high 0x07 bits [1:0]
+// = SF, 0x03 = 2x fastest). CONF is volatile (OTP reset at power-up), so this write
+// must be repeated on every boot BEFORE the first sensor read. A NACK here is the
+// per-channel sensor-absent signal: initFOC() is skipped rather than run blind.
 constexpr uint8_t kAs5600Address = 0x36;
 constexpr uint8_t kAs5600ConfRegister = 0x07;
 constexpr uint8_t kAs5600ConfFastMask = 0x03;
@@ -195,11 +197,11 @@ constexpr uint32_t kCsCheckMs = 200;
 constexpr uint32_t kHealthPeriodMs = 50;
 constexpr uint32_t kDiagnoseCooldownMs = 2000;
 
-constexpr float kPidCurrentP = 1.0f;
-constexpr float kPidCurrentI = 500.0f;
-constexpr float kPidVelP = 0.2f;
-constexpr float kPidVelI = 2.0f;
-constexpr float kPidVelD = 0.0f;
+constexpr float kPidCurrentP = 1.0f;  // ARTICLE (official V2.0 example 11 agrees)
+constexpr float kPidCurrentI = 500.0f;  // ARTICLE (official V2.0 example 11 agrees)
+constexpr float kPidVelP = 0.2f;  // ARTICLE. Official V2.0 example 11 uses 0.021 for
+constexpr float kPidVelI = 2.0f;  // its 2808 motor: try those if this oscillates.
+constexpr float kPidVelD = 0.0f;  // TODO(gains): bench-tune on LA8308 KV90.
 constexpr float kPidAngleP = 8.0f;
 constexpr float kLpfCurrentTf = 0.002f;
 
