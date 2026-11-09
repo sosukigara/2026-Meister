@@ -2,8 +2,9 @@
 // Bench use only. Never flashed to production (that is firmware/foc_winch).
 //
 // What it does: open-loop spin (O), explicit alignment (C), closed-loop
-// velocity (W) with a 1 A current ceiling. EVERY motion auto-stops after 10 s.
-// Fixed voltages/currents only: there are no L/Z commands to get wrong.
+// velocity (W) with a bounded current ceiling (L, default 1 A, max 3 A).
+// EVERY motion auto-stops after 10 s. Voltages are fixed (0.3 V open-loop,
+// 12 V closed-loop ceiling); only speed and current have bounded commands.
 //
 // Wiring (MKS ESP32 FOC V2.0, M1): motor 3-phase to M1 output, AS5600 to
 // SDA23/SCL5 (bus 1, 0x36, magnet diametral on the shaft end, 0.5-3 mm gap),
@@ -35,13 +36,21 @@ constexpr int kPolePairs = 20;  // 36N40P; count magnets (/2) to confirm.
 constexpr int kVinPin = 13;
 constexpr float kVinRatio = 8.5f, kVinGateV = 10.0f;  // reasoned pick, not measured.
 // USER bench envelope: 12 V / 6 A max.
-constexpr float kOpenV = 0.3f, kAlignV = 0.3f;
-constexpr float kCurLimA = 1.0f, kVoltLimV = 1.0f, kVelLimRps = 5.0f;
+constexpr float kOpenV = 0.3f, kAlignV = 0.3f;  // fixed: 1.61 A stall.
+constexpr float kCurLimA = 1.0f;   // default closed-loop ceiling; L raises it.
+constexpr float kCurMaxA = 3.0f;   // L hard cap: 3 A << 4 A trip, I2R = 1.7 W.
+constexpr float kClVlimV = 12.0f;  // closed-loop ceiling: the FOC current loop
+                                   // (not this) bounds torque. BEMF at the 10 rps
+                                   // test cap is ~6.7 V, so 12 V leaves margin;
+                                   // a saturated fault is caught by the OC trips.
+constexpr float kVelMaxRps = 10.0f;  // test cap: ~600 rpm on the 12 V rail.
 constexpr float kOcOlA = 4.0f;
 constexpr uint32_t kOcOlMs = 500;
 constexpr float kOcClA = 5.0f;
 constexpr uint32_t kOcClMs = 200;
+constexpr float kAdcSatA = 6.47f;  // 0.98 * 6.6 A full scale: unmeasurable = fault.
 constexpr uint32_t kRunMs = 10000, kCoolMs = 10000;  // every motion stops itself.
+constexpr uint32_t kSpdMs = 500;  // #SPD telemetry while running.
 }  // namespace cfg
 
 BLDCDriver3PWM driver(cfg::kPwmA, cfg::kPwmB, cfg::kPwmC, cfg::kGateEn);
@@ -58,7 +67,9 @@ uint32_t t0ms = 0;
 uint32_t cool_until_ms = 0;
 bool over = false;
 uint32_t over_since_ms = 0;
+uint32_t last_spd_ms = 0;
 float target = 0.0f;
+float user_current_limit = cfg::kCurLimA;
 }  // namespace st
 
 float vinV() { return analogReadMilliVolts(cfg::kVinPin) * cfg::kVinRatio / 1000.0f; }
@@ -92,7 +103,7 @@ void stop(const __FlashStringHelper* why) {
   st::running = false;
   st::over = false;
   st::target = 0.0f;
-  motor.voltage_limit = cfg::kVoltLimV;
+  motor.voltage_limit = cfg::kClVlimV;
   if (why != nullptr) Serial.println(why);
 }
 
@@ -134,6 +145,11 @@ void poll() {
   const float trip_a = openloop ? cfg::kOcOlA : cfg::kOcClA;
   const uint32_t trip_ms = openloop ? cfg::kOcOlMs : cfg::kOcClMs;
   const float imag = phaseMaxA();
+  if (imag >= cfg::kAdcSatA) {
+    // Unmeasurable current: the controller is flying blind (shunt/gain/wiring).
+    stop(F("#OC_SAT current sense at full scale"));
+    return;
+  }
   if (imag > trip_a) {
     if (!st::over) {
       st::over = true;
@@ -151,6 +167,13 @@ void poll() {
     motor.loopFOC();
     motor.move(st::target);
   }
+  if (now - st::last_spd_ms > cfg::kSpdMs) {
+    st::last_spd_ms = now;
+    Serial.print(F("#SPD "));
+    Serial.print(motor.shaft_velocity, 1);
+    Serial.print(F(" rad/s Iq "));
+    Serial.println(motor.current.q, 2);
+  }
 }
 
 void onLine(const String& line) {
@@ -167,8 +190,20 @@ void onLine(const String& line) {
   if (cmd == '?') {
     Serial.println(F("O [rps] open-loop spin, fixed 0.3 V (default 1 rps, max 2)"));
     Serial.println(F("C       align with AS5600, prints zero_elec"));
-    Serial.println(F("W <rps> closed-loop velocity, needs C, max 0.8 rps"));
+    Serial.print(F("L [amps] current ceiling 0.1-"));
+    Serial.print(cfg::kCurMaxA, 1);
+    Serial.println(F(" A (default 1.0)"));
+    Serial.println(F("W <rps> closed-loop velocity, needs C, max 10 rps"));
     Serial.println(F("S       stop. Every motion auto-stops after 10 s."));
+    return;
+  }
+  if (cmd == 'L') {
+    float amps = arg == 0.0f ? cfg::kCurLimA : arg;
+    if (amps < 0.1f) amps = 0.1f;
+    if (amps > cfg::kCurMaxA) amps = cfg::kCurMaxA;
+    st::user_current_limit = amps;
+    Serial.print(F("#CUR_LIM "));
+    Serial.println(amps, 2);
     return;
   }
   if (!motionAllowed()) return;
@@ -204,11 +239,11 @@ void onLine(const String& line) {
       return;
     }
     float rps = arg;
-    if (rps > 0.8f) rps = 0.8f;  // 0.8 rps = 5.0 rad/s = kVelLimRps.
-    if (rps < -0.8f) rps = -0.8f;
+    if (rps > cfg::kVelMaxRps) rps = cfg::kVelMaxRps;
+    if (rps < -cfg::kVelMaxRps) rps = -cfg::kVelMaxRps;
     motor.controller = MotionControlType::velocity;
-    motor.current_limit = cfg::kCurLimA;
-    motor.voltage_limit = cfg::kVoltLimV;
+    motor.current_limit = st::user_current_limit;
+    motor.voltage_limit = cfg::kClVlimV;
     st::target = rps * _2PI;
     st::t0ms = millis();
     st::running = true;
@@ -237,9 +272,9 @@ void setup() {
 
   motor.torque_controller = TorqueControlType::foc_current;
   motor.controller = MotionControlType::torque;
-  motor.current_limit = cfg::kCurLimA;
-  motor.velocity_limit = cfg::kVelLimRps;
-  motor.voltage_limit = cfg::kVoltLimV;
+  motor.current_limit = st::user_current_limit;
+  motor.velocity_limit = cfg::kVelMaxRps * _2PI;
+  motor.voltage_limit = cfg::kClVlimV;
   motor.voltage_sensor_align = cfg::kAlignV;
   motor.PID_current_q.P = 1.0f;  // ARTICLE (5010) baseline; bench-tune on LA8308.
   motor.PID_current_q.I = 500.0f;

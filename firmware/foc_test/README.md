@@ -12,8 +12,8 @@ evolves.
 | Supply | 12 V, 6 A max bench | USER envelope; VIN gate 10 V |
 | Open loop `O` | fixed 0.3 V → 1.61 A stall | 0.3/0.186 Ω |
 | Align `C` | fixed 0.3 V | same as above |
-| Closed loop `W` | fixed 1.0 A, 1.0 V ceiling → 5.38 A stall max | under 6 A and 6.6 A ADC full scale |
-| Overcurrent | open loop 4 A/500 ms, closed loop 5 A/200 ms | hard-fault backstop |
+| Closed loop `W` | `L` 0.1–3.0 A (default 1.0), 12 V ceiling, max 10 rps (~600 rpm) | current loop bounds torque; BEMF at 10 rps ~6.7 V so 12 V leaves margin |
+| Overcurrent | open loop 4 A/500 ms, closed loop 5 A/200 ms, ADC full scale trips now | hard-fault backstops |
 | Run cap | **every motion auto-stops after 10 s**; open loop then cools down 10 s | test-only rule |
 
 Motor: LA8308 KV90, 20 pole pairs (36N40P — count the magnets ÷2 to confirm).
@@ -38,9 +38,15 @@ cd firmware/foc_test
 ```
 O       open-loop spin at 1 rps (arg optional, max 2 rps)
 C       align with AS5600, prints #ZERO_ELEC
-W 0.5   closed-loop velocity in rps (needs C, max 0.8 rps)
-S       stop. ? shows this list.
+L [amps] current ceiling 0.1-3.0 A (default 1.0)
+W <rps> closed-loop velocity in rps (needs C, max 10 rps)
+S       stop. ? shows this list. Every motion auto-stops after 10 s.
 ```
+
+High-speed run-up: `C`, then `L 1.0`, `W 1`, `W 3`, `W 5`, `W 8`, `W 10`,
+watching `#SPD` (rad/s) and supply current at each step. Each `W` stops
+itself after 10 s. If `#OC`/`#OC_SAT` trips, stop: check the magnet gap,
+phase wiring, and the shunt marking before retrying.
 
 Expected first spin: `O` turns the free motor, telemetry shows `#IOL` ≈ 1.6 A
 or less. If `C` fails, check the magnet gap/direction and the SDA/SCL wiring —

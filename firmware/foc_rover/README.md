@@ -151,7 +151,7 @@ as bare lines in the CSV stream.
 | `firmware/main_board/` | MSTE binary protocol: steering servos, arm, gripper; no FOC |
 | `firmware/foc_winch/` | single-channel M1 winch, text console, flashed for bench spins |
 | `firmware/foc_rover/` | this project: 3 axle roles, M0+M1, bench open loop now, AS5600 closed loop later |
-| `firmware/foc_test/` | spin-test only: fixed 0.3 V open loop + align + 1 A closed loop, 10 s auto-stop |
+| `firmware/foc_test/` | spin-test only: fixed 0.3 V open loop + align, bounded L/W, 10 s auto-stop |
 
 `firmware/foc_winch` is intentionally not modified. The two projects pin the same
 `espressif32@6.9.0`; building them against the same `~/.platformio` still has the
