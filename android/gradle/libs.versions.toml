@@ -6,7 +6,7 @@ appcompat = "1.7.0"
 activity-ktx = "1.9.3"
 lifecycle = "2.8.6"
 camerax = "1.3.4"
-onnxruntime-mobile = "1.20.0"
+onnxruntime-mobile = "1.18.0"
 junit = "4.13.2"
 
 [libraries]

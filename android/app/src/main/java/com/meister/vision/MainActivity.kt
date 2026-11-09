@@ -11,7 +11,7 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
-import androidx.camera.core.toBitmap
+// toRgbBitmap は同パッケージ (ImageUtil.kt) の拡張関数。
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import com.meister.vision.databinding.ActivityMainBinding
@@ -94,7 +94,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun analyze(image: ImageProxy) {
         try {
-            val bitmap = image.toBitmap()
+            val bitmap = image.toRgbBitmap()
             // 配線確認用の等方ストレッチ。本番推論では letterbox に置き換える (tuning)。
             val scaled = Bitmap.createScaledBitmap(bitmap, 320, 320, true)
             val start = System.nanoTime()
