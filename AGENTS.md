@@ -19,8 +19,9 @@ simulation serves as the preliminary stage for real-machine development.
   Aiming at automatic grasping and automatic control via image recognition (features/07-10)
 
 The MCU layer (ESP32 firmware) is `firmware/main_board/` (PlatformIO + Arduino).
-`firmware/foc/` (single-channel winch) and `firmware/foc_drive/` (rover axle roles)
-are separate projects (MKS ESP32 FOC V2.0).
+`firmware/foc_winch/` (single-channel winch, flashed for bench spins),
+`firmware/foc_rover/` (rover axle roles) and `firmware/foc_test/` (spin-test
+only, fixed envelope) are separate projects (MKS ESP32 FOC V2.0).
 
 Goals: G1 auto-drive / G2 arm retrieval / G3 manual operation ([docs/やりたいこと.md](docs/やりたいこと.md)).
 

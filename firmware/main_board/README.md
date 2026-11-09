@@ -219,12 +219,12 @@ pio test -e native
 `pio test -e native` は ESP32 不要で、エンコード/デコードのラウンドトリップ・
 チェックサム検証・不正フレーム（ヘッダ/チェックサム/未知種別/途中切れ）の拒否を検証する。
 
-## `firmware/foc/` — 別 PlatformIO プロジェクト
+## `firmware/foc_winch/` — 別 PlatformIO プロジェクト
 
-`firmware/foc/` は MKS ESP32 FOC V2.0（M1 チャンネル）を SimpleFOC でウィンチとして回すための
+`firmware/foc_winch/` は MKS ESP32 FOC V2.0（M1 チャンネル）を SimpleFOC でウィンチとして回すための
 **独立した PlatformIO プロジェクト**。独自の `platformio.ini` と `.pio/` を持ち、
 **本ファームウェアのビルドには含まれない**。MSTE のバイナリプロトコルとは共有するコードが
-なく、`cd firmware/main_board && pio run` は `firmware/foc/` を読まない。
+なく、`cd firmware/main_board && pio run` は `firmware/foc_winch/` を読まない。
 
 ```bash
 cd firmware/foc
@@ -233,7 +233,7 @@ pio device monitor -b 115200    # C / L / Z / T / W / A / S / ?
 pio test -e native               # コンソール層のホスト側テスト
 ```
 
-配線表・コマンド一覧・安全上の注意・要確認値は [`firmware/foc/README.md`](../foc/README.md) にある。
+配線表・コマンド一覧・安全上の注意・要確認値は [`firmware/foc_winch/README.md`](../foc_winch/README.md) にある。
 
 ## サーボ制御の設計
 

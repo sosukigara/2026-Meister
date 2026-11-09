@@ -26,7 +26,7 @@
 ```
 
 - シミュレーション（Gazebo）と実機は**同じロボットの異なる段階**。シミュレーションは実機開発の前段。
-- `firmware/foc/` は別 PlatformIO プロジェクト（MKS ESP32 FOC V2.0 ウィンチ）。`firmware/main_board/` とは独立。
+- `firmware/foc_winch/` は別 PlatformIO プロジェクト（MKS ESP32 FOC V2.0 ウィンチ、ベンチで書き込む方）。`firmware/main_board/` とは独立。走行用は `firmware/foc_rover/`。
 
 ## 2. レイヤーと依存方向（片方向のみ）
 

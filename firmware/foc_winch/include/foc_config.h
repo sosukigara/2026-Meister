@@ -11,7 +11,7 @@
 //            file 3_dual_as5600_test.ino (M0/M1 I2C buses verified 2026-11-09).
 //   ARTICLE  the Japanese article sketch this firmware follows (5010/24 V era gains)
 //   SIMPLEFOC SimpleFOC 2.2.1 sources read at
-//            firmware/foc/.pio/libdeps/foc_m1/Simple FOC/src
+//            firmware/foc_winch/.pio/libdeps/foc_m1/Simple FOC/src
 //   DATASHEET Infineon AS5600 datasheet, Fig 21 (register map) + Fig 22 (CONF).
 //            CONF high byte 0x07 bits [1:0] = SF slow-filter, 0x03 = 2x fastest.
 //            CONF is volatile: reset to OTP at power-up (unprogrammed = 0 = 16x),
@@ -77,7 +77,7 @@ constexpr float kPhaseResistanceVendorOhms = 0.186f;  // VENDOR, KV90 row. Sizin
                                                       // only, never a control gain.
 // 36N40P -> 20 pole pairs. Vendor pages do not publish the pole count; two
 // independent ODrive community reports plus a working ODrive config for the
-// Eaglepower 8308 90KV agree on 20 PP (same evidence as firmware/foc_drive).
+// Eaglepower 8308 90KV agree on 20 PP (same evidence as firmware/foc_rover).
 // TODO(magnets): count the rotor magnets (/2) before trusting closed loop.
 constexpr int kPolePairs = 20;
 constexpr float kGearRatio = 6.0f;     // documented only, no control path consumes it

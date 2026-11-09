@@ -2,7 +2,8 @@
 
 One source, three binaries for the 6-wheel rover: **FRONT / MID / REAR**. Each board drives
 the two wheels of one axle (M0 = left, M1 = right). This is a sibling of
-[`../foc/`](../foc/README.md) (the single-channel winch) and deliberately shares no code
+[`../foc_winch/`](../foc_winch/README.md) (the single-channel winch, the one flashed
+for bench spins) and deliberately shares no code
 with it, so the winch's verified behaviour is untouched.
 
 **Status: bench bring-up. AS5600 is now in use (user 2026-11-09): each channel
@@ -47,7 +48,7 @@ Boot alignment is off: `C` is an explicit command.
 ## Build
 
 ```bash
-cd firmware/foc_drive
+cd firmware/foc_rover
 ~/.local/bin/pio run -e foc_front -e foc_mid -e foc_rear
 ~/.local/bin/pio test -e native
 ```
@@ -148,12 +149,13 @@ as bare lines in the CSV stream.
 | Project | Role |
 |---|---|
 | `firmware/main_board/` | MSTE binary protocol: steering servos, arm, gripper; no FOC |
-| `firmware/foc/` | single-channel M1 winch, sensorless bring-up, text console |
-| `firmware/foc_drive/` | this project: 3 axle roles, M0+M1, bench open loop now, AS5600 closed loop later |
+| `firmware/foc_winch/` | single-channel M1 winch, text console, flashed for bench spins |
+| `firmware/foc_rover/` | this project: 3 axle roles, M0+M1, bench open loop now, AS5600 closed loop later |
+| `firmware/foc_test/` | spin-test only: fixed 0.3 V open loop + align + 1 A closed loop, 10 s auto-stop |
 
-`firmware/foc` is intentionally not modified. The two projects pin the same
+`firmware/foc_winch` is intentionally not modified. The two projects pin the same
 `espressif32@6.9.0`; building them against the same `~/.platformio` still has the
-`tool-esptoolpy` reinstall quirk documented in `../foc/README.md`. Use a separate
+`tool-esptoolpy` reinstall quirk documented in `../foc_winch/README.md`. Use a separate
 `PLATFORMIO_CORE_DIR` if that becomes painful.
 
 ## Verification status

@@ -8,7 +8,7 @@
 - **ステアリングサーボ**: 種類は要確定（Feetech STS3215 等のシリアルバスサーボ想定）。6個を UART バス1系統でデイジーチェーン接続できる。
 - **駆動モータ**: DC ギヤードモータ想定。エンコーダ付きにすると速度制御・オドメトリ精度が上がる。
 - **モータドライバ**: ESP32 の PWM 出力からモータドライバモジュール（例: TB6612 / DRV8833 / BTS7960 等）を介して駆動。
-- **FOC 案**: MKS ESP32 FOC V2.0（1 台 2 ch）を 3 台使い、PC と USB 3 リンクで 6 輪を回す。ベンチ版は `firmware/foc_drive/` に実装済み。詳細と前提は下記「FOC ドライバ 3 台で 6 輪を回す構成」。
+- **FOC 案**: MKS ESP32 FOC V2.0（1 台 2 ch）を 3 台使い、PC と USB 3 リンクで 6 輪を回す。ベンチ版は `firmware/foc_rover/` に実装済み。詳細と前提は下記「FOC ドライバ 3 台で 6 輪を回す構成」。
 - **走行モード**: 全輪独立操舵により「前進・後進・斜行・超信地旋回」が可能。Nav2 の経路追従と整合させる。
 - 電源容量（モータ6個 + サーボ6個 + アーム）の見積もりが必要。
 
@@ -23,7 +23,7 @@
 ## FOC ドライバ 3 台で 6 輪を回す構成（2026-11-03 追記・ベンチ版実装）
 
 > 前提: MKS ESP32 FOC V2.0（1 台 2 ch）を 3 台、PC と USB で 3 リンク。
-> ステータス: **構成案 + ベンチ版実装（`firmware/foc_drive/`）。実機検証は ✗ 未検証**。
+> ステータス: **構成案 + ベンチ版実装（`firmware/foc_rover/`）。実機検証は ✗ 未検証**。
 > 下記の帯域・skew は計算値で、測定値ではない。
 
 ### 構成
@@ -40,7 +40,7 @@ PC (ROS 2)
 - M0 と M1 はドライバ素子・電流センサ・I2C バスが独立（M0: bus 0 / SDA 19 / SCL 18、
   M1: bus 1 / SDA 23 / SCL 5）。AS5600 はどちらも 0x36 だがバスが別なので、2 個を
   同じ基板に付けてもアドレス衝突しない
-  （[firmware/foc/docs/bringup_notes.md](../../firmware/foc/docs/bringup_notes.md) §1）。
+  （[firmware/foc_winch/docs/bringup_notes.md](../../firmware/foc_winch/docs/bringup_notes.md) §1）。
 - **ENABLE は M0/M1 とも GPIO 12 で共有**（公式例 `BLDCDriver3PWM(..., 12)` を両 ch に
   渡している）。片 ch だけ disable できない。片輪の故障を隔離するなら電源側で切る。
 - 基板は **AP30H80Q のディスクリート MOSFET + ゲートドライバ**で、6A/ch は
@@ -67,37 +67,37 @@ PC (ROS 2)
 
 | # | 項目 | 現状 |
 |---|---|---|
-| 1 | 車輪用モータ・減速比・車輪径 | ★要確認★ 現行 `foc_drive/include/foc_config.h` は LA8308 KV90（20 極対 = 40 磁石、ベンチ上限 5 rev/s）。減速比・車輪径は未確定 |
+| 1 | 車輪用モータ・減速比・車輪径 | ★要確認★ 現行 `foc_rover/include/foc_config.h` は LA8308 KV90（20 極対 = 40 磁石、ベンチ上限 5 rev/s）。減速比・車輪径は未確定 |
 | 2 | AS5600 を 6 輪すべてに付けるか | ★要確認★ 無いと閉ループ速度制御・オドメトリができない |
 | 3 | 走行方式（スキッドステア / 全輪操舵） | ★要確認★ 指令の作り方が変わる |
 | 4 | 3 台の役割と USB の固定方法 | ★要確認★ 下記「USB・列挙」 |
 | 5 | 3 台とも MKS ESP32 FOC V2.0 か | ★要確認★ |
 
-### 現行 `firmware/foc` とのギャップ（そのままでは使えない）
+### 現行 `firmware/foc_winch` とのギャップ（そのままでは使えない）
 
-> 2026-11-03: 走行用の `firmware/foc_drive/` を追加した（3 role × M0/M1、ベンチ
+> 2026-11-03: 走行用の `firmware/foc_rover/` を追加した（3 role × M0/M1、ベンチ
 > オープンループ、`M/P/V` コマンド、50 Hz 2 行テレメトリ）。AS5600 は未接続なので
 > 閉ループはゲートしたまま。詳細は
-> [firmware/foc_drive/README.md](../../firmware/foc_drive/README.md)。以下はウィンチ
+> [firmware/foc_rover/README.md](../../firmware/foc_rover/README.md)。以下はウィンチ
 > との差分と、まだ残っている穴。
 
-- **M1 単 ch・センサレス前提**（ウィンチ）。`firmware/foc` の `FocDrive` は 1 モータ分。
+- **M1 単 ch・センサレス前提**（ウィンチ）。`firmware/foc_winch` の `FocDrive` は 1 モータ分。
 - **閉ループ（`W`）は AS5600 必須**。無いと `O`（オープンループ）だけで、速度制御・
   保持・オドメトリができない。しかも `kOpenLoopTimeoutMs = 10 s` で自動停止し、
   10 秒クールダウンに入る。走行には使えない。
 - **起動ごとに `initFOC()`**（`FocDrive::begin()`）。6 モータ分を毎回回すのは時間も
   失敗率も現実的でない → キャリブレーション値を NVS に保存し、ボード ID を持たせる。
-  現状は EEPROM 保存を意図的に未実装（[firmware/foc/README.md](../../firmware/foc/README.md)）。
+  現状は EEPROM 保存を意図的に未実装（[firmware/foc_winch/README.md](../../firmware/foc_winch/README.md)）。
 - **プロトコルはテキスト行でチェックサム無し**。`W 2.0\n` 程度なら実用だが、駆動用は
   誤 1 文字が別指令になりうる。バイナリ + チェックサムか、少なくとも行チェックサムを検討。
 - **低電圧ゲート 20.0 V**（`kUndervoltageVolts`）。24 V バッテリの負荷降下で誤作動しうる。
   しきい値とヒステリシスは実測で決める（現状 20.0 V は未測定、
-  [bringup_notes §8](../../firmware/foc/docs/bringup_notes.md)）。
-- **既存のウィンチを壊さない**。`firmware/foc` はウィンチ用として残し、走行用は
-  `firmware/foc_drive/` に分けた（R7）。
-- **ビルド環境**: `firmware/foc`（espressif32@6.9.0）と `firmware/main_board`（pioarduino）を
+  [bringup_notes §8](../../firmware/foc_winch/docs/bringup_notes.md)）。
+- **既存のウィンチを壊さない**。`firmware/foc_winch` はウィンチ用として残し、走行用は
+  `firmware/foc_rover/` に分けた（R7）。
+- **ビルド環境**: `firmware/foc_winch`（espressif32@6.9.0）と `firmware/main_board`（pioarduino）を
   同じ `~/.platformio` でビルドすると、片方のビルドが他方の `tool-esptoolpy` を
-  無効化する（[firmware/foc/README.md](../../firmware/foc/README.md) 既知）。走行用を
+  無効化する（[firmware/foc_winch/README.md](../../firmware/foc_winch/README.md) 既知）。走行用を
   別プロジェクトにするなら `PLATFORMIO_CORE_DIR` を分ける。
 
 ### 安全（これが無いと「大丈夫」とは言えない）

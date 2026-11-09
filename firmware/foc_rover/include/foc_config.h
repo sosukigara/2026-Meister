@@ -13,7 +13,7 @@
 //   TODO      not confirmed by a primary source -> listed in README.md
 //
 // This project drives the two wheels of one axle (M0 = left, M1 = right). It is a sibling
-// of firmware/foc (the single-channel winch) and shares no code with it.
+// of firmware/foc_winch (the single-channel winch) and shares no code with it.
 
 #include "foc_limits.h"
 

@@ -59,7 +59,7 @@ normal ceiling. At 5 rad/s on KV90, BEMF ~0.53 V + 1 A * 0.186 Ω ~ 0.19 V =
 Pole pairs: vendor pages do not publish the pole count, so 20 PP is
 secondary-source only: two independent ODrive community reports plus a working
 ODrive config for the Eaglepower 8308 90KV (same evidence as
-`firmware/foc_drive`, see its `foc_config.h` links). Count the rotor magnets (/2)
+`firmware/foc_rover`, see its `foc_config.h` links). Count the rotor magnets (/2)
 before trusting closed loop.
 
 > **GPIO12 is an ESP32 strapping pin.** Do **not** add a pull-up to it. A pull-up holds
@@ -94,10 +94,10 @@ Symptom: `pio run -e esp32dev` run from `firmware/main_board/` fails once, immed
 (`FRAMEWORK_DIR` resolves to `None` while the core is being reinstalled). The second
 `pio run -e esp32dev` succeeds. **✗ 未検証** root cause of the reinstall loop itself.
 
-This is not caused by anything in `foc/`'s sources — an empty scratch project pinned to
+This is not caused by anything in `foc_winch/`'s sources — an empty scratch project pinned to
 `espressif32@6.9.0` reproduces it identically. The durable fix is to give the two projects
 separate `PLATFORMIO_CORE_DIR`s, which is left to the maintainer because it would discard the
-already-verified package set in `firmware/foc/.pio/`.
+already-verified package set in `firmware/foc_winch/.pio/`.
 
 ## Commands
 
