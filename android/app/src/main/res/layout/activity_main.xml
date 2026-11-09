@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.meister.vision.DetectionOverlayView
+        android:id="@+id/overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/hudFps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- fps"
+            android:textColor="#00FF00"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/hudMs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- ms"
+            android:textColor="#00FF00"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/hudCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- objs"
+            android:textColor="#00FF00"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/thresholdLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="thr 0.25"
+            android:textColor="#00FF00"
+            android:textSize="16sp" />
+
+        <SeekBar
+            android:id="@+id/thresholdBar"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:max="100"
+            android:progress="25" />
+
+        <Button
+            android:id="@+id/switchCameraButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/switch_camera" />
+    </LinearLayout>
+</FrameLayout>
