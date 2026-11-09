@@ -10,7 +10,7 @@ evolves.
 | Item | Value | Sizing |
 |---|---|---|
 | Supply | 12 V, 6 A max bench | USER envelope; VIN gate 10 V, sag gate 9 V/500 ms while running |
-| Open loop `O` | fixed 0.3 V → 1.61 A stall | 0.3/0.186 Ω |
+| Open loop `O` | fixed 0.3 V → **2.13 A measured** (2026-11-09) | 0.3 V / 0.14 Ω; 0.186 Ω is line-to-line |
 | Align `C` | fixed 0.3 V | same as above |
 | Closed loop `W` | `L` 0.1–3.0 A (default 1.0), 12 V ceiling, max 10 rps (~600 rpm) | current loop bounds torque; BEMF at 10 rps ~6.7 V so 12 V leaves margin |
 | Overcurrent | open loop 4 A/500 ms, closed loop 5 A/200 ms, ADC full scale trips now | hard-fault backstops |
@@ -41,16 +41,26 @@ O       open-loop spin at 1 rps (arg optional, max 2 rps)
 C       align with AS5600, prints #ZERO_ELEC
 L [amps] current ceiling 0.1-3.0 A (default 1.0)
 W <rps> closed-loop velocity in rps (needs C, max 10 rps)
+I       probe phase currents once (wiring/shunt check)
 S       stop. ? shows this list. Every motion auto-stops after 10 s.
 ```
+
+If `C` prints `#CAL` but `W` stays gated, rebuild with
+`PLATFORMIO_BUILD_FLAGS="-DFOC_TEST_MONITOR=1"` to see SimpleFOC's own `MOT:`
+trace. `MOT: Align error!` means the phase-current 2:1 split test failed, and
+`I` then shows which phase is not carrying its share: with all three phases
+connected, driving one must read ~2x the returning one. A ratio near 1 or a
+much weaker third phase is a wiring fault, not a setting.
 
 High-speed run-up: `C`, then `L 1.0`, `W 1`, `W 3`, `W 5`, `W 8`, `W 10`,
 watching `#SPD` (rad/s) and supply current at each step. Each `W` stops
 itself after 10 s. If `#OC`/`#OC_SAT` trips, stop: check the magnet gap,
 phase wiring, and the shunt marking before retrying.
 
-Expected first spin: `O` turns the free motor, telemetry shows `#IOL` ≈ 1.6 A
-or less. If `C` fails, check the magnet gap/direction and the SDA/SCL wiring —
+Expected first spin: `O` turns the free motor. `I` then shows ~2.1 A on the
+driven phase splitting ~2:1 into the returning one; a ratio near 1 means a phase
+wire is not landed and SimpleFOC will refuse closed loop (`MOT: Align error!`).
+If `C` fails, check the magnet gap/direction and the SDA/SCL wiring —
 not the voltages (they are fixed).
 
 ## Deliberately missing

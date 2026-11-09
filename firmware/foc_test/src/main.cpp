@@ -15,10 +15,12 @@
 // 12 V supply current-limited with a fuse in series (no reverse protection).
 // Keep the drum/wheel free: boot aligns the motor when a sensor is present.
 //
-// Envelope math (R = 0.186 ohm vendor, KV90):
-//   open-loop/align 0.3 V -> 1.61 A stall; closed-loop ceiling 1.0 V ->
-//   5.38 A stall max (under the 6 A bench envelope and 6.6 A ADC full scale);
-//   closed-loop current fixed at 1.0 A; BEMF at 5 rad/s ~0.53 V + 0.19 V IR.
+// Envelope math (VENDOR R = 0.186 ohm line-to-line, KV90; measured 2026-11-09:
+//   driving one phase at 0.3 V drew 2.13 A, so the whole path is phase +
+//   phase/2 = 0.14 ohm and 0.186 is line-to-line, not per-phase). Open loop and
+//   align therefore draw ~2.1 A, not the 1.6 A the old per-phase reading gave;
+//   both stay under the 4 A open-loop trip and the 6 A bench envelope.
+//   Closed-loop current is fixed at 1.0 A; BEMF at 10 rps ~6.7 V fits in 12 V.
 
 #include <Arduino.h>
 
@@ -40,7 +42,8 @@ constexpr int kPolePairs = 20;  // 36N40P; count magnets (/2) to confirm.
 constexpr int kVinPin = 13;
 constexpr float kVinRatio = 8.5f, kVinGateV = 10.0f;  // reasoned pick, not measured.
 // USER bench envelope: 12 V / 6 A max.
-constexpr float kOpenV = 0.3f, kAlignV = 0.3f;  // fixed: 1.61 A stall.
+constexpr float kOpenV = 0.3f, kAlignV = 0.3f;  // fixed: 2.13 A measured on
+                                                // 2026-11-09 (path 0.14 ohm).
 constexpr float kCurLimA = 1.0f;   // default closed-loop ceiling; L raises it.
 constexpr float kCurMaxA = 3.0f;   // L hard cap: 3 A << 4 A trip, I2R = 1.7 W.
 constexpr float kClVlimV = 12.0f;  // closed-loop ceiling: the FOC current loop
@@ -150,7 +153,47 @@ bool align(const __FlashStringHelper* tag) {
   Serial.print(tag);
   Serial.print(' ');
   Serial.println(motor.zero_electric_angle, 4);
+  // A failed initFOC still yields a zero-angle float, so without this line a
+  // broken alignment is indistinguishable from a good one until W is refused.
+  if (!ok) Serial.println(F("#CAL_FAIL initFOC failed, closed loop stays gated"));
   return ok;
+}
+
+void currentProbe() {
+  // Mirrors the stimulus InlineCurrentSense::driverAlign() applies one phase at
+  // a time at the align voltage, so these numbers explain its PASS/FAIL directly
+  // instead of guessing at the shunt, the amp or the phase wiring. With all three
+  // phases connected the driven phase must read ~2x the returning phase.
+  motor.enable();
+  delay(50);
+  const PhaseCurrent_s z = cs.getPhaseCurrents();
+  Serial.print(F("#CUR_OFF "));
+  Serial.print(z.a, 3);
+  Serial.print(' ');
+  Serial.println(z.b, 3);
+  for (int ph = 0; ph < 3; ++ph) {
+    driver.setPwm(ph == 0 ? cfg::kAlignV : 0.0f, ph == 1 ? cfg::kAlignV : 0.0f,
+                  ph == 2 ? cfg::kAlignV : 0.0f);
+    delay(200);
+    PhaseCurrent_s c = cs.getPhaseCurrents();
+    for (int i = 0; i < 100; i++) {
+      const PhaseCurrent_s c1 = cs.getPhaseCurrents();
+      c.a = c.a * 0.6f + 0.4f * c1.a;
+      c.b = c.b * 0.6f + 0.4f * c1.b;
+      delay(3);
+    }
+    driver.setPwm(0, 0, 0);
+    delay(100);
+    Serial.print(F("#CUR_DRIVE_"));
+    Serial.print(ph == 0 ? 'A' : (ph == 1 ? 'B' : 'C'));
+    Serial.print(F(" ia "));
+    Serial.print(c.a, 3);
+    Serial.print(F(" ib "));
+    Serial.print(c.b, 3);
+    Serial.print(F(" ratio "));
+    Serial.println(c.b != 0.0f ? fabs(c.a / c.b) : 0.0f, 3);
+  }
+  motor.disable();
 }
 
 void poll() {
@@ -242,6 +285,7 @@ void onLine(const String& line) {
     Serial.print(cfg::kCurMaxA, 1);
     Serial.println(F(" A (default 1.0)"));
     Serial.println(F("W <rps> closed-loop velocity, needs C, max 10 rps"));
+    Serial.println(F("I       probe phase currents once (shunt/amp check)"));
     Serial.println(F("S       stop. O/C need a stopped motor; W retargets live."));
     Serial.println(F("Every motion auto-stops after 10 s."));
     return;
@@ -259,6 +303,14 @@ void onLine(const String& line) {
     return;
   }
   if (!motionAllowed()) return;
+  if (cmd == 'I') {
+    if (st::running) {
+      Serial.println(F("#ERR stop first (S)"));
+      return;
+    }
+    currentProbe();
+    return;
+  }
   if (cmd == 'O') {
     if (st::running) {
       Serial.println(F("#ERR stop first (S)"));
@@ -326,6 +378,13 @@ void onLine(const String& line) {
 void setup() {
   Serial.begin(115200);
   Serial.setTimeout(20);  // Arduino default 1000 ms would stall loop() a full second.
+#ifdef FOC_TEST_MONITOR
+  // SimpleFOC only reports why initFOC() failed through monitor_port. Build with
+  // PLATFORMIO_BUILD_FLAGS="-DFOC_TEST_MONITOR=1" when C fails silently: the
+  // MOT: trace separates a weak-align stall from a bad direction/PP/current-sense
+  // result, and this firmware otherwise prints no diagnostic for it.
+  motor.useMonitoring(Serial);
+#endif
   i2c.begin(cfg::kSda, cfg::kScl, cfg::kI2cHz);
   // Fast mode must land before the first sensor read. A NACK is the
   // sensor-absent signal: closed loop stays gated, open loop still works.
