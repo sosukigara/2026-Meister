@@ -1,10 +1,14 @@
-// Spin-test-only firmware: one LA8308 KV90 on M1, fixed safe envelope.
-// Bench use only. Never flashed to production (that is firmware/foc_winch).
+// Spin-test-only firmware: one LA8308 KV90 on M1, bounded safe envelope.
+// Bench use only. Production is firmware/foc_rover; this rig shares no code
+// with it on purpose.
 //
 // What it does: open-loop spin (O), explicit alignment (C), closed-loop
 // velocity (W) with a bounded current ceiling (L, default 1 A, max 3 A).
-// EVERY motion auto-stops after 10 s. Voltages are fixed (0.3 V open-loop,
-// 12 V closed-loop ceiling); only speed and current have bounded commands.
+// EVERY motion auto-stops after 10 s. Open-loop voltage is fixed at 0.3 V;
+// the closed-loop ceiling is 12 V so BEMF fits at 10 rps, and speed/current
+// stay inside the 12 V / 6 A envelope via the current loop plus OC trips.
+// Guards: O/C need a stopped motor, W retargets a running session, accel
+// ramp 30 rad/s^2, and supply sag + sensor loss stop a running test.
 //
 // Wiring (MKS ESP32 FOC V2.0, M1): motor 3-phase to M1 output, AS5600 to
 // SDA23/SCL5 (bus 1, 0x36, magnet diametral on the shaft end, 0.5-3 mm gap),
@@ -51,6 +55,12 @@ constexpr uint32_t kOcClMs = 200;
 constexpr float kAdcSatA = 6.47f;  // 0.98 * 6.6 A full scale: unmeasurable = fault.
 constexpr uint32_t kRunMs = 10000, kCoolMs = 10000;  // every motion stops itself.
 constexpr uint32_t kSpdMs = 500;  // #SPD telemetry while running.
+constexpr float kRampRps2 = 30.0f;  // velocity-loop accel cap: 0-62.8 rad/s in
+                                    // ~2.1 s. Reasoned pick for a free shaft;
+                                    // TODO(bench): raise if spin-up feels sluggish.
+constexpr uint32_t kHealthMs = 100;  // sensor/supply checks while running.
+constexpr float kVinRunV = 9.0f;  // sag gate while running (boot gate is 10 V).
+constexpr uint32_t kVinRunMs = 500;
 }  // namespace cfg
 
 BLDCDriver3PWM driver(cfg::kPwmA, cfg::kPwmB, cfg::kPwmC, cfg::kGateEn);
@@ -68,9 +78,19 @@ uint32_t cool_until_ms = 0;
 bool over = false;
 uint32_t over_since_ms = 0;
 uint32_t last_spd_ms = 0;
+uint32_t last_health_ms = 0;
+uint8_t nack_count = 0;
+bool vin_low = false;
+uint32_t vin_low_since_ms = 0;
 float target = 0.0f;
 float user_current_limit = cfg::kCurLimA;
 }  // namespace st
+
+bool sensorAlive() {
+  // Bare ACK ping: no register pointer change, so it never disturbs the angle reads.
+  i2c.beginTransmission(cfg::kAs5600Addr);
+  return i2c.endTransmission(true) == 0;
+}
 
 float vinV() { return analogReadMilliVolts(cfg::kVinPin) * cfg::kVinRatio / 1000.0f; }
 
@@ -102,6 +122,8 @@ void stop(const __FlashStringHelper* why) {
   motor.disable();
   st::running = false;
   st::over = false;
+  st::nack_count = 0;
+  st::vin_low = false;
   st::target = 0.0f;
   motor.voltage_limit = cfg::kClVlimV;
   if (why != nullptr) Serial.println(why);
@@ -161,6 +183,32 @@ void poll() {
   } else {
     st::over = false;
   }
+  // While spinning, a dead sensor (frozen angle) or a sagging supply is as
+  // dangerous as an overcurrent: check both at 10 Hz, stop on persistence.
+  if (now - st::last_health_ms > cfg::kHealthMs) {
+    st::last_health_ms = now;
+    if (vinV() < cfg::kVinRunV) {
+      if (!st::vin_low) {
+        st::vin_low = true;
+        st::vin_low_since_ms = now;
+      } else if (now - st::vin_low_since_ms > cfg::kVinRunMs) {
+        stop(F("#ERR supply sag, motion stopped"));
+        return;
+      }
+    } else {
+      st::vin_low = false;
+    }
+    if (!openloop) {
+      if (!sensorAlive()) {
+        if (++st::nack_count >= 2) {
+          stop(F("#ERR AS5600 lost mid-run"));
+          return;
+        }
+      } else {
+        st::nack_count = 0;
+      }
+    }
+  }
   if (openloop) {
     motor.move(st::target);
   } else {
@@ -194,7 +242,8 @@ void onLine(const String& line) {
     Serial.print(cfg::kCurMaxA, 1);
     Serial.println(F(" A (default 1.0)"));
     Serial.println(F("W <rps> closed-loop velocity, needs C, max 10 rps"));
-    Serial.println(F("S       stop. Every motion auto-stops after 10 s."));
+    Serial.println(F("S       stop. O/C need a stopped motor; W retargets live."));
+    Serial.println(F("Every motion auto-stops after 10 s."));
     return;
   }
   if (cmd == 'L') {
@@ -202,12 +251,19 @@ void onLine(const String& line) {
     if (amps < 0.1f) amps = 0.1f;
     if (amps > cfg::kCurMaxA) amps = cfg::kCurMaxA;
     st::user_current_limit = amps;
+    if (st::running && motor.controller == MotionControlType::velocity) {
+      motor.current_limit = amps;  // live-apply, like the rover drive does.
+    }
     Serial.print(F("#CUR_LIM "));
     Serial.println(amps, 2);
     return;
   }
   if (!motionAllowed()) return;
   if (cmd == 'O') {
+    if (st::running) {
+      Serial.println(F("#ERR stop first (S)"));
+      return;
+    }
     float rps = arg == 0.0f ? 1.0f : arg;
     if (rps > 2.0f) rps = 2.0f;
     if (rps < -2.0f) rps = -2.0f;
@@ -226,6 +282,10 @@ void onLine(const String& line) {
     return;
   }
   if (cmd == 'C') {
+    if (st::running) {
+      Serial.println(F("#ERR stop first (S): never align mid-spin"));
+      return;
+    }
     if (!st::sensor_ok) {
       Serial.println(F("#ERR no AS5600 (CONF NACK at boot)"));
       return;
@@ -241,6 +301,15 @@ void onLine(const String& line) {
     float rps = arg;
     if (rps > cfg::kVelMaxRps) rps = cfg::kVelMaxRps;
     if (rps < -cfg::kVelMaxRps) rps = -cfg::kVelMaxRps;
+    if (st::running) {
+      if (motor.controller != MotionControlType::velocity) {
+        Serial.println(F("#ERR stop first (S)"));
+        return;
+      }
+      st::target = rps * _2PI;  // retarget only: the 10 s cap keeps running.
+      Serial.println(F("#VELOCITY retarget"));
+      return;
+    }
     motor.controller = MotionControlType::velocity;
     motor.current_limit = st::user_current_limit;
     motor.voltage_limit = cfg::kClVlimV;
@@ -284,6 +353,7 @@ void setup() {
   motor.LPF_current_d.Tf = 0.002f;
   motor.PID_velocity.P = 0.2f;
   motor.PID_velocity.I = 2.0f;
+  motor.PID_velocity.output_ramp = cfg::kRampRps2;  // no torque step on W jumps.
   motor.P_angle.P = 8.0f;
 
   Serial.print(F("#TEST foc_test_m1 VIN "));

@@ -5,16 +5,17 @@ production is [`../foc_winch/`](../foc_winch/README.md). This project shares no
 code with it on purpose: a test rig must keep working even while production
 evolves.
 
-## Fixed envelope (no L/Z commands exist)
+## Envelope (bounded commands, fixed voltages)
 
 | Item | Value | Sizing |
 |---|---|---|
-| Supply | 12 V, 6 A max bench | USER envelope; VIN gate 10 V |
+| Supply | 12 V, 6 A max bench | USER envelope; VIN gate 10 V, sag gate 9 V/500 ms while running |
 | Open loop `O` | fixed 0.3 V → 1.61 A stall | 0.3/0.186 Ω |
 | Align `C` | fixed 0.3 V | same as above |
 | Closed loop `W` | `L` 0.1–3.0 A (default 1.0), 12 V ceiling, max 10 rps (~600 rpm) | current loop bounds torque; BEMF at 10 rps ~6.7 V so 12 V leaves margin |
 | Overcurrent | open loop 4 A/500 ms, closed loop 5 A/200 ms, ADC full scale trips now | hard-fault backstops |
 | Run cap | **every motion auto-stops after 10 s**; open loop then cools down 10 s | test-only rule |
+| Motion guards | `O`/`C` need a stopped motor; `W` retargets a live session; accel ramp 30 rad/s²; AS5600 loss (2×NACK) stops a run | mid-run faults cannot hide behind a frozen angle |
 
 Motor: LA8308 KV90, 20 pole pairs (36N40P — count the magnets ÷2 to confirm).
 Sensor: AS5600 on bus 1 (SDA23/SCL5, 0x36, fast mode set every boot).
