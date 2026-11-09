@@ -7,21 +7,21 @@
 
 # cmd_vel を ROS 2 から Gazebo へ流す設定
 - ros_topic_name: "/cmd_vel"
-  gz_topic_name: "/model/meistar_bot/cmd_vel"
+  gz_topic_name: "/model/umeonigiri_bot/cmd_vel"
   ros_type_name: "geometry_msgs/msg/Twist"
   gz_type_name: "gz.msgs.Twist"
   direction: ROS_TO_GZ
 
 # 1. オドメトリ（odom）のブリッジ
 - ros_topic_name: "/odom"
-  gz_topic_name: "/model/meistar_bot/odometry"
+  gz_topic_name: "/model/umeonigiri_bot/odometry"
   ros_type_name: "nav_msgs/msg/Odometry"
   gz_type_name: "gz.msgs.Odometry"
   direction: GZ_TO_ROS
 
 # 2. 座標変換（TF）のブリッジ
 - ros_topic_name: "/tf"
-  gz_topic_name: "/model/meistar_bot/tf"
+  gz_topic_name: "/model/umeonigiri_bot/tf"
   ros_type_name: "tf2_msgs/msg/TFMessage"
   gz_type_name: "gz.msgs.Pose_V"
   direction: GZ_TO_ROS

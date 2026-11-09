@@ -5,7 +5,7 @@ from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    pkg_description = get_package_share_directory('meistar_description')
+    pkg_description = get_package_share_directory('umeonigiri_description')
     
     # Path to xacro file
     xacro_file = os.path.join(pkg_description, 'urdf', 'robot.urdf.xacro')

@@ -7,7 +7,7 @@
 
 ## 概要
 
-`meistar_description` パッケージでロボットの物理モデル（URDF/xacro）と Gazebo シミュレーション環境を定義する。
+`umeonigiri_description` パッケージでロボットの物理モデル（URDF/xacro）と Gazebo シミュレーション環境を定義する。
 差動駆動ロボットを想定し、LiDAR センサ・速度制御・オドメトリは Gazebo プラグインで再現される。
 
 ## 実装済み機能

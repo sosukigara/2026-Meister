@@ -36,10 +36,10 @@
 
 | パッケージ | 役割 | エントリポイント | 依存 |
 |---|---|---|---|
-| `meistar_description` | URDF / spawn / 全システム起動 | `launch/all_system.launch.py` `launch/spawn.launch.py` | — |
-| `ros2_autonomous_nav` | Nav2 / SLAM / `real_robot.launch.py` | 各 `launch/*.launch.py` | meistar_description, meister_serial_bridge |
+| `umeonigiri_description` | URDF / spawn / 全システム起動 | `launch/all_system.launch.py` `launch/spawn.launch.py` | — |
+| `ros2_autonomous_nav` | Nav2 / SLAM / `real_robot.launch.py` | 各 `launch/*.launch.py` | umeonigiri_description, meister_serial_bridge |
 | `meister_vision` | YOLOv8n ONNX 検出 → `detections` | `detection_node` / `hand_landmarks_node` / `pc_camera`（いずれも C++） | OpenCV, ONNX Runtime |
-| `meister_web_nav` | Web UI（地図・現在地・経路・認識モニター） | `web_nav_server`（C++） | meistar_description |
+| `meister_web_nav` | Web UI（地図・現在地・経路・認識モニター） | `web_nav_server`（C++） | umeonigiri_description |
 | `meister_serial_bridge` | **`/cmd_vel` → UART フレーム、`/esp32/state` ← FB_STATE** | `serial_bridge` / `meister_comm_check` / `meister_hz_measure`（いずれも C++） | libserial, firmware の protocol ソース |
 
 ### `meister_serial_bridge` 内部（PC 側と ESP32 側の接点。ここ最重要）
@@ -218,7 +218,7 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 | 場所 | 役割 |
 |---|---|
 | `firmware/main_board/platformio.ini` | ビルド env と `MSTE_*` の指定（値は `firmware/main_board/include/meister_config.h` が既定値として持つ） |
-| `src/meistar_description/config/*.yaml` | URDF / Nav2 パラメータ / ブリッジ（ros_gz 用。シリアル設定は**含まない**） |
+| `ros/src/umeonigiri_description/config/*.yaml` | URDF / Nav2 パラメータ / ブリッジ（ros_gz 用。シリアル設定は**含まない**） |
 | `build.sh` / `launch.sh` / `launch_vision.sh` / `kill.sh` | ビルドと起動。`launch.sh:44-48` は VPN 環境のマルチキャスト障害回避で `ROS_LOCALHOST_ONLY=1` を設定（**子プロセスのみ**。別ターミナルの `ros2` CLI には継承されない） |
 | `docs/{features,functions,design}/NN-*.md` | 4 層ドキュメント（やりたいこと → features → functions → design） |
 

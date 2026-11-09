@@ -1,6 +1,6 @@
 #!/bin/bash
 # ==========================================
-# Meistar ROS 2 ビルドスクリプト
+# Meister ROS 2 ビルドスクリプト
 # 使い方: ./build.sh
 # 並列ビルド + symlink-install で高速化
 # ==========================================
@@ -36,5 +36,5 @@ echo "=== ビルド開始 (workers=$WORKERS, type=$BUILD_TYPE) ==="
 cd "$WORKSPACE_ROOT/ros"
 colcon build --symlink-install --parallel-workers "$WORKERS" \
     --cmake-args -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
-    --packages-select meistar_description meister_vision meister_web_nav meister_serial_bridge ros2_autonomous_nav
+    --packages-select umeonigiri_description meister_vision meister_web_nav meister_serial_bridge ros2_autonomous_nav
 echo "=== ビルド完了 ==="

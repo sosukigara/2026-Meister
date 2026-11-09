@@ -7,7 +7,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    pkg_meistar = get_package_share_directory('meistar_description')
+    pkg_umeonigiri = get_package_share_directory('umeonigiri_description')
     pkg_slam = get_package_share_directory('slam_toolbox')
     pkg_nav2 = get_package_share_directory('nav2_bringup')
 
@@ -21,7 +21,7 @@ def generate_launch_description():
     # 1. Gazebo & Spawn
     launch_gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
-            os.path.join(pkg_meistar, 'launch', 'spawn.launch.py')
+            os.path.join(pkg_umeonigiri, 'launch', 'spawn.launch.py')
         ),
         launch_arguments={'use_sim_time': use_sim_time}.items()
     )
@@ -41,7 +41,7 @@ def generate_launch_description():
         ),
         launch_arguments={
             'use_sim_time': 'true',
-            'params_file': os.path.join(pkg_meistar, 'config', 'nav2_params.yaml')
+            'params_file': os.path.join(pkg_umeonigiri, 'config', 'nav2_params.yaml')
         }.items()
     )
 

@@ -8,7 +8,7 @@ from launch_ros.actions import Node
 import xacro
 
 def generate_launch_description():
-    pkg_name = 'meistar_description'
+    pkg_name = 'umeonigiri_description'
     pkg_share = get_package_share_directory(pkg_name)
 
     # Path to xacro file
@@ -45,7 +45,7 @@ def generate_launch_description():
         package='ros_gz_sim',
         executable='create',
         output='screen',
-        arguments=['-topic', 'robot_description', '-name', 'meistar_bot', '-z', '0.2'],
+        arguments=['-topic', 'robot_description', '-name', 'umeonigiri_bot', '-z', '0.2'],
         parameters=[{'use_sim_time': use_sim_time}]
     )
 

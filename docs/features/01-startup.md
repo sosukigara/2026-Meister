@@ -12,7 +12,7 @@
 ## 実装済み機能
 
 - [ ] ワンショット起動: `./launch.sh [warehouse|maze|empty]` で環境全体を起動できる
-- [ ] ビルド自動化: `colcon build --symlink-install` で対象 3 パッケージ（ros2_autonomous_nav / meistar_description / meister_web_nav）を自動ビルドする
+- [ ] ビルド自動化: `colcon build --symlink-install` で対象 3 パッケージ（ros2_autonomous_nav / umeonigiri_description / meister_web_nav）を自動ビルドする
 - [ ] ワールド選択: warehouse / maze / empty の 3 ワールドから起動時に選択できる
 - [ ] 起動完了待機: `/clock` トピックの出現を最大 90 秒待機し、Gazebo 準備完了を検知してから RViz を起動する
 - [ ] クリーン終了: Ctrl+C で関連プロセス（launch / RViz / Gazebo）をまとめて終了する

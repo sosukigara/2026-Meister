@@ -8,7 +8,7 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 source /opt/ros/jazzy/setup.bash
 
-# Meistarワークスペースのルートへ移動
+# Meisterワークスペースのルートへ移動
 cd "$SCRIPT_DIR/.."
 WS_ROOT=$(pwd)
 

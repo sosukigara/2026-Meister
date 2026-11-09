@@ -42,7 +42,7 @@ def generate_launch_description():
     spawn_robot = Node(
         package='ros_gz_sim',
         executable='create',
-        arguments=['-name', 'meistar_bot', '-topic', '/robot_description', '-x',
+        arguments=['-name', 'umeonigiri_bot', '-topic', '/robot_description', '-x',
                    LaunchConfiguration('spawn_x'), '-y', LaunchConfiguration('spawn_y'),
                    '-z', LaunchConfiguration('spawn_z')],
         output='screen'
@@ -53,18 +53,18 @@ def generate_launch_description():
         executable='parameter_bridge',
         arguments=[
             [LaunchConfiguration('clock_topic'), '@rosgraph_msgs/msg/Clock[gz.msgs.Clock'],
-            '/model/meistar_bot/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
-            '/model/meistar_bot/odometry@nav_msgs/msg/Odometry@gz.msgs.Odometry',
+            '/model/umeonigiri_bot/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
+            '/model/umeonigiri_bot/odometry@nav_msgs/msg/Odometry@gz.msgs.Odometry',
             '/joint_states@sensor_msgs/msg/JointState@gz.msgs.Model',
             '/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan',
             '/camera_image@sensor_msgs/msg/Image@gz.msgs.Image',
-            '/model/meistar_bot/tf@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V',
+            '/model/umeonigiri_bot/tf@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V',
         ],
         remappings=[
             (LaunchConfiguration('clock_topic'), '/clock'),
-            ('/model/meistar_bot/cmd_vel', '/cmd_vel'),
-            ('/model/meistar_bot/odometry', '/odom'),
-            ('/model/meistar_bot/tf', '/tf'),
+            ('/model/umeonigiri_bot/cmd_vel', '/cmd_vel'),
+            ('/model/umeonigiri_bot/odometry', '/odom'),
+            ('/model/umeonigiri_bot/tf', '/tf'),
             ('/camera_image', '/camera/image_raw'),
         ],
         parameters=[{'use_sim_time': True}],

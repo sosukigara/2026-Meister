@@ -55,7 +55,7 @@
 
 ## 6. 命名規則
 
-- ファイル名: `snake_case`（ROS パッケージ・Python・C++ 共通）。ROS パッケージ名は `meister_*` / `meistar_*`。
+- ファイル名: `snake_case`（ROS パッケージ・Python・C++ 共通）。ROS パッケージ名は `meister_*` / `umeonigiri_*`。
 - C++ クラス: `PascalCase`。関数/変数: `camelCase`。定数: `kPascalCase`（`config::k...`）または `MSTE_*` マクロ。
 - Python: PEP 8（`snake_case`）。ROS ノードは `*_node.py`。
 - テストファイル: `test_*.py` / `test_*/`（Unity）。

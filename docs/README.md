@@ -52,7 +52,7 @@ Meister/
 ├── kill.sh                          # domain 5 の ROS / Gazebo プロセスを終了
 └── ros/                            # ROS 2 ワークスペース（colcon はここで実行）
     ├── src/
-    │   ├── meistar_description/     # ロボットモデル・シミュレーション定義
+    │   ├── umeonigiri_description/  # ロボットモデル・シミュレーション定義
     │   ├── meister_vision/          # 画像認識（ONNX Runtime + YOLOv8n）
     │   ├── ros2_autonomous_nav/     # SLAM・ナビゲーションの中核パッケージ
     │   └── meister_web_nav/         # Web UI（:8088）
