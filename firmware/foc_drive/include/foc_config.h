@@ -83,11 +83,12 @@ static_assert(kM0Pins.enable == kM1Pins.enable,
 // gate coordinator.
 constexpr bool kOneChannelAtATime = true;
 
-constexpr float kSupplyVolts = 24.0f;  // bench PSU. Board accepts 12-24 V.
-constexpr float kUndervoltageVolts = 20.0f;  // boot gate. TODO: reasoned, not measured.
+constexpr float kSupplyVolts = 12.0f;  // USER bench envelope: 12 V / 6 A max.
+// Board accepts 12-24 V, but this build targets the 12 V rail only.
+constexpr float kUndervoltageVolts = 10.0f;  // boot gate. TODO: reasoned, not measured.
 // Runtime gate, deliberately lower than the boot gate so load sag does not nuisance-stop.
-// TODO(undervoltage): both thresholds need a loaded 24 V measurement.
-constexpr float kRuntimeUndervoltageVolts = 19.0f;
+// TODO(undervoltage): both thresholds need a loaded 12 V measurement.
+constexpr float kRuntimeUndervoltageVolts = 9.0f;
 constexpr uint32_t kRuntimeUndervoltageMs = 500;
 
 // MKSREPO: InlineCurrentSense(0.01, 50.0, ...). 6 A -> 3.0 V, 6.6 A -> ADC full scale.
@@ -159,9 +160,11 @@ constexpr uint32_t kOpenLoopCooldownMs = 10000;  // 10 s before the next open-lo
 // only updates the target; it must not re-enable the driver or reset the velocity PID.
 constexpr uint32_t kCommandTimeoutMs = 500;
 
-// Closed-loop ceiling. Full 24 V is allowed because the FOC current loop (not this limit)
-// is what bounds torque; start the first closed-loop test with a low `L` (e.g. 1 A).
-constexpr float kVoltageLimitVolts = 24.0f;
+// Closed-loop ceiling. Full 12 V (the USER rail) is allowed because the FOC current
+// loop (not this limit) is what bounds torque; the USER 6 A envelope is enforced by
+// the 4 A command hard cap plus the 4/5 A OC trips. Start the first closed-loop
+// test with a low `L` (e.g. 1 A).
+constexpr float kVoltageLimitVolts = 12.0f;
 // Alignment is voltage-mode, not current-limited. 0.30 V is ~1.6 A at 0.186 ohm. The
 // command is clamped to foc::kAlignVoltageMin..Max (0.10-0.60 V).
 constexpr float kAlignVoltageVolts = 0.30f;
@@ -182,10 +185,11 @@ constexpr bool kCurrentSenseCheckEnabled = true;
 constexpr float kCsCheckMaxSpeedRad = 1.0f;
 constexpr float kCsCheckMinVoltageVolts = 0.30f;
 constexpr float kCsCheckMinRatio = 0.25f;
-// At the 5 rev/s bench cap the back-EMF is ~3.3 V at 24 V, so >12 V with no measured
-// current cannot be a legitimate no-load point. It means the current loop is saturated
-// against a dead shunt/gain. Re-tune this if kClosedLoopMaxRps is raised.
-constexpr float kCsLossVoltageVolts = 12.0f;
+// At the 5 rev/s bench cap the back-EMF is ~3.3 V, so >6 V (half the 12 V rail)
+// with no measured current cannot be a legitimate no-load point. It means the
+// current loop is saturated against a dead shunt/gain. Re-tune this if
+// kClosedLoopMaxRps is raised or the rail voltage changes.
+constexpr float kCsLossVoltageVolts = 6.0f;
 constexpr float kCsLossCurrentAmps = 0.2f;
 constexpr uint32_t kCsCheckMs = 200;
 constexpr uint32_t kHealthPeriodMs = 50;

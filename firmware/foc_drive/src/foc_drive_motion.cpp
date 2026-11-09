@@ -13,7 +13,7 @@ bool FocDrive::motionAllowed() {
   }
   if (!motor_inited_) {
     printPrefix();
-    Serial.println(F("ERR motor not initialized (24V?)"));
+    Serial.println(F("ERR motor not initialized (12V?)"));
     return false;
   }
   return true;

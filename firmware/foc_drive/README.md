@@ -36,7 +36,7 @@ explicit command.
 - Closed loop: `W`/`T`/`A` are deadman commands (500 ms).
 - Overcurrent: open loop 4 A/500 ms; closed loop 5 A/200 ms; ADC full scale (≈6.5 A)
   trips immediately. This is a backstop, not a control loop.
-- Runtime checks while enabled: VIN < 19 V for 500 ms, AS5600 NACK ×3, low-speed
+- Runtime checks while enabled: VIN < 9 V for 500 ms, AS5600 NACK ×3, low-speed
   current-sense plausibility (`V/R` vs measured). Any failure latches `#FAULT`.
 - Heartbeat guard: if the main loop stops feeding for 500 ms, a timer ISR drops the shared
   ENABLE pin. An I2C/library hang therefore cannot leave the last PWM applied.
@@ -77,9 +77,9 @@ wrong image on the wrong axle is exactly what the `#ROLE` print is meant to catc
 ## First bench spin (no AS5600)
 
 1. Wheels off the ground. Current-limited supply, fuse, guard.
-2. Flash one board. Open the monitor **before** powering the 24 V rail if possible; opening
+2. Flash one board. Open the monitor **before** powering the 12 V rail if possible; opening
    it resets the ESP32.
-3. Confirm the boot log: `#ROLE`, `#VIN` ~24 V, `#M0 SHUNT 0.010`,
+3. Confirm the boot log: `#ROLE`, `#VIN` ~12 V, `#M0 SHUNT 0.010`,
    `#M0 POLE_PAIRS ... UNCONFIRMED`, `#SAFE`.
 4. Pole pairs are pre-set to **20 (40 magnets)** from three consistent ODrive sources.
    Count the actual rotor magnets (÷2); if they differ, `P <magnets / 2>`. Open loop still
@@ -138,10 +138,10 @@ as bare lines in the CSV stream.
 6. **AS5600 still gates the closed loop.** `C/W/T/A` refuse until `C` succeeds. `P` is
    pre-set to 20; SimpleFOC's PP check only prints, it does not fail `initFOC()`.
 7. **Opening the serial monitor resets the ESP32.** Never do it while spinning.
-8. **The 24 V rail is shared by 3 boards.** Fuse and wire for the peak; do not assume
-   continuous 6 A×2 without a thermal test.
+8. **The 12 V rail is shared by 3 boards (USER envelope: 12 V / 6 A max).** Fuse and wire
+   for the peak; do not assume continuous 6 A×2 without a thermal test.
 9. **The heartbeat guard is not a substitute for an E-stop.** A hard E-stop must cut the
-   24 V contactor.
+   12 V contactor.
 
 ## Relationship to the other firmware
 
