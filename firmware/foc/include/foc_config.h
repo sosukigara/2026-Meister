@@ -7,10 +7,16 @@
 // Provenance tags used below:
 //   MKSREPO  github.com/makerbase-motor/MKS-ESP32FOC, branch MKS-ESP32-FOC-V2.0,
 //            dir "Test Code/", files 11_close_loop_velocity_example*.ino and
-//            12_close_loop_position_example*.ino
+//            12_close_loop_position_example*.ino (pins, shunt, gains, align 5 V),
+//            file 3_dual_as5600_test.ino (M0/M1 I2C buses verified 2026-11-09).
 //   ARTICLE  the Japanese article sketch this firmware follows (5010/24 V era gains)
 //   SIMPLEFOC SimpleFOC 2.2.1 sources read at
 //            firmware/foc/.pio/libdeps/foc_m1/Simple FOC/src
+//   DATASHEET Infineon AS5600 datasheet, Fig 21 (register map) + Fig 22 (CONF).
+//            CONF high byte 0x07 bits [1:0] = SF slow-filter, 0x03 = 2x fastest.
+//            CONF is volatile: reset to OTP at power-up (unprogrammed = 0 = 16x),
+//            so the fast-mode write must be repeated every boot. Angle itself is
+//            RAW ANGLE 0x0C (SimpleFOC default), full-turn while ZPOS/MANG are default.
 //   VENDOR    Eaglepower LA8308 KV90 reseller spec (OL Electronics / Amazon,
 //            not a primary datasheet). KV90: 22 A continuous, 900 W, 6S-12S,
 //            0.186 ohm, idle 0.6 A @24 V. R phase convention unpublished.
@@ -42,11 +48,12 @@ constexpr int kI2cSdaPin = 23;       // MKSREPO  M1 begin(23, 5, 400000UL)
 constexpr int kI2cSclPin = 5;        // MKSREPO
 constexpr uint32_t kI2cClockHz = 400000UL;  // MKSREPO
 
-// AS5600 fast mode. The CONF register is volatile, so this write must be repeated on
-// every boot. Bit 0-1 select the digital filter (0x03 = fastest).
+// AS5600 fast mode (DATASHEET). CONF is volatile, so this write must be repeated on
+// every boot BEFORE the first sensor read, otherwise init() caches the slow filter.
+// Read-modify-write preserves WD/FTH. A NACK here is the sensor-absent signal.
 constexpr uint8_t kAs5600Address = 0x36;      // SIMPLEFOC sensors/MagneticSensorI2C.cpp:5
-constexpr uint8_t kAs5600ConfRegister = 0x07; // AS5600 datasheet CONF register
-constexpr uint8_t kAs5600ConfFastMask = 0x03; // AS5600 datasheet, CONF bit 0-1
+constexpr uint8_t kAs5600ConfRegister = 0x07; // DATASHEET Fig 21: CONF high byte
+constexpr uint8_t kAs5600ConfFastMask = 0x03; // DATASHEET Fig 22: SF bits [1:0] = 2x
 
 constexpr int kVinSensePin = 13;      // MKSREPO  analogReadMilliVolts(13)
 constexpr float kVinDividerRatio = 8.5f;  // MKSREPO  * 8.5 / 1000
@@ -80,6 +87,10 @@ constexpr float kCurrentLimitAmps = 1.0f;  // closed-loop torque ceiling. Far be
                                         // the motor 22 A continuous (VENDOR) and the
                                         // USER 6 A bench envelope, so the first spin
                                         // stresses neither. ARTICLE value kept.
+// Upper clamp for L (ARTICLE constrains its L to 0.05-2.0 the same way). A limit
+// above the 4 A #OC trip can never be reached without tripping, and anything near
+// 6 A leaves no shunt/ripple headroom, so the console can never raise it past this.
+constexpr float kCurrentLimitMaxAmps = 4.0f;  // == kOpenLoopOcTripAmps, USER envelope
 // phase_resistance is deliberately NOT set. Setting it makes SimpleFOC derive the
 // open-loop voltage as Uq = current_limit * phase_resistance
 // (BLDCMotor.cpp:622-623,660-661) instead of using kOpenLoopVoltageVolts below.
@@ -140,13 +151,18 @@ constexpr float kAlignVoltageVolts = 0.3f;  // alignment bypasses the current lo
                                         // this voltage lands directly as 0.3/0.186 stall
                                         // (~1.61 A on KV90). 1.0 V (ARTICLE) would be
                                         // ~5.38 A on this winding, too close to the
-                                        // USER 6 A envelope. If C fails,
-                                        // raise in 0.1 V steps and watch #IOL, never
-                                        // jump to 1 V.
+                                        // USER 6 A envelope; the official 5 V would be
+                                        // ~27 A here. Z is clamped to voltage_limit
+                                        // (ARTICLE practice), so neither can be reached.
+// Lower clamp for Z (ARTICLE constrains its Z to 0.1-voltage_limit the same way).
+// Below 0.1 V the alignment field is too weak to pull the LA8308 rotor in.
+// If C fails, raise in 0.1 V steps and watch #IOL, never jump past voltage_limit.
+constexpr float kAlignVoltageMinVolts = 0.1f;
 
 // Gains below are the ARTICLE (5010) starting point. The LA8308 KV90 has higher R
 // but far lower KV than the BE4108, so the current loop may need less I and the
-// velocity loop a retune.
+// velocity loop a retune. The official V2.0 example 11 uses vel P=0.021/I=0.12 for
+// its 2808 motor - try those if the ARTICLE P=0.2/I=2.0 oscillates.
 // TODO(gains): bench-tune on LA8308 KV90 before trusting closed loop with load.
 constexpr float kPidCurrentP = 1.0f;   // ARTICLE
 constexpr float kPidCurrentI = 500.0f;  // ARTICLE

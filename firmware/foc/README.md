@@ -199,9 +199,14 @@ for the one-shot reports the operator needs.
 3. **There is no holding brake.** On power-down the drum coasts.
 4. `init()` and `C` energise the phases for alignment. Keep the 12 V supply
    **current-limited** while calibrating (alignment bypasses the current loop:
-   0.3 V lands as ~1.61 A stall on the KV90 winding).
+   0.3 V lands as ~1.61 A stall on the KV90 winding). Bench practice from the
+   [ARTICLE](https://note.com/kawashigi_/n/n1eaf1e362ebc) (24 V rig, same board):
+   PSU CC low, a ~2 A fuse in series with the rail, and a polarity check before
+   connecting — the board has **no reverse-polarity protection and no OCP**,
+   the PSU CC is the only current limit.
 5. `L` only bounds the **torque** mode. The velocity loop is bounded by `velocity_limit`,
-   the position loop by `velocity_limit` too.
+   the position loop by `velocity_limit` too. `L` clamps to 4 A and `Z` clamps to
+   `voltage_limit` (1.0 V), so neither command can reach the 12 V / 6 A envelope.
 
 ## Implementation notes worth knowing
 
@@ -255,10 +260,10 @@ bench-checked before the firmware is trusted with load.
 | Value | In config as | Why it is unconfirmed |
 |---|---|---|
 | Undervoltage threshold | `kUndervoltageVolts = 10.0f` | The official 11.1 V is a 3S LiPo cutoff with no sag margin on a bench PSU. 10.0 V is a reasoned pick, **not** measured. **✗ 未検証**: no loaded 12 V bench measurement yet. |
-| I2C bus index | `kI2cBusIndex = 1` | The official M1 example uses `TwoWire(1)`. **✗ 未検証**: bench check pending (AS5600 not fitted yet). |
+| I2C bus index | `kI2cBusIndex = 1` | The official M1 example uses `TwoWire(1)` (verified against the V2.0 branch `3_dual_as5600_test`). **✗ 未検証**: bench check pending (AS5600 now in use since 2026-11-09: confirm boot CONF ACK + `C` align; magnet must be diametral on the shaft end, 0.5–3 mm gap per [ARTICLE](https://note.com/kawashigi_/n/n1eaf1e362ebc); watch total I2C pull-up strength at 400 kHz). |
 | Motor pole pairs | `kPolePairs = 20` | Secondary sources only (ODrive community 36N40P reports + working 8308 90KV config). **★要確認★**: count the rotor magnets (/2). **✗ 未検証**. |
 | Motor KV / R | `kMotorKv = 90`, `kPhaseResistanceVendorOhms = 0.186` | Vendor reseller spec (KV90 user-confirmed 2026-11-09), R phase convention unpublished. **★要確認★**: bell marking + winding-meter R + no-load KV check. **✗ 未検証**. |
-| Closed-loop gains | `kPidCurrent*`, `kPidVel*`, `kPidAngleP` | ARTICLE (5010) values reused as a starting point. LA8308 KV90 retune pending. **✗ 未検証**. |
+| Closed-loop gains | `kPidCurrent*`, `kPidVel*`, `kPidAngleP` | ARTICLE (5010) values reused as a starting point (official V2.0 example 11 uses vel P=0.021/I=0.12 for its 2808: try if ARTICLE P=0.2/I=2.0 oscillates). LA8308 KV90 retune pending. **✗ 未検証**. |
 | `zero_elec` healthy window | `kZeroElecWindowCalibrated = false` | The 3.12–3.42 rad ARTICLE window was for the 5010 and is retired. Bench data must set the LA8308 window. Only used for the boot note; the firmware never clamps on it. |
 
 ## Deliberately not implemented

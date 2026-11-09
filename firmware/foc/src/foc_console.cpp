@@ -102,9 +102,15 @@ void FocConsole::dispatch(const foc::Request& req) {
 
 void FocConsole::printHelp() {
   Serial.println(F("C          recalibrate (zero_elec + sensor direction)"));
-  Serial.print(F("L <amps>   current limit, default "));
+  Serial.print(F("L <amps>   current limit 0-"));
+  Serial.print(foc_cfg::kCurrentLimitMaxAmps, 1);
+  Serial.print(F(" A, default "));
   Serial.println(foc_cfg::kCurrentLimitAmps, 1);
-  Serial.print(F("Z <volts>  alignment voltage, default "));
+  Serial.print(F("Z <volts>  alignment voltage "));
+  Serial.print(foc_cfg::kAlignVoltageMinVolts, 1);
+  Serial.print(F("-"));
+  Serial.print(foc_cfg::kVoltageLimitVolts, 1);
+  Serial.print(F(" V, default "));
   Serial.println(foc_cfg::kAlignVoltageVolts, 1);
   Serial.println(F("T <torque> torque mode"));
   Serial.println(F("W <rps>    velocity mode. W 0 = ACTIVE BRAKING"));

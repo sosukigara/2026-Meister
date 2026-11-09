@@ -124,6 +124,11 @@ bool FocDrive::setAlignVoltage(float volts) {
     Serial.println(F("#ERR undervoltage, alignment refused"));
     return false;
   }
+  // Alignment bypasses the current loop: the voltage lands directly as V/R stall.
+  // Clamp to voltage_limit (ARTICLE practice) so Z can never reach the USER 6 A
+  // envelope - the official 5 V would be ~27 A on the 0.186 ohm winding.
+  if (volts < foc_cfg::kAlignVoltageMinVolts) volts = foc_cfg::kAlignVoltageMinVolts;
+  if (volts > foc_cfg::kVoltageLimitVolts) volts = foc_cfg::kVoltageLimitVolts;
   motor_.voltage_sensor_align = volts;
   motor_.enable();
   const bool ok = motor_.initFOC() != 0;
@@ -136,6 +141,9 @@ bool FocDrive::setAlignVoltage(float volts) {
 
 bool FocDrive::setCurrentLimit(float amps) {
   if (!ready_) return false;
+  // Clamp first (ARTICLE constrains its L the same way): above the 4 A trip the
+  // limit could never be reached without tripping, and the USER envelope is 6 A.
+  if (amps > foc_cfg::kCurrentLimitMaxAmps) amps = foc_cfg::kCurrentLimitMaxAmps;
   // The pair has to be written together: a later init() re-bakes PID_velocity.limit from
   // current_limit, so setting current_limit alone leaves the velocity loop with the old
   // ceiling until the next init. The limit only bounds the torque mode.
