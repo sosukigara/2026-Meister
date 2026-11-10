@@ -28,3 +28,10 @@ FPS が何 Hz でも基盤としては合格。20Hz は tuning 課題。
 - Q31: 実機の「設定→端末情報」の Android バージョンと RAM を確定し、minSdk を合わせる。
 - tuning: 320 モデル化・NNAPI/GPU delegate・量子化は実測後に判断。
 - しきい値の端末既定は 0.50 (PC 側 0.25 では幻検出が出るため。スライダーで変更可)。
+
+## ADB デバッグ (画面の値を PC から抜く)
+
+1. 実機の開発者向けオプションで USB デバッグを ON にする。
+2. この PC に USB 接続する (`adb devices` に出ること)。
+3. 取得する: `./tools/adb_fetch.sh` (出るのは logcat 要約 + screen.png + battery)。
+4. エージェントに渡す: 出力先ディレクトリ (`/tmp/meister-adb-日時`) を教える。

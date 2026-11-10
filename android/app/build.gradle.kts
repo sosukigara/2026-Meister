@@ -12,8 +12,8 @@ android {
         // OPPO A5 2020 は Android 10 想定。実機の「設定→端末情報」で確定する (Q31 宿題)。
         minSdk = 29
         targetSdk = 35
-        versionCode = 6
-        versionName = "0.2.5"
+        versionCode = 7
+        versionName = "0.2.6"
         // 実機 (Snapdragon 665 = arm64) のみ。onnxruntime の全 ABI 同梱を避けて APK を軽くする。
         ndk {
             abiFilters += "arm64-v8a"

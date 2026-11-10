@@ -3,6 +3,7 @@ package com.meister.vision
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import android.widget.SeekBar
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -21,6 +22,13 @@ import java.util.concurrent.TimeUnit
 // 通信なし。モデル未配置なら FakeDetector で配線確認できる。
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        // ADB 取得用タグ。`adb logcat -d MeisterVision:I *:S` で抜く。
+        const val LOG_TAG = "MeisterVision"
+        // HUD 要約ログの間隔。1Hz で十分かつ安い。
+        const val LOG_INTERVAL_NS = 1_000_000_000L
+    }
+
     private lateinit var binding: ActivityMainBinding
     // 準備できるまで null。その間 analyze はフレームを捨てる (プレビューは動く)。
     @Volatile private var detector: Detector? = null
@@ -31,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     private val analysisExecutor = Executors.newSingleThreadExecutor()
     // 幻の person 報告があるため端末既定は 0.5 に上げた (PC 側は 0.25 のまま)。スライダーで変えられる。
     @Volatile private var threshold = 0.5f
+    private var lastLogNs = 0L
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -83,6 +92,7 @@ class MainActivity : AppCompatActivity() {
             FakeDetector()
         }
         detector = d
+        Log.i(LOG_TAG, "detector ready: $detectorStatus")
         runOnUiThread { binding.hudDet.text = detectorStatus }
     }
 
@@ -117,6 +127,24 @@ class MainActivity : AppCompatActivity() {
                 val results = active.detect(bitmap, threshold)
                 val ms = (System.nanoTime() - start) / 1_000_000
                 counter.tick(ms)
+                // ADB デバッグ用に 1Hz で要約を出す。画面 HUD と同じ値。
+                val now = System.nanoTime()
+                if (now - lastLogNs >= LOG_INTERVAL_NS) {
+                    lastLogNs = now
+                    val top = results.firstOrNull()
+                    val topStr = if (top != null) {
+                        " top=${top.className} ${"%.2f".format(top.score)}" +
+                            " [${top.x1.toInt()},${top.y1.toInt()},${top.x2.toInt()},${top.y2.toInt()}]"
+                    } else {
+                        " top=none"
+                    }
+                    Log.i(
+                        LOG_TAG,
+                        "det=$detectorStatus fps=${"%.1f".format(counter.fps())}" +
+                            " ms=${counter.lastInferenceMs()}" +
+                            " objs=${results.size}$topStr thr=$threshold",
+                    )
+                }
                 runOnUiThread {
                     binding.overlay.setDetections(results, bitmap.width, bitmap.height)
                     binding.hudFps.text = "%.1f fps".format(counter.fps())

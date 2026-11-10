@@ -3,6 +3,7 @@ package com.meister.vision
 import ai.onnxruntime.OnnxTensor
 import ai.onnxruntime.OrtEnvironment
 import ai.onnxruntime.OrtSession
+import ai.onnxruntime.TensorInfo
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -20,8 +21,8 @@ class YoloDetector(
 ) : Detector {
     companion object {
         private const val TAG = "YoloDetector"
-        // onnx load で実測した入力形 [1,3,640,640]。変えたら Ultralytics 再 export が要る。
-        const val INPUT_SIZE = 640
+        // モデル入力が正方形でない・読めない時の fallback。onnx 実測では 640。
+        const val DEFAULT_INPUT_SIZE = 640
         const val IOU_THRESHOLD = 0.45f
         const val PAD_COLOR = 114
 
@@ -32,6 +33,8 @@ class YoloDetector(
     private val env: OrtEnvironment = sharedEnv
     private val session: OrtSession
     private val inputName: String
+    // 入力解像度はモデルから取る (640/320 どちらも同じ経路。PC 側と同じ)。
+    val inputSize: Int
 
     init {
         check(modelName.isNotBlank()) { "modelName is blank" }
@@ -48,16 +51,24 @@ class YoloDetector(
             opts.close()
         }
         inputName = session.inputNames.firstOrNull() ?: "images"
+        val shape = (session.inputInfo[inputName]?.info as? TensorInfo)?.shape
+        inputSize = if (shape != null && shape.size == 4 && shape[0] == 1L &&
+            shape[1] == 3L && shape[2] == shape[3] && shape[2] > 0
+        ) {
+            shape[2].toInt()
+        } else {
+            DEFAULT_INPUT_SIZE
+        }
     }
 
-    override fun label(): String = "YOLOv8n-640"
+    override fun label(): String = "YOLOv8n-$inputSize"
 
     // 初回推論を通して session が実働することを保証する。重いのでバックグラウンドで呼ぶ。
     // 失敗したら例外→呼び出し側が Fake に落とす。画面に理由が出る。
     fun validate() {
-        val n = INPUT_SIZE * INPUT_SIZE
+        val n = inputSize * inputSize
         val zeros = FloatBuffer.wrap(FloatArray(3 * n))
-        val shape = longArrayOf(1, 3, INPUT_SIZE.toLong(), INPUT_SIZE.toLong())
+        val shape = longArrayOf(1, 3, inputSize.toLong(), inputSize.toLong())
         OnnxTensor.createTensor(env, zeros, shape).use { tensor ->
             session.run(mapOf(inputName to tensor)).use { result ->
                 @Suppress("UNCHECKED_CAST")
@@ -69,8 +80,8 @@ class YoloDetector(
     }
 
     override fun detect(input: Bitmap, threshold: Float): List<Detection> {
-        val lb = YoloPostprocess.letterboxMath(input.width, input.height, INPUT_SIZE)
-        val padded = Bitmap.createBitmap(INPUT_SIZE, INPUT_SIZE, Bitmap.Config.ARGB_8888)
+        val lb = YoloPostprocess.letterboxMath(input.width, input.height, inputSize)
+        val padded = Bitmap.createBitmap(inputSize, inputSize, Bitmap.Config.ARGB_8888)
         padded.eraseColor(Color.rgb(PAD_COLOR, PAD_COLOR, PAD_COLOR))
         val scaled = if (lb.newW == input.width && lb.newH == input.height) {
             input
@@ -80,10 +91,10 @@ class YoloDetector(
         Canvas(padded).drawBitmap(scaled, lb.padW.toFloat(), lb.padH.toFloat(), null)
         if (scaled !== input) scaled.recycle()
 
-        val n = INPUT_SIZE * INPUT_SIZE
+        val n = inputSize * inputSize
         val data = FloatArray(3 * n)
         val pixels = IntArray(n)
-        padded.getPixels(pixels, 0, INPUT_SIZE, 0, 0, INPUT_SIZE, INPUT_SIZE)
+        padded.getPixels(pixels, 0, inputSize, 0, 0, inputSize, inputSize)
         // フレーム毎の Bitmap はここで捨てる。捨てないと 10 分回した時に落ちる。
         padded.recycle()
         for (i in 0 until n) {
@@ -94,7 +105,7 @@ class YoloDetector(
         }
 
         val channels: Array<FloatArray> = try {
-            OnnxTensor.createTensor(env, FloatBuffer.wrap(data), longArrayOf(1, 3, INPUT_SIZE.toLong(), INPUT_SIZE.toLong())).use { tensor ->
+            OnnxTensor.createTensor(env, FloatBuffer.wrap(data), longArrayOf(1, 3, inputSize.toLong(), inputSize.toLong())).use { tensor ->
                 session.run(mapOf(inputName to tensor)).use { result ->
                     @Suppress("UNCHECKED_CAST")
                     val out = (result[0].value as Array<Array<FloatArray>>)[0]
