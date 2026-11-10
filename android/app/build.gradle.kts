@@ -13,7 +13,7 @@ android {
         minSdk = 29
         targetSdk = 35
         versionCode = 1
-        versionName = "0.1.0"
+        versionName = "0.2.0"
         // 実機 (Snapdragon 665 = arm64) のみ。onnxruntime の全 ABI 同梱を避けて APK を軽くする。
         ndk {
             abiFilters += "arm64-v8a"

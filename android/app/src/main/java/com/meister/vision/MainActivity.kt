@@ -2,7 +2,6 @@ package com.meister.vision
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.os.Bundle
 import android.widget.SeekBar
 import androidx.activity.result.contract.ActivityResultContracts
@@ -95,14 +94,13 @@ class MainActivity : AppCompatActivity() {
     private fun analyze(image: ImageProxy) {
         try {
             val bitmap = image.toRgbBitmap()
-            // 配線確認用の等方ストレッチ。本番推論では letterbox に置き換える (tuning)。
-            val scaled = Bitmap.createScaledBitmap(bitmap, 320, 320, true)
+            // letterbox は Detector 側 (YoloDetector) がやる。ここでは縮小しない。
             val start = System.nanoTime()
-            val results = detector.detect(scaled, threshold)
+            val results = detector.detect(bitmap, threshold)
             val ms = (System.nanoTime() - start) / 1_000_000
             counter.tick(ms)
             runOnUiThread {
-                binding.overlay.setDetections(results, scaled.width, scaled.height)
+                binding.overlay.setDetections(results, bitmap.width, bitmap.height)
                 binding.hudFps.text = "%.1f fps".format(counter.fps())
                 binding.hudMs.text = "%d ms".format(counter.lastInferenceMs())
                 binding.hudCount.text = "%d objs".format(results.size)
