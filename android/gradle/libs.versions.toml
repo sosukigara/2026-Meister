@@ -6,7 +6,8 @@ appcompat = "1.7.0"
 activity-ktx = "1.9.3"
 lifecycle = "2.8.6"
 camerax = "1.3.4"
-onnxruntime-mobile = "1.18.0"
+# mobile 版は削減ビルドで標準 onnx を読めない。full (onnxruntime-android) を使う。
+onnxruntime-android = "1.18.0"
 junit = "4.13.2"
 
 [libraries]
@@ -18,7 +19,7 @@ camerax-core = { group = "androidx.camera", name = "camera-core", version.ref = 
 camerax-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "camerax" }
 camerax-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "camerax" }
 camerax-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
-onnxruntime-mobile = { group = "com.microsoft.onnxruntime", name = "onnxruntime-mobile", version.ref = "onnxruntime-mobile" }
+onnxruntime-android = { group = "com.microsoft.onnxruntime", name = "onnxruntime-android", version.ref = "onnxruntime-android" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]
