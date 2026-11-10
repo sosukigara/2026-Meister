@@ -5,7 +5,8 @@ ROS ノード `meister_vision` の推論をスマホに肩代わりさせるた�
 ## v1 の範囲
 
 - スマホ単体で画像認識 + プレビュー表示。通信なし (Q30 合意)。
-- Kotlin + CameraX + onnxruntime-mobile。YOLOv8n 320 想定。
+- Kotlin + CameraX + onnxruntime-mobile 1.18.0。YOLOv8n 640 を同梱 (PC 側と同一モデル)。
+- エミュレータ (x86_64) は非対応。APK は arm64 のみ。実機で動かす。
 - UI が触るのは `Detector` interface のみ (将来の ROS 送り差し替え口)。
 
 ## 開き方
@@ -25,4 +26,4 @@ FPS が何 Hz でも基盤としては合格。20Hz は tuning 課題。
 ## 宿題
 
 - Q31: 実機の「設定→端末情報」の Android バージョンと RAM を確定し、minSdk を合わせる。
-- tuning: 320 モデル用意、NNAPI/GPU delegate、量子化可否は実測後に判断。
+- tuning: 320 モデル化・NNAPI/GPU delegate・量子化は実測後に判断。

@@ -61,6 +61,8 @@ class YoloDetector(
         val data = FloatArray(3 * n)
         val pixels = IntArray(n)
         padded.getPixels(pixels, 0, INPUT_SIZE, 0, 0, INPUT_SIZE, INPUT_SIZE)
+        // フレーム毎の Bitmap はここで捨てる。捨てないと 10 分回した時に落ちる。
+        padded.recycle()
         for (i in 0 until n) {
             val p = pixels[i]
             data[i] = ((p shr 16) and 0xFF) / 255f

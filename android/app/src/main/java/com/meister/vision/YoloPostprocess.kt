@@ -4,7 +4,6 @@ import kotlin.math.max
 import kotlin.math.min
 
 // PC 側 YoloPostprocess / Letterbox / NMS の移植。Android 非依存で単体テスト可能。
-// 出力レイアウトは [84, gridCells] のチャンネル優先 (C++ と同じ取り出し順)。
 object YoloPostprocess {
     const val NUM_CLASSES = 80
     const val BBOX_COLS = 4
@@ -39,6 +38,8 @@ object YoloPostprocess {
     ): List<Detection> {
         require(output.size == CHANNELS)
         require(output.all { it.size == gridCells })
+        // クラス表と定数の対応がずれると class_id が範囲外になる。増減は両方同時に。
+        require(COCO_CLASSES.size == NUM_CLASSES)
         require(lb.ratio > 0.0)
 
         data class Candidate(val det: Detection, val ix1: Float, val iy1: Float, val ix2: Float, val iy2: Float)

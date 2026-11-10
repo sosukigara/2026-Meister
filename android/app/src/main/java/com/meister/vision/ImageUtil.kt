@@ -15,7 +15,9 @@ fun ImageProxy.toRgbBitmap(): Bitmap {
     val out = ByteArrayOutputStream()
     yuvImage.compressToJpeg(Rect(0, 0, width, height), 100, out)
     val bytes = out.toByteArray()
+    // 壊れたフレームで null が返る。呼び出し側が catch して 1 フレーム捨てる。
     val raw = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        ?: throw IllegalStateException("jpeg decode failed")
     val rotation = imageInfo.rotationDegrees
     if (rotation == 0) return raw
     val matrix = Matrix().apply { postRotate(rotation.toFloat()) }
