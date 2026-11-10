@@ -5,7 +5,8 @@ ROS ノード `meister_vision` の推論をスマホに肩代わりさせるた�
 ## v1 の範囲
 
 - スマホ単体で画像認識 + プレビュー表示。通信なし (Q30 合意)。
-- Kotlin + CameraX + onnxruntime-mobile 1.18.0。YOLOv8n 640 を同梱 (PC 側と同一モデル)。
+- Kotlin + CameraX + onnxruntime-android 1.18.0。YOLOv8n 320 を同梱
+  (Ultralytics 公式 export、PC 側 640 とは別物。320 は約4倍速い)。
 - エミュレータ (x86_64) は非対応。APK は arm64 のみ。実機で動かす。
 - UI が触るのは `Detector` interface のみ (将来の ROS 送り差し替え口)。
 
@@ -13,7 +14,8 @@ ROS ノード `meister_vision` の推論をスマホに肩代わりさせるた�
 
 1. Android Studio で `android/` を開く。
 2. モデルを配置する (任意・13MB のため git 管理外):
-   `mkdir -p app/src/main/assets && cp ../ros/src/meister_vision/models/yolov8n.onnx app/src/main/assets/`
+   320 モデルは export 済み想定 (`yolov8n-320.onnx`)。作り直す場合:
+   `yolo export model=yolov8n.pt format=onnx imgsz=320` → `app/src/main/assets/yolov8n-320.onnx` に配置
 3. 実機 (OPPO A5 2020, Android 10 想定) を USB デバッグで繋いで Run。
 
 モデル未配置でも起動する。その場合は `FakeDetector` (動く仮枠) で配線確認になる。
@@ -26,7 +28,7 @@ FPS が何 Hz でも基盤としては合格。20Hz は tuning 課題。
 ## 宿題
 
 - Q31: 実機の「設定→端末情報」の Android バージョンと RAM を確定し、minSdk を合わせる。
-- tuning: 320 モデル化・NNAPI/GPU delegate・量子化は実測後に判断。
+- tuning: NNAPI/GPU delegate・量子化は実測後に判断。
 - しきい値の端末既定は 0.50 (PC 側 0.25 では幻検出が出るため。スライダーで変更可)。
 
 ## ADB デバッグ (画面の値を PC から抜く)

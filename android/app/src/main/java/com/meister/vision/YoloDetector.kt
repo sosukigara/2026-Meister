@@ -11,12 +11,12 @@ import android.graphics.Color
 import android.util.Log
 import java.nio.FloatBuffer
 
-// YOLOv8n ONNX を onnxruntime-mobile で動かす実装。
+// YOLOv8n ONNX を onnxruntime(-android) で動かす実装。
 // 前処理→推論→後処理の順序は PC 側 yolo_detector.cpp と 1:1。
 class YoloDetector(
     context: Context,
-    // assets 内のモデル名。640 入力 ([1,3,640,640]) を実測済み。
-    modelName: String = "yolov8n.onnx",
+    // assets 内のモデル名。320 が既定 (Ultralytics 公式 export、640 より約4倍速い)。
+    modelName: String = "yolov8n-320.onnx",
     private val threads: Int = 4,
 ) : Detector {
     companion object {
