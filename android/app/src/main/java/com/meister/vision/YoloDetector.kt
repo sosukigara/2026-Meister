@@ -42,12 +42,31 @@ class YoloDetector(
         }
         val opts = OrtSession.SessionOptions()
         opts.setIntraOpNumThreads(threads)
-        session = env.createSession(modelBytes, opts)
-        opts.close()
+        try {
+            session = env.createSession(modelBytes, opts)
+        } finally {
+            opts.close()
+        }
         inputName = session.inputNames.firstOrNull() ?: "images"
     }
 
     override fun label(): String = "YOLOv8n-640"
+
+    // 初回推論を通して session が実働することを保証する。重いのでバックグラウンドで呼ぶ。
+    // 失敗したら例外→呼び出し側が Fake に落とす。画面に理由が出る。
+    fun validate() {
+        val n = INPUT_SIZE * INPUT_SIZE
+        val zeros = FloatBuffer.wrap(FloatArray(3 * n))
+        val shape = longArrayOf(1, 3, INPUT_SIZE.toLong(), INPUT_SIZE.toLong())
+        OnnxTensor.createTensor(env, zeros, shape).use { tensor ->
+            session.run(mapOf(inputName to tensor)).use { result ->
+                @Suppress("UNCHECKED_CAST")
+                val out = (result[0].value as Array<Array<FloatArray>>)[0]
+                require(out.size == YoloPostprocess.CHANNELS) { "bad channels: ${out.size}" }
+                require(out[0].isNotEmpty()) { "empty output" }
+            }
+        }
+    }
 
     override fun detect(input: Bitmap, threshold: Float): List<Detection> {
         val lb = YoloPostprocess.letterboxMath(input.width, input.height, INPUT_SIZE)

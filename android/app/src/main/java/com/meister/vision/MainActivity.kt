@@ -22,13 +22,15 @@ import java.util.concurrent.TimeUnit
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private var detector: Detector = FakeDetector()
+    // 準備できるまで null。その間 analyze はフレームを捨てる (プレビューは動く)。
+    @Volatile private var detector: Detector? = null
     // どれが動いているか (YOLO/FAKE) と fallback 理由。謎検出の切り分け用。
-    private var detectorStatus = "init"
+    private var detectorStatus = "loading..."
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private val counter = FpsCounter()
     private val analysisExecutor = Executors.newSingleThreadExecutor()
-    @Volatile private var threshold = 0.25f
+    // 幻の person 報告があるため端末既定は 0.5 に上げた (PC 側は 0.25 のまま)。スライダーで変えられる。
+    @Volatile private var threshold = 0.5f
 
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -40,8 +42,9 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        detector = openDetector()
         binding.hudDet.text = detectorStatus
+        // 重い初期化+疎通確認は裏でやる。表でやると低端末で ANR になる。
+        analysisExecutor.execute { initDetector() }
 
         binding.thresholdBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(bar: SeekBar?, value: Int, fromUser: Boolean) {
@@ -69,13 +72,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun openDetector(): Detector {
-        return try {
-            YoloDetector(this).also { detectorStatus = it.label() }
+    private fun initDetector() {
+        val d = try {
+            YoloDetector(this).also {
+                it.validate()
+                detectorStatus = it.label()
+            }
         } catch (e: Exception) {
             detectorStatus = "FAKE (${e.message})"
             FakeDetector()
         }
+        detector = d
+        runOnUiThread { binding.hudDet.text = detectorStatus }
     }
 
     private fun startCamera() {
@@ -100,11 +108,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun analyze(image: ImageProxy) {
         try {
+            // 準備前は捨てる。Detector が null のまま推論はしない。
+            val active = detector ?: return
             val bitmap = image.toRgbBitmap()
             try {
                 // letterbox は Detector 側 (YoloDetector) がやる。ここでは縮小しない。
                 val start = System.nanoTime()
-                val results = detector.detect(bitmap, threshold)
+                val results = active.detect(bitmap, threshold)
                 val ms = (System.nanoTime() - start) / 1_000_000
                 counter.tick(ms)
                 runOnUiThread {
@@ -132,7 +142,7 @@ class MainActivity : AppCompatActivity() {
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
         }
-        detector.close()
+        detector?.close()
         super.onDestroy()
     }
 }
