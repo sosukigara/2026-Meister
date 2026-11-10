@@ -24,9 +24,12 @@ class YoloDetector(
         const val INPUT_SIZE = 640
         const val IOU_THRESHOLD = 0.45f
         const val PAD_COLOR = 114
+
+        // OrtEnvironment はプロセス単一。閉じると作り直しになるので使い回し、閉じない。
+        private val sharedEnv: OrtEnvironment by lazy { OrtEnvironment.getEnvironment() }
     }
 
-    private val env: OrtEnvironment = OrtEnvironment.getEnvironment()
+    private val env: OrtEnvironment = sharedEnv
     private val session: OrtSession
     private val inputName: String
 
@@ -35,7 +38,6 @@ class YoloDetector(
         val modelBytes = try {
             context.assets.open(modelName).use { it.readBytes() }
         } catch (e: Exception) {
-            env.close()
             throw IllegalStateException("model asset missing: $modelName", e)
         }
         val opts = OrtSession.SessionOptions()
@@ -44,6 +46,8 @@ class YoloDetector(
         opts.close()
         inputName = session.inputNames.firstOrNull() ?: "images"
     }
+
+    override fun label(): String = "YOLOv8n-640"
 
     override fun detect(input: Bitmap, threshold: Float): List<Detection> {
         val lb = YoloPostprocess.letterboxMath(input.width, input.height, INPUT_SIZE)
@@ -93,7 +97,7 @@ class YoloDetector(
     }
 
     override fun close() {
+        // sharedEnv は閉じない (プロセス単一で使い回す)。
         session.close()
-        env.close()
     }
 }

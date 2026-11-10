@@ -23,6 +23,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private var detector: Detector = FakeDetector()
+    // どれが動いているか (YOLO/FAKE) と fallback 理由。謎検出の切り分け用。
+    private var detectorStatus = "init"
     private var lensFacing = CameraSelector.LENS_FACING_BACK
     private val counter = FpsCounter()
     private val analysisExecutor = Executors.newSingleThreadExecutor()
@@ -39,6 +41,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         detector = openDetector()
+        binding.hudDet.text = detectorStatus
 
         binding.thresholdBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(bar: SeekBar?, value: Int, fromUser: Boolean) {
@@ -68,8 +71,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun openDetector(): Detector {
         return try {
-            YoloDetector(this)
+            YoloDetector(this).also { detectorStatus = it.label() }
         } catch (e: Exception) {
+            detectorStatus = "FAKE (${e.message})"
             FakeDetector()
         }
     }

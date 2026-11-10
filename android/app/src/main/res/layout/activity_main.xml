@@ -20,6 +20,14 @@
         android:padding="12dp">
 
         <TextView
+            android:id="@+id/hudDet"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- det"
+            android:textColor="#00FF00"
+            android:textSize="18sp" />
+
+        <TextView
             android:id="@+id/hudFps"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

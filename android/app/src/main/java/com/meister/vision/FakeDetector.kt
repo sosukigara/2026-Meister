@@ -10,6 +10,8 @@ class FakeDetector : Detector {
         const val DUMMY_SCORE = 0.6f
     }
 
+    override fun label(): String = "FAKE"
+
     override fun detect(input: Bitmap, threshold: Float): List<Detection> {
         tick++
         // しきい値スライダの動作確認用に固定スコアでフィルタする。
