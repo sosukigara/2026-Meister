@@ -44,6 +44,7 @@ PATTERNS=(
   "ros2-daemon"
   "detection_node"
   "pc_camera"
+  "d500_node"
 )
 
 # 括弧トリックで kill.sh 自身や grep にマッチしないようにする
