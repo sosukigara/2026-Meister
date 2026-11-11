@@ -67,18 +67,10 @@ def generate_launch_description():
         output='screen'
     )
 
-    # --- odom->base_footprint (static, 不動仮定) ---
-    # 実機には odom 発行源 (Gazebo odometry / ESP32 odom) がない。SLAM の message filter は
-    # odom フレームの存在を要求するため、identity を置き、ずれは SLAM の map->odom が補正する。
-    # ESP32 odom ができたらこのノードを置き換えること。
-    odom_static_tf = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='real_odom_static_tf',
-        output='screen',
-        arguments=['0', '0', '0', '0', '0', '0', 'odom', 'base_footprint'],
-        parameters=[{'use_sim_time': False}],
-    )
+    # --- odom->base_footprint は meister_serial_bridge が配信する ---
+    # 静的 identity 変換を置くと、走行中もロボットが静止していると SLAM/Nav2 に
+    # 誤認させる（旧実装の欠陥）。serial_bridge が /cmd_vel と IMU ヨーを融合して
+    # 50 Hz で /odom と odom->base_footprint を出すので、ここでは何も置かない。
 
     # --- SLAM (Slam Toolbox) ---
     # 実機のLiDARデータ (/scan) を元に地図を作成
@@ -123,6 +115,7 @@ def generate_launch_description():
     # 実機のオドメトリ (/odom) と地図を元に経路計画と制御を行う
 
     # /cmd_vel -> ESP32 UART (ステアリング舵角 + モータ PWM フレーム)
+    # /odom と odom->base_footprint はこのノードが 50 Hz で配信する。
     serial_bridge = Node(
         package='meister_serial_bridge',
         executable='serial_bridge',
@@ -131,6 +124,9 @@ def generate_launch_description():
         parameters=[{
             'serial_port': serial_port,
             'baud': serial_baud,
+            'publish_odom': True,
+            'publish_odom_tf': True,
+            'odom_rate_hz': 50.0,
         }],
     )
 
@@ -223,7 +219,6 @@ def generate_launch_description():
         LogInfo(msg='Make sure your hardware (LD-D500 LiDAR, ESP32) is connected!'),
 
         robot_state_publisher,
-        odom_static_tf,
         lidar,
         slam_toolbox,
         configure_slam,
