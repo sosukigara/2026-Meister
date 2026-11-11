@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-/// /map と /tf を購読し、Web UI が要る 3 つ（地図メタデータ / PNG / ロボット姿勢）に
-/// 答える。
+/// /map と /tf および /tf_static を購読し、Web UI が要る 3 つ（地図メタデータ / PNG / ロボット姿勢）に答える。
 ///
-/// 地図は MapCache が持ち、ここは tf の最新値だけを持つ。
-///
-/// 座標変換とメタデータの計算は自由関数に出してある。Node は rclcpp::init 無しに
-/// 構築できないので、クラスの中に置くと数値の検証に ROS グラフが要る。
+/// 重大バグ修正:
+///   旧実装は `/tf` のみを購読し `/tf_static` を購読していなかったため、
+///   `static_transform_publisher` 等が `/tf_static` (TransientLocal) に配信する変換を
+///   一切受信できず、実機で `RobotPose()` が永久に `std::nullopt`（「未受信」）となっていた。
+///   本修正により `/tf` と `/tf_static` の双方を購読し、先頭スラッシュの有無も正規化する。
 #ifndef MEISTER_WEB_NAV_MAP_LISTENER_HPP_
 #define MEISTER_WEB_NAV_MAP_LISTENER_HPP_
 
@@ -59,6 +59,7 @@ class MapListener : public rclcpp::Node, public MapSource {
   // 購読が破棄され、グラフにも /map が現れない (vision_listener と同じ持ち方)。
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
   rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr tf_sub_;
+  rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr tf_static_sub_;
 };
 
 }  // namespace meister_web_nav

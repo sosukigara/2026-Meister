@@ -2,6 +2,7 @@
 #include "meister_web_nav/map_cache.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cinttypes>
 #include <cstdio>
 #include <stdexcept>
@@ -18,6 +19,25 @@ constexpr uint64_t kFnvPrime = 1099511628211ULL;
 
 /// 未知セルのグレー値。Python 版 (PIL) と同じ 205。
 constexpr uint8_t kUnknownGray = 205;
+
+/// OccupancyGrid の int8_t 値 (-128..127) を O(1) でグレースケール uint8_t に変換する
+/// コンパイル時ルックアップテーブル（1200x1200 セル走査時の浮動小数点除算を完全排除）。
+constexpr std::array<uint8_t, 256> BuildOccupancyGrayTable() noexcept {
+  std::array<uint8_t, 256> table{};
+  for (int i = 0; i < 256; ++i) {
+    const int8_t cell = static_cast<int8_t>(static_cast<uint8_t>(i));
+    if (cell < 0) {
+      table[static_cast<std::size_t>(i)] = kUnknownGray;
+    } else {
+      const float value = 255.0f - (static_cast<float>(cell) / 100.0f) * 255.0f;
+      const float clamped = value < 0.0f ? 0.0f : (value > 255.0f ? 255.0f : value);
+      table[static_cast<std::size_t>(i)] = static_cast<uint8_t>(clamped);
+    }
+  }
+  return table;
+}
+
+inline constexpr std::array<uint8_t, 256> kOccupancyGrayTable = BuildOccupancyGrayTable();
 
 void HashBytes(uint64_t& h, const void* data, std::size_t len) {
   const auto* bytes = static_cast<const unsigned char*>(data);
@@ -93,8 +113,8 @@ std::optional<CropBounds> MapCache::CropBoundsOf(
   if (width == 0 || height == 0) {
     return std::nullopt;
   }
-  // 壊れた grid（data が宣言サイズより短い）で範囲外を読まない。
   if (grid.data.size() < static_cast<std::size_t>(width) * height) {
+    // 壊れた grid（data が宣言サイズより短い）で範囲外を読まない。
     return std::nullopt;
   }
   int min_r = height;
@@ -129,8 +149,7 @@ std::optional<CropBounds> MapCache::CropBoundsOf(
   return CropBounds{r0, r1, c0, c1};
 }
 
-MapSnapshot MapCache::Snapshot() {
-  std::lock_guard<std::mutex> memo(memo_lock_);
+MapSnapshot MapCache::SnapshotLocked() {
   nav_msgs::msg::OccupancyGrid::ConstSharedPtr grid;
   std::string version;
   {
@@ -149,6 +168,11 @@ MapSnapshot MapCache::Snapshot() {
   return MapSnapshot{grid, version, bounds_};
 }
 
+MapSnapshot MapCache::Snapshot() {
+  std::lock_guard<std::mutex> memo(memo_lock_);
+  return SnapshotLocked();
+}
+
 std::string MapCache::EncodePng(const nav_msgs::msg::OccupancyGrid& grid,
                                const std::optional<CropBounds>& bounds) {
   const int width = static_cast<int>(grid.info.width);
@@ -157,20 +181,14 @@ std::string MapCache::EncodePng(const nav_msgs::msg::OccupancyGrid& grid,
   const int r1 = bounds ? bounds->r1 : height;
   const int c0 = bounds ? bounds->c0 : 0;
   const int c1 = bounds ? bounds->c1 : width;
-  cv::Mat gray(r1 - r0, c1 - c0, CV_8UC1);
+  const int crop_w = c1 - c0;
+  cv::Mat gray(r1 - r0, crop_w, CV_8UC1);
   for (int r = r0; r < r1; ++r) {
-    const int8_t* row = grid.data.data() + static_cast<std::size_t>(r) * width;
+    const int8_t* row = grid.data.data() + static_cast<std::size_t>(r) * width + c0;
     // OccupancyGrid の row 0 は地図の下端、画像の row 0 は上端。
     uint8_t* out = gray.ptr<uint8_t>(r1 - 1 - r);
-    for (int c = c0; c < c1; ++c) {
-      const int8_t cell = row[c];
-      if (cell < 0) {
-        out[c - c0] = kUnknownGray;
-      } else {
-        // 占有 100 を黒、自由 0 を白。丸めは Python 版 (PIL) と同じく切り捨て。
-        const float value = 255.0f - (static_cast<float>(cell) / 100.0f) * 255.0f;
-        out[c - c0] = static_cast<uint8_t>(std::clamp(value, 0.0f, 255.0f));
-      }
+    for (int x = 0; x < crop_w; ++x) {
+      out[x] = kOccupancyGrayTable[static_cast<uint8_t>(row[x])];
     }
   }
   std::vector<uint8_t> encoded;
@@ -181,13 +199,12 @@ std::string MapCache::EncodePng(const nav_msgs::msg::OccupancyGrid& grid,
 }
 
 std::optional<std::pair<std::string, std::string>> MapCache::RenderPng() {
-  const MapSnapshot snapshot = Snapshot();
-  // 0x0 の地図は encode できない。空の PNG を 200 で返すより「地図なし」に倒す。
+  std::lock_guard<std::mutex> memo(memo_lock_);
+  const MapSnapshot snapshot = SnapshotLocked();
   if (!snapshot.grid || snapshot.grid->info.width == 0 ||
       snapshot.grid->info.height == 0) {
     return std::nullopt;
   }
-  std::lock_guard<std::mutex> memo(memo_lock_);
   if (snapshot.version != png_version_) {
     png_ = EncodePng(*snapshot.grid, snapshot.bounds);
     png_version_ = snapshot.version;

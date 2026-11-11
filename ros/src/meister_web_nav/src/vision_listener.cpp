@@ -9,18 +9,37 @@ namespace {
 constexpr char kNodeName[] = "umeonigiri_web_nav_vision_listener";
 constexpr char kImageTopic[] = "detection_image";
 constexpr char kDetectionsTopic[] = "detections";
-constexpr std::chrono::milliseconds kReconcilePeriod{200};
+constexpr std::chrono::milliseconds kReconcilePeriod{100};
+constexpr std::chrono::seconds kIdleSuspendTimeout{10};
 
 }  // namespace
 
 VisionListener::VisionListener() : rclcpp::Node(kNodeName) {
   // 既定 ON。executor に載る前なので constructor で作ってよい。
+  TouchClientActivity();
   ApplyEnabled();
   reconcile_timer_ = create_wall_timer(kReconcilePeriod, [this] { ApplyEnabled(); });
 }
 
+void VisionListener::TouchClientActivity() noexcept {
+  const auto now_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                          Clock::now().time_since_epoch())
+                          .count();
+  last_client_access_ns_.store(now_ns, std::memory_order_relaxed);
+}
+
+bool VisionListener::IsClientRecentlyActive() const noexcept {
+  const auto now_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+                          Clock::now().time_since_epoch())
+                          .count();
+  const auto last_ns = last_client_access_ns_.load(std::memory_order_relaxed);
+  const auto timeout_ns =
+      std::chrono::duration_cast<std::chrono::nanoseconds>(kIdleSuspendTimeout).count();
+  return (now_ns - last_ns) <= timeout_ns;
+}
+
 void VisionListener::ApplyEnabled() {
-  const bool want = enabled_.load();
+  const bool want = enabled_.load(std::memory_order_relaxed) && IsClientRecentlyActive();
   if (want == subscribed_) {
     return;
   }
@@ -40,12 +59,15 @@ void VisionListener::ApplyEnabled() {
     detections_sub_.reset();
   }
   subscribed_ = want;
-  RCLCPP_INFO(get_logger(), "認識モニター: %s", want ? "ON" : "OFF");
+  RCLCPP_INFO(get_logger(), "認識モニター購読状態: %s (enabled=%d)",
+              want ? "ACTIVE" : "SUSPENDED",
+              static_cast<int>(enabled_.load(std::memory_order_relaxed)));
 }
 
 nlohmann::json VisionListener::Status() {
+  TouchClientActivity();
   nlohmann::json payload = cache_.Status();
-  payload["monitor"] = enabled_.load();
+  payload["monitor"] = enabled_.load(std::memory_order_relaxed);
   // 配信側が生きているかを見る。監視 OFF のときに「トピック自体は流れている」と
   // 分かるようにするため。
   payload["publishers"] = {{"detection_image", count_publishers(kImageTopic)},
@@ -54,9 +76,13 @@ nlohmann::json VisionListener::Status() {
 }
 
 std::optional<VisionFrame> VisionListener::Latest(long after_seq, double timeout_s) {
+  TouchClientActivity();
   return cache_.Latest(after_seq, timeout_s);
 }
 
-void VisionListener::SetEnabled(bool enabled) { enabled_.store(enabled); }
+void VisionListener::SetEnabled(bool enabled) {
+  TouchClientActivity();
+  enabled_.store(enabled, std::memory_order_relaxed);
+}
 
 }  // namespace meister_web_nav

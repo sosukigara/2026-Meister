@@ -69,6 +69,9 @@ class MapCache {
   Stats stats() const;
 
  private:
+  /// memo_lock_ を保持した状態で呼ぶ内部スナップショット取得（二重ロック排除）。
+  MapSnapshot SnapshotLocked();
+
   /// 既知セルの bounding box を求める。既知セルが 1 つも無ければ nullopt。
   static std::optional<CropBounds> CropBoundsOf(
       const nav_msgs::msg::OccupancyGrid& grid);
@@ -77,6 +80,7 @@ class MapCache {
 
   // state_lock は grid ポインタの差し替えだけ、memo_lock は重い計算の直列化。
   // 取得順は常に memo_lock -> state_lock に固定する。
+
   std::mutex state_lock_;
   std::mutex memo_lock_;
   nav_msgs::msg::OccupancyGrid::ConstSharedPtr grid_;

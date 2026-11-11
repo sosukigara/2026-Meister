@@ -2,6 +2,7 @@
 #include "meister_web_nav/map_listener.hpp"
 
 #include <cmath>
+#include <string>
 
 #include "geometry_msgs/msg/transform_stamped.hpp"
 #include "tf2_msgs/msg/tf_message.hpp"
@@ -14,6 +15,19 @@ namespace {
 /// VOLATILE だと最初の配信を取りこぼし、「地図を待っています」のまま固まる。
 rclcpp::QoS MapQos() {
   return rclcpp::QoS(rclcpp::KeepLast(1)).reliable().transient_local();
+}
+
+/// /tf_static も TRANSIENT_LOCAL。VOLATILE で受けると、後から起動した本ノードが
+/// static_transform_publisher の過去の配信を取りこぼす。
+rclcpp::QoS StaticTfQos() {
+  return rclcpp::QoS(rclcpp::KeepLast(10)).reliable().transient_local();
+}
+
+std::string NormalizeFrameId(const std::string& f) {
+  if (!f.empty() && f.front() == '/') {
+    return f.substr(1);
+  }
+  return f;
 }
 
 }  // namespace
@@ -39,21 +53,25 @@ MapListener::MapListener() : rclcpp::Node("web_nav_map_listener") {
         cache_.SetGrid(std::move(msg));
       });
   tf_sub_ = create_subscription<tf2_msgs::msg::TFMessage>(
-      "/tf", rclcpp::QoS(10),
+      "/tf", rclcpp::QoS(50),
+      [this](tf2_msgs::msg::TFMessage::ConstSharedPtr msg) { OnTf(*msg); });
+  tf_static_sub_ = create_subscription<tf2_msgs::msg::TFMessage>(
+      "/tf_static", StaticTfQos(),
       [this](tf2_msgs::msg::TFMessage::ConstSharedPtr msg) { OnTf(*msg); });
 }
 
 void MapListener::OnTf(const tf2_msgs::msg::TFMessage& msg) {
   for (const auto& t : msg.transforms) {
-    if (t.header.frame_id == "map" && t.child_frame_id == "odom") {
+    const std::string parent = NormalizeFrameId(t.header.frame_id);
+    const std::string child = NormalizeFrameId(t.child_frame_id);
+    if (parent == "map" && child == "odom") {
       const PlanarTransform planar{t.transform.translation.x,
                                    t.transform.translation.y,
                                    YawOf(t.transform.rotation)};
       std::lock_guard<std::mutex> lock(lock_);
       map_odom_ = planar;
-    } else if (t.header.frame_id == "odom" &&
-               (t.child_frame_id == "base_footprint" ||
-                t.child_frame_id == "base_link")) {
+    } else if (parent == "odom" &&
+               (child == "base_footprint" || child == "base_link")) {
       const PlanarTransform planar{t.transform.translation.x,
                                    t.transform.translation.y,
                                    YawOf(t.transform.rotation)};
