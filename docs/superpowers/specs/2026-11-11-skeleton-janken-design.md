@@ -4,6 +4,7 @@
 > 前提ブランチ: `origin/android-vision-base`（YOLOアプリ `android/`）。既存は触らない。
 > 実装開始点: `origin/android-vision-base` から新ブランチ（例：`android-skeleton-base`）を切って `android-skeleton/` を追加する。
 > 要望: 「改造じゃなくて、新しく骨格検出用のアプリを作る」「じゃんけんはしなくてよくて、いま写ってる手がグーちょきぱーどれかを検出できればいい」
+> 追加要望（2026-11-11）: HUDにCPU使用率とリアルタイム性（遅延）を表示する。25FPSで動作させる。
 
 ## 背景
 
@@ -20,6 +21,8 @@
 | D3 | 依存は CameraX＋`tasks-vision` のみ。onnxruntime は入れない | 骨格は MediaPipe に一本化し、APK肥大とABI問題を避ける |
 | D4 | 判定は **21点→グー/チョキ/パー/不明の純粋関数** `JankenClassifier` | Snapdragon 665でも回る軽さ。テスト容易 |
 | D5 | YOLO系（`YoloDetector`・`YoloPostprocess`・320モデル）は持ち込まない | 骨格専用のため。削除PRも今回は出さない（既存側は無変更） |
+| D6 | **HUDにCPU使用率・遅延・FPSを表示し、25FPSを目標にする** | 操作入力に使うなら体感遅延と処理落ちが見える必要がある。CPU%は自プロセス、遅延は撮影→描画の端 to 端 |
+| D7 | **25FPS未達のときだけGPU delegateを検討する** | CPUのみで届くか実測で判断。やみくもな最適化はしない |
 
 ## 構成
 
@@ -37,7 +40,8 @@ android-skeleton/
     JankenClassifier.kt            # 新規：純粋関数
     HandResult.kt                  # 新規：21点＋判定＋bbox＋score
     SkeletonOverlayView.kt         # 新規：骨格線＋点＋判定ラベル（centerCrop＋mirror流用）
-    FpsCounter.kt                  # 流用
+    CpuMonitor.kt                  # 新規：自プロセスCPU使用率（/proc/self/stat＋/proc/stat差分、1Hz更新）
+    FpsCounter.kt                  # 流用（fps＋推論ms。撮影→描画の端to端遅延はMainActivityで計測しHUD表示）
     ImageUtil.kt                   # 流用（toRgbBitmap）
     FakeSkeleton.kt                # 新規：配線確認用。グー→チョキ→パー巡回の仮21点
   app/src/main/res/...             # layout/themes/strings流用
@@ -65,6 +69,7 @@ android-skeleton/
 ## テスト＋完成定義（§4合意）
 
 - 単体：`JankenClassifierTest`（合成21点で4値を検証）＋既存流儀の `./gradlew testDebugUnitTest`。
-- 実機：既存 Q30 流用。「起動→プレビュー→骨格＋グー/チョキ/パー表示→10分落ちない」。FPS不問。
+- 実機：既存 Q30 流用。「起動→プレビュー→骨格＋グー/チョキ/パー表示→10分落ちない」。加えてHUDのFPSが **25前後**（実測・Snapdragon 665想定。未達ならD7へ）。
+- HUD追加：cpu（自プロセスCPU%）・lat（撮影→描画の端to端ms）。fps/ms/handsは既存通り。logcat要約にも `cpu=` `lat=` を足す。
 - 確認物：`adb_fetch.sh` 流儀の logcat＋screen.png＋battery。グー・チョキ・パー各1枚。
-- やらないこと：ROS送信、NNAPI/GPU delegate・量子化、勝敗判定、自動回転対応。
+- やらないこと：ROS送信、勝敗判定、自動回転対応。量子化は実測後に判断（D7のdelegate検討に含む）。
