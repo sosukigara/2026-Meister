@@ -41,11 +41,15 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "use_pc_camera", default_value="false",
             description="PC内蔵カメラを使うか (既定はGazeboロボット目線カメラ)"),
+        DeclareLaunchArgument(
+            "model_path", default_value="",
+            description="YOLOモデルへの明示パス。空なら自動解決 "
+                        "(640既定。320を使う場合はパスを指定)"),
 
         Node(
             package="meister_vision",
             executable="pc_camera",
-            name="umeonigiri_pc_camera",
+            name="pc_camera",
             output="screen",
             parameters=[{
                 "device": LaunchConfiguration("device"),
@@ -57,10 +61,11 @@ def generate_launch_description():
         Node(
             package="meister_vision",
             executable="detection_node",
-            name="umeonigiri_vision",
+            name="meister_vision",
             output="screen",
             parameters=[{
                 "image_topic": LaunchConfiguration("image_topic"),
+                "model_path": LaunchConfiguration("model_path"),
                 "conf_threshold": LaunchConfiguration("conf_threshold"),
                 "iou_threshold": LaunchConfiguration("iou_threshold"),
                 "rate": LaunchConfiguration("rate"),

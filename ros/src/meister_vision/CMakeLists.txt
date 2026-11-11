@@ -75,6 +75,12 @@ install(TARGETS detection_node hand_landmarks_node pc_camera
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY rviz DESTINATION share/${PROJECT_NAME})
+# モデルは git 管理外（*.onnx は ignore）。取得済みのものだけ配備する。
+# launch.sh はこのパスを見て 320/640 を切り替える（R2: 参照は 1 箇所）。
+# models/ が無い fresh clone でも configure が落ちないよう EXISTS 付き。
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/models")
+  install(DIRECTORY models DESTINATION share/${PROJECT_NAME})
+endif()
 
 # モデル DL は Python のまま残す（ネットワーク取得だけなので C++ にしても
 # 得られるものが libcurl 依存の追加だけ）。実行ファイル名は download_model で

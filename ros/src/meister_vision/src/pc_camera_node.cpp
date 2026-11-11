@@ -10,6 +10,7 @@
 ///   height    (int,    480)          取得高さ
 ///   fps       (double, 5.0)          取得フレームレート
 ///   frame_id  (string, camera_link) 配信するフレーム ID
+///   pixel_format (string, MJPEG)    要求ピクセル形式。空はドライバ任せ
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -26,7 +27,7 @@
 namespace meister_vision {
 namespace {
 
-constexpr char kNodeName[] = "umeonigiri_pc_camera";
+constexpr char kNodeName[] = "pc_camera";
 constexpr char kTopic[] = "/camera/image_raw";
 constexpr int kDefaultWidth = 640;
 constexpr int kDefaultHeight = 480;
@@ -40,7 +41,8 @@ class PcCameraNode final : public rclcpp::Node {
         width_(declare_parameter<int>("width", kDefaultWidth)),
         height_(declare_parameter<int>("height", kDefaultHeight)),
         fps_(declare_parameter<double>("fps", kDefaultFps)),
-        frame_id_(declare_parameter<std::string>("frame_id", "camera_link")) {
+        frame_id_(declare_parameter<std::string>("frame_id", "camera_link")),
+        pixel_format_(declare_parameter<std::string>("pixel_format", "MJPEG")) {
     pub_ = create_publisher<sensor_msgs::msg::Image>(kTopic, 10);
     // 取得は専用スレッドで回す。タイマー + ブロッキング read だと
     // 「待ち時間 + 次のフレーム待ち」で周期が倍になり、30fps 指定でも
@@ -78,6 +80,12 @@ class PcCameraNode final : public rclcpp::Node {
     if (!capture_.isOpened()) {
       RCLCPP_ERROR(get_logger(), "open failed (backend=%d)", cv::CAP_V4L2);
       return false;
+    }
+    // YUYV だと USB2 の帯域で 640x480 が 10〜15fps 頭打ちになる。
+    // MJPEG 要求で 30fps まで出る (デコードは OpenCV 側)。空文字は要求なし。
+    if (pixel_format_ == "MJPEG") {
+      capture_.set(cv::CAP_PROP_FOURCC,
+                   cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
     }
     capture_.set(cv::CAP_PROP_FRAME_WIDTH, width_);
     capture_.set(cv::CAP_PROP_FRAME_HEIGHT, height_);
@@ -141,6 +149,7 @@ class PcCameraNode final : public rclcpp::Node {
   int height_;
   double fps_;
   std::string frame_id_;
+  std::string pixel_format_;
   cv::VideoCapture capture_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
   std::thread capture_thread_;

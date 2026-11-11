@@ -41,6 +41,7 @@
 | `meister_vision` | YOLOv8n ONNX 検出 → `detections` | `detection_node` / `hand_landmarks_node` / `pc_camera`（いずれも C++） | OpenCV, ONNX Runtime |
 | `meister_web_nav` | Web UI（地図・現在地・経路・認識モニター） | `web_nav_server`（C++） | umeonigiri_description |
 | `meister_serial_bridge` | **`/cmd_vel` → UART フレーム、`/esp32/state` ← FB_STATE** | `serial_bridge` / `meister_comm_check` / `meister_hz_measure`（いずれも C++） | libserial, firmware の protocol ソース |
+| `ros2_ldlidar_d500` | LD-D500 LiDAR → `/scan` (vendored, MIT) | `d500_node`（C++） | なし (termios のみ) |
 
 ### `meister_serial_bridge` 内部（PC 側と ESP32 側の接点。ここ最重要）
 

@@ -74,3 +74,10 @@
 
 - 判定範囲は 3 個に限る: (1) 日本語の直後に英単語 3 文字以上、(2) ハングル、(3) U+FFFD。
 - 日本語の漢字も CJK 範囲 `[\x{4E00}-\x{9FFF}]` に含まれるので、CJK 範囲で判定すると正常な日本語が全滅する（`meister_web_nav` で実際に全滅した）。
+
+## P12. ROS 2 ノード名・購読の罠（2026-11-11 実測）
+
+- launch の `Node(..., name='X')` は `-r __node:=X` になり、プロセス内手作りノードの**明示名も上書き**する。1 実行ファイル多ノード（`web_nav_server` 内の map/vision/commander）で `name` を付けると 3 ノードが同名 3 重登録になり、`ros2 node info` が「3 nodes with the exact name」と言う。対策: 多ノード実行ファイルの launch には `name` を付けない（`web_nav.launch.py`）。
+- `create_subscription` の戻りを捨てると Jazzy では購読が破棄される。「Node が保持する」は誤り。`vision_listener`（メンバ保持、生存）と `map_listener`（破棄、死亡）で実証済み。購読はメンバで持つ。
+- 実機に odom 発行源がないと SLAM の message filter が `/scan` を全捨てする（`discarding message because the queue is full`）。対策: `real_robot.launch.py` の static `odom->base_footprint`（不動仮定。ずれは SLAM の `map->odom` が補正）。ESP32 odom ができたら置き換える。
+- 実機 launch の SLAM 起動は固定秒数 `activate` 禁止。`configure` 前に走ると両方 exit 1 で SLAM が `unconfigured` のまま固まる。`slam.launch.py` と同じ `OnStateTransition(inactive)` 駆動にする。

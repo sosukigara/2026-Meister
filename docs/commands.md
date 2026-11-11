@@ -57,13 +57,24 @@ ros2 run meister_serial_bridge meister_hz_measure --port /dev/ttyUSB0 --expect-h
 ## 5. 起動
 
 ```bash
-# ビルドなしで起動
-./start_meister.sh
+# 実機モード (既定。Gazeboなし。LD-D500 + ESP32 が必要)
+./launch.sh
+# シミュレーションモード (Gazeboあり)
+./launch.sh --sim [warehouse|maze|empty]
 # 停止
-./kill_ros.sh
+./kill.sh
 ```
 
-- `start_meister.sh:44-48` は VPN 環境のマルチキャスト障害回避で `ROS_LOCALHOST_ONLY=1` を設定するが、**子プロセスのみ**。別ターミナルの `ros2` CLI には継承されない。
+- 実機モードは `ros2_autonomous_nav/real_robot.launch.py` を起動する
+  (robot_state_publisher + LD-D500 + SLAM + Nav2 + serial_bridge + Web UI + 画像認識)。
+- ポートは環境変数で上書き可 (既定: ESP32 `/dev/ttyUSB0`、LD-D500 `/dev/ttyUSB1`。
+  両方 `ttyUSB0` のままだと衝突する)。by-id / by-path 推奨。
+  ```bash
+  MEISTAR_SERIAL_PORT=/dev/ttyUSB0 MEISTAR_LIDAR_PORT=/dev/ttyUSB1 ./launch.sh
+  ```
+- シリアル権限がないと `/scan` も `/esp32/state` も流れない。
+  `groups` に `dialout` がなければ `sudo usermod -a -G dialout $USER` 後に再ログイン。
+- `launch.sh` は VPN 環境のマルチキャスト障害回避で `ROS_LOCALHOST_ONLY=1` を設定するが、**子プロセスのみ**。別ターミナルの `ros2` CLI には継承されない。
 
 ## 6. 4 通りのビルド（条件コンパイル確認）
 

@@ -147,3 +147,31 @@ JPEG 化は購読コールバックで 1 回だけ行い、`/api/vision.jpg` と
 - コードマップ: [code-map.md](code-map.md)
 - 起動スクリプト: `launch.sh`（Gazebo と SLAM と Nav2 を起動。
   vision は `mapping_nav.launch.py` 経由で上がる）
+## 5. Orange Pi 5 Max 実測 (2026-11-11、実測した)
+
+条件: 本機 (RK3588・8GB・aarch64)、実機モード全起動 (SLAM/Nav2/Web UI/LiDAR)、
+デスクトップ (firefox/gnome) 同居、load average 約 9〜12/8 core。
+モデル yolov8n-320.onnx (12.7MB、git 管理外。640 は yolov8n.onnx)。
+カメラ EMEET C960 `/dev/video0` 640x480 (MJPEG 要求は `pixel_format` 既定)。
+
+| 構成 | `/detections` | detector CPU | 備考 |
+|---|---|---|---|
+| 640 / 4 threads | **5.1 Hz** | 122〜347% | 推論律速。10fps 未達 |
+| 320 / 4 threads | **16.2 Hz** | 310% | 10fps 到達。CPU 食い過ぎ |
+| 320 / 2 threads | **10.7 Hz** | 148% | 実機モード既定に採用。動作は 640 と同等 (person 0.93 等) |
+| 320 / 6 threads | 0 Hz (無出力) | — | 過購読で失速。採用しない |
+
+カメラ側: YUYV 8.5Hz → MJPEG 要求で 11.3Hz → 露出固定 (`auto_exposure=1`、
+`exposure_time_absolute=333`) で 14.8Hz。暗所の自動露出が律速だった。
+`/camera/image_raw` の上限が e2e の上限になる (推論が速くても超えられない)。
+
+遅延 (`/api/vision`): `detection_age_ms` 137〜276ms。内訳はカメラバッファ
+(2 枚 ≈ 130ms @15Hz)＋推論 60〜90ms＋描画。`/detection_image` は 0.8〜1.6Hz
+(描画＋JPEG 化が重い。見る人用であり検出経路には影響しない)。
+
+20fps の天井: カメラ 15Hz・推論 16Hz が現経路の上限。20fps は NPU
+(RKNN 計画) または明所＋余裕 core が要る。TOPS からの推定はしない。
+
+計算量の軽減（動作はそのまま）で実施済み:
+320 モデル＋2 スレッド化 (310%→148%)、RViz 残留終了 (約 30%)、
+`pixel_format` パラメータ (MJPEG 要求)、露出固定は手動 (`v4l2-ctl`、未コード化)。
