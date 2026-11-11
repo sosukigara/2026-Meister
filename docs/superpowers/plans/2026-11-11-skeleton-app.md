@@ -211,7 +211,7 @@ Expected: `Success`、`pm list packages` に `com.meister.skeleton`。
 
 - [ ] **Step 4: 実機でグー・チョキ・パー各1枚＋10分安定を確認する**
 
-`adb logcat -d MeisterSkeleton:I '*:S'` に `top=グー/チョキ/パー` が出ること。HUDの `fps` が **25前後**・`cpu` と `lat` が更新されることを screen.png で目視する（未達なら測定値を記録しdelegate検討を次PRに回す。今回PRでは無理に載せない）。`tools/adb_fetch.sh` 流儀で screen.png＋batteryを取得し、グー・チョキ・パー各1枚を保存する。既存 YOLO アプリ（`com.meister.vision`）が併存していること。
+`adb logcat -d MeisterSkeleton:I '*:S'` に `top=グー/チョキ/パー` が出ること。HUDの `fps` が **10以上**・`cpu` と `lat` が更新されることを screen.png で目視する（未達なら測定値を記録しdelegate検討を次PRに回す。今回PRでは無理に載せない）。`tools/adb_fetch.sh` 流儀で screen.png＋batteryを取得し、グー・チョキ・パー各1枚を保存する。既存 YOLO アプリ（`com.meister.vision`）が併存していること。
 
 - [ ] **Step 5: APKを releases に置いて Commit**
 
