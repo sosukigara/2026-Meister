@@ -36,5 +36,5 @@ echo "=== ビルド開始 (workers=$WORKERS, type=$BUILD_TYPE) ==="
 cd "$WORKSPACE_ROOT/ros"
 colcon build --symlink-install --parallel-workers "$WORKERS" \
     --cmake-args -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
-    --packages-select umeonigiri_description meister_vision meister_web_nav meister_serial_bridge ros2_autonomous_nav
+    --packages-select umeonigiri_description meister_vision meister_web_nav meister_serial_bridge ros2_autonomous_nav ros2_ldlidar_d500
 echo "=== ビルド完了 ==="
