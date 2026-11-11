@@ -25,7 +25,13 @@ class ImageConversionError : public std::runtime_error {
 
 /// sensor_msgs/Image を BGR の CV_8UC3 に変換する。
 /// 未対応のエンコーディングは ImageConversionError。
+/// bgr8 の場合はゼロコピーまたは最小コピーで高速変換する。
 cv::Mat BgrFromImageMsg(const sensor_msgs::msg::Image& msg);
+
+/// bgr8 エンコーディング時にデータコピーを行わず読み取り専用の cv::Mat ビューを返す。
+/// その他のエンコーディング時は BgrFromImageMsg と同様に BGR へ変換する。
+/// 返り値は msg の data を参照するので、msg より長生きさせないこと。
+cv::Mat BgrViewOrConvertFromImageMsg(const sensor_msgs::msg::Image& msg);
 
 /// BGR の CV_8UC3 を bgr8 の sensor_msgs/Image にする。
 sensor_msgs::msg::Image ImageMsgFromBgr(const cv::Mat& bgr);

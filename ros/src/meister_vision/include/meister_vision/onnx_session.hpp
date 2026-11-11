@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: MIT
-/// ONNX Runtime の薄いラッパ。
+/// ONNX Runtime の薄いラッパ（RK3588 最適化・出力バッファ再利用対応）。
 ///
 /// Session と入出力名を生命期としてまとめ、モデルが無い・入力形が想定と違う
 /// をどちらも std::runtime_error で致命扱いにする（AGENTS.md R4）。
 #ifndef MEISTER_VISION_ONNX_SESSION_HPP_
 #define MEISTER_VISION_ONNX_SESSION_HPP_
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -29,7 +30,13 @@ class OnnxSession {
   const std::string& input_name() const { return input_name_; }
   const std::string& output_name() const { return output_name_; }
 
-  /// 入力テンソルを渡して 1 回推論し、出力を平坦化して返す。
+  /// 生ポインタ入力 + 出力バッファ再利用によるゼロアロケーション推論。
+  /// OpenCV の cv::Mat::ptr<float>() を直接渡すことで 4.91 MB の中間コピーを省く。
+  /// input_count は input_shape() の積と一致していなければいけない。
+  void RunInto(const float* input_data, std::size_t input_count,
+               std::vector<float>& output) const;
+
+  /// 入力テンソルを渡して 1 回推論し、出力を平坦化して返す（後方互換 API）。
   /// 入力元素数は input_shape() の積と一致していなければいけない。
   std::vector<float> Run(const std::vector<float>& input) const;
 

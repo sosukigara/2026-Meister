@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "meister_vision/image_util.hpp"
 
+#include <cstring>
 #include <string>
 
 #include <opencv2/imgproc.hpp>
@@ -33,12 +34,22 @@ void RequireLayout(const sensor_msgs::msg::Image& msg, size_t bytes_per_pixel) {
 
 }  // namespace
 
+cv::Mat BgrViewOrConvertFromImageMsg(const sensor_msgs::msg::Image& msg) {
+  if (msg.encoding == "bgr8") {
+    RequireLayout(msg, 3);
+    void* const raw = const_cast<uint8_t*>(msg.data.data());
+    return cv::Mat(static_cast<int>(msg.height),
+                   static_cast<int>(msg.width),
+                   CV_8UC3, raw, msg.step);
+  }
+  return BgrFromImageMsg(msg);
+}
+
 cv::Mat BgrFromImageMsg(const sensor_msgs::msg::Image& msg) {
   const std::string& enc = msg.encoding;
   const size_t w = msg.width;
   const int rows = static_cast<int>(msg.height);
   const int cols = static_cast<int>(w);
-  // msg は const 参照だが読むだけなので view のポインタは const を外す。
   void* const raw = const_cast<uint8_t*>(msg.data.data());
   const size_t step = msg.step;
 
@@ -96,18 +107,26 @@ sensor_msgs::msg::Image ImageMsgFromBgr(const cv::Mat& bgr) {
   if (bgr.empty() || bgr.type() != CV_8UC3) {
     throw ImageConversionError("bgr8 で書き出せるのは CV_8UC3 だけです");
   }
-  cv::Mat contiguous;
-  bgr.copyTo(contiguous);
 
   sensor_msgs::msg::Image msg;
-  msg.height = static_cast<uint32_t>(contiguous.rows);
-  msg.width = static_cast<uint32_t>(contiguous.cols);
+  msg.height = static_cast<uint32_t>(bgr.rows);
+  msg.width = static_cast<uint32_t>(bgr.cols);
   msg.encoding = "bgr8";
   msg.is_bigendian = 0;
-  msg.step = static_cast<uint32_t>(contiguous.step);
-  msg.data.assign(contiguous.ptr<uint8_t>(),
-                  contiguous.ptr<uint8_t>() +
-                      static_cast<size_t>(contiguous.step) * contiguous.rows);
+  const uint32_t row_bytes = static_cast<uint32_t>(bgr.cols * 3);
+  msg.step = row_bytes;
+  const size_t total = static_cast<size_t>(row_bytes) * bgr.rows;
+
+  // 既に連続メモリであれば中間 cv::Mat contiguous の確保・コピーを省略して直接転送する
+  if (bgr.isContinuous()) {
+    msg.data.assign(bgr.ptr<uint8_t>(), bgr.ptr<uint8_t>() + total);
+  } else {
+    msg.data.resize(total);
+    for (int r = 0; r < bgr.rows; ++r) {
+      std::memcpy(msg.data.data() + static_cast<size_t>(r) * row_bytes,
+                  bgr.ptr<uint8_t>(r), row_bytes);
+    }
+  }
   return msg;
 }
 

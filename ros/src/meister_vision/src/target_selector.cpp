@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 #include "meister_vision/target_selector.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <limits>
 
@@ -26,6 +27,8 @@ void TargetSelector::Reset() {
   miss_count_ = 0;
   last_center_x_ = 0.0f;
   last_center_y_ = 0.0f;
+  vel_x_ = 0.0f;
+  vel_y_ = 0.0f;
   last_class_ = -1;
 }
 
@@ -54,7 +57,11 @@ Target TargetSelector::Select(const std::vector<Detection>& detections,
   int chosen = -1;
   bool kept_lock = false;
 
-  // 1) 前フレームの対象が近くに残っているならそれを追い続ける。
+  // α-β カルマン等速予測に基づく次フレーム期待中心位置
+  const float pred_x = last_center_x_ + vel_x_;
+  const float pred_y = last_center_y_ + vel_y_;
+
+  // 1) 前フレームの対象が予測位置の近くに残っているならそれを追い続ける。
   if (has_lock_) {
     const float lock_radius_sq = options_.lock_radius_px * options_.lock_radius_px;
     float best_dist = std::numeric_limits<float>::max();
@@ -63,8 +70,7 @@ Target TargetSelector::Select(const std::vector<Detection>& detections,
       if (!IsCandidate(det) || det.class_id != last_class_) {
         continue;
       }
-      const float dist = DistSq(CenterX(det), CenterY(det), last_center_x_,
-                                last_center_y_);
+      const float dist = DistSq(CenterX(det), CenterY(det), pred_x, pred_y);
       if (dist <= lock_radius_sq && dist < best_dist) {
         best_dist = dist;
         chosen = static_cast<int>(i);
@@ -78,6 +84,10 @@ Target TargetSelector::Select(const std::vector<Detection>& detections,
   if (has_lock_ && chosen < 0) {
     if (miss_count_ + 1 < options_.lock_grace_frames) {
       ++miss_count_;
+      last_center_x_ = pred_x;
+      last_center_y_ = pred_y;
+      vel_x_ *= 0.8f;
+      vel_y_ *= 0.8f;
       return target;
     }
     Reset();
@@ -110,19 +120,35 @@ Target TargetSelector::Select(const std::vector<Detection>& detections,
   }
 
   const Detection& det = detections[static_cast<std::size_t>(chosen)];
-  const float cx = CenterX(det);
-  const float cy = CenterY(det);
+  const float meas_cx = CenterX(det);
+  const float meas_cy = CenterY(det);
+
+  float filtered_cx = meas_cx;
+  float filtered_cy = meas_cy;
+  if (kept_lock) {
+    const float rx = meas_cx - pred_x;
+    const float ry = meas_cy - pred_y;
+    const float alpha = std::clamp(options_.alpha_pos, 0.05f, 1.0f);
+    const float beta = std::clamp(options_.beta_vel, 0.0f, 1.0f);
+    filtered_cx = pred_x + alpha * rx;
+    filtered_cy = pred_y + alpha * ry;
+    vel_x_ += beta * rx;
+    vel_y_ += beta * ry;
+  } else {
+    vel_x_ = 0.0f;
+    vel_y_ = 0.0f;
+  }
 
   target.valid = true;
   target.detection = det;
-  target.offset_x = (cx - center_x) / center_x;
-  target.offset_y = (cy - center_y) / center_y;
+  target.offset_x = (filtered_cx - center_x) / center_x;
+  target.offset_y = (filtered_cy - center_y) / center_y;
   target.locked = kept_lock;
 
   has_lock_ = true;
   miss_count_ = 0;
-  last_center_x_ = cx;
-  last_center_y_ = cy;
+  last_center_x_ = filtered_cx;
+  last_center_y_ = filtered_cy;
   last_class_ = det.class_id;
   return target;
 }

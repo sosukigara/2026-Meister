@@ -8,6 +8,7 @@
 #include <stdexcept>
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
 
 #include "meister_vision/letterbox.hpp"
@@ -65,7 +66,7 @@ std::optional<HandLandmarks> DecodeHandLandmarks(const std::vector<float>& outpu
                                                  int image_height,
                                                  float score_threshold) {
   const size_t expected =
-      static_cast<size_t>(num_landmarks) * 3;  // 1 手分の (x, y, score)
+      static_cast<size_t>(num_landmarks) * 3;
   if (output.size() != expected) {
     throw std::runtime_error("未対応の出力要素数（期待 " +
                              std::to_string(expected) + ", 実際 " +
@@ -89,13 +90,16 @@ std::optional<HandLandmarks> DecodeHandLandmarks(const std::vector<float>& outpu
   HandLandmarks out;
   out.confidence = confidence;
   out.landmarks.reserve(static_cast<size_t>(num_landmarks));
+  const double inv_ratio = 1.0 / ratio;
+  const double max_w = static_cast<double>(image_width);
+  const double max_h = static_cast<double>(image_height);
   for (int k = 0; k < num_landmarks; ++k) {
     const size_t base = static_cast<size_t>(k) * 3;
-    const double x = (output[base + 0] * input_size - pad_w) / ratio;
-    const double y = (output[base + 1] * input_size - pad_h) / ratio;
+    const double x = (output[base + 0] * input_size - pad_w) * inv_ratio;
+    const double y = (output[base + 1] * input_size - pad_h) * inv_ratio;
     out.landmarks.emplace_back(
-        static_cast<float>(std::clamp(x, 0.0, static_cast<double>(image_width))),
-        static_cast<float>(std::clamp(y, 0.0, static_cast<double>(image_height))));
+        static_cast<float>(std::clamp(x, 0.0, max_w)),
+        static_cast<float>(std::clamp(y, 0.0, max_h)));
   }
   return out;
 }
@@ -131,34 +135,31 @@ std::optional<HandLandmarks> HandLandmarkDetector::Detect(
     throw std::invalid_argument("入力画像は (H, W, 3) の BGR 画像が必要です");
   }
 
-  const LetterboxResult lb = Letterbox(image_bgr, input_size_, kYoloPadColor);
+  thread_local cv::Mat letterbox_canvas;
+  thread_local cv::Mat blob_or_rgb;
+  thread_local std::vector<float> output_buf;
+
+  const LetterboxResult lb =
+      LetterboxInto(image_bgr, letterbox_canvas, input_size_, kYoloPadColor);
+
+  // 旧実装の C++ 3重スプローループ (y * x * c) を廃止し、OpenCV の SIMD ベクトル化変換と
+  // RunInto ポインタ渡しでゼロコピー推論を実行
+  //
   // keypoint モデルは RGB で学習されている前提。入力名で分岐する手法は、
   // 名前が違う書き出しで静かに外れるので採らない。
-  cv::Mat rgb;
-  cv::cvtColor(lb.padded, rgb, cv::COLOR_BGR2RGB);
-  rgb.convertTo(rgb, CV_32F, 1.0 / 255.0);
-
-  const size_t plane = static_cast<size_t>(input_size_) * input_size_;
-  std::vector<float> blob(3 * plane);
-  for (int y = 0; y < input_size_; ++y) {
-    const float* row = rgb.ptr<float>(y);
-    const size_t row_base = static_cast<size_t>(y) * input_size_;
-    for (int x = 0; x < input_size_; ++x) {
-      const float* px = row + static_cast<size_t>(x) * 3;
-      const size_t at = row_base + static_cast<size_t>(x);
-      if (layout_ == TensorLayout::kNhwc) {
-        blob[at * 3 + 0] = px[0];
-        blob[at * 3 + 1] = px[1];
-        blob[at * 3 + 2] = px[2];
-      } else {
-        blob[at] = px[0];
-        blob[plane + at] = px[1];
-        blob[2 * plane + at] = px[2];
-      }
-    }
+  if (layout_ == TensorLayout::kNchw) {
+    cv::dnn::blobFromImage(lb.padded, blob_or_rgb, 1.0 / 255.0,
+                           cv::Size(input_size_, input_size_), cv::Scalar(),
+                           /*swapRB=*/true, /*crop=*/false, CV_32F);
+    session_->RunInto(blob_or_rgb.ptr<float>(), blob_or_rgb.total(), output_buf);
+  } else {
+    cv::cvtColor(lb.padded, blob_or_rgb, cv::COLOR_BGR2RGB);
+    blob_or_rgb.convertTo(blob_or_rgb, CV_32F, 1.0 / 255.0);
+    session_->RunInto(blob_or_rgb.ptr<float>(),
+                      blob_or_rgb.total() * blob_or_rgb.channels(), output_buf);
   }
 
-  return DecodeHandLandmarks(session_->Run(blob), num_landmarks_, input_size_,
+  return DecodeHandLandmarks(output_buf, num_landmarks_, input_size_,
                              lb.ratio, lb.pad_w, lb.pad_h, image_bgr.cols,
                              image_bgr.rows, score_threshold_);
 }

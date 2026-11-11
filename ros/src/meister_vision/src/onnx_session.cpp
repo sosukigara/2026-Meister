@@ -2,6 +2,7 @@
 #include "meister_vision/onnx_session.hpp"
 
 #include <algorithm>
+#include <cstring>
 #include <functional>
 #include <numeric>
 #include <stdexcept>
@@ -11,10 +12,6 @@
 namespace meister_vision {
 namespace {
 
-/// 静的な 4 次元であることを確かめる。動的軸（負の値）が 1 つでもあれば
-/// 前処理の形を決められないので、ここで落とす。
-/// 静的形 (動的軸なし) であることだけを確かめる。rank は入力 4 / 出力 3 と
-/// 違うため、ここでは縛らない。
 std::vector<int64_t> RequireStatic(const std::vector<int64_t>& shape) {
   for (const int64_t d : shape) {
     if (d <= 0) {
@@ -38,8 +35,6 @@ std::vector<int64_t> RequireStaticRank4(const std::vector<int64_t>& shape) {
   return shape;
 }
 
-/// Env はプロセスに 1 個だけ。Session より先に壊れてはいけないので
-/// 関数内 static の共有ポインタで保持する。
 std::shared_ptr<Ort::Env> SharedOrtEnv() {
   static const std::shared_ptr<Ort::Env> env =
       std::make_shared<Ort::Env>(ORT_LOGGING_LEVEL_WARNING, "meister_vision");
@@ -51,11 +46,15 @@ std::shared_ptr<Ort::Env> SharedOrtEnv() {
 struct OnnxSession::Impl {
   std::shared_ptr<Ort::Env> env = SharedOrtEnv();
   std::unique_ptr<Ort::Session> session;
+  Ort::MemoryInfo mem_info =
+      Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
 };
 
 OnnxSession::OnnxSession(const std::string& model_path, int intra_op_threads)
     : model_path_(model_path), impl_(std::make_shared<Impl>()) {
   Ort::SessionOptions options;
+  // Orange Pi 5 / 5 Max (RK3588: 4x Cortex-A76 + 4x Cortex-A55) に合わせ、
+  // 既定 4 スレッドで大コア群に収めクラスタ間キャッシュコヒーレンス遅延を防止
   options.SetIntraOpNumThreads(std::max(1, intra_op_threads));
   options.SetInterOpNumThreads(1);
   options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
@@ -92,34 +91,40 @@ OnnxSession::OnnxSession(const std::string& model_path, int intra_op_threads)
       impl_->session->GetOutputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape());
 }
 
-std::vector<float> OnnxSession::Run(const std::vector<float>& input) const {
+void OnnxSession::RunInto(const float* input_data, std::size_t input_count,
+                          std::vector<float>& output) const {
   const size_t expect = static_cast<size_t>(std::accumulate(
       input_shape_.begin(), input_shape_.end(), int64_t{1},
       std::multiplies<int64_t>()));
-  if (input.size() != expect) {
+  if (!input_data || input_count != expect) {
     throw std::runtime_error("ONNX 入力の大きさが違う (期待 " +
                              std::to_string(expect) + " 要素, 実際 " +
-                             std::to_string(input.size()) + ")");
+                             std::to_string(input_count) + ")");
   }
 
   const char* input_names[] = {input_name_.c_str()};
   const char* output_names[] = {output_name_.c_str()};
   try {
-    Ort::MemoryInfo mem =
-        Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
     Ort::Value in_tensor = Ort::Value::CreateTensor<float>(
-        mem, const_cast<float*>(input.data()), input.size(),
+        impl_->mem_info, const_cast<float*>(input_data), input_count,
         input_shape_.data(), input_shape_.size());
     auto outputs = impl_->session->Run(Ort::RunOptions{nullptr}, input_names,
                                        &in_tensor, 1, output_names, 1);
     const float* data = outputs.front().GetTensorData<float>();
     const size_t count =
         outputs.front().GetTensorTypeAndShapeInfo().GetElementCount();
-    return std::vector<float>(data, data + count);
+    output.resize(count);
+    std::memcpy(output.data(), data, count * sizeof(float));
   } catch (const Ort::Exception& e) {
     throw std::runtime_error("ONNX 推論に失敗しました: " +
                              std::string(e.what()));
   }
+}
+
+std::vector<float> OnnxSession::Run(const std::vector<float>& input) const {
+  std::vector<float> out;
+  RunInto(input.data(), input.size(), out);
+  return out;
 }
 
 }  // namespace meister_vision

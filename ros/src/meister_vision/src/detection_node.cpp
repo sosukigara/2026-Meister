@@ -14,17 +14,23 @@
 ///   inference_threads  (int,    4)           ONNX 推論スレッド数
 ///   target_class       (int,    -1)          追うクラス (-1 は指定なし)
 ///   target_lock_radius (double, 120.0)       同一対象とみなす移動量 [px]
+///
+/// 最適化:
+///   - bgr8 入力時は BgrViewOrConvertFromImageMsg() により 921 KB のフレーム複製を省略。
+///   - TargetSelector に α-β カルマンフィルタ (`alpha_pos=0.70`, `beta_vel=0.25`) を設定し、
+///     走行中・アーム移動中のバウンディングボックス揺らぎを平滑化。
+///   - unique_ptr によるゼロコピー配信。
 #include <algorithm>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
-#include <chrono>
 #include <cstdio>
 #include <exception>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
@@ -63,13 +69,13 @@ vision_msgs::msg::Detection2D ToDetection2D(
   return d2d;
 }
 
-vision_msgs::msg::Detection2DArray BuildDetectionArray(
+std::unique_ptr<vision_msgs::msg::Detection2DArray> BuildDetectionArray(
     const sensor_msgs::msg::Image& msg, const std::vector<Detection>& dets) {
-  vision_msgs::msg::Detection2DArray array;
-  array.header = msg.header;
-  array.detections.reserve(dets.size());
+  auto array = std::make_unique<vision_msgs::msg::Detection2DArray>();
+  array->header = msg.header;
+  array->detections.reserve(dets.size());
   for (const Detection& det : dets) {
-    array.detections.push_back(ToDetection2D(msg.header, det));
+    array->detections.push_back(ToDetection2D(msg.header, det));
   }
   return array;
 }
@@ -77,11 +83,12 @@ vision_msgs::msg::Detection2DArray BuildDetectionArray(
 class DetectionNode final : public rclcpp::Node {
  public:
   DetectionNode()
-      : rclcpp::Node(kNodeName),
+      : rclcpp::Node(kNodeName,
+                     rclcpp::NodeOptions().use_intra_process_comms(true)),
         publish_annotated_(declare_parameter<bool>("publish_annotated", true)) {
     const std::string image_topic =
         declare_parameter<std::string>("image_topic", "image_raw");
-    const double rate = std::max(0.1, declare_parameter<double>("rate", 5.0));
+    const double rate = std::max(0.1, declare_parameter<double>("rate", 10.0));
     const int inference_threads =
         declare_parameter<int>("inference_threads", 4);
     const float conf_threshold =
@@ -91,6 +98,10 @@ class DetectionNode final : public rclcpp::Node {
     selector_options.min_confidence = conf_threshold;
     selector_options.lock_radius_px =
         static_cast<float>(declare_parameter<double>("target_lock_radius", 120.0));
+    selector_options.alpha_pos =
+        static_cast<float>(declare_parameter<double>("target_alpha_pos", 0.70));
+    selector_options.beta_vel =
+        static_cast<float>(declare_parameter<double>("target_beta_vel", 0.25));
     target_selector_ = std::make_unique<TargetSelector>(selector_options);
 
     detector_ = std::make_unique<YoloDetector>(
@@ -197,7 +208,8 @@ class DetectionNode final : public rclcpp::Node {
     std::vector<Detection> detections;
     cv::Mat bgr;
     try {
-      bgr = BgrFromImageMsg(msg);
+      // bgr8 の場合はゼロコピービューを参照し 921 KB のクローンを省略
+      bgr = BgrViewOrConvertFromImageMsg(msg);
       detections = detector_->Detect(bgr);
     } catch (const std::exception& e) {
       RCLCPP_ERROR(get_logger(), "検出処理に失敗しました: %s", e.what());
@@ -212,10 +224,10 @@ class DetectionNode final : public rclcpp::Node {
     if (publish_annotated_ && pub_annotated_->get_subscription_count() > 0) {
       // cv_bridge の cv2_to_imgmsg は実行時に KeyError を起こす環境が
       // あるので、手動変換に固定する（購読側の変換は問題なし）。
-      sensor_msgs::msg::Image annotated_msg = ImageMsgFromBgr(
-          DrawDetections(bgr, detections));
-      annotated_msg.header = msg.header;
-      pub_annotated_->publish(annotated_msg);
+      auto annotated_msg = std::make_unique<sensor_msgs::msg::Image>(
+          ImageMsgFromBgr(DrawDetections(bgr, detections)));
+      annotated_msg->header = msg.header;
+      pub_annotated_->publish(std::move(annotated_msg));
     }
 
     RCLCPP_DEBUG(get_logger(), "[%zu] %zu 件検出", process_count_,
@@ -228,12 +240,12 @@ class DetectionNode final : public rclcpp::Node {
     const Target target = target_selector_->Select(
         detections, static_cast<int>(msg.width),
         static_cast<int>(msg.height));
-    vision_msgs::msg::Detection2DArray out;
-    out.header = msg.header;
+    auto out = std::make_unique<vision_msgs::msg::Detection2DArray>();
+    out->header = msg.header;
     if (target.valid) {
-      out.detections.push_back(ToDetection2D(msg.header, target.detection));
+      out->detections.push_back(ToDetection2D(msg.header, target.detection));
     }
-    pub_target_->publish(out);
+    pub_target_->publish(std::move(out));
 
     RCLCPP_DEBUG(get_logger(),
                  "target valid=%d locked=%d offset=(%.3f, %.3f)", target.valid,
