@@ -29,9 +29,9 @@ class MainActivity : AppCompatActivity() {
         const val LOG_TAG = "MeisterSkeleton"
         // HUD 要約ログの間隔。1Hz で十分かつ安い。
         const val LOG_INTERVAL_NS = 1_000_000_000L
-        // 25fps寄せの解析上限。画質優先で上げない。
-        const val ANALYSIS_WIDTH = 640
-        const val ANALYSIS_HEIGHT = 480
+        // 推論の内部入力は256固定なので、小さくしても精度はほぼ保つ。JPEG往復の分だけ速くなる。
+        const val ANALYSIS_WIDTH = 320
+        const val ANALYSIS_HEIGHT = 240
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -136,7 +136,9 @@ class MainActivity : AppCompatActivity() {
         val t0 = System.nanoTime()
         try {
             // Bitmap経路。MediaImageBuilder は RGBA_8888 しか受けないため YUV 直結はできない。
+            val tJpeg0 = System.nanoTime()
             val bitmap = image.toRgbBitmap()
+            val tJpeg = (System.nanoTime() - tJpeg0) / 1_000_000
             try {
                 val results: List<HandResult> = detector?.detectHands(
                     bitmap,
@@ -146,6 +148,7 @@ class MainActivity : AppCompatActivity() {
                     ?: fake?.detectHands(bitmap.width, bitmap.height, threshold)
                     ?: return
                 val ms = (System.nanoTime() - t0) / 1_000_000
+                val tInfer = ms - tJpeg
                 lastLatMs = ms
                 counter.tick(ms)
                 // ADB デバッグ用に 1Hz で要約を出す。画面 HUD と同じ値。
@@ -163,6 +166,7 @@ class MainActivity : AppCompatActivity() {
                         LOG_TAG,
                         "det=$detectorStatus fps=${"%.1f".format(counter.fps())}" +
                             " ms=${counter.lastInferenceMs()}" +
+                            " jpeg=$tJpeg infer=$tInfer" +
                             " lat=$lastLatMs" +
                             " cpu=${if (lastCpu.isNaN()) "--" else "%.1f".format(lastCpu)}" +
                             " hands=${results.size}$topStr thr=$threshold",

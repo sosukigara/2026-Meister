@@ -52,14 +52,19 @@ class HandLandmarkerDetector(
         } catch (e: Exception) {
             throw IllegalStateException("model asset missing: $modelAssetPath", e)
         }
-        // 25fps目標のため GPU を試し、駄目なら CPU に落とす (D7)。
-        val gpu = try {
-            createLandmarker(context, modelAssetPath, numHands, Delegate.GPU) to "GPU"
-        } catch (e: Exception) {
-            android.util.Log.w(TAG, "GPU delegate unavailable, using CPU", e)
-            null
+        // 高速な順に試す (NPU→GPU→CPU)。作れなければ次に落とす。
+        // 速度の優劣は実機実測で決める (速い順の仮置き。遅ければ戻す)。
+        val chosen = try {
+            createLandmarker(context, modelAssetPath, numHands, Delegate.NPU) to "NPU"
+        } catch (e1: Exception) {
+            android.util.Log.w(TAG, "NPU delegate unavailable, trying GPU", e1)
+            try {
+                createLandmarker(context, modelAssetPath, numHands, Delegate.GPU) to "GPU"
+            } catch (e2: Exception) {
+                android.util.Log.w(TAG, "GPU delegate unavailable, using CPU", e2)
+                createLandmarker(context, modelAssetPath, numHands, Delegate.CPU) to "CPU"
+            }
         }
-        val chosen = gpu ?: (createLandmarker(context, modelAssetPath, numHands, Delegate.CPU) to "CPU")
         landmarker = chosen.first
         delegateName = chosen.second
     }

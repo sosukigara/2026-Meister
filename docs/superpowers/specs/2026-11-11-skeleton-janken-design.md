@@ -22,7 +22,7 @@
 | D4 | 判定は **21点→グー/チョキ/パー/不明の純粋関数** `JankenClassifier` | Snapdragon 665でも回る軽さ。テスト容易 |
 | D5 | YOLO系（`YoloDetector`・`YoloPostprocess`・320モデル）は持ち込まない | 骨格専用のため。削除PRも今回は出さない（既存側は無変更） |
 | D6 | **HUDにCPU使用率・遅延・FPSを表示し、10FPSを目標にする** | 操作入力に使うなら体感遅延と処理落ちが見える必要がある。CPU%は自プロセス、遅延は撮影→描画の端 to 端 |
-| D7 | **GPU delegateで10FPSを確保する** | CPUのみ約5FPSのためGPU既定＋CPU fallback。実機で約13FPSを確認 |
+| D7 | **delegateはNPU→GPU→CPUの順に試す** | NPU非対応（実機で作成例外→GPUへフォールバック確認）。GPUで手なし18・手あり14FPSを確認 |
 
 ## 構成
 
@@ -69,7 +69,7 @@ android-skeleton/
 ## テスト＋完成定義（§4合意）
 
 - 単体：`JankenClassifierTest`（合成21点で4値を検証）＋既存流儀の `./gradlew testDebugUnitTest`。
-- 実機：既存 Q30 流用。「起動→プレビュー→骨格＋グー/チョキ/パー表示→10分落ちない」。加えてHUDのFPSが **10以上**（実機GPUで約13FPSを確認）。
+- 実機：既存 Q30 流用。「起動→プレビュー→骨格＋グー/チョキ/パー表示→10分落ちない」。加えてHUDのFPSが **10以上**（実機で手なし約18・手あり約14FPSを確認。320x240解析。30fpsはSDM665の天井外）。
 - HUD追加：cpu（自プロセスCPU%）・lat（撮影→描画の端to端ms）。fps/ms/handsは既存通り。logcat要約にも `cpu=` `lat=` を足す。
 - 確認物：`adb_fetch.sh` 流儀の logcat＋screen.png＋battery。グー・チョキ・パー各1枚。
 - やらないこと：ROS送信、勝敗判定、自動回転対応。量子化は実測後に判断（D7のdelegate検討に含む）。
