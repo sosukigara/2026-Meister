@@ -55,6 +55,10 @@ class MapListener : public rclcpp::Node, public MapSource {
   std::optional<PlanarTransform> map_odom_;
   std::optional<PlanarTransform> odom_base_;
   MapCache cache_;
+  // Subscription はメンバで保持する。戻りの SharedPtr を捨てると Jazzy では
+  // 購読が破棄され、グラフにも /map が現れない (vision_listener と同じ持ち方)。
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub_;
+  rclcpp::Subscription<tf2_msgs::msg::TFMessage>::SharedPtr tf_sub_;
 };
 
 }  // namespace meister_web_nav
