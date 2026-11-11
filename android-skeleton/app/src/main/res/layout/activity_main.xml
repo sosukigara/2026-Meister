@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.camera.view.PreviewView
+        android:id="@+id/previewView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.meister.skeleton.SkeletonOverlayView
+        android:id="@+id/overlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="12dp">
+
+        <TextView
+            android:id="@+id/hudDet"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- det"
+            android:textColor="#00FF00"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/hudFps"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- fps"
+            android:textColor="#00FF00"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/hudMs"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- ms"
+            android:textColor="#00FF00"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/hudCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- hands"
+            android:textColor="#00FF00"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/hudCpu"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- cpu"
+            android:textColor="#00FF00"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/hudLat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-- lat"
+            android:textColor="#00FF00"
+            android:textSize="18sp" />
+
+        <TextView
+            android:id="@+id/thresholdLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="thr 0.50"
+            android:textColor="#00FF00"
+            android:textSize="16sp" />
+
+        <SeekBar
+            android:id="@+id/thresholdBar"
+            android:layout_width="200dp"
+            android:layout_height="wrap_content"
+            android:max="100"
+            android:progress="50" />
+
+        <Button
+            android:id="@+id/switchCameraButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/switch_camera" />
+    </LinearLayout>
+</FrameLayout>
