@@ -3,6 +3,7 @@
 #include <cmath>
 #include <stdexcept>
 
+#include "meister_serial_bridge/ackermann_imu_odometry.hpp"
 #include "meister_serial_bridge/kinematics.hpp"
 
 namespace msb = meister_serial_bridge;
@@ -22,6 +23,23 @@ TEST(TwistToActuators, StraightForward) {
   const auto cmd = msb::TwistToActuators(0.5, 0.0, Default());
   EXPECT_EQ(cmd.steering_tenths, 0);
   EXPECT_EQ(cmd.velocity_permille, 500);
+}
+
+TEST(TwistToActuators, StraightReverseDoesNotDeflectSteering) {
+  // 旧実装では atan2(0.0, -0.5) = +pi (+180度) となり +300 (+30.0度) に張り付いていたバグの回帰テスト
+  const auto cmd = msb::TwistToActuators(-0.5, 0.0, Default());
+  EXPECT_EQ(cmd.steering_tenths, 0);
+  EXPECT_EQ(cmd.velocity_permille, -500);
+}
+
+TEST(TwistToActuators, CurvedReverseMaintainsTrueBicycleCurvature) {
+  const auto k = Default();
+  // vx = -0.5 m/s, wz = -0.5 rad/s -> kappa = (-0.5)/(-0.5) = +1.0 m^-1 -> +atan(0.3)
+  const auto cmd = msb::TwistToActuators(-0.5, -0.5, k);
+  const int expected =
+      static_cast<int>(std::nearbyint(std::atan(0.3 * 1.0) * 180.0 / M_PI * 10.0));
+  EXPECT_EQ(cmd.steering_tenths, expected);
+  EXPECT_EQ(cmd.velocity_permille, -500);
 }
 
 TEST(TwistToActuators, LeftTurnIsPositiveSteering) {
@@ -94,4 +112,29 @@ TEST(TwistToActuators, RoundsHalfToEvenLikePythonRound) {
 
   k.max_linear_vel_mps = 3.0;  // vx=0.005 -> 1.666... -> 2
   EXPECT_EQ(msb::TwistToActuators(0.005, 0.0, k).velocity_permille, 2);
+}
+
+TEST(AckermannImuOdometry, FusesBicycleMotionWithBno055ImuHeading) {
+  msb::OdometryConfig cfg{};
+  cfg.wheelbase_m = 0.30;
+  cfg.max_steering_deg = 30.0;
+  cfg.imu_yaw_fusion_gain = 0.85;
+  msb::AckermannImuOdometry odom(cfg);
+
+  odom.Step(0.0);
+  odom.UpdateTwistCommand(1.0, 0.0, 0.0);
+  for (int i = 1; i <= 10; ++i) {
+    odom.Step(i * 0.02);
+  }
+  EXPECT_NEAR(odom.state().x, 0.20, 1e-4);
+  EXPECT_NEAR(odom.state().y, 0.0, 1e-4);
+
+  // Feed initial IMU heading (0 deg) then +30.0 deg (300 tenths)
+  msb::ImuReport imu0{0, 0xFF};
+  odom.UpdateImuReport(imu0, 0.20);
+  msb::ImuReport imu1{300, 0xFF};
+  odom.UpdateImuReport(imu1, 0.22);
+  odom.Step(0.22);
+
+  EXPECT_GT(odom.state().yaw, 0.40);
 }

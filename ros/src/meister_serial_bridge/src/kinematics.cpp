@@ -40,10 +40,15 @@ ActuatorCommand TwistToActuators(double vx, double wz, const TwistKinematics& ki
     vel_permille = -vel_permille;
   }
 
+  // 後退時 (vx < 0) の舵角反転バグ修正:
+  // 旧実装の std::atan2(L * wz, vx) は vx < 0, wz == 0（直進後退）のとき +pi (+180度) を返し、
+  // 舵角が最大の +300 (+30.0度) に張り付いて直進後退が不可能になっていた。
+  // 自転車モデルの曲率 kappa = wz / vx に基づき、std::atan(L * wz / vx) を用いることで
+  // 前進・後退の双方で [-90度, +90度] 内の連続かつ正確な舵角を算出する。
   int steer_tenths = 0;
   if (std::fabs(vx) >= kEpsilonVx) {
     steer_tenths = RoundHalfToEven(
-        std::atan2(kin.wheelbase_m * wz, vx) * kRadToDeg * 10.0);
+        std::atan((kin.wheelbase_m * wz) / vx) * kRadToDeg * 10.0);
   } else if (wz > 0.0) {
     steer_tenths = max_steer_tenths;
   } else if (wz < 0.0) {

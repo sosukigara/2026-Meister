@@ -11,8 +11,10 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(tf2_msgs REQUIRED)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SERIAL REQUIRED IMPORTED_TARGET libserial)
 
@@ -47,7 +49,8 @@ target_link_libraries(meister_serial_bridge_core
 add_executable(serial_bridge src/serial_bridge_node.cpp)
 target_link_libraries(serial_bridge
   PRIVATE meister_serial_bridge_core rclcpp::rclcpp
-          ${geometry_msgs_TARGETS} ${sensor_msgs_TARGETS} ${std_msgs_TARGETS})
+          ${geometry_msgs_TARGETS} ${nav_msgs_TARGETS}
+          ${sensor_msgs_TARGETS} ${std_msgs_TARGETS} ${tf2_msgs_TARGETS})
 
 add_executable(meister_comm_check src/comm_check_main.cpp)
 target_link_libraries(meister_comm_check PRIVATE meister_serial_bridge_core)
