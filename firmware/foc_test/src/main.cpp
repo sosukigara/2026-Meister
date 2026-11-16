@@ -3,7 +3,7 @@
 // with it on purpose.
 //
 // What it does: open-loop spin (O), explicit alignment (C), closed-loop
-// velocity (W) with a bounded current ceiling (L, default 1 A, max 3 A).
+// velocity (W) with a bounded current ceiling (L, default 1 A, max 5 A).
 // EVERY motion auto-stops after 10 s. Open-loop voltage is fixed at 0.3 V;
 // the closed-loop ceiling is 12 V so BEMF fits at 10 rps, and speed/current
 // stay inside the 12 V / 6 A envelope via the current loop plus OC trips.
@@ -45,7 +45,11 @@ constexpr float kVinRatio = 8.5f, kVinGateV = 10.0f;  // reasoned pick, not meas
 constexpr float kOpenV = 0.3f, kAlignV = 0.3f;  // fixed: 2.13 A measured on
                                                 // 2026-11-09 (path 0.14 ohm).
 constexpr float kCurLimA = 1.0f;   // default closed-loop ceiling; L raises it.
-constexpr float kCurMaxA = 3.0f;   // L hard cap: 3 A << 4 A trip, I2R = 1.7 W.
+// L hard cap. The board is rated 12 A total / 6 A per motor, and the 10 mohm shunt with
+// gain 50 puts ADC full scale at 6.6 A: 5 A is 83% of the motor rating and 76% of what the
+// sense path can still resolve. I2R at 5 A is ~3.5 W on the measured 0.14 ohm path, so the
+// winding is not what stops us here.
+constexpr float kCurMaxA = 5.0f;
 constexpr float kClVlimV = 12.0f;  // closed-loop ceiling: the FOC current loop
                                    // (not this) bounds torque. The rail caps the
                                    // speed, and above ~87 rad/s it is exhausted.
@@ -54,13 +58,15 @@ constexpr float kVelMaxRps = 14.0f;  // measured 2026-11-09: ~830 rpm (13.8 rps)
                                      // 16 and 18 rps commands both sat at ~87 rad/s.
 constexpr float kOcOlA = 4.0f;
 constexpr uint32_t kOcOlMs = 500;
-constexpr float kOcClA = 5.0f;
+// Must sit above the 5 A command plus switching ripple, and below the 6.47 A full-scale
+// guard: 6 A is exactly the board's per-motor rating, so this trips at the rating, not past it.
+constexpr float kOcClA = 6.0f;
 constexpr uint32_t kOcClMs = 200;
 constexpr float kAdcSatA = 6.47f;  // 0.98 * 6.6 A full scale: unmeasurable = fault.
 // A switching transient hits both shunts at once, so one railed sample proves
 // nothing. The guard has to see the reading persist before it declares the
 // current sense unreadable; 10 ms is far shorter than any real overcurrent the
-// 5 A/200 ms trip would miss.
+// 6 A/200 ms trip would miss.
 constexpr uint32_t kAdcSatMs = 10;
 constexpr uint32_t kRunMs = 10000, kCoolMs = 10000;  // every motion stops itself.
 constexpr uint32_t kSpdMs = 500;  // #SPD telemetry while running.
@@ -324,10 +330,16 @@ void onLine(const String& line) {
     if (amps > cfg::kCurMaxA) amps = cfg::kCurMaxA;
     st::user_current_limit = amps;
     if (st::running && motor.controller == MotionControlType::velocity) {
-      motor.current_limit = amps;  // live-apply, like the rover drive does.
+      // In velocity mode the I_q ceiling is PID_velocity.limit, not current_limit: init()
+      // baked it once from current_limit, so writing current_limit alone leaves the loop
+      // clamped at the boot value and `L` appears to do nothing under load.
+      motor.current_limit = amps;
+      motor.PID_velocity.limit = amps;
     }
     Serial.print(F("#CUR_LIM "));
-    Serial.println(amps, 2);
+    Serial.print(amps, 2);
+    Serial.print(F(" Iq_limit "));
+    Serial.println(motor.PID_velocity.limit, 2);
     return;
   }
   if (!motionAllowed()) return;
@@ -392,12 +404,16 @@ void onLine(const String& line) {
     }
     motor.controller = MotionControlType::velocity;
     motor.current_limit = st::user_current_limit;
+    motor.PID_velocity.limit = st::user_current_limit;  // the I_q ceiling in velocity mode
     motor.voltage_limit = cfg::kClVlimV;
     st::target = rps * _2PI;
     st::t0ms = millis();
     st::running = true;
     motor.enable();
-    Serial.println(F("#VELOCITY go"));
+    // Report the ceiling the velocity loop will actually use: `L` is only a request until
+    // this line proves it reached PID_velocity.limit.
+    Serial.print(F("#VELOCITY go Iq_limit "));
+    Serial.println(motor.PID_velocity.limit, 2);
     return;
   }
   Serial.println(F("#ERR bad line, send ?"));
