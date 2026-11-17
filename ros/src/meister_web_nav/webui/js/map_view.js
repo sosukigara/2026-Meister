@@ -11,6 +11,7 @@ const TRAIL_MIN_SPACING = 0.05; // meters: 間引きして点の塊を防ぐ
 const ZOOM_MIN = 0.15;
 const ZOOM_MAX = 14;
 const MARKER_RADIUS = 9;
+const SCALE_CHOICES = [0.5, 1, 2, 5, 10, 20, 50];
 
 export function createMapView({ canvas, stage, onPlace, onNotice }) {
   const ctx = canvas.getContext('2d');
@@ -24,6 +25,15 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
   let hovered = null;
   let drag = null;
   let dpr = 1;
+  // 利用者がパン・ズームしたか。していない間だけ、リサイズに合わせて全体表示を
+  // 取り直す (操作した表示を勝手に動かさない)。
+  let userAdjusted = false;
+  // ステージの大きさは ResizeObserver が動いたときだけ測る。draw のたびに
+  // getBoundingClientRect を呼ぶと、描く前に強制レイアウトが入る。
+  let size = { width: 1, height: 1 };
+  // 描画は 1 フレーム 1 回にまとめる。pointermove は 1 フレームに何度も来るので、
+  // そのまま描くと後から来た座標で同じ絵を作り直してしまう。
+  let frame = 0;
 
   const worldToMapPixels = (x, y) => ({
     x: (x - meta.origin.x) / meta.resolution,
@@ -35,39 +45,52 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
   });
   const toScreen = (x, y) => ({ x: x * view.scale + view.x, y: y * view.scale + view.y });
   const toMapPixels = (x, y) => ({ x: (x - view.x) / view.scale, y: (y - view.y) / view.scale });
+  const mapToScreen = (x, y) => {
+    const pixels = worldToMapPixels(x, y);
+    return { x: pixels.x * view.scale + view.x, y: pixels.y * view.scale + view.y };
+  };
+
+  function requestDraw() {
+    if (frame !== 0) return;
+    frame = requestAnimationFrame(() => {
+      frame = 0;
+      draw();
+    });
+  }
 
   function screenPoint(event) {
     const rect = canvas.getBoundingClientRect();
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
   }
 
-  function stageSize() {
-    const rect = stage.getBoundingClientRect();
-    return { width: Math.max(1, rect.width), height: Math.max(1, rect.height) };
-  }
-
   function resize() {
-    const size = stageSize();
+    const rect = stage.getBoundingClientRect();
+    size = { width: Math.max(1, rect.width), height: Math.max(1, rect.height) };
     dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.round(size.width * dpr);
-    canvas.height = Math.round(size.height * dpr);
-    draw();
+    const width = Math.round(size.width * dpr);
+    const height = Math.round(size.height * dpr);
+    // 同じ大きさで width/height を代入するとキャンバスが消えるだけなので避ける。
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    if (!userAdjusted && meta) fit();
+    else requestDraw();
   }
 
   function fit() {
     if (!meta) return;
-    const size = stageSize();
     const scale = Math.min(size.width / meta.width, size.height / meta.height) * 0.94;
     view = {
       scale,
       x: (size.width - meta.width * scale) / 2,
       y: (size.height - meta.height * scale) / 2,
     };
-    draw();
+    userAdjusted = false;
+    requestDraw();
   }
 
   function zoomAt(factor, anchor) {
-    const size = stageSize();
     const center = anchor ?? { x: size.width / 2, y: size.height / 2 };
     const next = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, view.scale * factor));
     if (next === view.scale) return;
@@ -76,11 +99,11 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
     // 拡大の中心にした点が動かないように offset を決め直す。
     view.x = center.x - before.x * view.scale;
     view.y = center.y - before.y * view.scale;
-    draw();
+    userAdjusted = true;
+    requestDraw();
   }
 
   function drawBackdrop() {
-    const size = stageSize();
     const step = 28;
     ctx.save();
     ctx.strokeStyle = 'rgba(233, 230, 223, 0.045)';
@@ -107,7 +130,7 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
     ctx.save();
     ctx.beginPath();
     trail.forEach((point, index) => {
-      const p = toScreen(...Object.values(worldToMapPixels(point.x, point.y)));
+      const p = mapToScreen(point.x, point.y);
       if (index === 0) ctx.moveTo(p.x, p.y);
       else ctx.lineTo(p.x, p.y);
     });
@@ -124,7 +147,7 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
     ctx.save();
     ctx.beginPath();
     waypoints.forEach((point, index) => {
-      const p = toScreen(...Object.values(worldToMapPixels(point.x, point.y)));
+      const p = mapToScreen(point.x, point.y);
       if (index === 0) ctx.moveTo(p.x, p.y);
       else ctx.lineTo(p.x, p.y);
     });
@@ -148,7 +171,7 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
 
   function drawWaypoints() {
     waypoints.forEach((point, index) => {
-      const p = toScreen(...Object.values(worldToMapPixels(point.x, point.y)));
+      const p = mapToScreen(point.x, point.y);
       const length = 26;
       drawArrow(
         p,
@@ -173,9 +196,21 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
     });
   }
 
+  function drawPreview() {
+    if (!drag || drag.mode !== 'place') return;
+    const distance = Math.hypot(drag.currentX - drag.startX, drag.currentY - drag.startY);
+    if (distance < DRAG_THRESHOLD_PX) return;
+    drawArrow(
+      { x: drag.startX, y: drag.startY },
+      { x: drag.currentX, y: drag.currentY },
+      '#f0c05a',
+      2,
+    );
+  }
+
   function drawRobot() {
     if (!robot) return;
-    const p = toScreen(...Object.values(worldToMapPixels(robot.x, robot.y)));
+    const p = mapToScreen(robot.x, robot.y);
     const length = 30;
     drawArrow(
       p,
@@ -197,12 +232,11 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
   /// 縮尺。地図の resolution が効いているかを目で確かめる手段でもある。
   function drawScaleBar() {
     if (!meta) return;
-    const choices = [0.5, 1, 2, 5, 10, 20, 50];
     const target = 120 / view.scale * meta.resolution; // 120 px に収まる距離
-    const distance = choices.find((value) => value >= target) ?? choices.at(-1);
+    const distance = SCALE_CHOICES.find((value) => value >= target) ?? SCALE_CHOICES.at(-1);
     const width = (distance / meta.resolution) * view.scale;
-    const size = stageSize();
-    const x = 16;
+    // 左下は操作ヒントの場所なので、縮尺は右下に置く。
+    const x = size.width - 16 - width;
     const y = size.height - 18;
     ctx.save();
     ctx.strokeStyle = 'rgba(233, 230, 223, 0.75)';
@@ -217,15 +251,14 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
     ctx.stroke();
     ctx.fillStyle = 'rgba(233, 230, 223, 0.75)';
     ctx.font = '10px ui-monospace, SFMono-Regular, Menlo, monospace';
-    ctx.textAlign = 'left';
+    ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(`${meters(distance, distance < 1 ? 1 : 0)} m`, x + width + 6, y + 4);
+    ctx.fillText(`${meters(distance, distance < 1 ? 1 : 0)} m`, x + width, y - 6);
     ctx.restore();
   }
 
   function draw() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const size = stageSize();
     ctx.clearRect(0, 0, size.width, size.height);
     drawBackdrop();
     if (!meta || !image) return;
@@ -237,16 +270,9 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
     drawTour();
     drawTrail();
     drawWaypoints();
+    drawPreview();
     drawRobot();
     drawScaleBar();
-  }
-
-  function previewArrow() {
-    if (!drag || drag.mode !== 'place') return;
-    const distance = Math.hypot(drag.currentX - drag.startX, drag.currentY - drag.startY);
-    if (distance < DRAG_THRESHOLD_PX) return;
-    drawArrow({ x: drag.startX, y: drag.startY },
-              { x: drag.currentX, y: drag.currentY }, '#f0c05a', 2);
   }
 
   canvas.addEventListener('pointerdown', (event) => {
@@ -268,14 +294,14 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
     if (drag.mode === 'pan') {
       view.x = drag.x + (event.clientX - drag.clientX);
       view.y = drag.y + (event.clientY - drag.clientY);
-      draw();
+      userAdjusted = true;
+      requestDraw();
       return;
     }
     const point = screenPoint(event);
     drag.currentX = point.x;
     drag.currentY = point.y;
-    draw();
-    previewArrow();
+    requestDraw();
   });
 
   function endDrag(event) {
@@ -286,10 +312,13 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
     if (canvas.hasPointerCapture?.(event.pointerId)) {
       canvas.releasePointerCapture(event.pointerId);
     }
-    if (finished.mode !== 'place') return;
+    if (finished.mode !== 'place') {
+      requestDraw();
+      return;
+    }
     if (!meta || !image) {
       onNotice('地図がまだ届いていません');
-      draw();
+      requestDraw();
       return;
     }
     const dx = finished.currentX - finished.startX;
@@ -299,7 +328,7 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
     const yaw = distance < DRAG_THRESHOLD_PX ? 0 : Math.atan2(-dy, dx);
     const mapPoint = toMapPixels(finished.startX, finished.startY);
     onPlace(mapPixelsToWorld(mapPoint.x, mapPoint.y), yaw);
-    draw();
+    requestDraw();
   }
 
   canvas.addEventListener('pointerup', endDrag);
@@ -321,6 +350,7 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
   } else {
     window.addEventListener('resize', resize);
   }
+  resize();
 
   return {
     fit,
@@ -333,16 +363,19 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
         trail = []; // 地図座標が変わり得るため軌跡をリセット
         fit();
       } else {
-        draw();
+        requestDraw();
       }
     },
     setImage(next) {
+      // 地図は 5 秒ごとに再取得される。見た目が同じでも Image は作り直されるので、
+      // ここで fit すると操作中のパン・ズームが定期的に巻き戻る。合わせ直すのは
+      // 地図の同一性が変わったとき (setMapMeta) だけにする。
       image = next;
-      fit();
+      requestDraw();
     },
     setWaypoints(list) {
       waypoints = list;
-      draw();
+      requestDraw();
     },
     setRobot(pose) {
       robot = pose;
@@ -351,15 +384,16 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
         trail.push({ x: robot.x, y: robot.y });
         if (trail.length > TRAIL_MAX_POINTS) trail.shift();
       }
-      draw();
+      requestDraw();
     },
     clearTrail() {
       trail = [];
-      draw();
+      requestDraw();
     },
     highlight(index) {
+      if (hovered === index) return;
       hovered = index;
-      draw();
+      requestDraw();
     },
     hasMap: () => Boolean(meta && image),
     resize,
