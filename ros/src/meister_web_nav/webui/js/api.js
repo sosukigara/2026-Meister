@@ -6,13 +6,20 @@
 const listeners = new Set();
 let consecutiveFailures = 0;
 let lastSuccessAt = null;
+// 直前の結果を覚えておき、状態が変わったときだけ購読者へ知らせる。
+// 同じ状態を何度も通知して DOM を触らないため。
+let reportedOnline = true;
+const TIMEOUT_MS = 5000;
 
 function notify(online) {
+  if (online === reportedOnline) return;
+  reportedOnline = online;
   listeners.forEach((listener) => listener(online));
 }
 
 export function onConnectionChange(listener) {
   listeners.add(listener);
+  listener(reportedOnline);
 }
 
 /// 最後に値が取れてからの秒数。切断中の画面が「いつの値か」を出せるようにする。
@@ -23,7 +30,11 @@ export function secondsSinceLastSuccess() {
 
 async function request(path, options) {
   try {
-    const response = await fetch(path, options);
+    // サーバーが固まったとき、UI が「最後の値」のまま黙って止まらないようにする。
+    // timeout 非対応のブラウザでは従来どおり待つ。
+    const signal =
+      typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(TIMEOUT_MS) : undefined;
+    const response = await fetch(path, { ...options, signal });
     if (!response.ok) {
       throw new Error(`${path} が ${response.status} を返しました`);
     }

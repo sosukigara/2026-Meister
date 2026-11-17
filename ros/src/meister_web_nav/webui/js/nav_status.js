@@ -38,6 +38,7 @@ export function stateTone(state) {
 
 export function createNavStatus({ badgeEl, messageEl, onState, onSignal }) {
   let current = null;
+  let polling = false;
 
   function describe(status) {
     const text = status.message || STATE_LABELS[status.state] || status.state;
@@ -55,6 +56,8 @@ export function createNavStatus({ badgeEl, messageEl, onState, onSignal }) {
   }
 
   async function poll() {
+    if (document.hidden || polling) return;
+    polling = true;
     try {
       const status = await getJson('/api/status');
       render(status);
@@ -65,6 +68,8 @@ export function createNavStatus({ badgeEl, messageEl, onState, onSignal }) {
       current = status;
     } catch (error) {
       // 取得できない間は最後の状態を出したままにする (api.js が接続断を知らせる)。
+    } finally {
+      polling = false;
     }
   }
 

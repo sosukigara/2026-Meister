@@ -26,6 +26,10 @@ const log = createEventLog({
 });
 const signals = createSignalStrip();
 let busy = false;
+// 応答が遅いときに interval が要求を積み上げないようにする。古い応答が
+// 新しい値を上書きするのも防げる。
+let mapBusy = false;
+let poseBusy = false;
 
 const mapView = createMapView({
   canvas: el('map-canvas'),
@@ -97,7 +101,9 @@ function refreshActions() {
 }
 
 async function loadMap() {
-  if (document.hidden) return; // 見えていない画面のために地図を運ばない
+  // 見えていない画面のために地図を運ばない。遅い応答が重ならないように 1 本に絞る。
+  if (document.hidden || mapBusy) return;
+  mapBusy = true;
   try {
     const meta = await getJson('/api/map');
     if (!meta.has_map) {
@@ -121,11 +127,14 @@ async function loadMap() {
     image.src = meta.image_url;
   } catch (error) {
     signals.setMap({ value: '—', note: '未接続', tone: 'bad' });
+  } finally {
+    mapBusy = false;
   }
 }
 
 async function pollPose() {
-  if (document.hidden) return;
+  if (document.hidden || poseBusy) return;
+  poseBusy = true;
   try {
     const pose = await getJson('/api/pose');
     if (!pose.has_pose) {
@@ -136,6 +145,8 @@ async function pollPose() {
     signals.setPose({ value: position(pose.x, pose.y), note: degrees(pose.yaw), tone: 'ok' });
   } catch (error) {
     signals.setPose({ value: '—', note: '未接続', tone: 'bad' });
+  } finally {
+    poseBusy = false;
   }
 }
 
@@ -221,15 +232,29 @@ setInterval(() => {
     seconds === null ? 'まだ値がありません' : `最後の受信 ${Math.round(seconds)} 秒前`;
 }, 1000);
 
+function refreshAll() {
+  loadMap();
+  pollPose();
+  nav.poll();
+  vision.poll();
+}
+
 refreshActions();
 waypoints.render();
 log.info('画面を初期化しました');
-loadMap();
-pollPose();
-nav.poll();
-vision.poll();
+refreshAll();
 // 地図は /map が更新された時だけ変わる。5 秒より短くしても地図は早くならない。
 setInterval(loadMap, 5000);
 setInterval(pollPose, 500);
-setInterval(() => nav.poll(), 1000);
-setInterval(() => vision.poll(), 1000);
+setInterval(() => {
+  if (!document.hidden) nav.poll();
+}, 1000);
+setInterval(() => {
+  if (!document.hidden) vision.poll();
+}, 1000);
+
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  // 隠れている間は取得を止めている。戻った瞬間に古い表示を更新する。
+  refreshAll();
+});
