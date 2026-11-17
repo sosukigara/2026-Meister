@@ -217,6 +217,10 @@ b { font-weight: 600; }
   padding-right: 2px;
 }
 
+/* 縦が足りないときにパネルを潰すと、中身（目的地一覧など）が操作ボタンに
+   重なる。潰さずに side 全体をスクロールさせる。 */
+.side > .panel { flex-shrink: 0; }
+
 .badge {
   font-family: var(--mono);
   font-size: 11px;
@@ -245,6 +249,10 @@ b { font-weight: 600; }
   object-fit: contain;
   display: block;
 }
+
+/* display:block は hidden 属性の display:none より強いので、明示的に戻す。
+   フレームが無いときに壊れた画像アイコンと alt が出るのを防ぐ。 */
+#vision-stream[hidden] { display: none; }
 
 #vision-stream.is-stale { opacity: 0.45; filter: saturate(0.6); }
 
