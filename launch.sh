@@ -147,7 +147,7 @@ else
 fi
 
 echo "=== RViz を起動します ==="
-"$WORKSPACE_ROOT/ros/src/ros2_autonomous_nav/rviz.sh" &
+"$WORKSPACE_ROOT/ros/src/ros2_autonomous_nav/scripts/rviz.sh" &
 
 echo "------------------------------------------"
 echo "起動完了！"

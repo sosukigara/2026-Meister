@@ -13,4 +13,4 @@ else
 fi
 echo "============================================"
 
-ros2 launch $(dirname "$0")/launch/slam_map.launch.py
+ros2 launch $(dirname "$0")/../launch/slam_map.launch.py

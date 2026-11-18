@@ -3,4 +3,4 @@
 conda deactivate 2>/dev/null
 source /opt/ros/jazzy/setup.bash
 source $(dirname "$0")/../../../install/setup.bash
-rviz2 -d $(dirname "$0")/config/nav2_rviz.rviz --ros-args -p use_sim_time:=${MEISTAR_USE_SIM_TIME:-true}
+rviz2 -d $(dirname "$0")/../config/nav2_rviz.rviz --ros-args -p use_sim_time:=${MEISTAR_USE_SIM_TIME:-true}
