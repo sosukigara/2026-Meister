@@ -7,7 +7,8 @@ controller_server:
     controller_plugins: ["FollowPath"]
     FollowPath:
       plugin: "nav2_mppi_controller::MPPIController"
-      # 20 Hz 制御なので 56 × 0.05 = 2.8 秒先まで見る。
+      # 記録済みの比較（docs/bench/2026-11-19-mppi.md）と同じ設定に戻してある。
+      # 40 × 1000 に落としても成功率は 3/8、クリアランスは 0.030 m と悪化した。
       time_steps: 56
       model_dt: 0.05
       batch_size: 2000
