@@ -20,9 +20,9 @@ setup(
     ],
     install_requires=['setuptools'],
     zip_safe=True,
-    maintainer='Ahmed M. Abbas',
-    maintainer_email='ahmed@example.com',
-    description='Autonomous Navigation with Nav2 on a diff drive robot in Gazebo.',
+    maintainer='Meister',
+    maintainer_email='',
+    description='Nav2/SLAM integration for the Meister rover (simulation and real machine).',
     license='MIT',
     tests_require=['pytest'],
     entry_points={
