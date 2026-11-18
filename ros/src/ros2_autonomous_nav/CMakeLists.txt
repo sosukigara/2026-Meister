@@ -47,6 +47,12 @@ target_include_directories(nav_mode PUBLIC
   $<INSTALL_INTERFACE:include>)
 target_compile_features(nav_mode PUBLIC cxx_std_17)
 
+add_library(map_store src/map_store.cpp)
+target_include_directories(map_store PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(map_store PUBLIC cxx_std_17)
+
 add_executable(nav_mode_manager src/nav_mode_manager_main.cpp)
 target_link_libraries(nav_mode_manager nav_mode)
 ament_target_dependencies(nav_mode_manager rclcpp nav2_msgs std_msgs std_srvs)
@@ -98,6 +104,9 @@ if(BUILD_TESTING)
 
   ament_add_gtest(test_nav_mode test/test_nav_mode.cpp)
   target_link_libraries(test_nav_mode nav_mode)
+
+  ament_add_gtest(test_map_store test/test_map_store.cpp)
+  target_link_libraries(test_map_store map_store)
 endif()
 
 ament_package()
