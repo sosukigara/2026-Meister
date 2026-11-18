@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <ctime>
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <memory>
@@ -115,6 +116,8 @@ int main(int argc, char** argv) {
   std::optional<nav_msgs::msg::OccupancyGrid> occupancy_msg;
   std::optional<nav_msgs::msg::Path> plan;
   double plan_first_at = 0.0;
+  // 受理直後に届いた最初の計画の長さ。最後の plan はゴール直前の残りで短い。
+  double first_plan_length = 0.0;
   std::vector<double> cmd_times;
 
   auto raw_sub = node->create_subscription<nav2_msgs::msg::Costmap>(
@@ -130,10 +133,22 @@ int main(int argc, char** argv) {
         plan = *msg;
         if (plan_first_at == 0.0) {
           plan_first_at = node->now().seconds();
+          double length = 0.0;
+          for (std::size_t i = 1; i < msg->poses.size(); ++i) {
+            length += std::hypot(
+                msg->poses[i].pose.position.x - msg->poses[i - 1].pose.position.x,
+                msg->poses[i].pose.position.y - msg->poses[i - 1].pose.position.y);
+          }
+          first_plan_length = length;
         }
       });
   auto cmd_sub = node->create_subscription<geometry_msgs::msg::Twist>(
       "/cmd_vel_nav", 10, [&](geometry_msgs::msg::Twist::ConstSharedPtr) {
+        cmd_times.push_back(node->now().seconds());
+      });
+  // 構成によっては controller の出力が直接 /cmd_vel に出る。どちらでも測れるようにする。
+  auto cmd_smoothed_sub = node->create_subscription<geometry_msgs::msg::Twist>(
+      "/cmd_vel", 10, [&](geometry_msgs::msg::Twist::ConstSharedPtr) {
         cmd_times.push_back(node->now().seconds());
       });
   auto client = rclcpp_action::create_client<NavigateToPose>(node, "navigate_to_pose");
@@ -149,7 +164,7 @@ int main(int argc, char** argv) {
   const std::string started_at = NowIso8601();
   const std::string load_average = LoadAverageText();
 
-  spin_for(8.0);
+  spin_for(25.0);  // コストマップは 1 Hz。起動直後を取りこぼさないよう長めに待つ。
   if (!raw_msg.has_value() || !occupancy_msg.has_value()) {
     const char* domain = std::getenv("ROS_DOMAIN_ID");
     std::fprintf(stderr,
@@ -214,8 +229,6 @@ int main(int argc, char** argv) {
       std::printf("[%d/%d] goal %zu: (%.2f, %.2f, %.2f)\n", repeat + 1, repeats, index,
                   goal.x, goal.y, goal.yaw);
 
-      plan.reset();
-      plan_first_at = 0.0;
       cmd_times.clear();
       std::vector<Pose2> trajectory;
       const auto cpu_before = ros2_autonomous_nav::SampleNavCpu();
@@ -250,7 +263,11 @@ int main(int argc, char** argv) {
       }
       // 計画時間は「アクションが受理されてから /plan が届くまで」で測る。
       // 送信前を起点にすると DDS と行動サーバの往復まで含んで過大になる。
+      // 受理の瞬間にリセットする: ここより前の /plan は前のゴールのもの。
       const double accepted_at = node->now().seconds();
+      plan.reset();
+      plan_first_at = 0.0;
+      first_plan_length = 0.0;
 
       auto result_future = client->async_get_result(handle);
       while (result_future.wait_for(std::chrono::milliseconds(50)) !=
@@ -276,12 +293,21 @@ int main(int argc, char** argv) {
       }
 
       try {
-        const auto tf = tf_buffer.lookupTransform("map", "base_footprint", tf2::TimePointZero);
+        const auto tf =
+                tf_buffer.lookupTransform("map", "base_footprint", tf2::TimePointZero);
         trajectory.push_back(Pose2{tf.transform.translation.x, tf.transform.translation.y,
                                    YawFromQuaternion(tf.transform.rotation)});
       } catch (const tf2::TransformException&) {
       }
 
+      // タイムアウトで抜けた場合、結果は永遠に来ない。待ち続けると計測全体が
+      // 止まるので、上限付きで待ち、来なければ「測定不能」として次へ進む。
+      if (result_future.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
+        const auto cpu_after = ros2_autonomous_nav::SampleNavCpu();
+        (void)cpu_after;
+        runs.emplace_back();
+        continue;
+      }
       const auto result = result_future.get();
       RunRecord run;
       run.success = result.code == rclcpp_action::ResultCode::SUCCEEDED;
@@ -299,17 +325,9 @@ int main(int argc, char** argv) {
         cpu_seconds_by_node[sample.node] += sample.cpu_seconds - before->second.cpu_seconds;
       }
 
-      if (plan.has_value()) {
-        double planned = 0.0;
-        for (std::size_t i = 1; i < plan->poses.size(); ++i) {
-          planned += std::hypot(
-              plan->poses[i].pose.position.x - plan->poses[i - 1].pose.position.x,
-              plan->poses[i].pose.position.y - plan->poses[i - 1].pose.position.y);
-        }
-        run.planned_length_m = planned;
-        run.path_length_ratio =
-            ros2_autonomous_nav::PathLengthRatio(run.path_length_m, planned);
-      }
+      run.planned_length_m = first_plan_length;
+      run.path_length_ratio =
+          ros2_autonomous_nav::PathLengthRatio(run.path_length_m, first_plan_length);
       if (plan_first_at > 0.0) {
         run.planner_latency_ms = (plan_first_at - accepted_at) * 1000.0;
       }
@@ -359,8 +377,25 @@ int main(int argc, char** argv) {
   payload["summary"] = json::parse(ros2_autonomous_nav::SummaryToJsonText(
       ros2_autonomous_nav::Summarize(runs)));
 
+  // 出力先は存在しないことがある（docs/bench など）。作ってから開き、
+  // 開けなければ黙って成功扱いにしない。
+  const std::filesystem::path out_path(options.out);
+  std::error_code dir_error;
+  if (out_path.has_parent_path()) {
+    std::filesystem::create_directories(out_path.parent_path(), dir_error);
+  }
   std::ofstream out(options.out);
+  if (!out) {
+    std::fprintf(stderr, "ERROR: cannot write %s\n", options.out.c_str());
+    rclcpp::shutdown();
+    return 2;
+  }
   out << payload.dump(2) << "\n";
+  if (!out) {
+    std::fprintf(stderr, "ERROR: failed while writing %s\n", options.out.c_str());
+    rclcpp::shutdown();
+    return 2;
+  }
   std::printf("%s\n", payload["summary"].dump(2).c_str());
 
   rclcpp::shutdown();
