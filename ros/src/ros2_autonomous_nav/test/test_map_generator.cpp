@@ -5,6 +5,9 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <fstream>
+#include <string>
+#include <vector>
 
 #include "ros2_autonomous_nav/map_generator.hpp"
 
@@ -60,6 +63,36 @@ TEST(MapGenerator, WallIsOneCellWideOnTheGrid) {
   // 北壁は y=4.9..5.1。セル中心 4.925 は壁、4.875 は床。
   EXPECT_EQ(At(spec, grid, 0.0, 4.925), kOccupiedPixel);
   EXPECT_EQ(At(spec, grid, 0.0, 4.875), kFreePixel);
+}
+
+TEST(MapGenerator, MatchesGoldenPgmByteForByte) {
+  std::ifstream in(MAP_GOLDEN_PATH, std::ios::binary);
+  ASSERT_TRUE(in.good()) << "missing golden " << MAP_GOLDEN_PATH;
+  std::string magic;
+  int width = 0;
+  int height = 0;
+  int max_value = 0;
+  in >> magic >> width >> height >> max_value;
+  ASSERT_EQ(magic, "P5");
+  ASSERT_EQ(max_value, 255);
+  in.get();  // ヘッダ末尾の改行
+
+  std::vector<uint8_t> golden(static_cast<std::size_t>(width) * height);
+  in.read(reinterpret_cast<char*>(golden.data()), static_cast<std::streamsize>(golden.size()));
+  ASSERT_EQ(in.gcount(), static_cast<std::streamsize>(golden.size()));
+
+  const MapSpec spec;
+  const auto grid = BuildNavWorldGrid(spec);
+  ASSERT_EQ(width, spec.width());
+  ASSERT_EQ(height, spec.height());
+  // PGM は row 0 が最大 y。グリッドは y 昇順なので上下を入れ替えて比べる。
+  for (int row = 0; row < height; ++row) {
+    for (int col = 0; col < width; ++col) {
+      const auto golden_index = static_cast<std::size_t>(row) * width + col;
+      const auto grid_index = static_cast<std::size_t>(height - 1 - row) * width + col;
+      ASSERT_EQ(golden[golden_index], grid[grid_index]) << "row " << row << " col " << col;
+    }
+  }
 }
 
 }  // namespace

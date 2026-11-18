@@ -46,8 +46,18 @@ add_executable(waypoint_follower src/waypoint_follower_main.cpp)
 target_link_libraries(waypoint_follower waypoint_tour)
 ament_target_dependencies(waypoint_follower rclcpp rclcpp_action nav2_msgs)
 
-add_executable(bench_nav src/bench_nav_main.cpp)
-target_link_libraries(bench_nav bench_metrics nlohmann_json::nlohmann_json)
+add_library(bench_proc src/bench_proc.cpp)
+target_include_directories(bench_proc PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(bench_proc PUBLIC cxx_std_17)
+
+add_executable(bench_nav
+  src/bench_nav_main.cpp
+  src/bench_options.cpp
+  src/costmap_view.cpp
+  src/bench_report.cpp)
+target_link_libraries(bench_nav bench_metrics bench_proc nlohmann_json::nlohmann_json)
 ament_target_dependencies(bench_nav
   rclcpp rclcpp_action nav2_msgs nav_msgs geometry_msgs tf2 tf2_ros)
 
@@ -64,9 +74,15 @@ if(BUILD_TESTING)
 
   ament_add_gtest(test_map_generator test/test_map_generator.cpp)
   target_link_libraries(test_map_generator map_generator)
+  # Python 版が生成した地図とのバイト一致を、リポジトリ内で再現できる形で固定する。
+  target_compile_definitions(test_map_generator PRIVATE
+    MAP_GOLDEN_PATH="${CMAKE_CURRENT_SOURCE_DIR}/maps/nav_world.pgm")
 
   ament_add_gtest(test_waypoint_tour test/test_waypoint_tour.cpp)
   target_link_libraries(test_waypoint_tour waypoint_tour)
+
+  ament_add_gtest(test_bench_proc test/test_bench_proc.cpp)
+  target_link_libraries(test_bench_proc bench_proc)
 endif()
 
 ament_package()

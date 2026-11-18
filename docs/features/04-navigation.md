@@ -16,7 +16,7 @@
 - [ ] 既存地図ナビ: `robot_nav.launch.py` で Gazebo + map_server + AMCL + Nav2 を起動し、保存済み地図上で自己位置推定しながら移動できる
 - [ ] Nav2 ノード群: `navigation.launch.py` でコントローラ / プランナ / ビヘイビア / BT ナビゲータ / ベロシティスムーザ / ライフサイクルマネージャを起動できる
 - [ ] 目標地点移動: RViz の「2D Nav Goal」指定または `navigate.sh`（`/navigate_to_pose` アクション）で単一目標へ自律移動できる
-- [ ] ウェイポイント巡回: `waypoint_follower.py`（nav2_simple_commander の BasicNavigator）で複数地点を順に巡回できる
+- [ ] ウェイポイント巡回: `waypoint_follower`（nav2_simple_commander の BasicNavigator）で複数地点を順に巡回できる
 - [ ] ウェイポイント CLI: `waypoints.sh` でスクリプト化された巡回を起動できる
 - [ ] 手動操作: `drive.sh`（teleop_twist_keyboard）でキーボードによる手動走行ができる
 - [ ] GPU/CPU 自動検出: `nvidia-smi` の有無で GPU/CPU 用 URDF（`my_robot_gpu.urdf` / `my_robot_cpu.urdf`）、LiDAR スペック（360°@10Hz / 180°@5Hz）、Gazebo 描画エンジン（ogre2 系）を自動選択する

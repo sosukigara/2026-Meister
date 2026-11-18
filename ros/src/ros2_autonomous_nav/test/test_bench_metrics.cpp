@@ -220,5 +220,52 @@ TEST(BenchMetrics, SelectFreeGoalsSkipsOccupiedCells) {
   EXPECT_TRUE(SelectFreeGoals(grid, {}, 3, 0.5, 0.0, 0.30, 0.20).empty());
 }
 
+TEST(BenchMetrics, ValidateGoalsRejectsEmptyList) {
+  const auto grid = MakeGrid(4, 4, 0.5, 0.0, 0.0, 0);
+  const auto problems = ValidateGoals({}, grid);
+  ASSERT_EQ(problems.size(), 1u);
+  EXPECT_EQ(problems[0], "no goals defined");
+}
+
+TEST(BenchMetrics, ValidateGoalsRejectsGoalInsideObstacle) {
+  auto grid = MakeGrid(4, 4, 0.5, 0.0, 0.0, 0);
+  grid.data[0] = 100;  // セル (0,0) が占有
+  const auto problems = ValidateGoals({{0.1, 0.1, 0.0}}, grid);
+  ASSERT_EQ(problems.size(), 1u);
+  EXPECT_EQ(problems[0], "goal 0 (0.1, 0.1) is not in free space");
+}
+
+TEST(BenchMetrics, ValidateGoalsAcceptsFreeGoals) {
+  const auto grid = MakeGrid(4, 4, 0.5, 0.0, 0.0, 0);
+  EXPECT_TRUE(ValidateGoals({{1.75, 1.75, 0.0}}, grid).empty());
+}
+
+TEST(BenchMetrics, ValidateGoalsRejectsGoalOutsideTheGrid) {
+  const auto grid = MakeGrid(4, 4, 0.5, 0.0, 0.0, 0);
+  EXPECT_EQ(ValidateGoals({{9.0, 9.0, 0.0}}, grid).size(), 1u);
+}
+
+TEST(BenchMetrics, SummarizeAggregatesPlannerP95AndWorstControlP99) {
+  std::vector<RunRecord> runs(3);
+  for (int i = 0; i < 3; ++i) {
+    runs[i].success = true;
+    runs[i].min_clearance_m = 0.5;
+    runs[i].final_error_xy = 0.05;
+    runs[i].final_error_yaw = 0.02;
+  }
+  runs[0].planner_latency_ms = 10.0;
+  runs[1].planner_latency_ms = 20.0;
+  runs[2].planner_latency_ms = 100.0;
+  runs[0].control_p99_ms = 50.0;
+  runs[1].control_p99_ms = 70.0;
+  runs[2].control_p99_ms = 40.0;
+
+  const auto summary = Summarize(runs);
+  ASSERT_TRUE(summary.planner_latency_p95_ms.has_value());
+  EXPECT_NEAR(*summary.planner_latency_p95_ms, 100.0, 1e-9);
+  ASSERT_TRUE(summary.max_control_p99_ms.has_value());
+  EXPECT_NEAR(*summary.max_control_p99_ms, 70.0, 1e-9);
+}
+
 }  // namespace
 }  // namespace ros2_autonomous_nav

@@ -37,7 +37,7 @@
 | パッケージ | 役割 | エントリポイント | 依存 |
 |---|---|---|---|
 | `umeonigiri_description` | URDF / spawn / 全システム起動 | `launch/all_system.launch.py` `launch/spawn.launch.py` | — |
-| `ros2_autonomous_nav` | Nav2 / SLAM / `real_robot.launch.py` | 各 `launch/*.launch.py` | umeonigiri_description, meister_serial_bridge |
+| `ros2_autonomous_nav` | Nav2 / SLAM / 評価ツール (ament_cmake) | 各 `launch/*.launch.py`、`bench_nav` / `generate_map` / `waypoint_follower`（いずれも C++） | umeonigiri_description, meister_serial_bridge |
 | `meister_vision` | YOLOv8n ONNX 検出 → `detections` | `detection_node` / `hand_landmarks_node` / `pc_camera`（いずれも C++） | OpenCV, ONNX Runtime |
 | `meister_web_nav` | Web UI（地図・現在地・経路・認識モニター） | `web_nav_server`（C++） | umeonigiri_description |
 | `meister_serial_bridge` | **`/cmd_vel` → UART フレーム、`/esp32/state` ← FB_STATE** | `serial_bridge` / `meister_comm_check` / `meister_hz_measure`（いずれも C++） | libserial, firmware の protocol ソース |

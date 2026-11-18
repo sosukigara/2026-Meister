@@ -3,6 +3,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
+#include <string>
 #include <limits>
 
 namespace ros2_autonomous_nav {
@@ -107,6 +109,39 @@ std::optional<int> CellCost(const GridView& grid, double x, double y) {
   return static_cast<int>(grid.data[static_cast<std::size_t>(row) * grid.width + col]);
 }
 
+namespace {
+
+double Percentile(std::vector<double> values, double q) {
+  if (values.empty()) {
+    return 0.0;
+  }
+  std::sort(values.begin(), values.end());
+  const auto last = static_cast<double>(values.size() - 1);
+  const auto index = static_cast<std::size_t>(std::min(last, std::round(q * last)));
+  return values[index];
+}
+
+}  // namespace
+
+std::vector<std::string> ValidateGoals(const std::vector<Goal>& goals,
+                                       const GridView& cost_grid, int free_cost_max) {
+  std::vector<std::string> problems;
+  if (goals.empty()) {
+    problems.emplace_back("no goals defined");
+    return problems;
+  }
+  for (std::size_t i = 0; i < goals.size(); ++i) {
+    const auto cost = CellCost(cost_grid, goals[i].x, goals[i].y);
+    if (!cost.has_value() || *cost < 0 || *cost >= free_cost_max) {
+      char text[128];
+      std::snprintf(text, sizeof(text), "goal %zu (%.1f, %.1f) is not in free space", i,
+                    goals[i].x, goals[i].y);
+      problems.emplace_back(text);
+    }
+  }
+  return problems;
+}
+
 double SuccessRate(const std::vector<bool>& results) {
   if (results.empty()) {
     return 0.0;
@@ -144,6 +179,23 @@ RunSummary Summarize(const std::vector<RunRecord>& runs) {
       max_yaw = std::max(max_yaw, *run.final_error_yaw);
     }
   }
+  std::vector<double> planner_latencies;
+  double max_control_p99 = -std::numeric_limits<double>::infinity();
+  for (const auto& run : runs) {
+    if (run.planner_latency_ms.has_value()) {
+      planner_latencies.push_back(*run.planner_latency_ms);
+    }
+    if (run.control_p99_ms.has_value()) {
+      max_control_p99 = std::max(max_control_p99, *run.control_p99_ms);
+    }
+  }
+  if (!planner_latencies.empty()) {
+    summary.planner_latency_p95_ms = Percentile(planner_latencies, 0.95);
+  }
+  if (!std::isinf(max_control_p99)) {
+    summary.max_control_p99_ms = max_control_p99;
+  }
+
   summary.measured = measured;
   if (measured > 0) {
     summary.min_clearance_m = min_clearance;

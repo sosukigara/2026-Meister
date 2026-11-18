@@ -16,7 +16,7 @@
 - [ ] オンライン非同期 SLAM 設定: `config/mapper_params_online_async.yaml` で非同期 SLAM パラメータを保持する
 - [ ] 地図の保存: `save_map.sh` で `map_saver_cli` を実行し、作成した地図を PGM/YAML として保存できる
 - [ ] 既製地図: `maps/nav_world.pgm` + `.yaml`（12 m × 12 m, 解像度 0.05 m/px）を同梱する
-- [ ] 既知ジオメトリからの地図生成: `generate_map.py` で SDF の壁ジオメトリから直接占有グリッド地図（PGM/YAML）を生成できる（SLAM 不要）
+- [ ] 既知ジオメトリからの地図生成: `generate_map` で SDF の壁ジオメトリから直接占有グリッド地図（PGM/YAML）を生成できる（SLAM 不要）
 - [ ] 実機向け SLAM 設定: `config/real_mapper_params_online_async.yaml` で実機用パラメータを用意する
 
 ## 計画中機能

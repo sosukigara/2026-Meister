@@ -10,6 +10,7 @@
 
 #include <cstdint>
 #include <optional>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -19,6 +20,12 @@ namespace ros2_autonomous_nav {
 inline constexpr int kFreeCostMax = 50;      ///< ゴールを自由とみなすコストマップ値の上限
 inline constexpr int kLethalRaw = 254;       ///< nav2_msgs/Costmap の LETHAL_OBSTACLE
 inline constexpr double kContactThreshold = 0.02;  ///< 接触とみなす footprint 距離 [m]
+
+/// 機体寸法 [m]。設計書 §3 が 0.6 x 0.4 と定めている。
+/// URDF（半径 0.25）と Nav2 の robot_radius（0.35）はこの値より古い記述で、
+/// 更新は設計書 PR4（自己位置推定の入れ替え）で行う。
+inline constexpr double kFootprintHalfLength = 0.30;
+inline constexpr double kFootprintHalfWidth = 0.20;
 
 struct Pose2 {
   double x{0.0};
@@ -74,6 +81,10 @@ struct RunSummary {
   std::optional<double> max_final_error_yaw;
   std::optional<double> min_clearance_m;
   std::optional<double> mean_duration_s;
+  /// 設計書 §8.1「計画 p95 < 100 ms」の判定に使う。
+  std::optional<double> planner_latency_p95_ms;
+  /// 設計書 §8.1「制御 p99 < 60 ms」の判定に、最悪の run で使う。
+  std::optional<double> max_control_p99_ms;
 };
 
 /// 軌跡の累積距離 [m]。点が 1 つ以下なら 0。
@@ -103,6 +114,12 @@ IntervalStats ComputeIntervalStats(const std::vector<double>& times);
 std::optional<int> CellCost(const GridView& grid, double x, double y);
 
 double SuccessRate(const std::vector<bool>& results);
+
+/// ゴールが自由空間にあるかを検証する。問題の説明を返す（空なら実行してよい）。
+/// ROS に依存しないので単体テストで固定できる。
+std::vector<std::string> ValidateGoals(const std::vector<Goal>& goals,
+                                       const GridView& cost_grid,
+                                       int free_cost_max = kFreeCostMax);
 
 /// 測定値が揃っている run だけを集計する。無ければ各値は nullopt。
 RunSummary Summarize(const std::vector<RunRecord>& runs);

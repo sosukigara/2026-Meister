@@ -2,4 +2,4 @@
 # Run the waypoint follower node — sends the robot on a maze tour
 conda deactivate 2>/dev/null
 source /opt/ros/jazzy/setup.bash
-/usr/bin/python3 $(dirname "$0")/waypoint_follower.py
+ros2 run ros2_autonomous_nav waypoint_follower
