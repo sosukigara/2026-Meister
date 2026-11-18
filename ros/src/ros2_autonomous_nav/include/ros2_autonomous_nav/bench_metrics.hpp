@@ -71,6 +71,11 @@ struct RunRecord {
   std::optional<double> min_clearance_driving_m;
   /// 計画経路そのものの最小クリアランス。プランナと追従のどちらが寄せたかを切り分ける。
   std::optional<double> plan_min_clearance_m;
+  /// アクションの結果コード（1=SUCCEEDED 2=ABORTED 3=CANCELED）。失敗の理由を残す。
+  std::optional<int> result_code;
+  /// NavigateToPose の error_code と error_msg。BT のどのノードで落ちたかが分かる。
+  std::optional<int> nav_error_code;
+  std::optional<std::string> nav_error_msg;
   std::optional<int> contact_count;
   std::optional<double> planner_latency_ms;
   std::optional<double> control_hz;
@@ -88,6 +93,11 @@ struct RunSummary {
   std::optional<double> min_clearance_driving_m;
   /// 計画経路そのものの最小クリアランス。プランナと追従のどちらが寄せたかを切り分ける。
   std::optional<double> plan_min_clearance_m;
+  /// アクションの結果コード（1=SUCCEEDED 2=ABORTED 3=CANCELED）。失敗の理由を残す。
+  std::optional<int> result_code;
+  /// NavigateToPose の error_code と error_msg。BT のどのノードで落ちたかが分かる。
+  std::optional<int> nav_error_code;
+  std::optional<std::string> nav_error_msg;
   std::optional<double> mean_duration_s;
   /// 設計書 §8.1「計画 p95 < 100 ms」の判定に使う。
   std::optional<double> planner_latency_p95_ms;

@@ -16,6 +16,10 @@ json ToJson(const std::optional<int>& value) {
   return value.has_value() ? json(*value) : json(nullptr);
 }
 
+json ToJson(const std::optional<std::string>& value) {
+  return value.has_value() ? json(*value) : json(nullptr);
+}
+
 json RunToJson(const RunRecord& run) {
   return json{{"success", run.success},
               {"duration_s", run.duration_s},
@@ -27,6 +31,9 @@ json RunToJson(const RunRecord& run) {
               {"min_clearance_m", ToJson(run.min_clearance_m)},
               {"min_clearance_driving_m", ToJson(run.min_clearance_driving_m)},
               {"plan_min_clearance_m", ToJson(run.plan_min_clearance_m)},
+              {"result_code", ToJson(run.result_code)},
+              {"nav_error_code", ToJson(run.nav_error_code)},
+              {"nav_error_msg", ToJson(run.nav_error_msg)},
               {"contact_count", ToJson(run.contact_count)},
               {"planner_latency_ms", ToJson(run.planner_latency_ms)},
               {"control_hz", ToJson(run.control_hz)},

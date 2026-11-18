@@ -368,12 +368,20 @@ int main(int argc, char** argv) {
       if (result_future.wait_for(std::chrono::seconds(5)) != std::future_status::ready) {
         const auto cpu_after = ros2_autonomous_nav::SampleNavCpu();
         (void)cpu_after;
-        runs.emplace_back();
+        RunRecord timed_out;
+        timed_out.success = false;
+        timed_out.result_code = 3;  // CANCELED（ゴールタイムアウト）
+        runs.push_back(timed_out);
         continue;
       }
       const auto result = result_future.get();
       RunRecord run;
       run.success = result.code == rclcpp_action::ResultCode::SUCCEEDED;
+      run.result_code = static_cast<int>(result.code);
+      if (result.result != nullptr) {
+        run.nav_error_code = static_cast<int>(result.result->error_code);
+        run.nav_error_msg = result.result->error_msg;
+      }
       run.duration_s = node->now().seconds() - started;
       run.path_length_m = ros2_autonomous_nav::PathLength(trajectory);
 
