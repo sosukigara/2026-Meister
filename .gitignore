@@ -33,3 +33,4 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 .vscode/
+.dsh-code-index/

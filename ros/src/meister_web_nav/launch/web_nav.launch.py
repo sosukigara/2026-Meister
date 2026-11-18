@@ -1,3 +1,6 @@
+import os
+
+from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
@@ -11,5 +14,11 @@ def generate_launch_description():
             package='meister_web_nav',
             executable='web_nav_server',
             output='screen',
+            parameters=[{
+                # symlink-install ではソースの maps/ を指す。保存地図を
+                # install 側に散らかさない。
+                'maps_dir': os.path.join(
+                    get_package_share_directory('ros2_autonomous_nav'), 'maps'),
+            }],
         ),
     ])

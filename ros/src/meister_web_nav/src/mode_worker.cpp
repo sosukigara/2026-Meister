@@ -8,8 +8,6 @@
 
 #include <geometry_msgs/msg/pose_with_covariance_stamped.hpp>
 #include <nav2_msgs/srv/save_map.hpp>
-#include <rcl_interfaces/msg/parameter_value.hpp>
-#include <rcl_interfaces/srv/set_parameters.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
 #include "meister_web_nav/map_store.hpp"
@@ -86,39 +84,37 @@ std::vector<std::string> ModeWorker::ListMaps() { return ListMapNames(maps_dir_)
 std::string ModeWorker::SaveMap(const std::string& name) {
   std::error_code error;
   std::filesystem::create_directories(maps_dir_, error);
-  const std::string target = maps_dir_ + "/" + name;
+  // SaveMap は map_url を要求する（パラメータではない）。絶対パスに file:// を付ける。
+  const std::filesystem::path target =
+      std::filesystem::absolute(std::filesystem::path(maps_dir_) / name);
+  std::filesystem::create_directories(target.parent_path(), error);
 
-  {
-    std::lock_guard<std::mutex> lock(mutex_);
-    // map_saver は保存先を parameter でしか受け取らない。設定してから呼ぶ。
-    auto param_client =
-        std::make_shared<rclcpp::AsyncParametersClient>(node_, "/map_saver");
-    if (!param_client->wait_for_service(kServiceWait)) {
-      return "map_saver が見つかりません";
-    }
-    auto param_future = param_client->set_parameters(
-        {rclcpp::Parameter("save_map_filename", target)});
-    if (rclcpp::spin_until_future_complete(node_, param_future, kResponseWait) !=
-        rclcpp::FutureReturnCode::SUCCESS) {
-      return "map_saver の保存先を設定できません";
-    }
-    auto client = node_->create_client<nav2_msgs::srv::SaveMap>("/map_saver/save_map");
-    for (int i = 0; i < 40 && !client->service_is_ready(); ++i) {
-      rclcpp::spin_some(node_);
-      rclcpp::sleep_for(std::chrono::milliseconds(50));
-    }
-    if (!client->wait_for_service(kServiceWait)) {
-      return "map_saver/save_map が見つかりません";
-    }
-    auto future =
-        client->async_send_request(std::make_shared<nav2_msgs::srv::SaveMap::Request>());
-    if (rclcpp::spin_until_future_complete(node_, future, kResponseWait) !=
-        rclcpp::FutureReturnCode::SUCCESS) {
-      return "map_saver が応答しません";
-    }
-    if (!future.get()->result) {
-      return "地図の保存に失敗しました";
-    }
+  std::lock_guard<std::mutex> lock(mutex_);
+  auto client = node_->create_client<nav2_msgs::srv::SaveMap>("/map_saver/save_map");
+  for (int i = 0; i < 40 && !client->service_is_ready(); ++i) {
+    rclcpp::spin_some(node_);
+    rclcpp::sleep_for(std::chrono::milliseconds(50));
+  }
+  if (!client->wait_for_service(kServiceWait)) {
+    return "map_saver が見つかりません";
+  }
+  auto request = std::make_shared<nav2_msgs::srv::SaveMap::Request>();
+  request->map_topic = "/map";
+  // nav2 の map_saver は file:// を剥がさずに ImageMagick へ渡すため、
+  // 素の絶対パスを渡す（file:// を付けると "No encode delegate" で失敗する）。
+  request->map_url = target.string();
+  // この環境の ImageMagick は PGM の encode delegate を持たない。PNG で保存する。
+  request->image_format = "png";
+  request->map_mode = "trinary";
+  request->free_thresh = 0.25f;
+  request->occupied_thresh = 0.65f;
+  auto future = client->async_send_request(request);
+  if (rclcpp::spin_until_future_complete(node_, future, kResponseWait) !=
+      rclcpp::FutureReturnCode::SUCCESS) {
+    return "map_saver が応答しません";
+  }
+  if (!future.get()->result) {
+    return "地図の保存に失敗しました";
   }
   return {};
 }

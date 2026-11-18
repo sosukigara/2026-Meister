@@ -35,7 +35,7 @@ def generate_launch_description():
                      'bond_timeout': 10.0,
                      'node_names': ['controller_server', 'planner_server',
                                     'behavior_server', 'bt_navigator',
-                                    'velocity_smoother']}])
+                                    'velocity_smoother', 'map_saver']}])
 
     # ---- 保存地図での自己位置推定。起動時は inactive で待たせる ----
     map_server = LifecycleNode(
@@ -48,25 +48,20 @@ def generate_launch_description():
         package='nav2_amcl', executable='amcl', name='amcl', namespace='', output='screen',
         parameters=[nav2_params_file, {'use_sim_time': use_sim_time}])
 
-    lifecycle_manager_localization = Node(
-        package='nav2_lifecycle_manager', executable='lifecycle_manager',
-        name='lifecycle_manager_localization', output='screen',
-        parameters=[{'use_sim_time': use_sim_time, 'autostart': False,
-                     'bond_timeout': 10.0,
-                     'node_names': ['map_server', 'amcl']}])
-
     # 地図の保存は map_saver のサービス経由でしか行わない。
     map_saver = LifecycleNode(
         package='nav2_map_server', executable='map_saver_server', name='map_saver',
         namespace='', output='screen',
-        parameters=[{'use_sim_time': use_sim_time, 'save_map_timeout': 5.0}])
+        parameters=[{'use_sim_time': use_sim_time, 'save_map_timeout': 30.0,
+                     'map_subscribe_transient_local': True}])
 
     # map→odom を publish してよいのは常に1つ。切替はこのノードだけが行う。
     nav_mode_manager = Node(
         package='ros2_autonomous_nav', executable='nav_mode_manager',
         name='nav_mode_manager', output='screen',
-        parameters=[{'mapping_manager': '/lifecycle_manager_mapping',
-                     'localization_manager': '/lifecycle_manager_localization',
+        parameters=[{'slam_node': '/slam_toolbox',
+                     'map_server_node': '/map_server',
+                     'amcl_node': '/amcl',
                      'initial_mode': 'mapping'}])
 
     return LaunchDescription([
@@ -77,7 +72,6 @@ def generate_launch_description():
         lifecycle_manager_nav2,
         map_server,
         amcl,
-        lifecycle_manager_localization,
         map_saver,
         nav_mode_manager,
     ])

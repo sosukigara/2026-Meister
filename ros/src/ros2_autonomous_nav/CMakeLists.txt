@@ -20,6 +20,7 @@ find_package(tf2_ros REQUIRED)
 find_package(nlohmann_json 3.11 REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
 
 # 指標は ROS 非依存。host で gtest できる。
 add_library(bench_metrics src/bench_metrics.cpp)
@@ -49,7 +50,7 @@ target_compile_features(nav_mode PUBLIC cxx_std_17)
 
 add_executable(nav_mode_manager src/nav_mode_manager_main.cpp)
 target_link_libraries(nav_mode_manager nav_mode)
-ament_target_dependencies(nav_mode_manager rclcpp nav2_msgs std_msgs std_srvs)
+ament_target_dependencies(nav_mode_manager rclcpp nav2_msgs std_msgs std_srvs lifecycle_msgs)
 
 add_executable(generate_map src/generate_map_main.cpp)
 target_link_libraries(generate_map map_generator)
