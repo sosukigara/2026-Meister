@@ -39,6 +39,12 @@ target_include_directories(waypoint_tour PUBLIC
   $<INSTALL_INTERFACE:include>)
 target_compile_features(waypoint_tour PUBLIC cxx_std_17)
 
+add_library(nav_mode src/nav_mode.cpp)
+target_include_directories(nav_mode PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(nav_mode PUBLIC cxx_std_17)
+
 add_executable(generate_map src/generate_map_main.cpp)
 target_link_libraries(generate_map map_generator)
 
@@ -83,6 +89,9 @@ if(BUILD_TESTING)
 
   ament_add_gtest(test_bench_proc test/test_bench_proc.cpp)
   target_link_libraries(test_bench_proc bench_proc)
+
+  ament_add_gtest(test_nav_mode test/test_nav_mode.cpp)
+  target_link_libraries(test_nav_mode nav_mode)
 endif()
 
 ament_package()
