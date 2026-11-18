@@ -82,15 +82,17 @@ controller_server:
     general_goal_checker:
       stateful: true
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.25
+      # ベースラインの最終誤差 0.298 m が許容を超えた。判定を締めて寄せる。
+      xy_goal_tolerance: 0.15
+      yaw_goal_tolerance: 0.15
 
     FollowPath:
       plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
       desired_linear_vel: 0.5
-      lookahead_dist: 0.6
-      min_lookahead_dist: 0.3
-      max_lookahead_dist: 0.9
+      # 経路長比 0.82 はショートカット。先読みを短くして経路に沿わせる。
+      lookahead_dist: 0.45
+      min_lookahead_dist: 0.25
+      max_lookahead_dist: 0.8
       lookahead_time: 1.5
       rotate_to_heading_angular_vel: 1.0
       transform_tolerance: 0.1
@@ -203,7 +205,8 @@ local_costmap:
           obstacle_min_range: 0.0
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
+        # 減衰を緩めると高コスト帯が広がり、障害物から離れた経路が選ばれる。
+        cost_scaling_factor: 2.0
         inflation_radius: 1.2
       always_send_full_costmap: true
 
@@ -238,7 +241,8 @@ global_costmap:
           obstacle_min_range: 0.0
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
+        # 減衰を緩めると高コスト帯が広がり、障害物から離れた経路が選ばれる。
+        cost_scaling_factor: 2.0
         inflation_radius: 1.2
       always_send_full_costmap: true
 

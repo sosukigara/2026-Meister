@@ -159,6 +159,33 @@ TEST(BenchMetrics, SummarizeReportsCountsAndWorstCase) {
   EXPECT_NEAR(*summary.mean_duration_s, 20.0, 1e-9);
 }
 
+TEST(BenchMetrics, SummarizeSeparatesDrivingClearanceFromStartPose) {
+  // 初期姿勢は「走って行った位置」ではない。走行中の最小値と混ぜない。
+  std::vector<RunRecord> runs(2);
+  for (auto& run : runs) {
+    run.success = true;
+    run.duration_s = 5.0;
+    run.min_clearance_m = 0.10;
+    run.min_clearance_driving_m = 0.45;
+  }
+
+  const auto summary = Summarize(runs);
+
+  EXPECT_NEAR(*summary.min_clearance_m, 0.10, 1e-9);
+  EXPECT_NEAR(*summary.min_clearance_driving_m, 0.45, 1e-9);
+}
+
+TEST(BenchMetrics, SummarizeOmitsDrivingClearanceWhenUnmeasured) {
+  std::vector<RunRecord> runs(1);
+  runs[0].success = true;
+  runs[0].duration_s = 5.0;
+  runs[0].min_clearance_m = 0.10;
+
+  const auto summary = Summarize(runs);
+
+  EXPECT_FALSE(summary.min_clearance_driving_m.has_value());
+}
+
 TEST(BenchMetrics, SummarizeIgnoresRunsWithoutMeasurements) {
   std::vector<RunRecord> runs(2);
   runs[0].success = false;  // 測定不能（拒否・軌跡なし）

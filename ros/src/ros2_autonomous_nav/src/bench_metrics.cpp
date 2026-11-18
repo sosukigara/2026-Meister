@@ -163,6 +163,7 @@ RunSummary Summarize(const std::vector<RunRecord>& runs) {
   double max_xy = -std::numeric_limits<double>::infinity();
   double max_yaw = -std::numeric_limits<double>::infinity();
   double min_clearance = std::numeric_limits<double>::infinity();
+  double min_clearance_driving = std::numeric_limits<double>::infinity();
   double duration_sum = 0.0;
   int measured = 0;
   for (const auto& run : runs) {
@@ -172,6 +173,10 @@ RunSummary Summarize(const std::vector<RunRecord>& runs) {
     ++measured;
     duration_sum += run.duration_s;
     min_clearance = std::min(min_clearance, *run.min_clearance_m);
+    if (run.min_clearance_driving_m.has_value()) {
+      min_clearance_driving =
+          std::min(min_clearance_driving, *run.min_clearance_driving_m);
+    }
     if (run.final_error_xy.has_value()) {
       max_xy = std::max(max_xy, *run.final_error_xy);
     }
@@ -199,6 +204,9 @@ RunSummary Summarize(const std::vector<RunRecord>& runs) {
   summary.measured = measured;
   if (measured > 0) {
     summary.min_clearance_m = min_clearance;
+    if (!std::isinf(min_clearance_driving)) {
+      summary.min_clearance_driving_m = min_clearance_driving;
+    }
     summary.mean_duration_s = duration_sum / measured;
     if (!std::isinf(max_xy)) {
       summary.max_final_error_xy = max_xy;

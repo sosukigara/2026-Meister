@@ -25,6 +25,7 @@ json RunToJson(const RunRecord& run) {
               {"final_error_xy", ToJson(run.final_error_xy)},
               {"final_error_yaw", ToJson(run.final_error_yaw)},
               {"min_clearance_m", ToJson(run.min_clearance_m)},
+              {"min_clearance_driving_m", ToJson(run.min_clearance_driving_m)},
               {"contact_count", ToJson(run.contact_count)},
               {"planner_latency_ms", ToJson(run.planner_latency_ms)},
               {"control_hz", ToJson(run.control_hz)},
@@ -48,6 +49,7 @@ std::string SummaryToJsonText(const RunSummary& summary) {
                    {"max_final_error_xy", ToJson(summary.max_final_error_xy)},
                    {"max_final_error_yaw", ToJson(summary.max_final_error_yaw)},
                    {"min_clearance_m", ToJson(summary.min_clearance_m)},
+                   {"min_clearance_driving_m", ToJson(summary.min_clearance_driving_m)},
                    {"mean_duration_s", ToJson(summary.mean_duration_s)}};
   return value.dump(2);
 }

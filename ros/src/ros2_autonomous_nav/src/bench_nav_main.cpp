@@ -404,6 +404,14 @@ int main(int argc, char** argv) {
         run.contact_count = ros2_autonomous_nav::ContactCount(
             trajectory, occupied, ros2_autonomous_nav::kFootprintHalfLength,
             ros2_autonomous_nav::kFootprintHalfWidth);
+        // 最初のサンプルは「走って行った位置」ではなく置かれた位置。とくに 1 本目の
+        // ゴールはスポーン地点なので、そこを走行の余裕として数えない。
+        if (trajectory.size() >= 3) {
+          const std::vector<Pose2> driving(trajectory.begin() + 1, trajectory.end());
+          run.min_clearance_driving_m = ros2_autonomous_nav::MinFootprintClearance(
+              driving, occupied, ros2_autonomous_nav::kFootprintHalfLength,
+              ros2_autonomous_nav::kFootprintHalfWidth);
+        }
       } else {
         run.success = false;
         run.path_length_m = 0.0;

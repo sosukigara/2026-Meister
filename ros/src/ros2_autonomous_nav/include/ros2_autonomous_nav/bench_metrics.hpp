@@ -67,6 +67,8 @@ struct RunRecord {
   std::optional<double> final_error_xy;
   std::optional<double> final_error_yaw;
   std::optional<double> min_clearance_m;
+  /// 初期姿勢を除いた最小クリアランス。走行で近づいた量だけを見る。
+  std::optional<double> min_clearance_driving_m;
   std::optional<int> contact_count;
   std::optional<double> planner_latency_ms;
   std::optional<double> control_hz;
@@ -80,6 +82,8 @@ struct RunSummary {
   std::optional<double> max_final_error_xy;
   std::optional<double> max_final_error_yaw;
   std::optional<double> min_clearance_m;
+  /// 初期姿勢を除いた最小クリアランス。走行で近づいた量だけを見る。
+  std::optional<double> min_clearance_driving_m;
   std::optional<double> mean_duration_s;
   /// 設計書 §8.1「計画 p95 < 100 ms」の判定に使う。
   std::optional<double> planner_latency_p95_ms;
