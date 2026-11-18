@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
-#include "ros2_autonomous_nav/map_store.hpp"
+#include "meister_web_nav/map_store.hpp"
 
 #include <algorithm>
 #include <cctype>
 #include <filesystem>
 
-namespace ros2_autonomous_nav {
+namespace meister_web_nav {
 namespace {
 
 constexpr std::size_t kMaxNameLength = 64;
@@ -30,7 +30,7 @@ std::string DefaultMapName(const std::string& world, const std::string& timestam
   return prefix + "_" + timestamp;
 }
 
-std::vector<std::string> ListMaps(const std::string& dir) {
+std::vector<std::string> ListMapNames(const std::string& dir) {
   std::vector<std::string> names;
   std::error_code error;
   if (!std::filesystem::is_directory(dir, error)) {
@@ -49,4 +49,4 @@ std::vector<std::string> ListMaps(const std::string& dir) {
   return names;
 }
 
-}  // namespace ros2_autonomous_nav
+}  // namespace meister_web_nav

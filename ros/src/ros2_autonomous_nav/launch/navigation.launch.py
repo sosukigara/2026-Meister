@@ -55,6 +55,12 @@ def generate_launch_description():
                      'bond_timeout': 10.0,
                      'node_names': ['map_server', 'amcl']}])
 
+    # 地図の保存は map_saver のサービス経由でしか行わない。
+    map_saver = LifecycleNode(
+        package='nav2_map_server', executable='map_saver_server', name='map_saver',
+        namespace='', output='screen',
+        parameters=[{'use_sim_time': use_sim_time, 'save_map_timeout': 5.0}])
+
     # map→odom を publish してよいのは常に1つ。切替はこのノードだけが行う。
     nav_mode_manager = Node(
         package='ros2_autonomous_nav', executable='nav_mode_manager',
@@ -72,5 +78,6 @@ def generate_launch_description():
         map_server,
         amcl,
         lifecycle_manager_localization,
+        map_saver,
         nav_mode_manager,
     ])

@@ -49,6 +49,16 @@
     </div>
   </div>
 
+  <div class="mode-bar">
+    <span class="mode-badge" id="mode-badge" data-tone="idle">—</span>
+    <button id="btn-switch-mode" class="btn btn-quiet" type="button" hidden>
+      保存地図ナビへ
+    </button>
+    <input id="map-name" class="map-name" type="text" maxlength="64"
+           placeholder="地図名（空なら自動）" aria-label="保存する地図の名前">
+    <button id="btn-save-map" class="btn btn-quiet" type="button">地図を保存</button>
+  </div>
+
   <button id="btn-vision-toggle" class="btn btn-quiet" type="button"
           aria-pressed="true" data-tone="ok">認識モニター ON</button>
 </header>

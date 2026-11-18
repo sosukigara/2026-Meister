@@ -12,6 +12,7 @@ import {
 import { createEventLog } from './js/events.js';
 import { createSignalStrip } from './js/instruments.js';
 import { createMapView } from './js/map_view.js';
+import { createModePanel } from './js/mode_panel.js';
 import { BUSY_STATES, createNavStatus, stateLabel, stateTone } from './js/nav_status.js';
 import { createVisionPanel } from './js/vision_panel.js';
 import { createWaypointPanel } from './js/waypoints.js';
@@ -72,6 +73,14 @@ const vision = createVisionPanel({
       tone: !status.monitor ? 'idle' : status.has_frame && !status.stale ? 'ok' : 'warn',
     });
   },
+});
+
+const mode = createModePanel({
+  badgeEl: el('mode-badge'),
+  switchEl: el('btn-switch-mode'),
+  saveEl: el('btn-save-map'),
+  nameEl: el('map-name'),
+  onNotice: (message, kind) => (kind === 'error' ? log.error(message) : log.info(message)),
 });
 
 const nav = createNavStatus({
@@ -237,6 +246,7 @@ function refreshAll() {
   pollPose();
   nav.poll();
   vision.poll();
+  mode.poll();
 }
 
 refreshActions();
@@ -246,6 +256,10 @@ refreshAll();
 // 地図は /map が更新された時だけ変わる。5 秒より短くしても地図は早くならない。
 setInterval(loadMap, 5000);
 setInterval(pollPose, 500);
+setInterval(() => {
+  if (!document.hidden) mode.poll();
+}, 2000);
+
 setInterval(() => {
   if (!document.hidden) nav.poll();
 }, 1000);

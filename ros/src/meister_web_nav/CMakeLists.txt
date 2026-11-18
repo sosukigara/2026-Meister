@@ -20,6 +20,8 @@ find_package(tf2_msgs REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(std_srvs REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core imgcodecs imgproc)
 find_package(nlohmann_json REQUIRED)
 find_package(ament_cmake_gtest REQUIRED)
@@ -33,6 +35,8 @@ add_library(meister_web_nav_core SHARED
   src/http_app.cpp
   src/http_support.cpp
   src/map_cache.cpp
+  src/map_store.cpp
+  src/mode_worker.cpp
   src/map_listener.cpp
   src/nav_worker.cpp
   src/vision_cache.cpp
@@ -46,7 +50,7 @@ target_include_directories(meister_web_nav_core PUBLIC
 )
 ament_target_dependencies(meister_web_nav_core
   rclcpp rclcpp_action nav_msgs geometry_msgs tf2_msgs lifecycle_msgs nav2_msgs
-  ament_index_cpp sensor_msgs vision_msgs)
+  ament_index_cpp sensor_msgs vision_msgs std_srvs rcl_interfaces)
 target_link_libraries(meister_web_nav_core
   ${OpenCV_LIBS}
   nlohmann_json::nlohmann_json
@@ -73,6 +77,9 @@ install(DIRECTORY webui DESTINATION share/${PROJECT_NAME})
 if(BUILD_TESTING)
   ament_add_gtest(test_map_cache test/test_map_cache.cpp)
   target_link_libraries(test_map_cache meister_web_nav_core)
+
+  ament_add_gtest(test_map_store test/test_map_store.cpp)
+  target_link_libraries(test_map_store meister_web_nav_core)
 
   ament_add_gtest(test_map_listener test/test_map_listener.cpp)
   target_link_libraries(test_map_listener meister_web_nav_core)

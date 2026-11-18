@@ -6,9 +6,9 @@
 #include <fstream>
 #include <string>
 
-#include "ros2_autonomous_nav/map_store.hpp"
+#include "meister_web_nav/map_store.hpp"
 
-namespace ros2_autonomous_nav {
+namespace meister_web_nav {
 namespace {
 
 TEST(MapStore, AcceptsOrdinaryNames) {
@@ -55,7 +55,7 @@ TEST(MapStore, ListsMapStemsSortedAndIgnoresOtherFiles) {
   for (const char* name : {"b_second.yaml", "a_first.yaml", "notes.txt"}) {
     std::ofstream(dir / name) << "x";
   }
-  const auto maps = ListMaps(dir.string());
+  const auto maps = ListMapNames(dir.string());
   ASSERT_EQ(maps.size(), 2u);
   EXPECT_EQ(maps[0], "a_first");
   EXPECT_EQ(maps[1], "b_second");
@@ -63,8 +63,8 @@ TEST(MapStore, ListsMapStemsSortedAndIgnoresOtherFiles) {
 }
 
 TEST(MapStore, ListsNothingWhenDirectoryIsMissing) {
-  EXPECT_TRUE(ListMaps("/nonexistent/meister/maps").empty());
+  EXPECT_TRUE(ListMapNames("/nonexistent/meister/maps").empty());
 }
 
 }  // namespace
-}  // namespace ros2_autonomous_nav
+}  // namespace meister_web_nav

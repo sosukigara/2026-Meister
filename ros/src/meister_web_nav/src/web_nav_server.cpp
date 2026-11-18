@@ -16,6 +16,7 @@
 
 #include "meister_web_nav/http_app.hpp"
 #include "meister_web_nav/map_listener.hpp"
+#include "meister_web_nav/mode_worker.hpp"
 #include "meister_web_nav/nav_worker.hpp"
 #include "meister_web_nav/vision_listener.hpp"
 
@@ -46,10 +47,11 @@ int main(int argc, char** argv) {
 
   meister_web_nav::NavWorker nav_worker;
   nav_worker.Start();
+  meister_web_nav::ModeWorker mode_worker;
 
   httplib::Server server;
   meister_web_nav::RegisterRoutes(server, WebuiDir(), *map_listener, nav_worker,
-                                  *vision_listener);
+                                  *vision_listener, mode_worker);
 
   // rclcpp の SIGINT ハンドラは rclcpp::ok() を false にしてこのコールバックを呼ぶ。
   // httplib の listen は自分で止まるまで戻らないので、ここで止めないと Ctrl+C の後も

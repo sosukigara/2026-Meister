@@ -92,10 +92,22 @@ Reply ToReply(const httplib::Result& result) {
   return Reply{result->status, result->body, result->headers};
 }
 
+/// この test の関心は認識の経路なので、モード系は何もしない。
+class StubModeSink : public ModeSink {
+ public:
+  std::string Mode() override { return "mapping"; }
+  std::string SwitchToLocalization() override { return {}; }
+  std::vector<std::string> ListMaps() override { return {}; }
+  std::string SaveMap(const std::string&) override { return {}; }
+  std::string DeleteMap(const std::string&) override { return {}; }
+  void SetInitialPose(double, double, double) override {}
+};
+
 class HttpServer {
  public:
   HttpServer() {
-    RegisterRoutes(server_, std::filesystem::path(MEISTER_WEBUI_DIR), map_, nav_, vision_);
+    RegisterRoutes(server_, std::filesystem::path(MEISTER_WEBUI_DIR), map_, nav_, vision_,
+                   mode_);
     port_ = server_.bind_to_any_port("127.0.0.1");
     thread_ = std::thread([this] { server_.listen_after_bind(); });
     client_ = std::make_unique<httplib::Client>("127.0.0.1", port_);
@@ -131,6 +143,7 @@ class HttpServer {
   StubMapSource map_;
   StubNavSink nav_;
   StubVisionSource vision_;
+  StubModeSink mode_;
   int port_ = 0;
   std::thread thread_;
   std::unique_ptr<httplib::Client> client_;

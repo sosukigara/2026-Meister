@@ -11,6 +11,7 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <filesystem>
 #include <fstream>
@@ -127,11 +128,48 @@ class StubVisionSource : public VisionSource {
   void SetEnabled(bool) override {}
 };
 
+/// モード・保存地図の経路は「成功を返したか」と「失敗理由をそのまま出すか」が
+/// 要点なので、戻り値を差し替えられる stub にする。
+class StubModeSink : public ModeSink {
+ public:
+  std::string Mode() override { return mode; }
+  std::string SwitchToLocalization() override {
+    if (!switch_error.empty()) {
+      return switch_error;
+    }
+    mode = "localization";
+    switch_called = true;
+    return {};
+  }
+  std::vector<std::string> ListMaps() override { return maps; }
+  std::string SaveMap(const std::string& name) override {
+    saved_name = name;
+    return save_error;
+  }
+  std::string DeleteMap(const std::string& name) override {
+    deleted_name = name;
+    return delete_error;
+  }
+  void SetInitialPose(double x, double y, double yaw) override {
+    pose = {x, y, yaw};
+  }
+
+  std::string mode{"mapping"};
+  std::vector<std::string> maps{"warehouse", "lab"};
+  std::string switch_error;
+  std::string save_error;
+  std::string delete_error;
+  std::string saved_name;
+  std::string deleted_name;
+  bool switch_called{false};
+  std::array<double, 3> pose{0.0, 0.0, 0.0};
+};
+
 class HttpServer {
  public:
   HttpServer() {
     RegisterRoutes(server_, std::filesystem::path(MEISTER_WEBUI_DIR), source_, sink_,
-                   vision_);
+                   vision_, mode_);
     port_ = server_.bind_to_any_port("127.0.0.1");
     thread_ = std::thread([this] { server_.listen_after_bind(); });
     client_ = std::make_unique<httplib::Client>("127.0.0.1", port_);
@@ -148,6 +186,8 @@ class HttpServer {
 
   StubMapSource& source() { return source_; }
   StubNavSink& sink() { return sink_; }
+  StubModeSink& mode() { return mode_; }
+  Reply Delete(const std::string& path) { return ToReply(client_->Delete(path)); }
 
   Reply Get(const std::string& path) { return ToReply(client_->Get(path)); }
   Reply Get(const std::string& path, const httplib::Headers& headers) {
@@ -165,6 +205,7 @@ class HttpServer {
   StubMapSource source_;
   StubNavSink sink_;
   StubVisionSource vision_;
+  StubModeSink mode_;
   int port_ = 0;
   std::thread thread_;
   std::unique_ptr<httplib::Client> client_;
@@ -478,6 +519,103 @@ TEST(HttpAppStaticFiles, FollowsSymlinkedAssetsUnderTheWebuiRoot) {
   EXPECT_EQ(escaped.status, 404);
 
   fs::remove_all(sandbox);
+}
+
+TEST(HttpModeRoutes, ReportsCurrentMode) {
+  HttpServer server;
+  const auto reply = server.Get("/api/mode");
+  ASSERT_EQ(reply.status, 200);
+  EXPECT_EQ(json::parse(reply.body)["mode"], "mapping");
+}
+
+TEST(HttpModeRoutes, SwitchingToMappingIsRejectedWith409) {
+  HttpServer server;
+  const auto reply = server.Post("/api/mode", R"({"mode":"mapping"})");
+  EXPECT_EQ(reply.status, 409);
+  EXPECT_FALSE(server.mode().switch_called);
+}
+
+TEST(HttpModeRoutes, UnknownModeIsRejectedWith400) {
+  HttpServer server;
+  EXPECT_EQ(server.Post("/api/mode", R"({"mode":"sleep"})").status, 400);
+}
+
+TEST(HttpModeRoutes, FailedSwitchIsReportedNotSwallowed) {
+  HttpServer server;
+  server.mode().switch_error = "地図生成側を止められませんでした";
+  const auto reply = server.Post("/api/mode", R"({"mode":"localization"})");
+  EXPECT_EQ(reply.status, 409);
+  EXPECT_EQ(json::parse(reply.body)["error"], "地図生成側を止められませんでした");
+}
+
+TEST(HttpModeRoutes, SuccessfulSwitchReturnsTheNewMode) {
+  HttpServer server;
+  const auto reply = server.Post("/api/mode", R"({"mode":"localization"})");
+  ASSERT_EQ(reply.status, 200);
+  EXPECT_EQ(json::parse(reply.body)["mode"], "localization");
+}
+
+TEST(HttpMapRoutes, ListsSavedMaps) {
+  HttpServer server;
+  const auto reply = server.Get("/api/maps");
+  ASSERT_EQ(reply.status, 200);
+  EXPECT_EQ(json::parse(reply.body)["maps"].size(), 2u);
+}
+
+TEST(HttpMapRoutes, RejectsTraversalInSaveName) {
+  HttpServer server;
+  EXPECT_EQ(server.Post("/api/map/save", R"({"name":"../etc/passwd"})").status, 400);
+  EXPECT_TRUE(server.mode().saved_name.empty());
+}
+
+TEST(HttpMapRoutes, SavesWithAValidName) {
+  HttpServer server;
+  const auto reply = server.Post("/api/map/save", R"({"name":"warehouse_1"})");
+  ASSERT_EQ(reply.status, 200);
+  EXPECT_EQ(server.mode().saved_name, "warehouse_1");
+}
+
+TEST(HttpMapRoutes, ReportsSaveFailure) {
+  HttpServer server;
+  server.mode().save_error = "map_saver が応答しません";
+  const auto reply = server.Post("/api/map/save", R"({"name":"warehouse_1"})");
+  EXPECT_EQ(reply.status, 409);
+  EXPECT_EQ(json::parse(reply.body)["error"], "map_saver が応答しません");
+}
+
+TEST(HttpMapRoutes, DeletesAMap) {
+  HttpServer server;
+  const auto reply = server.Delete("/api/maps/warehouse");
+  ASSERT_EQ(reply.status, 200);
+  EXPECT_EQ(server.mode().deleted_name, "warehouse");
+}
+
+TEST(HttpMapRoutes, RejectsTraversalInDelete) {
+  HttpServer server;
+  // httplib がパスを正規化して route に一致しない場合もある。本質は「削除されない」こと。
+  const auto reply = server.Delete("/api/maps/..%2Fetc");
+  EXPECT_NE(reply.status, 200);
+  EXPECT_TRUE(server.mode().deleted_name.empty());
+}
+
+TEST(HttpMapRoutes, RejectsInvalidCharactersInDeleteName) {
+  HttpServer server;
+  EXPECT_EQ(server.Delete("/api/maps/a.b").status, 400);
+  EXPECT_TRUE(server.mode().deleted_name.empty());
+}
+
+TEST(HttpInitialPose, PublishesTheGivenPose) {
+  HttpServer server;
+  const auto reply = server.Post("/api/initialpose", R"({"x":1.0,"y":2.0,"yaw":0.5})");
+  ASSERT_EQ(reply.status, 200);
+  EXPECT_DOUBLE_EQ(server.mode().pose[0], 1.0);
+  EXPECT_DOUBLE_EQ(server.mode().pose[1], 2.0);
+  EXPECT_DOUBLE_EQ(server.mode().pose[2], 0.5);
+}
+
+TEST(HttpInitialPose, RequiresXAndY) {
+  HttpServer server;
+  EXPECT_EQ(server.Post("/api/initialpose", R"({"x":1.0})").status, 400);
 }
 
 }  // namespace

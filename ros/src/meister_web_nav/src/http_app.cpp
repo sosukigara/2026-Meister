@@ -11,6 +11,7 @@
 #include <nlohmann/json.hpp>
 
 #include "meister_web_nav/http_support.hpp"
+#include "meister_web_nav/map_store.hpp"
 #include "meister_web_nav/vision_routes.hpp"
 
 namespace meister_web_nav {
@@ -139,7 +140,7 @@ bool EtagMatches(const std::optional<std::string>& header, const std::string& et
 
 void RegisterRoutes(httplib::Server& server, const std::filesystem::path& webui_dir,
                     MapSource& map_source, NavSink& nav_sink,
-                    VisionSource& vision_source) {
+                    VisionSource& vision_source, ModeSink& mode_sink) {
   // webui_dir を捕まえる lambda は値でコピーする。呼び手は一時オブジェクト
   // (WebuiDir() や std::filesystem::path(MEISTER_WEBUI_DIR)) を渡すので、参照で
   // 捕まえると登録が終わった時点で宙に浮く。
@@ -206,6 +207,100 @@ void RegisterRoutes(httplib::Server& server, const std::filesystem::path& webui_
   server.Get("/api/status", [&nav_sink](const httplib::Request&, httplib::Response& res) {
     SendJson(res, nav_sink.Status());
   });
+
+  // ---- モードと保存地図 ----
+  server.Get("/api/mode", [&mode_sink](const httplib::Request&, httplib::Response& res) {
+    SendJson(res, json{{"mode", mode_sink.Mode()}});
+  });
+
+  server.Post("/api/mode", [&mode_sink](const httplib::Request& req, httplib::Response& res) {
+    const json body = json::parse(req.body, nullptr, false);
+    if (body.is_discarded() || !body.contains("mode") || !body["mode"].is_string()) {
+      SendJson(res, json{{"error", "mode is required"}}, 400);
+      return;
+    }
+    const std::string mode = body["mode"].get<std::string>();
+    if (mode == "mapping") {
+      // 地図生成へ戻るのは launch 再起動のみ（設計書 §6.4）。
+      SendJson(res, json{{"error",
+                          "地図生成へ戻るには launch を再起動してください"}}, 409);
+      return;
+    }
+    if (mode != "localization") {
+      SendJson(res, json{{"error", "unknown mode"}}, 400);
+      return;
+    }
+    const std::string error = mode_sink.SwitchToLocalization();
+    if (!error.empty()) {
+      // 切り替わっていないのに成功を返すと、以後の操作が全部嘘になる。
+      SendJson(res, json{{"error", error}}, 409);
+      return;
+    }
+    SendJson(res, json{{"mode", mode_sink.Mode()}});
+  });
+
+  server.Get("/api/maps", [&mode_sink](const httplib::Request&, httplib::Response& res) {
+    SendJson(res, json{{"maps", mode_sink.ListMaps()}});
+  });
+
+  server.Post("/api/map/save", [&mode_sink](const httplib::Request& req, httplib::Response& res) {
+    const json body = req.body.empty() ? json::object()
+                                       : json::parse(req.body, nullptr, false);
+    if (body.is_discarded()) {
+      SendJson(res, json{{"error", "invalid json"}}, 400);
+      return;
+    }
+    std::string name;
+    if (body.contains("name")) {
+      if (!body["name"].is_string()) {
+        SendJson(res, json{{"error", "name must be a string"}}, 400);
+        return;
+      }
+      name = body["name"].get<std::string>();
+    }
+    if (!name.empty() && !IsValidMapName(name)) {
+      SendJson(res, json{{"error",
+                          "name must be 1-64 chars of [A-Za-z0-9_-]"}}, 400);
+      return;
+    }
+    const std::string error = mode_sink.SaveMap(name);
+    if (!error.empty()) {
+      SendJson(res, json{{"error", error}}, 409);
+      return;
+    }
+    SendJson(res, json{{"status", "saved"}});
+  });
+
+  server.Delete(R"(/api/maps/([^/]+))",
+                [&mode_sink](const httplib::Request& req, httplib::Response& res) {
+                  const std::string name = req.matches[1];
+                  if (!IsValidMapName(name)) {
+                    SendJson(res, json{{"error", "invalid map name"}}, 400);
+                    return;
+                  }
+                  const std::string error = mode_sink.DeleteMap(name);
+                  if (!error.empty()) {
+                    SendJson(res, json{{"error", error}}, 409);
+                    return;
+                  }
+                  SendJson(res, json{{"status", "deleted"}});
+                });
+
+  server.Post("/api/initialpose",
+              [&mode_sink](const httplib::Request& req, httplib::Response& res) {
+                const json body = json::parse(req.body, nullptr, false);
+                if (body.is_discarded() || !body.contains("x") || !body.contains("y")) {
+                  SendJson(res, json{{"error", "x and y are required"}}, 400);
+                  return;
+                }
+                const double x = body["x"].get<double>();
+                const double y = body["y"].get<double>();
+                const double yaw = body.value("yaw", 0.0);
+                mode_sink.SetInitialPose(x, y, yaw);
+                SendJson(res, json{{"status", "ok"}});
+              });
+
+
 
   RegisterVisionRoutes(server, vision_source);
 

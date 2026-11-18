@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-namespace ros2_autonomous_nav {
+namespace meister_web_nav {
 
 /// ファイル名として安全な地図名か。英数・`_`・`-` のみ、1〜64 文字。
 /// `..` や `/` `\` ` ` `.` を含むものは拒否する（パストラバーサル対策）。
@@ -15,6 +15,6 @@ bool IsValidMapName(const std::string& name);
 std::string DefaultMapName(const std::string& world, const std::string& timestamp);
 
 /// `dir` 直下の `*.yaml` から拡張子を除いた名前を昇順で返す。無ければ空。
-std::vector<std::string> ListMaps(const std::string& dir);
+std::vector<std::string> ListMapNames(const std::string& dir);
 
-}  // namespace ros2_autonomous_nav
+}  // namespace meister_web_nav

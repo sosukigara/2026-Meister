@@ -36,7 +36,18 @@ async function request(path, options) {
       typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(TIMEOUT_MS) : undefined;
     const response = await fetch(path, { ...options, signal });
     if (!response.ok) {
-      throw new Error(`${path} が ${response.status} を返しました`);
+      // サーバーが理由を返しているなら捨てない。"切り替えできません" の一言では
+      // 何が起きたか分からない（409 の error に理由が入っている）。
+      let detail = '';
+      try {
+        const body = await response.json();
+        if (body && typeof body.error === 'string' && body.error.length > 0) {
+          detail = `: ${body.error}`;
+        }
+      } catch {
+        // 本文が JSON でない。status だけ伝える。
+      }
+      throw new Error(`${path} が ${response.status} を返しました${detail}`);
     }
     const body = await response.json();
     consecutiveFailures = 0;

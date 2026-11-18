@@ -30,7 +30,7 @@ bool EtagMatches(const std::optional<std::string>& header, const std::string& et
 /// 経由でしか触らないので、この関数は ROS 無しで test できる。
 void RegisterRoutes(httplib::Server& server, const std::filesystem::path& webui_dir,
                     MapSource& map_source, NavSink& nav_sink,
-                    VisionSource& vision_source);
+                    VisionSource& vision_source, ModeSink& mode_sink);
 
 }  // namespace meister_web_nav
 

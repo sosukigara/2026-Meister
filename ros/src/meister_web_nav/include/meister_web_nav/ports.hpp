@@ -64,6 +64,30 @@ struct VisionSource {
   virtual void SetEnabled(bool enabled) = 0;
 };
 
+/// モード切替・保存地図・初期位置。HTTP 面は ROS を知らないまま操作する。
+struct ModeSink {
+  virtual ~ModeSink() = default;
+
+  /// "mapping" / "localization" / "unknown"。
+  virtual std::string Mode() = 0;
+
+  /// 保存地図モードへ切り替える。空文字列なら成功、失敗なら理由。
+  virtual std::string SwitchToLocalization() = 0;
+
+  /// 保存済み地図の名前（拡張子なし、昇順）。
+  virtual std::vector<std::string> ListMaps() = 0;
+
+  /// 地図を保存する。name が空なら実装側が既定名を決める。
+  /// 空文字列なら成功、失敗なら理由。
+  virtual std::string SaveMap(const std::string& name) = 0;
+
+  /// 保存済み地図を削除する。空文字列なら成功、失敗なら理由。
+  virtual std::string DeleteMap(const std::string& name) = 0;
+
+  /// 初期位置を配る。
+  virtual void SetInitialPose(double x, double y, double yaw) = 0;
+};
+
 }  // namespace meister_web_nav
 
 #endif  // MEISTER_WEB_NAV_PORTS_HPP_
