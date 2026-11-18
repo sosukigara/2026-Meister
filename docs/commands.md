@@ -76,6 +76,23 @@ ros2 run meister_serial_bridge meister_hz_measure --port /dev/ttyUSB0 --expect-h
   `groups` に `dialout` がなければ `sudo usermod -a -G dialout $USER` 後に再ログイン。
 - `launch.sh` は VPN 環境のマルチキャスト障害回避で `ROS_LOCALHOST_ONLY=1` を設定するが、**子プロセスのみ**。別ターミナルの `ros2` CLI には継承されない。
 
+## 5.5 ナビゲーションの計測
+
+```bash
+# 30 run のベースライン計測（起動〜計測〜片付けをまとめて行う）
+ros/src/ros2_autonomous_nav/scripts/measure.sh docs/bench/<date>-<name>.json 10 3 <map-id>
+
+# 制御器を差し替えて比較（既定は RPP）
+MEISTER_LAUNCH_ARGS="controller:=mppi" \
+  ros/src/ros2_autonomous_nav/scripts/measure.sh docs/bench/<date>-mppi.json 10 1 mppi
+```
+
+- ラッパーが `DISPLAY`・`ROS_DOMAIN_ID` を設定し、Nav2 と `map→base_footprint` の
+  両方が立ち上がるまで待ってから計測する（spawn 失敗時は起動し直す）。
+- **launch と計測は同じプロセス内で行うこと。** 別プロセスからは DDS が
+  見えないことがある（VPN 環境のマルチキャスト障害）。
+- 結果の読み方と過去の計測は [docs/bench/](../bench/) を参照。
+
 ## 6. 4 通りのビルド（条件コンパイル確認）
 
 1. `pio run -e esp32dev`
