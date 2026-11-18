@@ -1,0 +1,103 @@
+# MPPI 制御器の上書き設定（PR7 の比較用）。
+#
+# ベースの `mapping_nav_params.yaml` に対して重ねて読み込む。
+# 共通部分（コストマップ・プランナ・BT など）は二重管理しない（R2）。
+controller_server:
+  ros__parameters:
+    controller_plugins: ["FollowPath"]
+    FollowPath:
+      plugin: "nav2_mppi_controller::MPPIController"
+      # 20 Hz 制御なので 56 × 0.05 = 2.8 秒先まで見る。
+      time_steps: 56
+      model_dt: 0.05
+      batch_size: 2000
+      iteration_count: 1
+      prune_distance: 1.7
+      transform_tolerance: 0.1
+      temperature: 0.3
+      gamma: 0.015
+      # 車体は 4WS 差動（横移動なし）。DiffDrive で扱う（設計 D-1）。
+      motion_model: "DiffDrive"
+      visualize: false
+      vx_std: 0.2
+      vy_std: 0.0
+      wz_std: 0.4
+      vx_max: 0.5
+      vx_min: -0.3
+      vy_max: 0.0
+      wz_max: 1.9
+
+      critics:
+        [
+          "ConstraintCritic",
+          "ObstaclesCritic",
+          "GoalCritic",
+          "GoalAngleCritic",
+          "PreferForwardCritic",
+          "TwirlingCritic",
+          "PathAlignCritic",
+          "PathFollowCritic",
+          "PathAngleCritic",
+        ]
+
+      ConstraintCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 4.0
+      ObstaclesCritic:
+        enabled: true
+        cost_power: 1
+        # ベースのコストマップは robot_radius 方式で footprint を持たない。
+        # ここだけ true にすると configure で落ちるうえ、RPP との比較条件も
+        # 変わってしまうので false（footprint 化は別途の検証課題）。
+        consider_footprint: false
+        repulsion_weight: 1.5
+        critical_weight: 20.0
+        collision_cost: 10000.0
+        collision_margin_distance: 0.1
+        near_goal_distance: 0.5
+      GoalCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        threshold_to_consider: 1.4
+      GoalAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 3.0
+        threshold_to_consider: 0.5
+      PreferForwardCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        threshold_to_consider: 0.5
+      TwirlingCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 10.0
+      PathAlignCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 14.0
+        max_path_occupancy_ratio: 0.05
+        trajectory_point_step: 4
+        threshold_to_consider: 0.5
+        offset_from_furthest: 20
+        use_path_orientations: false
+      PathFollowCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        offset_from_furthest: 5
+        threshold_to_consider: 1.4
+      PathAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 2.0
+        offset_from_furthest: 4
+        threshold_to_consider: 0.5
+        max_angle_to_furthest: 1.0
+        mode: 0
+      TrajectoryVisualizer:
+        trajectory_step: 5
+        time_step: 3

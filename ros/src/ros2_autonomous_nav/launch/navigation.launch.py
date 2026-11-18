@@ -3,6 +3,8 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
+from launch.conditions import IfCondition
+from launch.substitutions import PythonExpression
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import LifecycleNode, Node
 
@@ -12,12 +14,24 @@ def generate_launch_description():
     nav2_params_file = os.path.join(pkg_nav, 'config', 'mapping_nav_params.yaml')
     default_map = os.path.join(pkg_nav, 'maps', 'nav_world.yaml')
 
+    mppi_overlay = os.path.join(pkg_nav, 'config', 'mppi_overlay.yaml')
+
     use_sim_time = LaunchConfiguration('use_sim_time', default='true')
     map_yaml = LaunchConfiguration('map', default=default_map)
+    # 制御器は比較のために切り替えられる。既定は RPP（設計 D-4 のベースライン）。
+    controller = LaunchConfiguration('controller', default='rpp')
+    use_rpp = IfCondition(PythonExpression(["'", controller, "' == 'rpp'"]))
+    use_mppi = IfCondition(PythonExpression(["'", controller, "' == 'mppi'"]))
 
     nav2_nodes = [
+        # 同名ノードを条件で切り替える。lifecycle_manager は名前で管理するので
+        # 有効な方だけが管理対象になる。
         Node(package='nav2_controller', executable='controller_server',
-             name='controller_server', output='screen', parameters=[nav2_params_file]),
+             name='controller_server', output='screen',
+             parameters=[nav2_params_file], condition=use_rpp),
+        Node(package='nav2_controller', executable='controller_server',
+             name='controller_server', output='screen',
+             parameters=[nav2_params_file, mppi_overlay], condition=use_mppi),
         Node(package='nav2_planner', executable='planner_server',
              name='planner_server', output='screen', parameters=[nav2_params_file]),
         Node(package='nav2_behaviors', executable='behavior_server',

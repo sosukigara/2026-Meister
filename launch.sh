@@ -99,7 +99,8 @@ echo "=== Gazebo + SLAM + Nav2 を起動します ==="
 if [ "$SIM" -eq 1 ]; then
     echo "=== Mode: simulation (Gazebo) / World: $WORLD ==="
     export MEISTAR_USE_SIM_TIME=true
-    ros2 launch ros2_autonomous_nav mapping_nav.launch.py "world:=$WORLD" &
+    # 追加の launch 引数（例: MEISTER_LAUNCH_ARGS="controller:=mppi"）。
+    ros2 launch ros2_autonomous_nav mapping_nav.launch.py "world:=$WORLD" ${MEISTER_LAUNCH_ARGS:-} &
 else
     echo "=== Mode: real robot (LD-D500: $MEISTAR_LIDAR_PORT / ESP32: $MEISTAR_SERIAL_PORT) ==="
     export MEISTAR_USE_SIM_TIME=false
