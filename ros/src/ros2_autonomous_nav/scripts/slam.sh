@@ -5,7 +5,7 @@ source /opt/ros/jazzy/setup.bash
 
 echo "============================================"
 echo "  SLAM MODE — drive around to build a map"
-echo "  Then run: bash save_map.sh nav_world"
+echo "  Then run: bash scripts/save_map.sh nav_world"
 if nvidia-smi &>/dev/null; then
     echo "  GPU DETECTED — running in GPU mode"
 else
@@ -13,4 +13,4 @@ else
 fi
 echo "============================================"
 
-ros2 launch $(dirname "$0")/../launch/slam_map.launch.py
+ros2 launch "$(dirname "$0")/../launch/slam_map.launch.py"

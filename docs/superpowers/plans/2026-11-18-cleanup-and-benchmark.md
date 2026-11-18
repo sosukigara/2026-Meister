@@ -10,6 +10,10 @@
 
 **Spec:** [docs/superpowers/specs/2026-11-18-navigation-design.md](../specs/2026-11-18-navigation-design.md)
 
+> **実装ノート（2026-11-18）**: 実装途中で「Python を避け C++ を原則とする」決定が出たため、
+> Task 3・4 の Python 部分は **C++ 実装に置き換わっている**（`bench_metrics` / `bench_nav`、
+> gtest で検証）。Task 5 は未実施。詳細は設計書 §12 を参照。
+
 ## Global Constraints
 
 - 実機の★測定（舵角サーボ数、幾何、車輪径、ギア比、FOC 配線）が完了するまで PR5/PR6（ファームウェア）に着手しない。
