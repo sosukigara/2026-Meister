@@ -4,16 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Meister 運行コンソール</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
+<noscript><p class="noscript">このコンソールは JavaScript で動作します。ブラウザの設定を有効にしてください。</p></noscript>
 <p id="offline" class="offline" hidden role="status" aria-live="polite">
   サーバーに接続できません — 画面は最後の受信値のままです（<span id="offline-age">—</span>）
 </p>
 
 <header class="topbar">
   <div class="brand">
-    <span class="brand-mark" aria-hidden="true"></span>
+    <!-- うめおにぎり。米は currentColor、海苔は背景色の切り抜き、梅は赤。 -->
+    <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path d="M12 3.1c1 0 1.8.5 2.4 1.4l6.2 10c1.1 1.7.1 3.9-1.9 4.4-.4.1-.8.2-1.3.2H6.6c-1.9 0-3.1-2.1-2-3.7l6.2-10.9c.5-.9 1.2-1.4 2.2-1.4Z"
+            fill="currentColor"/>
+      <path d="M8.4 15h7.2v4.2c0 .4-.3.6-.6.6H9c-.3 0-.6-.2-.6-.6V15Z" fill="var(--bg)"/>
+      <circle cx="12" cy="10.2" r="1.5" fill="var(--red)"/>
+    </svg>
     <span class="brand-name">Meister</span>
     <span class="brand-sub">運行コンソール</span>
   </div>
@@ -50,24 +58,36 @@
     <div class="panel-head">
       <h2>地図</h2>
       <div class="panel-tools">
-        <button id="btn-fit" class="btn btn-quiet" type="button" title="全体表示 (F)">全体</button>
-        <button id="btn-zoom-in" class="btn btn-icon" type="button" title="拡大 (+)">＋</button>
-        <button id="btn-zoom-out" class="btn btn-icon" type="button" title="縮小 (−)">−</button>
+        <button id="btn-fit" class="btn btn-quiet" type="button" title="全体表示 (F)" aria-label="全体表示">全体</button>
+        <button id="btn-zoom-in" class="btn btn-icon" type="button" title="拡大 (+)" aria-label="拡大">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 3.5v9M3.5 8h9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+        <button id="btn-zoom-out" class="btn btn-icon" type="button" title="縮小 (−)" aria-label="縮小">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 8h9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
         <button id="btn-clear-trail" class="btn btn-quiet" type="button" title="軌跡を消す">軌跡</button>
       </div>
     </div>
 
     <div class="map-stage" id="map-stage">
       <canvas id="map-canvas" tabindex="0"
-              aria-label="地図キャンバス。クリックで目的地を追加、ドラッグで向きを指定"></canvas>
+              aria-label="地図キャンバス。クリックで目的地を追加、ドラッグで向きを指定"
+              aria-describedby="map-hint"></canvas>
       <p class="map-empty" id="map-empty">地図を待っています…（/map 未受信）</p>
-      <p class="map-hint">クリックで目的地 ／ ドラッグで向き ／ ホイールで拡大 ／ 右ドラッグで移動</p>
+      <p class="map-hint" id="map-hint">クリックで目的地 · ドラッグで向き · ホイールで拡大 · 右ドラッグで移動</p>
     </div>
 
     <div class="tour-summary">
       <span>目的地 <b id="tour-count">0</b> 地点</span>
       <span>合計 <b id="tour-distance">0.0</b> m</span>
-      <span class="shortcut-note">F 全体 ／ Z 戻す ／ C 全消去 ／ Enter 送信 ／ Esc 停止 ／ V 認識</span>
+      <span class="shortcut-note">
+        <span class="shortcut"><kbd>F</kbd>全体</span>
+        <span class="shortcut"><kbd>Z</kbd>戻す</span>
+        <span class="shortcut"><kbd>C</kbd>全消去</span>
+        <span class="shortcut"><kbd>Enter</kbd>送信</span>
+        <span class="shortcut"><kbd>Esc</kbd>停止</span>
+        <span class="shortcut"><kbd>V</kbd>認識</span>
+      </span>
     </div>
   </section>
 
@@ -99,16 +119,16 @@
         <h2>目的地</h2>
         <span class="badge" id="nav-badge" data-tone="idle">—</span>
       </div>
-      <p class="nav-message" id="nav-message">—</p>
+      <p class="nav-message" id="nav-message" role="status">—</p>
 
       <ol class="waypoint-list" id="waypoint-list"></ol>
-      <p class="empty-note" id="waypoint-empty">地図をクリックして目的地を追加します。</p>
+      <p class="empty-note" id="waypoint-empty">地図をクリックして目的地を追加</p>
 
       <div class="btn-row">
         <button id="btn-undo" class="btn" type="button">1つ戻す</button>
         <button id="btn-clear" class="btn" type="button">全消去</button>
       </div>
-      <div class="btn-row">
+      <div class="btn-row route-actions">
         <button id="btn-send" class="btn btn-primary" type="button">ルート送信</button>
         <button id="btn-cancel" class="btn btn-danger" type="button">停止</button>
       </div>

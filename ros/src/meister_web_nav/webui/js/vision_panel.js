@@ -145,7 +145,7 @@ export function createVisionPanel({
     let badge = '待機';
     let tone = 'idle';
     if (!monitor) {
-      badge = '監視 off';
+      badge = '監視停止';
     } else if (!hasFrame) {
       badge = '映像待ち';
       tone = 'warn';
@@ -181,7 +181,7 @@ export function createVisionPanel({
     ensureStream(monitor && hasFrame);
     imageEl.classList.toggle('is-stale', stale || !monitor);
 
-    toggleEl.textContent = monitor ? '認識モニター ON' : '認識モニター OFF';
+    toggleEl.textContent = monitor ? '認識モニター オン' : '認識モニター オフ';
     toggleEl.setAttribute('aria-pressed', String(monitor));
     toggleEl.dataset.tone = monitor ? 'ok' : 'idle';
 

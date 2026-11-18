@@ -48,7 +48,11 @@ export function createWaypointPanel({
       const remove = document.createElement('button');
       remove.type = 'button';
       remove.className = 'waypoint-remove';
-      remove.textContent = '✕';
+      // 定数だけを入れるので innerHTML でも安全。線アイコンは Heading と同じ 1.5 の線幅。
+      remove.innerHTML =
+        '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">' +
+        '<path d="M4 4 12 12M12 4 4 12" fill="none" stroke="currentColor" ' +
+        'stroke-width="1.5" stroke-linecap="round"/></svg>';
       remove.title = `${index + 1} 番目を削除`;
       remove.setAttribute('aria-label', `${index + 1} 番目の目的地を削除`);
       remove.addEventListener('click', () => {

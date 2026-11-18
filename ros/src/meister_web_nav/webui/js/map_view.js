@@ -10,7 +10,7 @@ const TRAIL_MAX_POINTS = 300;
 const TRAIL_MIN_SPACING = 0.05; // meters: 間引きして点の塊を防ぐ
 const ZOOM_MIN = 0.15;
 const ZOOM_MAX = 14;
-const MARKER_RADIUS = 9;
+const MARKER_RADIUS = 8;
 const SCALE_CHOICES = [0.5, 1, 2, 5, 10, 20, 50];
 
 export function createMapView({ canvas, stage, onPlace, onNotice }) {
@@ -103,28 +103,6 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
     requestDraw();
   }
 
-  function drawBackdrop() {
-    const step = 28;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(233, 230, 223, 0.045)';
-    ctx.lineWidth = 1;
-    const offsetX = ((view.x % step) + step) % step;
-    const offsetY = ((view.y % step) + step) % step;
-    for (let x = offsetX; x < size.width; x += step) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, size.height);
-      ctx.stroke();
-    }
-    for (let y = offsetY; y < size.height; y += step) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(size.width, y);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
-
   function drawTrail() {
     if (trail.length < 2) return;
     ctx.save();
@@ -134,8 +112,8 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
       if (index === 0) ctx.moveTo(p.x, p.y);
       else ctx.lineTo(p.x, p.y);
     });
-    ctx.strokeStyle = 'rgba(99, 199, 214, 0.55)';
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(99, 199, 214, 0.42)';
+    ctx.lineWidth = 1.5;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
     ctx.stroke();
@@ -151,9 +129,9 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
       if (index === 0) ctx.moveTo(p.x, p.y);
       else ctx.lineTo(p.x, p.y);
     });
-    ctx.setLineDash([7, 5]);
-    ctx.strokeStyle = 'rgba(217, 164, 65, 0.85)';
-    ctx.lineWidth = 1.5;
+    ctx.setLineDash([5, 4]);
+    ctx.strokeStyle = 'rgba(217, 164, 65, 0.7)';
+    ctx.lineWidth = 1;
     ctx.stroke();
     ctx.restore();
   }
@@ -172,23 +150,23 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
   function drawWaypoints() {
     waypoints.forEach((point, index) => {
       const p = mapToScreen(point.x, point.y);
-      const length = 26;
+      const length = 22;
       drawArrow(
         p,
         { x: p.x + Math.cos(point.yaw) * length, y: p.y - Math.sin(point.yaw) * length },
-        hovered === index ? '#f0c05a' : 'rgba(217, 164, 65, 0.9)',
-        2,
+        hovered === index ? '#f0c05a' : 'rgba(217, 164, 65, 0.8)',
+        1.5,
       );
       ctx.save();
       ctx.beginPath();
       ctx.arc(p.x, p.y, MARKER_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = hovered === index ? '#d9a441' : '#1b2126';
+      ctx.fillStyle = hovered === index ? '#d9a441' : '#111419';
       ctx.fill();
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = hovered === index ? '#f0c05a' : '#d9a441';
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = hovered === index ? '#f0c05a' : 'rgba(217, 164, 65, 0.8)';
       ctx.stroke();
-      ctx.fillStyle = hovered === index ? '#14181c' : '#e9e6df';
-      ctx.font = '600 10px ui-monospace, SFMono-Regular, Menlo, monospace';
+      ctx.fillStyle = hovered === index ? '#14181c' : '#e7e9ec';
+      ctx.font = '500 10px "JetBrainsMono Nerd Font", ui-monospace, monospace';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(String(index + 1), p.x, p.y + 0.5);
@@ -211,20 +189,20 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
   function drawRobot() {
     if (!robot) return;
     const p = mapToScreen(robot.x, robot.y);
-    const length = 30;
+    const length = 26;
     drawArrow(
       p,
       { x: p.x + Math.cos(robot.yaw) * length, y: p.y - Math.sin(robot.yaw) * length },
       '#63c7d6',
-      2.5,
+      2,
     );
     ctx.save();
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
     ctx.fillStyle = '#63c7d6';
     ctx.fill();
-    ctx.strokeStyle = '#0f1418';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#0b0d10';
+    ctx.lineWidth = 1;
     ctx.stroke();
     ctx.restore();
   }
@@ -239,8 +217,6 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
     const x = size.width - 16 - width;
     const y = size.height - 18;
     ctx.save();
-    ctx.strokeStyle = 'rgba(233, 230, 223, 0.75)';
-    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(x + width, y);
@@ -248,19 +224,28 @@ export function createMapView({ canvas, stage, onPlace, onNotice }) {
     ctx.lineTo(x, y + 4);
     ctx.moveTo(x + width, y - 4);
     ctx.lineTo(x + width, y + 4);
+    // 地図が明るい場所でも読めるように、暗い下敷きを1回敷いてから細線を描く。
+    ctx.strokeStyle = 'rgba(9, 11, 14, 0.85)';
+    ctx.lineWidth = 3;
     ctx.stroke();
-    ctx.fillStyle = 'rgba(233, 230, 223, 0.75)';
-    ctx.font = '10px ui-monospace, SFMono-Regular, Menlo, monospace';
+    ctx.strokeStyle = 'rgba(231, 233, 236, 0.72)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    const label = `${meters(distance, distance < 1 ? 1 : 0)} m`;
+    ctx.font = '11px "JetBrainsMono Nerd Font", ui-monospace, monospace';
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.fillText(`${meters(distance, distance < 1 ? 1 : 0)} m`, x + width, y - 6);
+    ctx.strokeStyle = 'rgba(9, 11, 14, 0.85)';
+    ctx.lineWidth = 3;
+    ctx.strokeText(label, x + width, y - 6);
+    ctx.fillStyle = 'rgba(231, 233, 236, 0.72)';
+    ctx.fillText(label, x + width, y - 6);
     ctx.restore();
   }
 
   function draw() {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, size.width, size.height);
-    drawBackdrop();
     if (!meta || !image) return;
     const origin = toScreen(0, 0);
     ctx.save();
