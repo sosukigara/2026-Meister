@@ -326,12 +326,17 @@ int main(int argc, char** argv) {
           break;
         }
       }
+      const double accept_ms = (node->now().seconds() - sent_at) * 1000.0;
       auto handle = goal_future.wait_for(std::chrono::seconds(0)) ==
                             std::future_status::ready
                         ? goal_future.get()
                         : nullptr;
       if (handle == nullptr) {
-        runs.emplace_back();
+        // 受理されなかった。理由を残さないと「時間 0 秒で失敗」としか読めない。
+        RunRecord refused;
+        refused.success = false;
+        refused.accept_ms = accept_ms;
+        runs.push_back(refused);
         continue;
       }
       // 計画時間は「アクションが受理されてから /plan が届くまで」で測る。
@@ -377,6 +382,7 @@ int main(int argc, char** argv) {
       const auto result = result_future.get();
       RunRecord run;
       run.success = result.code == rclcpp_action::ResultCode::SUCCEEDED;
+      run.accept_ms = accept_ms;
       run.result_code = static_cast<int>(result.code);
       if (result.result != nullptr) {
         run.nav_error_code = static_cast<int>(result.result->error_code);

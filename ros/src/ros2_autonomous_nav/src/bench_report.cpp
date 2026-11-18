@@ -31,6 +31,7 @@ json RunToJson(const RunRecord& run) {
               {"min_clearance_m", ToJson(run.min_clearance_m)},
               {"min_clearance_driving_m", ToJson(run.min_clearance_driving_m)},
               {"plan_min_clearance_m", ToJson(run.plan_min_clearance_m)},
+              {"accept_ms", ToJson(run.accept_ms)},
               {"result_code", ToJson(run.result_code)},
               {"nav_error_code", ToJson(run.nav_error_code)},
               {"nav_error_msg", ToJson(run.nav_error_msg)},

@@ -67,6 +67,5 @@ set -u
   --out "$OUT" \
   --limit "$LIMIT" \
   --repeats "$REPEATS" \
-  --goal-timeout 45 \
   --map-id "$MAP_ID" \
   --gui on 2>&1 | grep -vE "WARN"

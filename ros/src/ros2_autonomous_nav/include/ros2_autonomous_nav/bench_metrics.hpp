@@ -71,6 +71,8 @@ struct RunRecord {
   std::optional<double> min_clearance_driving_m;
   /// 計画経路そのものの最小クリアランス。プランナと追従のどちらが寄せたかを切り分ける。
   std::optional<double> plan_min_clearance_m;
+  /// ゴール受理までにかかった時間。受理されない故障を切り分ける。
+  std::optional<double> accept_ms;
   /// アクションの結果コード（1=SUCCEEDED 2=ABORTED 3=CANCELED）。失敗の理由を残す。
   std::optional<int> result_code;
   /// NavigateToPose の error_code と error_msg。BT のどのノードで落ちたかが分かる。
@@ -93,6 +95,8 @@ struct RunSummary {
   std::optional<double> min_clearance_driving_m;
   /// 計画経路そのものの最小クリアランス。プランナと追従のどちらが寄せたかを切り分ける。
   std::optional<double> plan_min_clearance_m;
+  /// ゴール受理までにかかった時間。受理されない故障を切り分ける。
+  std::optional<double> accept_ms;
   /// アクションの結果コード（1=SUCCEEDED 2=ABORTED 3=CANCELED）。失敗の理由を残す。
   std::optional<int> result_code;
   /// NavigateToPose の error_code と error_msg。BT のどのノードで落ちたかが分かる。

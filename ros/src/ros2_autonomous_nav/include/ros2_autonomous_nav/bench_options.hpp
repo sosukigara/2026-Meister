@@ -13,6 +13,8 @@ struct BenchOptions {
   int repeats{-1};
   int limit{-1};
   int auto_goals{-1};
+  /// 1 ゴールの制限時間。受理応答が完了時に返る構成なので、これは実質
+  /// 「ゴールの所要時間上限」として働く。遅い制御器でも打ち切らない長さにする。
   double goal_timeout{120.0};
   double sample_hz{10.0};
   double min_spacing{1.0};
