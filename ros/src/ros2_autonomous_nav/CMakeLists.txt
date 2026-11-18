@@ -26,13 +26,34 @@ target_include_directories(bench_metrics PUBLIC
   $<INSTALL_INTERFACE:include>)
 target_compile_features(bench_metrics PUBLIC cxx_std_17)
 
+# nav_world の地図を SDF ジオメトリから作る（SLAM 不要）。
+add_library(map_generator src/map_generator.cpp)
+target_include_directories(map_generator PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(map_generator PUBLIC cxx_std_17)
+
+add_library(waypoint_tour src/waypoint_tour.cpp)
+target_include_directories(waypoint_tour PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_compile_features(waypoint_tour PUBLIC cxx_std_17)
+
+add_executable(generate_map src/generate_map_main.cpp)
+target_link_libraries(generate_map map_generator)
+
+add_executable(waypoint_follower src/waypoint_follower_main.cpp)
+target_link_libraries(waypoint_follower waypoint_tour)
+ament_target_dependencies(waypoint_follower rclcpp rclcpp_action nav2_msgs)
+
 add_executable(bench_nav src/bench_nav_main.cpp)
 target_link_libraries(bench_nav bench_metrics nlohmann_json::nlohmann_json)
 ament_target_dependencies(bench_nav
   rclcpp rclcpp_action nav2_msgs nav_msgs geometry_msgs tf2 tf2_ros)
 
 install(DIRECTORY include/ DESTINATION include)
-install(TARGETS bench_nav DESTINATION lib/${PROJECT_NAME})
+install(TARGETS bench_nav generate_map waypoint_follower
+        DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch config urdf worlds maps scripts
         DESTINATION share/${PROJECT_NAME})
 
@@ -40,6 +61,12 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
   ament_add_gtest(test_bench_metrics test/test_bench_metrics.cpp)
   target_link_libraries(test_bench_metrics bench_metrics)
+
+  ament_add_gtest(test_map_generator test/test_map_generator.cpp)
+  target_link_libraries(test_map_generator map_generator)
+
+  ament_add_gtest(test_waypoint_tour test/test_waypoint_tour.cpp)
+  target_link_libraries(test_waypoint_tour waypoint_tour)
 endif()
 
 ament_package()
