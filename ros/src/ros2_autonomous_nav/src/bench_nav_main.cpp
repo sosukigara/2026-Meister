@@ -28,7 +28,10 @@
 #include <nav2_msgs/action/navigate_to_pose.hpp>
 #include <nav2_msgs/msg/costmap.hpp>
 #include <nav_msgs/msg/occupancy_grid.hpp>
+#include <nav_msgs/msg/odometry.hpp>
 #include <nav_msgs/msg/path.hpp>
+#include <rosgraph_msgs/msg/clock.hpp>
+#include <tf2_msgs/msg/tf_message.hpp>
 #include <tf2/time.h>
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
@@ -161,6 +164,46 @@ int main(int argc, char** argv) {
     }
   };
 
+  // 自己診断: /clock と TF がこのノードに届いているかを事実で確かめる。
+  if (options.self_check > 0.0) {
+    int clock_count = 0;
+    int tf_count = 0;
+    int odom_count = 0;
+    auto clock_sub = node->create_subscription<rosgraph_msgs::msg::Clock>(
+        "/clock", 10, [&](rosgraph_msgs::msg::Clock::ConstSharedPtr) { ++clock_count; });
+    auto tf_sub = node->create_subscription<tf2_msgs::msg::TFMessage>(
+        "/tf", 100, [&](tf2_msgs::msg::TFMessage::ConstSharedPtr) { ++tf_count; });
+    auto odom_sub = node->create_subscription<nav_msgs::msg::Odometry>(
+        "/odom", 10, [&](nav_msgs::msg::Odometry::ConstSharedPtr) { ++odom_count; });
+    const auto deadline =
+        std::chrono::steady_clock::now() + std::chrono::duration<double>(options.self_check);
+    int tick = 0;
+    while (std::chrono::steady_clock::now() < deadline) {
+      rclcpp::spin_some(node);
+      if (++tick % 50 == 0) {
+        std::string status;
+        try {
+          const auto tf =
+              tf_buffer.lookupTransform("map", "base_footprint", tf2::TimePointZero);
+          char text[160];
+          std::snprintf(text, sizeof(text), "ok x=%.3f y=%.3f stamp=%.3f",
+                        tf.transform.translation.x, tf.transform.translation.y,
+                        static_cast<double>(tf.header.stamp.sec) +
+                            static_cast<double>(tf.header.stamp.nanosec) * 1e-9);
+          status = text;
+        } catch (const tf2::TransformException& error) {
+          status = std::string("throw ") + error.what();
+        }
+        std::printf("[self] now=%.3f clock=%d tf=%d odom=%d map=%s\n",
+                    node->now().seconds(), clock_count, tf_count, odom_count, status.c_str());
+        std::fflush(stdout);
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+    rclcpp::shutdown();
+    return 0;
+  }
+
   const std::string started_at = NowIso8601();
   const std::string load_average = LoadAverageText();
 
@@ -245,10 +288,33 @@ int main(int argc, char** argv) {
       goal_msg.pose.pose.orientation.z = std::sin(goal.yaw / 2.0);
       goal_msg.pose.pose.orientation.w = std::cos(goal.yaw / 2.0);
 
+      // 軌跡は送信直後から採る。受理応答が数秒遅れることがあり、その間にも
+      // 車体は動くので、受理待ちの間に採らないと軌跡が欠ける。
+      auto sample_pose = [&]() {
+        const double now = node->now().seconds();
+        if (now - last_sample < 1.0 / options.sample_hz) {
+          return;
+        }
+        last_sample = now;
+        try {
+          const auto tf =
+              tf_buffer.lookupTransform("map", "base_footprint", tf2::TimePointZero);
+          trajectory.push_back(Pose2{tf.transform.translation.x, tf.transform.translation.y,
+                                     YawFromQuaternion(tf.transform.rotation)});
+        } catch (const tf2::TransformException&) {
+          // TF がまだ張られていない間は記録しない。
+        }
+      };
+
+      const double sent_at = node->now().seconds();
+      plan.reset();
+      plan_first_at = 0.0;
+      first_plan_length = 0.0;
       auto goal_future = client->async_send_goal(goal_msg);
       while (goal_future.wait_for(std::chrono::milliseconds(50)) !=
              std::future_status::ready) {
         rclcpp::spin_some(node);
+        sample_pose();
         if (node->now().seconds() - started > options.goal_timeout) {
           break;
         }
@@ -265,28 +331,18 @@ int main(int argc, char** argv) {
       // 送信前を起点にすると DDS と行動サーバの往復まで含んで過大になる。
       // 受理の瞬間にリセットする: ここより前の /plan は前のゴールのもの。
       const double accepted_at = node->now().seconds();
-      plan.reset();
-      plan_first_at = 0.0;
-      first_plan_length = 0.0;
+      // 受理応答が遅れると、計画は受理より先に届く。その場合は送信時刻を起点に
+      // しないと latency が負になる。
+      // 計画は受理より先に届くことがある（受理応答が遅い）。その場合は送信を起点に。
+      const double plan_baseline =
+          (plan_first_at > 0.0 && plan_first_at < accepted_at) ? sent_at : accepted_at;
 
       auto result_future = client->async_get_result(handle);
       while (result_future.wait_for(std::chrono::milliseconds(50)) !=
              std::future_status::ready) {
         rclcpp::spin_some(node);
-        const double now = node->now().seconds();
-        if (now - last_sample >= 1.0 / options.sample_hz) {
-          last_sample = now;
-          try {
-            const auto tf =
-                tf_buffer.lookupTransform("map", "base_footprint", tf2::TimePointZero);
-            trajectory.push_back(Pose2{tf.transform.translation.x,
-                                       tf.transform.translation.y,
-                                       YawFromQuaternion(tf.transform.rotation)});
-          } catch (const tf2::TransformException&) {
-            // TF がまだ張られていない間は記録しない。
-          }
-        }
-        if (now - started > options.goal_timeout) {
+        sample_pose();
+        if (node->now().seconds() - started > options.goal_timeout) {
           client->async_cancel_goal(handle);
           break;
         }
@@ -329,7 +385,7 @@ int main(int argc, char** argv) {
       run.path_length_ratio =
           ros2_autonomous_nav::PathLengthRatio(run.path_length_m, first_plan_length);
       if (plan_first_at > 0.0) {
-        run.planner_latency_ms = (plan_first_at - accepted_at) * 1000.0;
+        run.planner_latency_ms = (plan_first_at - plan_baseline) * 1000.0;
       }
       const auto control = ros2_autonomous_nav::ComputeIntervalStats(cmd_times);
       if (cmd_times.size() >= 2) {

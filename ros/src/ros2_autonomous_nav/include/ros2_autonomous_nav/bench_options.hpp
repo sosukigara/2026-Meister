@@ -19,6 +19,8 @@ struct BenchOptions {
   double min_clearance{0.5};
   /// 計測時の GUI 有無。"unknown" のまま推測で埋めない。
   std::string gui{"unknown"};
+  /// 0 より大きければ自己診断モード（TF と /clock の疎通確認）で秒数だけ回す。
+  double self_check{0.0};
 };
 
 enum class ParseStatus { kOk, kHelp, kError };

@@ -13,7 +13,7 @@ void PrintUsage() {
                "usage: bench_nav --goals FILE --out FILE [--repeats N] [--limit N]\n"
                "                 [--goal-timeout S] [--sample-hz HZ] [--map-id ID]\n"
                "                 [--auto-goals N] [--min-spacing M] [--min-clearance M]\n"
-               "                 [--gui on|off|unknown]\n");
+               "                 [--gui on|off|unknown] [--self-check SECONDS]\n");
 }
 
 /// 数値の解釈に失敗したら false。呼び出し側は ERROR を出して終わる。
@@ -74,6 +74,17 @@ ParseStatus ParseBenchArgs(int argc, char** argv, BenchOptions* options) {
       if (arg == "--repeats") options->repeats = parsed;
       if (arg == "--limit") options->limit = parsed;
       if (arg == "--auto-goals") options->auto_goals = parsed;
+      continue;
+    }
+    if (arg == "--self-check") {
+      const char* value = next(arg.c_str());
+      if (value == nullptr) return ParseStatus::kError;
+      double parsed = 0.0;
+      if (!ParseDouble(value, &parsed)) {
+        std::fprintf(stderr, "ERROR: --self-check expects a number\n");
+        return ParseStatus::kError;
+      }
+      options->self_check = parsed;
       continue;
     }
     if (arg == "--goal-timeout" || arg == "--sample-hz" || arg == "--min-spacing" ||
