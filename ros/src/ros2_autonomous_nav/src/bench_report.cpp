@@ -26,6 +26,7 @@ json RunToJson(const RunRecord& run) {
               {"final_error_yaw", ToJson(run.final_error_yaw)},
               {"min_clearance_m", ToJson(run.min_clearance_m)},
               {"min_clearance_driving_m", ToJson(run.min_clearance_driving_m)},
+              {"plan_min_clearance_m", ToJson(run.plan_min_clearance_m)},
               {"contact_count", ToJson(run.contact_count)},
               {"planner_latency_ms", ToJson(run.planner_latency_ms)},
               {"control_hz", ToJson(run.control_hz)},

@@ -118,6 +118,7 @@ int main(int argc, char** argv) {
   std::optional<nav2_msgs::msg::Costmap> raw_msg;
   std::optional<nav_msgs::msg::OccupancyGrid> occupancy_msg;
   std::optional<nav_msgs::msg::Path> plan;
+  std::vector<Pose2> first_plan_poses;
   double plan_first_at = 0.0;
   // 受理直後に届いた最初の計画の長さ。最後の plan はゴール直前の残りで短い。
   double first_plan_length = 0.0;
@@ -143,6 +144,11 @@ int main(int argc, char** argv) {
                 msg->poses[i].pose.position.y - msg->poses[i - 1].pose.position.y);
           }
           first_plan_length = length;
+          first_plan_poses.clear();
+          for (const auto& pose : msg->poses) {
+            first_plan_poses.push_back(Pose2{pose.pose.position.x, pose.pose.position.y,
+                                             YawFromQuaternion(pose.pose.orientation)});
+          }
         }
       });
   auto cmd_sub = node->create_subscription<geometry_msgs::msg::Twist>(
@@ -310,6 +316,7 @@ int main(int argc, char** argv) {
       plan.reset();
       plan_first_at = 0.0;
       first_plan_length = 0.0;
+      first_plan_poses.clear();
       auto goal_future = client->async_send_goal(goal_msg);
       while (goal_future.wait_for(std::chrono::milliseconds(50)) !=
              std::future_status::ready) {
@@ -406,6 +413,12 @@ int main(int argc, char** argv) {
             ros2_autonomous_nav::kFootprintHalfWidth);
         // 最初のサンプルは「走って行った位置」ではなく置かれた位置。とくに 1 本目の
         // ゴールはスポーン地点なので、そこを走行の余裕として数えない。
+        // 計画経路がそもそも寄っているのか、追従で寄るのかを分けて記録する。
+        if (first_plan_poses.size() >= 2) {
+          run.plan_min_clearance_m = ros2_autonomous_nav::MinFootprintClearance(
+              first_plan_poses, occupied, ros2_autonomous_nav::kFootprintHalfLength,
+              ros2_autonomous_nav::kFootprintHalfWidth);
+        }
         if (trajectory.size() >= 3) {
           const std::vector<Pose2> driving(trajectory.begin() + 1, trajectory.end());
           run.min_clearance_driving_m = ros2_autonomous_nav::MinFootprintClearance(
