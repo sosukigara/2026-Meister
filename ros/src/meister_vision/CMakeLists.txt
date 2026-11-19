@@ -85,7 +85,7 @@ endif()
 # モデル DL は Python のまま残す（ネットワーク取得だけなので C++ にしても
 # 得られるものが libcurl 依存の追加だけ）。実行ファイル名は download_model で
 # 維持し、`ros2 run meister_vision download_model` を壊さない。
-install(PROGRAMS scripts/download_model.py
+install(PROGRAMS scripts/download_model.py scripts/record_detections.py
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
