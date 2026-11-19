@@ -252,7 +252,7 @@ PR4 の「合格条件」には、`docs/features/04-navigation.md` と `docs/des
 
 | 項目 | 場所 | 確認方法 |
 |---|---|---|
-| 舵角サーボの実数（4 or 6） | `generated_config.h:18,55` vs `meister_robot.yaml:97` | 実機を数える |
+| ~~舵角サーボの実数（4 or 6）~~ **確定: 4（前後 2 対）** | `meister_config.h:269` は 6 本定義のまま | 2026-11-19 依頼者申告「旋回は4つ、6輪中前後4輪」 |
 | 幾何 `x=±0.30, y=±0.25` が図面値か実測値か | `meister_robot.yaml:111-123` | 実測 |
 | `wheel_radius: 0.05` | `meister_robot.yaml:112` | 実測 |
 | `max_linear_mm_per_sec: 800` | `meister_robot.yaml:115` | 実測 |
@@ -260,8 +260,13 @@ PR4 の「合格条件」には、`docs/features/04-navigation.md` と `docs/des
 | BNO055 ヨー符号（CW 正の仮定） | `serial_io.hpp:84-85` | 実測 |
 | エンコーダ無しでのオドメトリ精度 | `ackermann_imu_odometry.hpp:104-124` | PR2 以降で計測 |
 | FOC ボードへの実配線（UART 本数・ピン・レベル） | 未着手 | 実機の結線を見る |
-| ロッカー位置表の解釈（1軸×4輪か、前後2軸か） | `meister_robot.yaml:129` | 機構設計の確認 |
+| ロッカー位置表の解釈（1軸×4輪か、前後2軸か） → **舵角 4 輪の並びは前後 2 対で確定**。ロッカー軸そのものは未確認 | `meister_robot.yaml:129` | 機構設計の確認 |
 | ギア比・車輪径から m/s を出す換算 | 未測定 | 実測（`foc_rover` は rpm のみ既知） |
+
+**確定済み（2026-11-19）**: 舵角は 4 輪（前後 2 対、中間 2 輪は固定）。
+これで `meister_robot.yaml` の `steerable` パターン（前後 true / 中間 false）は確定。
+ただし **x/y の座標値・車輪径・ギア比・FOC 配線は未確定**のままで、
+`geometry_filled: false` も維持する。
 
 **ゲート**: 上の★が全て埋まるまで、PR5（駆動リンク）と PR6（ソルバ）には着手しない。同じ理由で `geometry_filled: false` を維持する。推測値で動かすと、通信試験は PASS したまま配線と係数が誤った状態で固定される。
 

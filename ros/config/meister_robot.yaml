@@ -115,6 +115,9 @@ kinematics:
   max_linear_mm_per_sec: 800
   wheels:
     # x, y, steerable（ボギー位置によって舵角が変わるか）, rocker_group
+    # 舵角は 4 輪（前後 2 対）で確定。中間 2 輪は固定。
+    # 出所: 依頼者への確認 2026-11-19「旋回は4つ、6輪中前後4輪」。
+    # ただし x/y の数値自体はまだ★要確認★（下の座標値をそのまま使わないこと）。
     - {x:  0.30, y:  0.25, steerable: true,  rocker_group: 0}
     - {x:  0.30, y: -0.25, steerable: true,  rocker_group: 1}
     - {x:  0.00, y:  0.25, steerable: false, rocker_group: 0}

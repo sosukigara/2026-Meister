@@ -265,7 +265,11 @@ constexpr uint8_t ArmId(uint8_t index) {
 #define MSTE_PWM_SERVO_PIN4 33
 #endif
 
-/// ステアリング PWM ピン（6ch）。いまの配線は上のバス構成ではなく PWM で駆動している
+/// ステアリング PWM ピン。実機の舵角は **4 輪（前後 2 対）** で確定
+/// （依頼者への確認 2026-11-19「旋回は4つ、6輪中前後4輪」）。中間 2 輪は固定。
+/// ★要確認★ 下の 6 本のうち実際に使う 4 本とその並び順は未確認。
+/// 配線を見て確定するまで、この表を 4 本に削らないこと（誤った 4 本を
+/// 正として固定してしまうため）。
 #ifndef MSTE_STEER_PIN0
 #define MSTE_STEER_PIN0 4
 #define MSTE_STEER_PIN1 5
