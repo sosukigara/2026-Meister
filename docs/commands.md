@@ -75,6 +75,13 @@ ros2 run meister_serial_bridge meister_hz_measure --port /dev/ttyUSB0 --expect-h
 - シリアル権限がないと `/scan` も `/esp32/state` も流れない。
   `groups` に `dialout` がなければ `sudo usermod -a -G dialout $USER` 後に再ログイン。
 - `launch.sh` は VPN 環境のマルチキャスト障害回避で `ROS_LOCALHOST_ONLY=1` を設定するが、**子プロセスのみ**。別ターミナルの `ros2` CLI には継承されない。
+- 表示系は切れる。既定はどちらも有効（従来どおり）。
+  ```bash
+  # Gazebo の GUI と RViz を切る。実測で 1 コアの 66% と 34% を節約でき、
+  # 同じ時間でシミュレーションが約 2 倍進む。地図と姿勢は Web UI で見る。
+  MEISTER_GUI=0 MEISTER_RVIZ=0 ./launch.sh --sim warehouse
+  ```
+  ヘッドレスでもセンサ(`/scan`・`/camera/image_raw`)はサーバ側で動く。
 
 ## 5.5 ナビゲーションの計測
 
@@ -92,6 +99,17 @@ MEISTER_LAUNCH_ARGS="controller:=mppi" \
 - **launch と計測は同じプロセス内で行うこと。** 別プロセスからは DDS が
   見えないことがある（VPN 環境のマルチキャスト障害）。
 - 結果の読み方と過去の計測は [docs/bench/](../bench/) を参照。
+
+## 5.6 CPU 内訳の計測
+
+```bash
+# 起動したまま、区間 20 秒でプロセス別の CPU を積分する
+python3 ros/src/ros2_autonomous_nav/scripts/cpu_split.py --seconds 20 --label "headless"
+```
+
+`/proc/<pid>/stat` の utime+stime の差分を使う。`top` の瞬間値は数秒で振れるため、
+比較には区間積分を使う。**シミュレーションの値は `/clock` の配信量に比例して
+膨らむ**ので、実機の見積りに流用しないこと（[bench/2026-11-20-cpu-analysis.md](../bench/2026-11-20-cpu-analysis.md) §1）。
 
 ## 6. 4 通りのビルド（条件コンパイル確認）
 
@@ -114,3 +132,26 @@ bash .omo/session-work/check_header.sh
 - ピン番号を変える → `pio run -e esp32dev -e esp32dev_usbuart`（両 env）と実機 `comm_check`
 - Python のみの変更 → `pytest`。C++ 変更 → `pio test -e native`
 - 実機挙動を変更 → `comm_check` 3 手順
+
+## 9. 画像認識の A/B（同一入力でモデルを比べる）
+
+同じ録画を 2 つの設定に流して比べる。シーンが暗いと検出が出ず比較にならないので、
+**明るく物体が写る状態で録る**こと。
+
+```bash
+# 1) 入力を録る（実機カメラ）
+ros2 bag record -o /tmp/bag_cam /camera/image_raw   # 25 秒ほど
+
+# 2) 各設定で /detections を採取（bag 再生 + 購読の記録）
+ros/install/meister_vision/lib/meister_vision/detection_node --ros-args \
+  -p image_topic:=/camera/image_raw -p rate:=30.0 -p inference_threads:=4 \
+  -p model_path:=ros/install/meister_vision/share/meister_vision/models/yolov8n.onnx &
+python3 ros/src/meister_vision/scripts/record_detections.py \\
+  --seconds 26 --out /tmp/ab_640.json
+ros2 bag play /tmp/bag_cam --rate 1.0
+
+# 3) 320 でも同じことをして、フレームごとの検出数・クラス一致を比べる
+```
+
+前回の結果と「比較にならなかった理由」は
+[bench/2026-11-20-cpu-analysis.md](../bench/2026-11-20-cpu-analysis.md) §5。

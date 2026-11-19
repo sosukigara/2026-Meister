@@ -81,3 +81,23 @@
 - `create_subscription` の戻りを捨てると Jazzy では購読が破棄される。「Node が保持する」は誤り。`vision_listener`（メンバ保持、生存）と `map_listener`（破棄、死亡）で実証済み。購読はメンバで持つ。
 - 実機に odom 発行源がないと SLAM の message filter が `/scan` を全捨てする（`discarding message because the queue is full`）。対策: `real_robot.launch.py` の static `odom->base_footprint`（不動仮定。ずれは SLAM の `map->odom` が補正）。ESP32 odom ができたら置き換える。
 - 実機 launch の SLAM 起動は固定秒数 `activate` 禁止。`configure` 前に走ると両方 exit 1 で SLAM が `unconfigured` のまま固まる。`slam.launch.py` と同じ `OnStateTransition(inactive)` 駆動にする。
+
+## P13. Orange Pi 5 Max では Gazebo の lidar が使えない（2026-11-20 実測）
+
+- 症状: `/scan` の全点が **0.092〜0.130 m の一定値**になる（障害物の有無によらず）。
+  `/map` が十数セルで停滞し、`/pose` が出ず、ゴールは
+  `Goal Coordinates ... outside bounds` で失敗する。
+- 原因: `~/.gz/rendering/ogre2.log` に毎回
+  `error: Too many vertex shader storage blocks (1/0)` が出ており、
+  Ogre2 のシェーダがリンクできていない（Mesa/llvmpipe の GL コンテキスト）。
+  GPU lidar はこのシェーダで深度を描くため、深度バッファが壊れて一定値を返す。
+  物理・TF・時刻は正常なので、**`ros2 topic hz /scan` は 10Hz で流れて見える**。
+  レートだけ見て「動いている」と判断してはいけない。`ranges` の中身を見ること。
+- CPU 版 lidar（`<sensor type="lidar">`）に替えても **1 点も出ない**
+  （gz-sim 8 で CPU レイ lidar は機能しない）。試しても無駄。
+- Vulkan バックエンド（`gz sim --render-engine-api-backend vulkan`）も不可。
+  `/usr/share/vulkan/icd.d/` が無く、`mesa-vulkan-drivers` は lavapipe を
+  含まないため ICD を用意できない（確認済み）。
+- 対策: **描画が正常な開発機でナビの検証を行う**。この機では画像認識
+  （実カメラ）とログ系の検証のみ行う。
+- 計測の詳細: [bench/2026-11-20-cpu-analysis.md](bench/2026-11-20-cpu-analysis.md) §7。
