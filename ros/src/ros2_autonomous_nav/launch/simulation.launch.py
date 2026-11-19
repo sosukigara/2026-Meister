@@ -15,10 +15,14 @@ WORLDS = {
 
 def _resolve_world(context):
     world_key = context.launch_configurations['world']
+    gui = context.launch_configurations.get('gui', 'true') == 'true'
     entry = WORLDS[world_key]
     pkg_nav = get_package_share_directory('ros2_autonomous_nav')
     world_path = os.path.join(pkg_nav, 'worlds', entry['sdf'])
-    gz_args = f'-r {world_path}'
+    # GUI は表示だけ。計測やヘッドレス運用では切ってよい（物理とセンサはサーバ側）。
+    # `-s` はサーバ単体起動。付けないと GUI も一緒に上がり、ソフトウェア描画で
+    # 1 コア近くを GUI が食う（実測 66%）。
+    gz_args = f'-r {world_path}' if gui else f'-s -r {world_path}'
     return [
         SetLaunchConfiguration('gz_args', gz_args),
         SetLaunchConfiguration('spawn_x', str(entry['spawn'][0])),
@@ -74,6 +78,8 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('world', default_value='warehouse',
                               description='World to load: warehouse, maze, or empty'),
+        DeclareLaunchArgument('gui', default_value='true',
+                              description='Gazebo GUI を出すか。false でサーバ単体 (ヘッドレス)'),
         OpaqueFunction(function=_resolve_world),
         gazebo,
         spawn_robot,

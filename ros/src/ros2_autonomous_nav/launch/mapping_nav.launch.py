@@ -12,6 +12,8 @@ def generate_launch_description():
 
     declare_world_arg = DeclareLaunchArgument('world', default_value='warehouse',
                                               description='World to load: warehouse, maze, empty')
+    declare_gui_arg = DeclareLaunchArgument('gui', default_value='true',
+                                            description='Gazebo GUI を出すか (false=ヘッドレス)')
 
     # 1. Robot State Publisher (Xacro dynamic processing)
     robot_state_publisher = IncludeLaunchDescription(
@@ -21,7 +23,8 @@ def generate_launch_description():
     # 2. Simulation (Gazebo + Bridge)
     simulation = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(pkg_nav, 'launch', 'simulation.launch.py')),
-        launch_arguments={'world': LaunchConfiguration('world')}.items()
+        launch_arguments={'world': LaunchConfiguration('world'),
+                          'gui': LaunchConfiguration('gui')}.items()
     )
 
     # 3. SLAM (slam_toolbox)
@@ -49,6 +52,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         declare_world_arg,
+        declare_gui_arg,
         robot_state_publisher,
         simulation,
         slam,

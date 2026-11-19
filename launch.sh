@@ -100,7 +100,11 @@ if [ "$SIM" -eq 1 ]; then
     echo "=== Mode: simulation (Gazebo) / World: $WORLD ==="
     export MEISTAR_USE_SIM_TIME=true
     # 追加の launch 引数（例: MEISTER_LAUNCH_ARGS="controller:=mppi"）。
-    ros2 launch ros2_autonomous_nav mapping_nav.launch.py "world:=$WORLD" ${MEISTER_LAUNCH_ARGS:-} &
+    # GUI と RViz は表示だけ。重いので MEISTER_GUI=0 / MEISTER_RVIZ=0 で切れる
+    # (実測: GUI 66% / RViz 34% のコア。Nav2 とセンサの挙動は変わらない)。
+    ros2 launch ros2_autonomous_nav mapping_nav.launch.py "world:=$WORLD" \
+        "gui:=$([ "${MEISTER_GUI:-1}" = "0" ] && echo false || echo true)" \
+        ${MEISTER_LAUNCH_ARGS:-} &
 else
     echo "=== Mode: real robot (LD-D500: $MEISTAR_LIDAR_PORT / ESP32: $MEISTAR_SERIAL_PORT) ==="
     export MEISTAR_USE_SIM_TIME=false
@@ -147,8 +151,12 @@ else
     done
 fi
 
-echo "=== RViz を起動します ==="
-"$WORKSPACE_ROOT/ros/src/ros2_autonomous_nav/scripts/rviz.sh" &
+if [ "${MEISTER_RVIZ:-1}" = "0" ]; then
+    echo "=== RViz は MEISTER_RVIZ=0 のため起動しません (Web UI で地図と姿勢は見えます) ==="
+else
+    echo "=== RViz を起動します ==="
+    "$WORKSPACE_ROOT/ros/src/ros2_autonomous_nav/scripts/rviz.sh" &
+fi
 
 echo "------------------------------------------"
 echo "起動完了！"
