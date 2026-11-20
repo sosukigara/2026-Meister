@@ -3,27 +3,23 @@
 #include <chrono>
 #include <exception>
 #include <memory>
-#include <mutex>
 #include <stdexcept>
 #include <string>
 #include <thread>
-#include <utility>
 #include <vector>
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <geometry_msgs/msg/transform_stamped.hpp>
 #include <geometry_msgs/msg/twist.hpp>
-#include <nav_msgs/msg/odometry.hpp>
-#include <sensor_msgs/msg/imu.hpp>
 #include <std_msgs/msg/int16_multi_array.hpp>
 #include <std_msgs/msg/u_int8.hpp>
-#include <tf2_msgs/msg/tf_message.hpp>
 
 #include "umeonigiri_serial_bridge/ackermann_imu_odometry.hpp"
 #include "umeonigiri_serial_bridge/bridge_core.hpp"
 #include "umeonigiri_serial_bridge/comm_check.hpp"
+#include "umeonigiri_serial_bridge/feedback_publisher.hpp"
 #include "umeonigiri_serial_bridge/frames.hpp"
+#include "umeonigiri_serial_bridge/odometry_publisher.hpp"
 
 namespace umeonigiri_serial_bridge {
 
@@ -89,7 +85,9 @@ class SerialBridgeNode final : public rclcpp::Node {
     odom_cfg.max_steering_deg = params.kinematics.max_steering_deg;
     odom_cfg.cmd_timeout_s = params.cmd_timeout_s;
     odom_cfg.imu_yaw_fusion_gain = declare_parameter<double>("imu_yaw_fusion_gain", 0.85);
-    odometry_ = std::make_unique<AckermannImuOdometry>(odom_cfg);
+    odometry_ = std::make_unique<OdometryPublisher>(
+        *this, odom_cfg, publish_odom_, publish_odom_tf_, odom_frame_id_, base_frame_id_);
+    feedback_publisher_ = std::make_unique<FeedbackPublisher>(*this);
 
     core_ = std::make_unique<BridgeCore>(
         params,
@@ -109,10 +107,7 @@ class SerialBridgeNode final : public rclcpp::Node {
     // 1 本の UART を共有しているので、片方の不通がもう片方を止めない。
     cmd_sub_ = create_subscription<geometry_msgs::msg::Twist>(
         "/cmd_vel", 10, [this](const geometry_msgs::msg::Twist& msg) {
-          {
-            std::lock_guard<std::mutex> lk(odom_mutex_);
-            odometry_->UpdateTwistCommand(msg.linear.x, msg.angular.z, NowSeconds());
-          }
+          odometry_->UpdateTwistCommand(msg.linear.x, msg.angular.z, NowSeconds());
           const std::string error =
               RunSerialOp(*core_, [&] { core_->OnCmdVel(msg.linear.x, msg.angular.z); });
           if (!error.empty()) {
@@ -132,22 +127,13 @@ class SerialBridgeNode final : public rclcpp::Node {
           }
         });
 
-    state_pub_ = create_publisher<std_msgs::msg::Int16MultiArray>("/esp32/state", 10);
-    imu_pub_ = create_publisher<sensor_msgs::msg::Imu>("/imu/data", 10);
-    if (publish_odom_) {
-      odom_pub_ = create_publisher<nav_msgs::msg::Odometry>("/odom", 20);
-    }
-    if (publish_odom_tf_) {
-      tf_pub_ = create_publisher<tf2_msgs::msg::TFMessage>("/tf", 20);
-    }
-
     watchdog_ = create_wall_timer(std::chrono::milliseconds(100), [this] { OnWatchdog(); });
 
     if (publish_odom_ || publish_odom_tf_) {
       const auto period = std::chrono::duration<double>(1.0 / odom_rate_hz);
       odom_timer_ = create_wall_timer(
           std::chrono::duration_cast<std::chrono::nanoseconds>(period),
-          [this] { StepAndPublishOdometry(); });
+          [this] { odometry_->StepAndPublish(NowSeconds()); });
     }
 
     rx_stop_ = false;
@@ -214,65 +200,6 @@ class SerialBridgeNode final : public rclcpp::Node {
     }
   }
 
-  void StepAndPublishOdometry() {
-    const rclcpp::Time stamp = now();
-    OdometryState st{};
-    OdometryConfig cfg{};
-    {
-      std::lock_guard<std::mutex> lk(odom_mutex_);
-      st = odometry_->Step(NowSeconds());
-      cfg = odometry_->config();
-    }
-
-    if (publish_odom_tf_ && tf_pub_) {
-      auto tf_msg = std::make_unique<tf2_msgs::msg::TFMessage>();
-      geometry_msgs::msg::TransformStamped t;
-      t.header.stamp = stamp;
-      t.header.frame_id = odom_frame_id_;
-      t.child_frame_id = base_frame_id_;
-      t.transform.translation.x = st.x;
-      t.transform.translation.y = st.y;
-      t.transform.translation.z = 0.0;
-      t.transform.rotation.x = 0.0;
-      t.transform.rotation.y = 0.0;
-      t.transform.rotation.z = st.qz;
-      t.transform.rotation.w = st.qw;
-      tf_msg->transforms.push_back(std::move(t));
-      tf_pub_->publish(std::move(tf_msg));
-    }
-
-    if (publish_odom_ && odom_pub_) {
-      auto odom = std::make_unique<nav_msgs::msg::Odometry>();
-      odom->header.stamp = stamp;
-      odom->header.frame_id = odom_frame_id_;
-      odom->child_frame_id = base_frame_id_;
-      odom->pose.pose.position.x = st.x;
-      odom->pose.pose.position.y = st.y;
-      odom->pose.pose.position.z = 0.0;
-      odom->pose.pose.orientation.x = 0.0;
-      odom->pose.pose.orientation.y = 0.0;
-      odom->pose.pose.orientation.z = st.qz;
-      odom->pose.pose.orientation.w = st.qw;
-      odom->pose.covariance[0]  = cfg.pose_cov_xy;
-      odom->pose.covariance[7]  = cfg.pose_cov_xy;
-      odom->pose.covariance[14] = 1e-6;
-      odom->pose.covariance[21] = 1e-6;
-      odom->pose.covariance[28] = 1e-6;
-      odom->pose.covariance[35] = cfg.pose_cov_yaw;
-
-      odom->twist.twist.linear.x = st.vx;
-      odom->twist.twist.linear.y = 0.0;
-      odom->twist.twist.angular.z = st.wz;
-      odom->twist.covariance[0]  = cfg.twist_cov_vx;
-      odom->twist.covariance[7]  = 1e-6;
-      odom->twist.covariance[14] = 1e-6;
-      odom->twist.covariance[21] = 1e-6;
-      odom->twist.covariance[28] = 1e-6;
-      odom->twist.covariance[35] = cfg.twist_cov_wz;
-      odom_pub_->publish(std::move(odom));
-    }
-  }
-
   void RxLoop() {
     std::vector<Feedback> states;
     std::vector<uint8_t> fb_errors;
@@ -306,14 +233,11 @@ class SerialBridgeNode final : public rclcpp::Node {
         continue;
       }
       for (const auto& fb : states) {
-        PublishState(fb);
+        feedback_publisher_->PublishState(fb);
       }
       for (const auto& imu : imus) {
-        {
-          std::lock_guard<std::mutex> lk(odom_mutex_);
-          odometry_->UpdateImuReport(imu, NowSeconds());
-        }
-        PublishImu(imu);
+        odometry_->UpdateImuReport(imu, NowSeconds());
+        feedback_publisher_->PublishImu(imu);
       }
       for (uint8_t code : fb_errors) {
         RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
@@ -322,40 +246,9 @@ class SerialBridgeNode final : public rclcpp::Node {
     }
   }
 
-  void PublishImu(const ImuReport& imu) {
-    auto msg = std::make_unique<sensor_msgs::msg::Imu>();
-    msg->header.stamp = now();
-    msg->header.frame_id = "imu_link";
-    const YawQuat q = YawTenthsToQuat(imu.yaw_tenths);
-    msg->orientation.x = 0.0;
-    msg->orientation.y = 0.0;
-    msg->orientation.z = q.z;
-    msg->orientation.w = q.w;
-    // BNO055 yaw orientation covariance (non-zero diagonal required by SLAM/EKF)
-    msg->orientation_covariance = {
-        0.01, 0.0, 0.0,
-        0.0, 0.01, 0.0,
-        0.0, 0.0, 0.0015};
-    // yaw 以外は送っていないので、角速度・加速度の先頭を -1（未知）で示す。
-    msg->angular_velocity_covariance[0] = -1.0;
-    msg->linear_acceleration_covariance[0] = -1.0;
-    imu_pub_->publish(std::move(msg));
-  }
-
-  void PublishState(const Feedback& fb) {
-    auto msg = std::make_unique<std_msgs::msg::Int16MultiArray>();
-    msg->data.reserve(fb.encoders.size() + 2);
-    for (int16_t e : fb.encoders) {
-      msg->data.push_back(e);
-    }
-    msg->data.push_back(static_cast<int16_t>(fb.state));
-    msg->data.push_back(static_cast<int16_t>(fb.error_flags));
-    state_pub_->publish(std::move(msg));
-  }
-
   std::unique_ptr<BridgeCore> core_;
-  std::unique_ptr<AckermannImuOdometry> odometry_;
-  std::mutex odom_mutex_;
+  std::unique_ptr<OdometryPublisher> odometry_;
+  std::unique_ptr<FeedbackPublisher> feedback_publisher_;
   bool publish_odom_{true};
   bool publish_odom_tf_{true};
   std::string odom_frame_id_{"odom"};
@@ -367,10 +260,6 @@ class SerialBridgeNode final : public rclcpp::Node {
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_sub_;
   rclcpp::Subscription<std_msgs::msg::Int16MultiArray>::SharedPtr arm_sub_;
   rclcpp::Subscription<std_msgs::msg::UInt8>::SharedPtr gripper_sub_;
-  rclcpp::Publisher<std_msgs::msg::Int16MultiArray>::SharedPtr state_pub_;
-  rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
-  rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
-  rclcpp::Publisher<tf2_msgs::msg::TFMessage>::SharedPtr tf_pub_;
   rclcpp::TimerBase::SharedPtr watchdog_;
   rclcpp::TimerBase::SharedPtr odom_timer_;
 };

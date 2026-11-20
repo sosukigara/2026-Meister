@@ -59,6 +59,8 @@ hal/bus_protocol ← Arduino 非依存（pio test -e native でテストでき�
 | `umeonigiri_serial_bridge/include/.../serial_io.hpp` | UART I/O 抽象と libserial 実装 | gtest からフェイクを注入できる |
 | `umeonigiri_serial_bridge/include/.../bridge_core.hpp` | ROS 非依存の中核（ウォッチドッグ・再オープン・受信） | `Clock` を注入する |
 | `umeonigiri_serial_bridge/src/frames.cpp` / `kinematics.cpp` | フレーム組み立てと Twist → (舵角, 速度) | 値域は firmware の生成 config を 1 箇所で使う |
+| `umeonigiri_serial_bridge/src/odometry_publisher.cpp` | `/odom` と `odom -> base_footprint` TF | rclcpp 依存。コアは ROS 非依存のまま |
+| `umeonigiri_serial_bridge/src/feedback_publisher.cpp` | `/esp32/state` と `/imu/data` | rclcpp 依存。コアは ROS 非依存のまま |
 
 ## 4. データフロー
 

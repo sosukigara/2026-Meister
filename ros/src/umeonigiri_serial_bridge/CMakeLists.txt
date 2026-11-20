@@ -46,7 +46,10 @@ target_link_libraries(umeonigiri_serial_bridge_core
   PUBLIC meister_proto
   PRIVATE PkgConfig::SERIAL)
 
-add_executable(umeonigiri_serial_bridge src/serial_bridge_node.cpp)
+add_executable(umeonigiri_serial_bridge
+  src/serial_bridge_node.cpp
+  src/odometry_publisher.cpp
+  src/feedback_publisher.cpp)
 target_link_libraries(umeonigiri_serial_bridge
   PRIVATE umeonigiri_serial_bridge_core rclcpp::rclcpp
           ${geometry_msgs_TARGETS} ${nav_msgs_TARGETS}

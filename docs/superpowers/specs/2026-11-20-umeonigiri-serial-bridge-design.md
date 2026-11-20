@@ -46,8 +46,8 @@ FB_STATE / FB_IMU を ROS へ戻す。2026-10-05 の Python → C++（ament_cmak
 - firmware（`firmware/main_board/`）の変更。プロトコルのバイト列・軸数・値域は変えない。
 - libserial の termios 置換。今回は「壊れた `SerialPort` を破棄しない」隔離で回避し、
   置換は別計画とする（F3 の根治は termios 移行時に判断）。
-- `serial_bridge_node.cpp` の 300 行以下への分割。R1 は「超えたら分割を検討」であり、
-  本計画では検討結果として「オドメトリ層の分離は別計画」と記録する（§6.9）。
+- 本設計時点での `serial_bridge_node.cpp` 分割。R1 は「超えたら分割を検討」であり、
+  当時は別計画へ送った。2026-11-20 の後続タスクで実施済み（§6.9）。
 - 日付付きの過去仕様書（`docs/superpowers/specs/2026-11-18-*.md`）の書き換え。
   これらは当時の判断の記録であり、現行仕様ではない。
 
@@ -160,11 +160,11 @@ LostFrames() = max(0, nbytes - decoded_bytes - buffered_bytes) / kMaxFrameSize
 
 ### 6.9 R1 の扱い（F10）
 
-`serial_bridge_node.cpp` は 327 行で、本ブランチの例外処理・検証を加えて 395 行に
-なった。オドメトリ出版（約 90 行）を `odometry_publisher.{hpp,cpp}` へ分離すれば
-300 行以下になるが、rclcpp 依存のテストが難しく、今回の実機ゲート（後日）と同時に
-挙動を変えるリスクを避けたい。本計画では**分割を別計画へ送り、395 行のまま着地する**。
-判断と残行数は設計書のこの節と `docs/code-map.md` に記録する。
+`serial_bridge_node.cpp` は 327 行で、例外処理・検証を加えると 395 行になった。
+2026-11-20 の後続タスクで、rclcpp 依存の出版を `OdometryPublisher`（`/odom` と TF）と
+`FeedbackPublisher`（`/esp32/state` と `/imu/data`）へ分離した。ノードは **284 行**になり、
+`BridgeCore` と CLI/gtest は ROS 非依存のまま。トピック名・QoS・frame_id・共分散・
+50 Hz の出版レートは変えていない。
 
 ## 7. 受入基準
 
