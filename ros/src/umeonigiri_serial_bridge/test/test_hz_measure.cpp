@@ -59,6 +59,12 @@ std::vector<uint8_t> StateFrame(uint8_t error_flags) {
   return {buf, buf + n};
 }
 
+std::vector<uint8_t> ImuFrame(int16_t yaw_tenths) {
+  uint8_t buf[proto::kMaxFrameSize];
+  const auto n = proto::EncodeImu(buf, sizeof(buf), yaw_tenths, 0xFF);
+  return {buf, buf + n};
+}
+
 std::vector<uint8_t> Repeat(const std::vector<uint8_t>& frame, int times) {
   std::vector<uint8_t> out;
   for (int i = 0; i < times; ++i) {
@@ -135,4 +141,21 @@ TEST(FeedbackHz, ReportsGapStatistics) {
   EXPECT_GT(m.measured_hz, 0.0);
   EXPECT_GE(m.max_ms, m.p95_ms);
   EXPECT_GE(m.p95_ms, m.mean_ms);
+}
+
+// firmware は FB_IMU を 20 Hz で送る。全バイトを 17 バイトの FB_STATE と
+// みなすと、IMU 有効の実機で毎秒数フレームの偽の欠落になる。
+TEST(FeedbackHz, DoesNotCountImuFramesAsLost) {
+  auto stream = Repeat(StateFrame(0), 10);
+  const auto imu = ImuFrame(900);
+  for (int i = 0; i < 5; ++i) {
+    stream.insert(stream.end(), imu.begin(), imu.end());
+  }
+
+  ScriptedEsp32 esp({stream});
+  const auto m = msb::MeasureFeedbackHz("fake", msb::kDefaultBaud, kDurationS,
+                                        /*with_commands=*/false, /*reset=*/false,
+                                        Opener(&esp));
+  EXPECT_EQ(m.frames, 10);
+  EXPECT_EQ(m.LostFrames(), 0);
 }

@@ -13,6 +13,10 @@ inline constexpr double kCommandHz = 10.0;
 struct Measurement {
   int frames = 0;
   long nbytes = 0;
+  /// 復元できた全種別フレームのバイト数（FB_STATE / FB_IMU / FB_ERROR）。
+  long decoded_bytes = 0;
+  /// 受信末尾に残った未完成フレームのバイト数。欠落判定から除く。
+  long buffered_bytes = 0;
   double duration_s = 0.0;
   double measured_hz = 0.0;
   double mean_ms = 0.0;
@@ -21,10 +25,15 @@ struct Measurement {
   int protocol_errors = 0;
   int commands_sent = 0;
 
-  /// 受信バイト数から期待されるフレーム数が減った分。欠落か破損の検出用。
+  /// どのフレームにも復元できなかったバイト数を、FB_STATE（最大長）単位で
+  /// 数える近似。FB_IMU など短いフレームを欠落と誤認しないための修正。
   int LostFrames() const {
-    const long expected = nbytes / static_cast<long>(meister::proto::kMaxFrameSize);
-    return expected > frames ? static_cast<int>(expected - frames) : 0;
+    const long unaccounted = nbytes - decoded_bytes - buffered_bytes;
+    if (unaccounted <= 0) {
+      return 0;
+    }
+    return static_cast<int>(unaccounted /
+                            static_cast<long>(meister::proto::kMaxFrameSize));
   }
 };
 

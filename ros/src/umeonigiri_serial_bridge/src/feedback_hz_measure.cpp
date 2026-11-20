@@ -46,6 +46,7 @@ Measurement MeasureFeedbackHz(const std::string& port, int baud, double duration
   std::vector<proto::Frame> frames;
   uint8_t buf[256];
   long nbytes = 0;
+  long decoded_bytes = 0;
   int protocol_errors = 0;
   int ncmd = 0;
   double next_cmd = 0.0;
@@ -70,6 +71,7 @@ Measurement MeasureFeedbackHz(const std::string& port, int baud, double duration
       frames.clear();
       parser.Feed(buf, n, &frames);
       for (const auto& frame : frames) {
+        decoded_bytes += static_cast<long>(frame.frameSize);
         if (frame.type != proto::kFbState) {
           continue;
         }
@@ -95,6 +97,8 @@ Measurement MeasureFeedbackHz(const std::string& port, int baud, double duration
   Measurement m;
   m.frames = static_cast<int>(stamps.size());
   m.nbytes = nbytes;
+  m.decoded_bytes = decoded_bytes;
+  m.buffered_bytes = static_cast<long>(parser.buffered());
   m.duration_s = window;
   m.measured_hz = span > 0.0 ? static_cast<double>(stamps.size() - 1) / span : 0.0;
   m.mean_ms = gaps.empty() ? 0.0
