@@ -74,6 +74,7 @@ Full version: [docs/commands.md](docs/commands.md).
 10. **Never close unverified work as "no problem"** (R10) → [pitfalls P6](docs/pitfalls.md)
 11. **Never rely on static initialization order** (R11) → [pitfalls P5](docs/pitfalls.md)
 12. **Split commits into reviewable units** (R12) → [pitfalls P7](docs/pitfalls.md)
+13. **All work happens in a worktree and lands by merge; never work on `main` directly** (R13) → §4.1 / [pitfalls P13](docs/pitfalls.md)
 
 Additional NGs:
 - Avoid abusing `Any` (add type hints)
@@ -81,6 +82,29 @@ Additional NGs:
 - `ros/src/` must not reference `MSTE_*` macros directly
 - When changing the protocol axis count, fix C++ and Python together
 - Never break what already works in order to move forward
+- Never edit files, build, or commit in the main checkout (`/home/so/Meistar`) as part of a task
+- Never `git push` from inside a feature worktree; only the main checkout pushes after merging
+
+## 4.1 Worktree Workflow (R13 — mandatory)
+
+```
+/home/so/Meistar  (main checkout, branch main)   ← fetch / merge / review / push ONLY
+  └─ .worktrees/<topic>  (branch <type>/<topic>)  ← all edits, builds, tests, commits
+```
+
+1. **Start** (from the main checkout):
+   `git fetch origin && git worktree add -b <type>/<topic> .worktrees/<topic> origin/main`
+   Types: `feat/` `fix/` `docs/` `chore/`. `.worktrees/` is already gitignored.
+2. **Work**: every file edit, build, test and commit happens inside that worktree.
+   The main checkout stays on `main` with a clean working tree.
+3. **Review** before landing (R6): read the diff in the worktree (`git diff main...HEAD`).
+4. **Land**: commit in the worktree → in the main checkout
+   `git merge --no-ff <type>/<topic>` → `git push origin main`.
+   Push only after the merge. Do not push the feature branch unless asked.
+5. **Cleanup** after the push is confirmed:
+   `git worktree remove .worktrees/<topic> && git branch -d <type>/<topic>`.
+6. If a worktree is genuinely impossible (e.g. the task is about the checkout itself),
+   say so explicitly in the report *before* touching `main`.
 
 ## 5. Pointers to Docs
 

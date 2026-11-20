@@ -48,6 +48,19 @@
 - 1 コミットに 1000 行超の refactor + 新 HAL + プロトコル変更 + 文書を入れない。
 - 推奨: pure refactor → 機能追加 → 文書・ルール。pure refactor は実機ゲートを通してから commit。
 
+## P13. 作業は worktree で行い、merge してから push する (R13)
+
+- `main` チェックアウト上で直接編集・commit・push しない。作業中に `main` が汚れていると、
+  「今どの差分がレビュー対象か」が分からなくなる（R6 のレビュー前提が崩れる）。
+- 手順: メインで `git worktree add -b <type>/<topic> .worktrees/<topic> origin/main` →
+  worktree 内で編集・ビルド・テスト・commit → メインで `git merge --no-ff <branch>` →
+  `git push origin main` → `git worktree remove` + `git branch -d`。
+- worktree 内から `git push` しない。feature ブランチは明示依頼が無い限り push しない。
+- `.worktrees/` は `.gitignore` 済み。worktree 内のビルド成果物（`build/` `install/` `log/`）は
+  メインと別ディレクトリになるため、colcon は worktree 内で `ros/` を cwd にして回す。
+- 理由: 複数タスクを並行すると、メインの作業ツリーに別タスクの未 commit 変更が混ざり、
+  merge 時に「どの変更がどのレビュー結果に対応するか」を示せなくなる。
+
 ## P8. 環境特有の挙動
 
 - **VPN 環境**: `start_meister.sh:44-48` で `ROS_LOCALHOST_ONLY=1` を設定するが子プロセスのみ。別ターミナルの `ros2` CLI には継承されない。
