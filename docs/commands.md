@@ -130,6 +130,26 @@ python3 ros/src/ros2_autonomous_nav/scripts/cpu_split.py --seconds 20 --label "h
 3. `PLATFORMIO_BUILD_FLAGS="-DMSTE_SERVO_DRIVER_DEBUG=1" pio run -e esp32dev`
 4. `pio test -e native`
 
+## 6.5 worktree での作業と着地（R13）
+
+```bash
+# メインチェックアウト (/home/so/Meistar) で: 開始
+git fetch origin
+git worktree add -b <type>/<topic> .worktrees/<topic> origin/main
+
+# worktree 内で: 編集・ビルド・テスト・commit
+cd .worktrees/<topic>
+git diff main...HEAD          # レビュー（R6）
+
+# メインで: merge → push → 後片付け
+cd /home/so/Meistar
+git merge --no-ff <type>/<topic>
+git push origin main
+git worktree remove .worktrees/<topic> && git branch -d <type>/<topic>
+```
+
+`<type>` は `feat` / `fix` / `docs` / `chore`。feature ブランチ自体は push しない。
+
 ## 7. 機械チェック
 
 ```bash
