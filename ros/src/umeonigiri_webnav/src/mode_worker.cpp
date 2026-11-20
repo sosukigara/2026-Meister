@@ -52,10 +52,14 @@ ModeWorker::ModeWorker(const std::string& maps_dir)
 ModeWorker::~ModeWorker() { Stop(); }
 
 void ModeWorker::Stop() {
-  executor_.cancel();
-  if (spinner_.joinable()) {
-    spinner_.join();
+  // 2 回目以降は何もしない。main() が rclcpp::shutdown() より先に Stop() を呼び、
+  // そのあとデストラクタがもう一度呼ぶので、終了済みの context に対して
+  // cancel() を撃たないようにする。
+  if (!spinner_.joinable()) {
+    return;
   }
+  executor_.cancel();
+  spinner_.join();
 }
 
 bool ModeWorker::CallTrigger(const rclcpp::Client<Trigger>::SharedPtr& client,
