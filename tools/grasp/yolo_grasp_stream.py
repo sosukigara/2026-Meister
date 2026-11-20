@@ -23,7 +23,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 
 IMG_SIZE = (640, 640)          # モデル入力 (w, h)
-OBJ_THRES = 0.25
+OBJ_THRES = 0.45          # 既定。--conf で変えられる
 NMS_THRES = 0.45
 MAX_DET = 30
 
@@ -37,61 +37,67 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
     return 1.0 / (1.0 + np.exp(-x))
 
 
-def dfl(position: np.ndarray) -> np.ndarray:
-    """DFL の期待値。torch を使うと毎フレーム数十 ms かかるので numpy で書く。"""
-    n, c, h, w = position.shape
-    p_num = 4
-    mc = c // p_num
-    y = position.reshape(n, p_num, mc, h, w)
-    y = np.exp(y - y.max(axis=2, keepdims=True))
-    y /= y.sum(axis=2, keepdims=True)
-    acc = np.arange(mc, dtype=np.float32).reshape(1, 1, mc, 1, 1)
-    return (y * acc).sum(axis=2)
+def anchor_decode(reg: np.ndarray, cls: np.ndarray, logit_thres: float):
+    """スコアで足切りしてから DFL を計算する。
+
+    全アンカー（80x80+40x40+20x20 = 8400 本）で DFL を回すと、exp と softmax だけで
+    数十 ms かかる。sigmoid は単調なので生ロジットで先に足切りすれば、
+    実際に DFL が要るのは数〜数十本になる。
+    """
+    score_map = cls[0].max(axis=0)                 # (h, w) 生ロジット
+    ys, xs = np.nonzero(score_map > logit_thres)
+    if len(ys) == 0:
+        return None
+    grid_h, grid_w = score_map.shape
+    stride_x, stride_y = IMG_SIZE[0] / grid_w, IMG_SIZE[1] / grid_h
+
+    sel = reg[0][:, ys, xs]                        # (64, N)
+    v = sel.reshape(4, 16, -1)
+    v = v - v.max(axis=1, keepdims=True)
+    np.exp(v, out=v)
+    v /= v.sum(axis=1, keepdims=True)
+    acc = np.arange(16, dtype=np.float32).reshape(1, 16, 1)
+    dist = (v * acc).sum(axis=1)                   # (4, N)
+
+    cx = (xs + 0.5 - dist[0]) * stride_x
+    cy = (ys + 0.5 - dist[1]) * stride_y
+    cx2 = (xs + 0.5 + dist[2]) * stride_x
+    cy2 = (ys + 0.5 + dist[3]) * stride_y
+    boxes = np.stack((cx, cy, cx2, cy2), axis=1).astype(np.float32)
+
+    probs = cls[0][:, ys, xs].T                    # (N, 80)
+    probs = 1.0 / (1.0 + np.exp(-probs))
+    class_ids = probs.argmax(axis=1)
+    scores = probs[np.arange(len(class_ids)), class_ids]
+    return boxes, class_ids, scores
 
 
-def box_process(position: np.ndarray) -> np.ndarray:
-    grid_h, grid_w = position.shape[2:4]
-    col, row = np.meshgrid(np.arange(grid_w), np.arange(grid_h))
-    grid = np.stack((col, row), axis=0).reshape(1, 2, grid_h, grid_w).astype(np.float32)
-    stride = np.array([IMG_SIZE[1] // grid_h, IMG_SIZE[0] // grid_w],
-                      dtype=np.float32).reshape(1, 2, 1, 1)
-    p = dfl(position)
-    xy = grid + 0.5 - p[:, 0:2]
-    xy2 = grid + 0.5 + p[:, 2:4]
-    return np.concatenate((xy * stride, xy2 * stride), axis=1)
-
-
-def post_process(outputs: List[np.ndarray]) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """3 スケール (reg, cls, sum) × 3 の出力を [N,4], [N,80], [N] へ。"""
-    boxes, classes, scores = [], [], []
-    all_boxes, all_cls = [], []
-    branch = 3
-    per = len(outputs) // branch
-    for i in range(branch):
-        all_boxes.append(box_process(outputs[per * i]))
-        all_cls.append(sigmoid(outputs[per * i + 1]))
-    for b, c in zip(all_boxes, all_cls):
-        b = b.transpose(0, 2, 3, 1).reshape(-1, 4)
-        c = c.transpose(0, 2, 3, 1).reshape(-1, c.shape[1])
-        boxes.append(b)
-        classes.append(c)
-        scores.append(c.max(axis=1))
+def post_process(outputs: List[np.ndarray], obj_thres: float):
+    """3 スケール (reg, cls, sum) をまとめて [N,4], [N], [N] にする。"""
+    # sigmoid(x) > t  <=>  x > log(t/(1-t))
+    logit_thres = math.log(obj_thres / (1.0 - obj_thres))
+    boxes, class_ids, scores = [], [], []
+    per = len(outputs) // 3
+    for i in range(3):
+        decoded = anchor_decode(outputs[per * i], outputs[per * i + 1], logit_thres)
+        if decoded is None:
+            continue
+        boxes.append(decoded[0])
+        class_ids.append(decoded[1])
+        scores.append(decoded[2])
+    if not boxes:
+        return (np.zeros((0, 4), np.float32), np.zeros((0,), np.int32),
+                np.zeros((0,), np.float32))
 
     boxes = np.concatenate(boxes)
-    classes = np.concatenate(classes)
+    class_ids = np.concatenate(class_ids)
     scores = np.concatenate(scores)
 
-    keep = scores > OBJ_THRES
-    boxes, classes, scores = boxes[keep], classes[keep], scores[keep]
-    if len(boxes) == 0:
-        return np.zeros((0, 4), np.float32), np.zeros((0,), np.int32), np.zeros((0,), np.float32)
-
-    xywh = np.concatenate(
-        ((boxes[:, 0:2] + boxes[:, 2:4]) / 2,
-         boxes[:, 2:4] - boxes[:, 0:2]), axis=1).tolist()
-    ids = cv2.dnn.NMSBoxes(xywh, scores.tolist(), OBJ_THRES, NMS_THRES)
+    xywh = np.concatenate(((boxes[:, 0:2] + boxes[:, 2:4]) / 2,
+                           boxes[:, 2:4] - boxes[:, 0:2]), axis=1).tolist()
+    ids = cv2.dnn.NMSBoxes(xywh, scores.tolist(), obj_thres, NMS_THRES)
     ids = np.array(ids).flatten()[:MAX_DET]
-    return boxes[ids], classes[ids].argmax(axis=1), scores[ids]
+    return boxes[ids], class_ids[ids], scores[ids]
 
 
 class GraspTarget:
@@ -144,11 +150,14 @@ class GraspTarget:
 
 class GraspNode(Node):
     def __init__(self, model: str, labels: List[str], device: str, topic: str,
-                 capture_w: int, capture_h: int) -> None:
+                 capture_w: int, capture_h: int, conf: float,
+                 display_fps: float) -> None:
         super().__init__("yolo_grasp")
         from rknnlite.api import RKNNLite
 
         self._labels = labels
+        self._conf = conf
+        self._display_period = 1.0 / display_fps if display_fps > 0 else 0.0
         self._grasp = GraspTarget()
         self._pub = self.create_publisher(Image, topic, 1)
         self._device = device
@@ -174,6 +183,7 @@ class GraspNode(Node):
         self._detections: List[dict] = []
         self._infer_ms = 0.0
         self._frames = 0
+        self._last_publish = 0.0
         self._stop = False
         self.get_logger().info(f"入力 {IMG_SIZE} / ラベル {len(labels)} 件 / {device}")
 
@@ -195,6 +205,10 @@ class GraspNode(Node):
             with self._lock:
                 self._latest = frame
                 self._has_frame = True
+            now = time.monotonic()
+            if now - self._last_publish < self._display_period:
+                continue  # 配信は上限レートに抑える（カメラは読み続けて最新を保つ）
+            self._last_publish = now
             canvas = self._compose(frame)
             self._publish(canvas)
             self._frames += 1
@@ -231,7 +245,7 @@ class GraspNode(Node):
         rgb = cv2.cvtColor(canvas, cv2.COLOR_BGR2RGB)[None, ...]
 
         outputs = self._rknn.inference(inputs=[rgb], data_format="nhwc")
-        boxes, class_ids, scores = post_process(outputs)
+        boxes, class_ids, scores = post_process(outputs, self._conf)
 
         results = []
         for box, cid, score in zip(boxes, class_ids, scores):
@@ -307,12 +321,17 @@ def main() -> int:
     parser.add_argument("--topic", default="/grasp_image")
     parser.add_argument("--width", type=int, default=640)
     parser.add_argument("--height", type=int, default=480)
+    parser.add_argument("--conf", type=float, default=OBJ_THRES,
+                        help="信頼度しきい値。誤検出が多いときは上げる")
+    parser.add_argument("--display-fps", type=float, default=15.0,
+                        help="配信レート上限。CPU を下げたいときは下げる")
     args = parser.parse_args()
 
     rclpy.init()
     try:
         node = GraspNode(args.model, load_labels(args.labels), args.device,
-                         args.topic, args.width, args.height)
+                         args.topic, args.width, args.height, args.conf,
+                         args.display_fps)
         node.run()
     except Exception as exc:  # noqa: BLE001 - 起動失敗はそのまま出して終わる
         print(f"起動に失敗: {exc}")
