@@ -189,3 +189,17 @@ ros2 bag play /tmp/bag_cam --rate 5.0
 `[vision-profile] pre 0.9 ms  infer 57.0 ms  post 0.4 ms  (input 320)`
 
 現状は**推論が 98%** なので、前処理・後処理の最適化では速くならない。
+
+## 11. 画像認識を RViz で見る
+
+```bash
+DISPLAY=:0 ros/src/meister_vision/scripts/vision_view.sh
+# DEVICE=/dev/video0 RATE=30 THREADS=2 MODEL=/path/to/model.onnx ... vision_view.sh
+```
+
+- 左のパネルに**検出枠つき**の `/detection_image`、タブに生の `/camera/image_raw`。
+- スクリプトはカメラ・検出・`robot_state_publisher`（`camera_link` の TF）・RViz を
+  まとめて起動する。TF が無いと `Global Status: Warn` になり 3D ビューが空になる。
+- 検出ノードは購読者が 0 の間は推論しないので、RViz が立ち上がるまで
+  `/detections` は流れない（異常ではない）。
+- レート確認: `ros2 topic hz /detections`、`ros2 topic hz /detection_image`。
