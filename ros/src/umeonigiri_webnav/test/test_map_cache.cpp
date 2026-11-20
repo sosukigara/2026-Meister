@@ -202,5 +202,19 @@ TEST(MapCacheRenderPng, PixelValuesFollowOccupancy) {
   EXPECT_EQ(image.at<uint8_t>(1, 1), 0);    // 占有 100
 }
 
+TEST(MapCacheRenderPng, EmptyGridIsNotAMap) {
+  // empty ワールドでは slam_toolbox が 0x0 の地図を 1 度流す。crop も PNG も
+  // 作れないので、呼び手は「地図が無い」と同じ扱いにできる。
+  MapCache cache;
+  auto grid = MakeGrid(0, 0, -1);
+  grid->info.width = 0;
+  grid->info.height = 0;
+  grid->data.clear();
+  cache.SetGrid(grid);
+  EXPECT_FALSE(cache.RenderPng().has_value());
+  EXPECT_FALSE(cache.Snapshot().bounds.has_value());
+  EXPECT_EQ(cache.stats().encode_calls, 0u);
+}
+
 }  // namespace
 }  // namespace umeonigiri_webnav

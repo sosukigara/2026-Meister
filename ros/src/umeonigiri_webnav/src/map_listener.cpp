@@ -111,7 +111,11 @@ std::optional<nlohmann::json> MapListener::RobotPose() {
 
 std::optional<nlohmann::json> MapListener::Metadata() {
   const MapSnapshot snapshot = cache_.Snapshot();
-  if (!snapshot.grid) {
+  // 0 サイズの地図は「まだ無い」と同じ扱いにする。empty ワールドでは
+  // slam_toolbox が 0x0 を 1 度流すことがあり、has_map:true + width:0 を返すと
+  // 画面が NaN の表示変換を作ってしまう（/api/map.png は 404 になる）。
+  if (!snapshot.grid || snapshot.grid->info.width == 0 ||
+      snapshot.grid->info.height == 0) {
     return std::nullopt;
   }
   return MetadataOf(*snapshot.grid, snapshot.bounds);
