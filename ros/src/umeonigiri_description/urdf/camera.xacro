@@ -1,6 +1,14 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
+  <!-- 認識モデルの入力は 320 なので、lite でも検出そのものは成立する。
+       lite: 320x240 / 5 Hz。full: 640x480 / 10 Hz。 -->
+  <xacro:arg name="sensor_profile" default="full"/>
+  <xacro:property name="cam_lite" value="${'$(arg sensor_profile)' == 'lite'}"/>
+  <xacro:property name="cam_width" value="${320 if cam_lite else 640}"/>
+  <xacro:property name="cam_height" value="${240 if cam_lite else 480}"/>
+  <xacro:property name="cam_rate" value="${5 if cam_lite else 10}"/>
+
   <!-- Camera Link (robot's-eye view, facing forward +X) -->
   <link name="camera_link">
     <visual>
@@ -38,14 +46,14 @@
   <gazebo reference="camera_link">
     <sensor name="camera" type="camera">
       <topic>/camera_image</topic>
-      <update_rate>10</update_rate>
+      <update_rate>${cam_rate}</update_rate>
       <always_on>1</always_on>
       <visualize>false</visualize>
       <camera>
         <horizontal_fov>1.047</horizontal_fov>
         <image>
-          <width>640</width>
-          <height>480</height>
+          <width>${cam_width}</width>
+          <height>${cam_height}</height>
           <format>R8G8B8</format>
         </image>
         <clip>

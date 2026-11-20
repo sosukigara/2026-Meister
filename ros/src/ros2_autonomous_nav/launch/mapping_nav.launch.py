@@ -14,10 +14,14 @@ def generate_launch_description():
                                               description='World to load: warehouse, maze, empty')
     declare_gui_arg = DeclareLaunchArgument('gui', default_value='true',
                                             description='Gazebo GUI を出すか (false=ヘッドレス)')
+    declare_profile_arg = DeclareLaunchArgument(
+        'sensor_profile', default_value='full',
+        description='センサの重さ。full=640点/10Hz、lite=360点/5Hz (ソフトウェア描画向け)')
 
     # 1. Robot State Publisher (Xacro dynamic processing)
     robot_state_publisher = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(pkg_nav, 'launch', 'robot_state_publisher.launch.py'))
+        PythonLaunchDescriptionSource(os.path.join(pkg_nav, 'launch', 'robot_state_publisher.launch.py')),
+        launch_arguments={'sensor_profile': LaunchConfiguration('sensor_profile')}.items()
     )
 
     # 2. Simulation (Gazebo + Bridge)
@@ -53,6 +57,7 @@ def generate_launch_description():
     return LaunchDescription([
         declare_world_arg,
         declare_gui_arg,
+        declare_profile_arg,
         robot_state_publisher,
         simulation,
         slam,

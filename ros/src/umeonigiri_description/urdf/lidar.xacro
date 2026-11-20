@@ -1,6 +1,13 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
+  <!-- センサの重さ。ソフトウェア描画 (llvmpipe) の機体では lite を使う。
+       lite: 360 点 / 5 Hz (角分解能 1.0 度)。full: 640 点 / 10 Hz (0.56 度)。 -->
+  <xacro:arg name="sensor_profile" default="full"/>
+  <xacro:property name="lidar_lite" value="${'$(arg sensor_profile)' == 'lite'}"/>
+  <xacro:property name="lidar_samples" value="${360 if lidar_lite else 640}"/>
+  <xacro:property name="lidar_rate" value="${5 if lidar_lite else 10}"/>
+
   <!-- Lidar Link -->
   <link name="lidar_link">
     <visual>
@@ -45,12 +52,12 @@
   <gazebo reference="lidar_link">
     <sensor name="lidar" type="gpu_lidar">
       <topic>/scan</topic>
-      <update_rate>10</update_rate>
+      <update_rate>${lidar_rate}</update_rate>
       <gz_frame_id>lidar_link</gz_frame_id>
       <lidar>
         <scan>
           <horizontal>
-            <samples>640</samples>
+            <samples>${lidar_samples}</samples>
             <resolution>1</resolution>
             <min_angle>-3.14</min_angle>
             <max_angle>3.14</max_angle>

@@ -102,8 +102,23 @@ if [ "$SIM" -eq 1 ]; then
     # 追加の launch 引数（例: MEISTER_LAUNCH_ARGS="controller:=mppi"）。
     # GUI と RViz は表示だけ。重いので MEISTER_GUI=0 / MEISTER_RVIZ=0 で切れる
     # (実測: GUI 66% / RViz 34% のコア。Nav2 とセンサの挙動は変わらない)。
+    #
+    # 描画はソフトウェア (llvmpipe) を使う。Mali/Panfrost の GL 3.3 では Ogre2 の
+    # シェーダがリンクできず (SSBO は GL 4.3 以降)、lidar が全点 0.1m の壊れた値に
+    # なる。llvmpipe は GL 4.5 を出せるのでセンサが正常に動く。
+    # 実 GPU のある機体では MEISTER_GL=hardware で無効化できる。
+    if [ "${MEISTER_GL:-software}" = "software" ]; then
+        export LIBGL_ALWAYS_SOFTWARE=1
+        export GALLIUM_DRIVER=llvmpipe
+        echo "=== GL: software (llvmpipe)。実 GPU があるなら MEISTER_GL=hardware ==="
+    fi
+    # ソフトウェア描画では full センサ (640点/10Hz, 640x480) だと実時間の数 % しか
+    # 進まない。lite (360点/5Hz, 320x240) で実時間相当になる (maze で実測 0.92)。
+    SIM_PROFILE="${MEISTER_SIM_PROFILE:-lite}"
+    echo "=== センサ: $SIM_PROFILE (MEISTER_SIM_PROFILE=full で高精細) ==="
     ros2 launch ros2_autonomous_nav mapping_nav.launch.py "world:=$WORLD" \
         "gui:=$([ "${MEISTER_GUI:-1}" = "0" ] && echo false || echo true)" \
+        "sensor_profile:=$SIM_PROFILE" \
         ${MEISTER_LAUNCH_ARGS:-} &
 else
     echo "=== Mode: real robot (LD-D500: $MEISTAR_LIDAR_PORT / ESP32: $MEISTAR_SERIAL_PORT) ==="
