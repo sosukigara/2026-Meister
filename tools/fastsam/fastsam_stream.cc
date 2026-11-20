@@ -7,8 +7,12 @@
 //   fastsam_stream <model.rknn> [/dev/video0] [topic]
 #include <sys/time.h>
 
+#include <chrono>
+#include <condition_variable>
 #include <cstdio>
 #include <cstring>
+#include <mutex>
+#include <thread>
 #include <memory>
 #include <string>
 #include <vector>
@@ -21,6 +25,15 @@
 #include "rknn_api.h"
 
 namespace {
+
+/// 検出 1 件（ピクセル座標）。推論スレッドから配信スレッドへ渡す。
+struct Rect {
+  int xmin = 0;
+  int ymin = 0;
+  int xmax = 0;
+  int ymax = 0;
+  float conf = 0.0f;
+};
 
 constexpr int kCaptureWidth = 640;
 constexpr int kCaptureHeight = 480;
@@ -67,17 +80,123 @@ class FastSamNode : public rclcpp::Node {
   }
 
   void Spin() {
-    while (rclcpp::ok()) {
-      cv::Mat bgr;
-      if (!cap_.read(bgr) || bgr.empty()) {
+    // 表示と推論を分ける。FastSAM-x の推論は約 180 ms（5.5 fps）で、
+    // カメラは 25 fps 出る。逐次だと「数秒前の絵」になり、配信レートも
+    // 推論に引きずられる。取得・配信はカメラレートで回し、
+    // マスクだけを推論スレッドで更新する。
+    std::thread infer([this] { InferLoop(); });
+    CaptureAndPublish();
+    stop_ = true;
+    cond_.notify_all();
+    if (infer.joinable()) infer.join();
+  }
+
+  /// カメラから読んで、最新のマスクを重ねて配信する（カメラレート）。
+  void CaptureAndPublish() {
+    while (rclcpp::ok() && !stop_) {
+      cv::Mat frame;
+      if (!cap_.read(frame) || frame.empty()) {
         RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "フレーム取得に失敗");
         continue;
       }
-      Annotate(bgr);
+      {
+        std::lock_guard<std::mutex> lock(mutex_);
+        latest_ = frame;              // 推論側へ渡す
+        latest_at_ms_ = NowMs();
+        has_frame_ = true;
+      }
+      cond_.notify_one();
+      Publish(Compose(frame));
+      ++frame_;
+      if (frame_ % 50 == 0) {
+        RCLCPP_INFO(get_logger(),
+                    "配信 %d フレーム  推論 %d 回  捨てた %ld  マスク遅延 %.0f ms",
+                    frame_, infer_count_, dropped_, NowMs() - mask_at_ms_);
+      }
     }
   }
 
+  /// 最新フレームを取ってきて推論し、マスクを差し替える（推論レート）。
+  void InferLoop() {
+    while (!stop_) {
+      cv::Mat frame;
+      {
+        std::unique_lock<std::mutex> lock(mutex_);
+        cond_.wait(lock, [this] { return has_frame_ || stop_; });
+        if (stop_) break;
+        frame = latest_.clone();
+        if (infer_busy_) {
+          ++dropped_;  // 推論中に来たフレームは捨てる
+        }
+        has_frame_ = false;
+        infer_busy_ = true;
+      }
+      const double t0 = NowMs();
+      cv::Mat mask;
+      std::vector<Rect> rects;
+      RunInference(frame, mask, rects);
+      const double t1 = NowMs();
+      {
+        std::lock_guard<std::mutex> lock(mutex_);
+        mask_overlay_ = mask;
+        rects_ = rects;
+        mask_at_ms_ = NowMs();
+        infer_busy_ = false;
+        ++infer_count_;
+      }
+      last_infer_ms_ = t1 - t0;
+    }
+  }
+
+  /// 最新フレームに最新マスクを重ねる。マスクは推論時点のものなので、
+  /// 動く物体では枠が少しずれる（表示は滑らか、マスクは 5.5 fps）。
+  cv::Mat Compose(const cv::Mat& bgr) {
+    cv::Mat mask;
+    std::vector<Rect> rects;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      mask = mask_overlay_;
+      rects = rects_;
+    }
+    cv::Mat canvas = bgr.clone();
+    if (!mask.empty() && mask.size() == bgr.size()) {
+      cv::addWeighted(canvas, 0.45, mask, 0.55, 0, canvas);
+    }
+    for (const Rect& r : rects) {
+      const cv::Point center((r.xmin + r.xmax) / 2, (r.ymin + r.ymax) / 2);
+      cv::putText(canvas, cv::format("%.2f", r.conf),
+                  cv::Point(r.xmin, std::max(12, r.ymin - 4)),
+                  cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
+      cv::circle(canvas, center, 4, cv::Scalar(0, 255, 255), -1);
+    }
+    cv::putText(canvas,
+                cv::format("mask %.0fms (%d obj)  display %d", last_infer_ms_,
+                           static_cast<int>(rects.size()), frame_),
+                cv::Point(8, 22), cv::FONT_HERSHEY_SIMPLEX, 0.6,
+                cv::Scalar(255, 255, 255), 2);
+    return canvas;
+  }
+
+
  private:
+  void CaptureLoop() {
+    while (!stop_) {
+      cv::Mat frame;
+      if (!cap_.read(frame) || frame.empty()) {
+        RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "フレーム取得に失敗");
+        continue;
+      }
+      std::lock_guard<std::mutex> lock(mutex_);
+      if (has_frame_) {
+        ++dropped_;  // 推論が終わっていない間に来たフレームは捨てる
+      }
+      latest_ = frame;
+      latest_at_ms_ = NowMs();
+      has_frame_ = true;
+      cond_.notify_one();
+    }
+  }
+
   bool LoadModel(const std::string& path) {
     FILE* fp = fopen(path.c_str(), "rb");
     if (fp == nullptr) {
@@ -134,7 +253,8 @@ class FastSamNode : public rclcpp::Node {
     return true;
   }
 
-  void Annotate(const cv::Mat& bgr) {
+  /// 推論して、フレームと同じ大きさの着色マスクと矩形を作る。
+  void RunInference(const cv::Mat& bgr, cv::Mat& mask_out, std::vector<Rect>& rects_out) {
     cv::Mat rgb;
     cv::cvtColor(bgr, rgb, cv::COLOR_BGR2RGB);
     cv::Mat resized;
@@ -145,11 +265,9 @@ class FastSamNode : public rclcpp::Node {
     }
     input_.buf = resized.data;
 
-    const double t0 = NowMs();
     rknn_inputs_set(ctx_, n_input_, &input_);
     rknn_run(ctx_, nullptr);
     rknn_outputs_get(ctx_, n_output_, outputs_.data(), nullptr);
-    const double t1 = NowMs();
 
     // postprocess.cc は int8 の生ポインタ配列を要求する
     std::vector<int8_t*> blobs(static_cast<size_t>(n_output_));
@@ -157,45 +275,24 @@ class FastSamNode : public rclcpp::Node {
       blobs[i] = static_cast<int8_t*>(outputs_[i].buf);
     }
 
-    std::vector<float> rects;
+    std::vector<float> flat;
     cv::Mat seg_mask = cv::Mat::zeros(88, 160, CV_8UC3);
     GetResultRectFastSAM post;
-    post.GetConvDetectionResult(blobs.data(), out_zps_, out_scales_, rects, seg_mask);
+    post.GetConvDetectionResult(blobs.data(), out_zps_, out_scales_, flat, seg_mask);
     for (int i = 0; i < n_output_; ++i) {
       rknn_outputs_release(ctx_, 1, &outputs_[i]);
     }
-    const double t2 = NowMs();
 
-    cv::Mat mask_resized;
-    cv::resize(seg_mask, mask_resized, cv::Size(bgr.cols, bgr.rows), 0, 0, cv::INTER_LINEAR);
-    cv::Mat canvas;
-    cv::addWeighted(bgr, 0.45, mask_resized, 0.55, 0, canvas);
-
-    const int objects = static_cast<int>(rects.size() / 6);
-    for (int i = 0; i + 5 < static_cast<int>(rects.size()); i += 6) {
-      const float conf = rects[i + 1];
-      const int xmin = static_cast<int>(rects[i + 2] * bgr.cols + 0.5f);
-      const int ymin = static_cast<int>(rects[i + 3] * bgr.rows + 0.5f);
-      const int xmax = static_cast<int>(rects[i + 4] * bgr.cols + 0.5f);
-      const int ymax = static_cast<int>(rects[i + 5] * bgr.rows + 0.5f);
-      const cv::Point center((xmin + xmax) / 2, (ymin + ymax) / 2);
-      char label[32];
-      snprintf(label, sizeof(label), "%.2f", conf);
-      cv::putText(canvas, label, cv::Point(xmin, std::max(12, ymin - 4)),
-                  cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
-      cv::circle(canvas, center, 4, cv::Scalar(0, 255, 255), -1);
-    }
-    cv::putText(canvas,
-                cv::format("%d obj  infer %.0fms  post %.0fms", objects, t1 - t0, t2 - t1),
-                cv::Point(8, 22), cv::FONT_HERSHEY_SIMPLEX, 0.6,
-                cv::Scalar(255, 255, 255), 2);
-
-    Publish(canvas);
-
-    ++frame_;
-    if (frame_ % 20 == 0) {
-      RCLCPP_INFO(get_logger(), "%d obj  infer %.1f ms  post %.1f ms",
-                  objects, t1 - t0, t2 - t1);
+    cv::resize(seg_mask, mask_out, cv::Size(bgr.cols, bgr.rows), 0, 0, cv::INTER_LINEAR);
+    rects_out.clear();
+    for (int i = 0; i + 5 < static_cast<int>(flat.size()); i += 6) {
+      Rect r;
+      r.conf = flat[i + 1];
+      r.xmin = static_cast<int>(flat[i + 2] * bgr.cols + 0.5f);
+      r.ymin = static_cast<int>(flat[i + 3] * bgr.rows + 0.5f);
+      r.xmax = static_cast<int>(flat[i + 4] * bgr.cols + 0.5f);
+      r.ymax = static_cast<int>(flat[i + 5] * bgr.rows + 0.5f);
+      rects_out.push_back(r);
     }
   }
 
@@ -234,6 +331,19 @@ class FastSamNode : public rclcpp::Node {
   cv::VideoCapture cap_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_;
   int frame_ = 0;
+  cv::Mat latest_;
+  double latest_at_ms_ = 0.0;
+  cv::Mat mask_overlay_;
+  std::vector<Rect> rects_;
+  double mask_at_ms_ = 0.0;
+  double last_infer_ms_ = 0.0;
+  int infer_count_ = 0;
+  bool infer_busy_ = false;
+  std::mutex mutex_;
+  std::condition_variable cond_;
+  bool has_frame_ = false;
+  bool stop_ = false;
+  long dropped_ = 0;
 };
 
 int main(int argc, char** argv) {
