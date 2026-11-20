@@ -27,7 +27,9 @@
 ## 制約
 
 - トピック名・型・QoS depth・frame_id・共分散・出版レートを変えない。
-- メンバー破棄順を守る（タイマー → 購読 → publisher → core の順で破棄される現行順を維持）。
+- メンバー破棄順を安全に保つ（旧: timers → publishers → subscriptions、新:
+  timers → subscriptions → publishers。どちらも RX スレッドをデストラクタ本体で
+  join 済みで、spin 終了後に executor コールバックは走らない）。
 - プロトコル・`BridgeCore`・CLI・テストの挙動を変えない。
 
 ## 検証
@@ -37,6 +39,14 @@
 3. 実機なしの起動スモーク: `/odom` が 50 Hz、`/tf` の `odom -> base_footprint`、
    `/odom` の frame_id/covariance が従来どおり。`/esp32/state` と `/imu/data` が存在。
 4. `wc -l serial_bridge_node.cpp` が 300 未満。
+
+## 実測（ホスト、分割後）
+
+- `/odom` の publisher は 1。`ros2 topic hz /odom` = **49.999 Hz**（window 51）。
+- `/odom` は `frame_id: odom` / `child_frame_id: base_footprint`、pose covariance `0.0025`。
+- `/tf` は `odom -> base_footprint`。
+- `/esp32/state` と `/imu/data` の topic が存在（実機未接続のためデータなし）。
+- SIGTERM で exit 0、ノードの残プロセスなし。
 
 ## 非ゴール
 
