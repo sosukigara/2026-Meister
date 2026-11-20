@@ -4,6 +4,7 @@
 #include <exception>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
 #include <string>
 #include <thread>
 #include <utility>
@@ -25,6 +26,10 @@
 #include "umeonigiri_serial_bridge/frames.hpp"
 
 namespace umeonigiri_serial_bridge {
+
+/// ノード名と logger 名の唯一の定義。launch 側の name= もこれに合わせる。
+constexpr char kNodeName[] = "umeonigiri_serial_bridge";
+
 namespace {
 
 double NowSeconds() {
@@ -41,7 +46,7 @@ constexpr int kRxTimeoutMs = 20;
 
 class SerialBridgeNode final : public rclcpp::Node {
  public:
-  SerialBridgeNode() : Node("umeonigiri_serial_bridge") {
+  SerialBridgeNode() : Node(kNodeName) {
     BridgeParams params;
     params.serial_port = declare_parameter<std::string>("serial_port", kDefaultPort);
     params.baud = declare_parameter<int>("baud", kDefaultBaud);
@@ -56,6 +61,21 @@ class SerialBridgeNode final : public rclcpp::Node {
     params.kinematics.steer_invert = declare_parameter<bool>("steer_invert", false);
     params.kinematics.drive_invert = declare_parameter<bool>("drive_invert", false);
     params.cmd_timeout_s = declare_parameter<double>("cmd_timeout", 0.5);
+
+    // 0 以下だと TwistToActuators が購読コールバック内で例外を投げ、
+    // rclcpp::spin ごと落ちる。起動時に落として原因を 1 行で返す。
+    if (params.kinematics.max_linear_vel_mps <= 0.0) {
+      throw std::invalid_argument("max_linear_vel must be positive");
+    }
+    if (params.kinematics.max_steering_deg <= 0.0) {
+      throw std::invalid_argument("max_steering_deg must be positive");
+    }
+    if (params.cmd_timeout_s <= 0.0) {
+      throw std::invalid_argument("cmd_timeout must be positive");
+    }
+    if (params.baud <= 0) {
+      throw std::invalid_argument("baud must be positive");
+    }
 
     publish_odom_ = declare_parameter<bool>("publish_odom", true);
     publish_odom_tf_ = declare_parameter<bool>("publish_odom_tf", true);
@@ -77,7 +97,7 @@ class SerialBridgeNode final : public rclcpp::Node {
             return std::shared_ptr<SerialIo>(OpenSerialPort(path, baud));
           } catch (const std::exception& e) {
             // ポート未接続でも起動は継続する。RX スレッドが後で再試行する。
-            RCLCPP_ERROR(rclcpp::get_logger("umeonigiri_serial_bridge"), "serial open failed: %s",
+            RCLCPP_ERROR(rclcpp::get_logger(kNodeName), "serial open failed: %s",
                          std::string(e.what()).c_str());
             return nullptr;
           }
@@ -367,7 +387,14 @@ class SerialBridgeNode final : public rclcpp::Node {
 
 int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
-  auto node = std::make_shared<umeonigiri_serial_bridge::SerialBridgeNode>();
+  std::shared_ptr<umeonigiri_serial_bridge::SerialBridgeNode> node;
+  try {
+    node = std::make_shared<umeonigiri_serial_bridge::SerialBridgeNode>();
+  } catch (const std::exception& e) {
+    RCLCPP_FATAL(rclcpp::get_logger(umeonigiri_serial_bridge::kNodeName), "%s", e.what());
+    rclcpp::shutdown();
+    return 1;
+  }
   rclcpp::spin(node);
   node->SendStopFrames();
   rclcpp::shutdown();
