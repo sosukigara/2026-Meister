@@ -34,3 +34,6 @@ __pycache__/
 *.egg-info/
 .vscode/
 .dsh-code-index/
+
+# RKNN 生成物（tools/rknn の変換結果）
+*.rknn

@@ -1,0 +1,38 @@
+diff --git a/examples/rknn_fastSAM/src/main.cc b/examples/rknn_fastSAM/src/main.cc
+index bd0a032..a7d41e6 100644
+--- a/examples/rknn_fastSAM/src/main.cc
++++ b/examples/rknn_fastSAM/src/main.cc
+@@ -287,10 +287,20 @@ int detect(char *model_path, char *image_path, char *save_image_path)
+         int xmax = int(DetectiontRects[i + 4] * float(img_width) + 0.5);
+         int ymax = int(DetectiontRects[i + 5] * float(img_height) + 0.5);
+ 
++        // 中心座標（bbox 中心）。把持の狙い点として使う。
++        const int cx = (xmin + xmax) / 2;
++        const int cy = (ymin + ymax) / 2;
++        const float ncx = 0.5f * (float(DetectiontRects[i + 2]) + float(DetectiontRects[i + 4]));
++        const float ncy = 0.5f * (float(DetectiontRects[i + 3]) + float(DetectiontRects[i + 5]));
++
++        printf("obj %d: conf=%.2f  bbox=(%d,%d)-(%d,%d)  center=(%d,%d)  norm=(%.3f, %.3f)\n",
++               i / 6, conf, xmin, ymin, xmax, ymax, cx, cy, ncx, ncy);
++
+         char text1[256];
+         sprintf(text1, "%.2f", conf);
+         // rectangle(SrcAddMask, cv::Point(xmin, ymin), cv::Point(xmax, ymax), cv::Scalar(255, 0, 0), 2);
+         putText(SrcAddMask, text1, cv::Point(xmin, ymin + 15), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 1);
++        circle(SrcAddMask, cv::Point(cx, cy), 4, cv::Scalar(0, 255, 255), -1);
+     }
+ 
+     printf("== obj: %d \n", int(float(DetectiontRects.size()) / 6.0));
+@@ -316,9 +326,9 @@ int detect(char *model_path, char *image_path, char *save_image_path)
+ 
+ int main(int argc, char **argv)
+ {
+-    char model_path[256] = "/home/firefly/zhangqian/rknn/examples/FastSAM_rknn_Cplusplusmodel/RK3588/FastSAM-x_640x352.rknn";
+-    char image_path[256] = "/home/firefly/zhangqian/rknn/examples/FastSAM_rknn_Cplusplus/test.jpg";
+-    char save_image_path[256] = "/home/firefly/zhangqian/rknn/examples/FastSAM_rknn_Cplusplus/test_result.jpg";
++    char model_path[256] = "/tmp/fastsam_rknn/examples/rknn_fastSAM/model/RK3588/FastSAM-x_640x352.rknn";
++    char image_path[256] = "/tmp/fastsam_rknn/examples/rknn_fastSAM/test.jpg";
++    char save_image_path[256] = "/tmp/fastsam_test_out.jpg";
+ 
+     detect(model_path, image_path, save_image_path);
+     return 0;
