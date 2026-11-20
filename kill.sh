@@ -95,7 +95,7 @@ if [ "$left" -eq 0 ]; then
   echo "==> domain $TARGET_DOMAIN の ROS 関連プロセスを全て停止しました"
 else
   echo "==> 警告: domain $TARGET_DOMAIN に $left プロセスが残っています"
-  pgrep -af "ros2|gz sim|slam_toolbox|web_nav|bridge|component_container" \
+  pgrep -af "ros2|gz sim|slam_toolbox|webnav|bridge|component_container" \
     | grep -v "kill\.sh" \
     | while IFS= read -r line; do
         pid=$(echo "$line" | awk '{print $1}')
