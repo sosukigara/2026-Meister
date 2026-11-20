@@ -82,25 +82,31 @@
 - 実機に odom 発行源がないと SLAM の message filter が `/scan` を全捨てする（`discarding message because the queue is full`）。対策: `real_robot.launch.py` の static `odom->base_footprint`（不動仮定。ずれは SLAM の `map->odom` が補正）。ESP32 odom ができたら置き換える。
 - 実機 launch の SLAM 起動は固定秒数 `activate` 禁止。`configure` 前に走ると両方 exit 1 で SLAM が `unconfigured` のまま固まる。`slam.launch.py` と同じ `OnStateTransition(inactive)` 駆動にする。
 
-## P13. Orange Pi 5 Max では Gazebo の lidar が使えない（2026-11-20 実測）
+## P13. Gazebo の lidar が壊れる機体と、その回避策（2026-11-20 実測）
 
 - 症状: `/scan` の全点が **0.092〜0.130 m の一定値**になる（障害物の有無によらず）。
   `/map` が十数セルで停滞し、`/pose` が出ず、ゴールは
   `Goal Coordinates ... outside bounds` で失敗する。
-- 原因: `~/.gz/rendering/ogre2.log` に毎回
-  `error: Too many vertex shader storage blocks (1/0)` が出ており、
-  Ogre2 のシェーダがリンクできていない（Mesa/llvmpipe の GL コンテキスト）。
-  GPU lidar はこのシェーダで深度を描くため、深度バッファが壊れて一定値を返す。
-  物理・TF・時刻は正常なので、**`ros2 topic hz /scan` は 10Hz で流れて見える**。
-  レートだけ見て「動いている」と判断してはいけない。`ranges` の中身を見ること。
-- CPU 版 lidar（`<sensor type="lidar">`）に替えても **1 点も出ない**
-  （gz-sim 8 で CPU レイ lidar は機能しない）。試しても無駄。
-- Vulkan バックエンド（`gz sim --render-engine-api-backend vulkan`）も不可。
-  `/usr/share/vulkan/icd.d/` が無く、`mesa-vulkan-drivers` は lavapipe を
-  含まないため ICD を用意できない（確認済み）。
-- 対策: **描画が正常な開発機でナビの検証を行う**。この機では画像認識
-  （実カメラ）とログ系の検証のみ行う。
-- 計測の詳細: [bench/2026-11-20-cpu-analysis.md](bench/2026-11-20-cpu-analysis.md) §7。
+  **`ros2 topic hz /scan` は正常に流れて見える**ので、レートだけで判断しないこと。
+  `ranges` の中身を見る。
+- 原因: この機体の Mali-G610 (Panfrost) は **GL 3.3** しか出さず、
+  Ogre2 のシェーダが必要とする SSBO は **GL 4.3 以降**。結果
+  `~/.gz/rendering/ogre2.log` に
+  `error: Too many vertex shader storage blocks (1/0)` が出て、深度バッファが壊れる。
+- **回避策（有効・実測）**: ソフトウェア描画に切り替えると GL 4.5 が出て解決する。
+  ```bash
+  LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe ./launch.sh --sim maze
+  ```
+  `launch.sh` はシミュレーションモードで既定これを設定する
+  （`MEISTER_GL=hardware` で無効化）。実 GPU のある機体では無効にすること。
+- CPU レイ lidar への変更（`type="lidar"` / `type="ray"`）は **無効**。
+  gz-sim 8 では CPU レイの lidar が 1 点も出さない（実測）。
+- Vulkan（`--render-engine-api-backend vulkan`）も不可。ICD が無く、
+  `mesa-vulkan-drivers` は lavapipe を含まない。
+- ソフトウェア描画は重いので、センサを軽くする `sensor_profile:=lite`
+  （lidar 360 点/5 Hz、カメラ 320x240/5 Hz）を併用する。既定は `full`。
+  `maze` で実時間比 0.89、`warehouse` はメッシュが重く 0.2 程度。
+- 計測の詳細: [bench/2026-11-20-cpu-analysis.md](bench/2026-11-20-cpu-analysis.md) §7・§10。
 
 ## P14. 画像認識のレートはカメラで決まる（2026-11-20 実測）
 

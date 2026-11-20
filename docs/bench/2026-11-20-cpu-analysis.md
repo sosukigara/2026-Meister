@@ -91,22 +91,41 @@
   走らせた通し計測は未実施。LiDAR 未接続のため）。
 - **シミュレーションでのナビ品質検証はこの機ではできない**（§7）。
 
-## 7. ブロッカー: この機では Gazebo の lidar が使えない（実測）
+## 7. シミュレーションの lidar が壊れる件と回避策（実測・解決済み）
 
-- `/scan` の全 640 点が 0.092〜0.130 m の一定値になる（GUI / ヘッドレス共通）。
-  これは障害物ではなく、描画側の失敗で深度バッファが壊れているため。
-- `~/.gz/rendering/ogre2.log` に毎回
-  `error: Too many vertex shader storage blocks (1/0)` が出ており、
-  Ogre2 のシェーダがリンクできていない（Mesa/llvmpipe の GL コンテキスト）。
-- CPU 版 lidar（`<sensor type="lidar">`）に替えると**1 点も出力されない**
-  （gz-sim 8 では CPU レイ lidar が機能しない）。実測で確認済み。
-- Vulkan バックエンド（`--render-engine-api-backend vulkan`）は使えない。
-  `/usr/share/vulkan/icd.d/` が無く、`mesa-vulkan-drivers` は導入済みだが
-  lavapipe (`libvulkan_lvp.so`) を含まないため ICD を用意できない。
+当初 `/scan` の全点が 0.092〜0.130 m の一定値になり、SLAM が地図を作れなかった。
+原因は Mali-G610 (Panfrost) が **GL 3.3** しか出さず、Ogre2 のシェーダが
+要求する SSBO（GL 4.3 以降）が無いこと。`ogre2.log` に
+`error: Too many vertex shader storage blocks (1/0)` が毎回出ていた。
 
-結果として、SLAM が地図を作れず（`/map` が 14×4 セルで停滞）、
-`/pose` を配信せず、ゴールは `Goal Coordinates ... outside bounds` で失敗する。
-**ナビのアルゴリズム検証は、GPU 描画が正常な開発機で行う必要がある。**
+**ソフトウェア描画（llvmpipe）に切り替えると GL 4.5 が出て解決する。**
+
+| 構成 | GL | `ranges` | 判定 |
+|---|---|---|---|
+| 既定（Panfrost） | 3.3 | 全点 0.09〜0.13 m | ✗ 壊れている |
+| `LIBGL_ALWAYS_SOFTWARE=1` | **4.5** | 2.25〜9.99 m（中央値 6.87） | ✅ 正常 |
+
+- CPU レイ lidar（`type="lidar"` / `type="ray"`）は gz-sim 8 で無出力（実測）。不可。
+- Vulkan バックエンドは ICD 不在で不可（`mesa-vulkan-drivers` に lavapipe が無い）。
+- `launch.sh` はシミュレーションモードで既定ソフトウェア描画を使う
+  （`MEISTER_GL=hardware` で無効化）。
+
+### 7.1 そのうえで必要な軽量化（`sensor_profile`）
+
+ソフトウェア描画は重い。既定センサ（lidar 640 点/10 Hz、カメラ 640x480/10 Hz）だと
+実時間比が数 % しか出ないため、`sensor_profile:=lite`（lidar 360 点/5 Hz、
+カメラ 320x240/5 Hz）を用意し、シミュレーションモードの既定にした
+（`MEISTER_SIM_PROFILE=full` で高精細に戻せる）。
+
+| ワールド | センサ | RTF（`/clock` 実測） | `/scan` |
+|---|---|---|---|
+| maze | full | —（測定せず） | — |
+| maze | lite | **0.89〜0.92** | 4.3〜4.5 Hz |
+| warehouse | lite | 0.20 | 1.2 Hz |
+| warehouse | full | 0.05 | 1.0 Hz |
+
+`warehouse` は外部メッシュ（棚・人物）が重く、ソフトウェア描画では実時間に届かない。
+**ナビのアルゴリズム検証は `maze`（壁のみ）で行う。**
 
 ## 8. 画像認識のレート上限はカメラ側（2026-11-20 実測）
 
@@ -143,3 +162,21 @@
 - ただし**この機では Gazebo のセンサが壊れている**（§7）ため、
   シミュレーション上で自動走行を走らせて同時動作を確認することはできない。
   同時動作の通し計測は、描画が正常な開発機で行う必要がある（**✗ 未検証**）。
+
+## 10. ナビと画像認識の同時動作（2026-11-20 実測）
+
+`MEISTER_GUI=0 MEISTER_RVIZ=0 ./launch.sh --sim maze`（ソフトウェア描画 + lite センサ）で、
+Nav2・SLAM・画像認識・Web UI を同時に起動した状態の実測。
+
+- `/clock` 891 Hz → RTF 0.89、`/scan` 4.5 Hz、`/camera/image_raw` 4.4 Hz、
+  画像認識 2.8 fps（Gazebo カメラ供給が上限）。
+- CPU 合計 **495% (1 コア換算) = 8 コアの 61.9%**。
+  内訳: `gz sim` 161% / `parameter_bridge` 50% / `bt_navigator` 47% /
+  `planner_server` 34% / `behavior_server` 31% / `controller_server` 31% /
+  `slam_toolbox` 30% / `lifecycle_manager` 24%。
+- **ナビの完走を 1 回確認**: ゴール (-1.0, -4.0) に対して `state: "succeeded"`、
+  最終位置 (-0.89, -4.01) ＝ 誤差 0.11 m。所要 約 30 秒（sim 時間）。
+  別のゴールでは SLAM のドリフトで失敗した（成功率の評価は未実施）。
+
+**✗ 未検証**: 30 ゴールでの成功率・最小クリアランス等の品質指標は、
+このワールド・このセンサ設定でまだ測っていない（`measure.sh` は `warehouse` 前提）。

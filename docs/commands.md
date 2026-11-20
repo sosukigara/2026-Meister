@@ -79,9 +79,21 @@ ros2 run meister_serial_bridge meister_hz_measure --port /dev/ttyUSB0 --expect-h
   ```bash
   # Gazebo の GUI と RViz を切る。実測で 1 コアの 66% と 34% を節約でき、
   # 同じ時間でシミュレーションが約 2 倍進む。地図と姿勢は Web UI で見る。
-  MEISTER_GUI=0 MEISTER_RVIZ=0 ./launch.sh --sim warehouse
+  MEISTER_GUI=0 MEISTER_RVIZ=0 ./launch.sh --sim maze
   ```
   ヘッドレスでもセンサ(`/scan`・`/camera/image_raw`)はサーバ側で動く。
+- **シミュレーションは既定でソフトウェア描画（llvmpipe）を使う。**
+  この機体の Mali/Panfrost は GL 3.3 しか出せず、Ogre2 のシェーダがリンクできずに
+  Gazebo の lidar が壊れる（全点 0.1 m）。llvmpipe は GL 4.5 を出せる。
+  実 GPU のある機体では `MEISTER_GL=hardware` で切る。詳細は
+  [pitfalls P13](pitfalls.md)。
+- センサの重さは `MEISTER_SIM_PROFILE` で選ぶ。シミュレーションの既定は `lite`。
+  ```bash
+  MEISTER_SIM_PROFILE=full ./launch.sh --sim maze   # 640点/10Hz・640x480/10Hz
+  ```
+  `lite` は 360 点/5 Hz・320x240/5 Hz。ソフトウェア描画では `lite` でないと
+  実時間に届かない（maze で実測 RTF 0.89）。`warehouse` は外部メッシュが重く
+  0.2 程度なので、**アルゴリズム検証は `maze` を使う**。
 
 ## 5.5 ナビゲーションの計測
 
