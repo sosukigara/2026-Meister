@@ -15,15 +15,16 @@
         │  ports.hpp の口だけを見る (ROS 型を出さない)
    ├ MapSource    ← MapListener  (/map TRANSIENT_LOCAL, /tf)   ┐ 同一 executor
    ├ VisionSource ← VisionListener (/detection_image, /detections) ┘ (別スレッド)
-   └ NavSink      ← NavWorker    (/navigate_to_pose action)     … 専用スレッド
+   ├ NavSink      ← NavWorker    (/navigate_to_pose action)     … 専用スレッド
+   └ ModeSink     ← ModeWorker   (get_mode / map_saver / initialpose) … 専用 executor
 ```
 
 | 層 | ファイル | 責務 |
 |---|---|---|
-| HTTP | `http_app.cpp` `/ `vision_routes.cpp` / `http_support.cpp` | 経路登録、ETag/304、JSON、MJPEG、静的ファイル |
+| HTTP | `http_app.cpp` / `vision_routes.cpp` / `http_support.cpp` | 経路登録、ETag/304、JSON、MJPEG、静的ファイル |
 | 変換 | `map_cache.cpp` / `vision_cache.cpp` | メッセージ → ブラウザが貼れる画像と状態 JSON |
-| ROS | `map_listener.cpp` / `vision_listener.cpp` / `nav_worker.cpp` | 購読・アクション・スレッド |
-| 口 | `ports.hpp` | `MapSource` / `VisionSource` / `NavSink`（gtest はここを stub する） |
+| ROS | `map_listener.cpp` / `vision_listener.cpp` / `nav_worker.cpp` / `mode_worker.cpp` | 購読・アクション・サービス・スレッド |
+| 口 | `ports.hpp` | `MapSource` / `VisionSource` / `NavSink` / `ModeSink`（gtest はここを stub する） |
 
 `ports.hpp` に ROS 型を出さないので、HTTP 面は ROS グラフ無しでテストできる（AGENTS.md R8）。
 
@@ -41,6 +42,23 @@
   `ResizeObserver` のときだけ測って、描画前の強制レイアウトを避ける。
 - **非表示タブでは取得と MJPEG を止める**。戻ったときに取り直す。推論は監視 ON の間
   サーバー側で続く（購読は張ったまま）ので、止めるのは転送と描画だけ。
+- **地図 PNG は共有したまま配る**。`MapSource::RenderPng` は `shared_ptr<const string>` を
+  返し、キャッシュと同じ実体を指す。地図が変わっていないときは 304 で捨てるだけなので、
+  1 MB 級のバイト列をコピーしない。crop は `/map` を受けたスレッドで済ませ、PNG だけを
+  要求時に作る（encode 中も `/api/map` は待たない）。
+- **PNG は圧縮レベル 0**。配信先は同じホストのブラウザだけで、loopback のバイト数は
+  ほぼ無料。既定（レベル 3）の 62 ms が 18 ms になり、地図が動いている間の
+  HTTP スレッド占有が減る（1000x1000 の実測）。
+- **静的ファイルは (mtime, size) を版にしてメモリに持つ**。1 画面で 13 本の asset を
+  取るので、毎回ディスクから読むとページ表示のたびに無駄が積まる。ETag を付けて
+  再読み込みは 304 で済ませる。
+- **TCP は TCP_NODELAY・keep-alive 多め**。既定のままだと、応答ヘッダと本文を別々に
+  送ったときに Nagle と delayed ACK が噛み合い、同じ接続の 2 回目以降が 40 ms
+  待たされる（実測 p50 42 ms）。keep-alive の既定 5 要求も、1 秒おきに引く画面では
+  すぐ TCP を張り直すことになる。
+- **HTTP ハンドラで秒単位に待たない**。1 本詰まるとスレッドプールが枯れ、無関係な
+  要求まで止まる（実測: `/api/mode` を 2 秒ごとに引く画面で地図も姿勢も返らなくなった）。
+  モード照会は待ち時間ゼロ、切替と保存だけは上限付きで待つ。
 - **PNG は `cv::imencode`、認識画像は JPEG（品質 80）**。認識画像は 3 Hz で流れ続けるので、
   可逆圧縮の PNG を毎フレーム送ると帯域もブラウザのデコードも無駄になる。JPEG への変換は
   購読コールバックで 1 回だけ行い、`/api/vision.jpg` と MJPEG は同じバイト列を共有する。
@@ -56,6 +74,10 @@
 - **既定は ON**。認識モニターは「見たいときだけ見る」機能ではなく、遠隔でロボットの
   見え方を確認する主要な計器なので、起動直後から映る方を既定にする。CPU を空けたいときは
   UI の 1 ボタンで切る。
+- **初期位置は地図の Shift+クリック**。保存地図ナビへ切り替えると AMCL は
+  初期姿勢を待つ。UI に専用のボタンを増やさず、目的地と同じ「クリック＋ドラッグ」で
+  位置と向きを渡せるようにした（押した瞬間の修飾キーを覚えるので、押下中に
+  Shift を離しても取り違えない）。
 - **`Cache-Control` の使い分け**: 地図 PNG は `no-cache`（保存してよいが必ず再検証 = ETag で
   304）、認識画像は `no-store`（1 枚ごとに別の絵なので保存に意味が無い）。
 - **MJPEG は切れたら張り直す**。`<img>` の `error` だけに頼らず、最初のフレームが
@@ -93,9 +115,10 @@
 
 | スレッド | 動くもの | 注意 |
 |---|---|---|
-| httplib のプール | 経路ハンドラ。MJPEG のフレーム待ちは条件変数で最大 1 秒 | executor を掴まない |
-| ROS executor (SingleThreaded) | `/map`・`/tf`・`/detection_image`・`/detections` のコールバックと監視 ON/OFF タイマー | 画像の JPEG 化はここで 1 回だけ |
-| NavWorker | action client と結果待ち | 専用スレッドなので executor と競合しない |
+| httplib のプール | 経路ハンドラ。MJPEG のフレーム待ちは条件変数で最大 1 秒 | executor を掴まない。秒単位で待たない |
+| ROS executor (SingleThreaded) | `/map`・`/tf`・`/detection_image`・`/detections` のコールバックと監視 ON/OFF タイマー | 画像の JPEG 化はここで 1 回だけ。crop もここで済ませる |
+| NavWorker | action client と結果待ち | 専用スレッドなので executor と競合しない。待ちには上限を付ける |
+| ModeWorker | `get_mode` / `switch_to_localization` / `map_saver` / `/initialpose` | 専用 executor で常に回す。HTTP 側は「待つだけ」で spin しない |
 
 ## 実装上の逸脱（Python 版との差）
 
@@ -108,7 +131,7 @@
 
 ## 未検証（✗）
 
-- ブラウザでの描画結果: ヘッドレス Chrome でモック API と実 `web_nav_server` の空状態を
+- ブラウザでの描画結果: ヘッドレス Chrome でモック API と実 `umeonigiri_webnav_server` の空状態を
   確認（2026-11-18）。実機の運用ブラウザでの長時間表示は ✗ 未検証（配線は `id` の
   突き合わせ・`/api/*` の突き合わせ・ES モジュールの構文と解決で機械検証している）
 - 認識モニター ON のときの Orange Pi 5 Max での CPU 使用率（開発機では 3 Hz 動作を実測）

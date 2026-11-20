@@ -18,7 +18,7 @@
 |---|---|---|
 | シリアル通信 (PC) | pyserial | — |
 | 物体検出 | onnxruntime | — |
-| HTTP/WebSocket (UI) | 既存 `web_nav_server.py` | 新規 FW 追加は要相談 |
+| HTTP/WebSocket (UI) | 既存 `umeonigiri_webnav`（cpp-httplib） | 新規 FW 追加は要相談 |
 | ファームウェア PWM | LEDC（`hal/ledc_pwm`） | 直接 `ledcXxx` を呼ばない |
 | テスト (C++) | Unity (`pio test`) | Arduino 依存コードは native テスト不可 |
 | テスト (Python) | pytest | rclpy 依存は分離してテスト |

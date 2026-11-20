@@ -55,7 +55,7 @@ Meister/
     │   ├── umeonigiri_description/  # ロボットモデル・シミュレーション定義
     │   ├── meister_vision/          # 画像認識（ONNX Runtime + YOLOv8n）
     │   ├── ros2_autonomous_nav/     # SLAM・ナビゲーションの中核パッケージ
-    │   └── meister_web_nav/         # Web UI（:8088）
+    │   └── umeonigiri_webnav/       # Web UI（:8088）
     └── config/
         └── meister_robot.yaml       # ロボット設定の唯一の出所（tools/gen_config.py が読む）
 ```
