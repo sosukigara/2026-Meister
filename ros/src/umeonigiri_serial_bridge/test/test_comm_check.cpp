@@ -5,6 +5,7 @@
 
 #include "fake_esp32.hpp"
 #include "umeonigiri_serial_bridge/comm_check.hpp"
+#include "umeonigiri_serial_bridge/feedback_hz_measure.hpp"
 #include "umeonigiri_serial_bridge/stream_parser.hpp"
 
 namespace msb = umeonigiri_serial_bridge;
@@ -122,4 +123,19 @@ TEST(CommCheck, ReportsResidualErrorFlagWhenResetDisabled) {
   EXPECT_TRUE(result.ok());
   EXPECT_NE(result.note.find("error_flags"), std::string::npos);
   EXPECT_NE(result.note.find("--reset"), std::string::npos);
+}
+
+// 手順 3 の error_flags を最終 reset で本当に消せたかは、直後の計測で確かめる。
+// RTS パルスの回数だけでは「reset を手順 3 より前に移す」退行を見逃す。
+TEST(CommCheck, ClearsProtocolErrorFlagAfterFinalReset) {
+  msb::test::FakeEsp32 esp;
+  const auto result = msb::RunCommCheck("fake", msb::kDefaultBaud, 0.2, /*reset=*/true,
+                                        Opener(&esp));
+  ASSERT_TRUE(result.ok());
+  EXPECT_EQ(esp.error_flags(), 0);
+
+  const auto m = msb::MeasureFeedbackHz("fake", msb::kDefaultBaud, 0.15,
+                                        /*with_commands=*/false, /*reset=*/false,
+                                        Opener(&esp));
+  EXPECT_EQ(m.protocol_errors, 0);
 }

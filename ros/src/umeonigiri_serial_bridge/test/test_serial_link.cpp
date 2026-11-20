@@ -64,7 +64,7 @@ void WaitForUart() { usleep(50 * 1000); }
 TEST(SerialLink, ReadReturnsEveryBufferedByte) {
   PtyPair pty;
   ASSERT_TRUE(pty.Open());
-  auto io = msb::OpenSerialPort(pty.slave(), msb::kDefaultBaud);
+  auto io = msb::OpenSerialPort(pty.slave(), msb::kDefaultBaud, /*control_modem_lines=*/false);
   ASSERT_TRUE(io != nullptr);
 
   std::array<uint8_t, 17> tx{};
@@ -83,7 +83,7 @@ TEST(SerialLink, ReadReturnsEveryBufferedByte) {
 TEST(SerialLink, ReadWithoutTimeoutDrainsBufferedBytes) {
   PtyPair pty;
   ASSERT_TRUE(pty.Open());
-  auto io = msb::OpenSerialPort(pty.slave(), msb::kDefaultBaud);
+  auto io = msb::OpenSerialPort(pty.slave(), msb::kDefaultBaud, /*control_modem_lines=*/false);
   ASSERT_TRUE(io != nullptr);
 
   const std::array<uint8_t, 4> tx{{0xA5, 0x01, 0x02, 0x03}};
@@ -99,7 +99,7 @@ TEST(SerialLink, ReadWithoutTimeoutDrainsBufferedBytes) {
 TEST(SerialLink, ReadReturnsZeroWhenIdle) {
   PtyPair pty;
   ASSERT_TRUE(pty.Open());
-  auto io = msb::OpenSerialPort(pty.slave(), msb::kDefaultBaud);
+  auto io = msb::OpenSerialPort(pty.slave(), msb::kDefaultBaud, /*control_modem_lines=*/false);
   ASSERT_TRUE(io != nullptr);
 
   std::array<uint8_t, 64> rx{};
@@ -110,4 +110,12 @@ TEST(SerialLink, RejectsUnsupportedBaud) {
   PtyPair pty;
   ASSERT_TRUE(pty.Open());
   EXPECT_THROW(msb::OpenSerialPort(pty.slave(), 12345), std::exception);
+}
+
+// pty は DTR/RTS を持たない。既定（modem control あり）で黙って開くと、
+// 実機で配線が効かないときに起動だけ成功して原因が見えなくなる。
+TEST(SerialLink, DoesNotSwallowModemControlFailureByDefault) {
+  PtyPair pty;
+  ASSERT_TRUE(pty.Open());
+  EXPECT_THROW(msb::OpenSerialPort(pty.slave(), msb::kDefaultBaud), std::exception);
 }

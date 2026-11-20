@@ -184,4 +184,14 @@ bool BridgeCore::RxOnce(std::vector<Feedback>* states, std::vector<uint8_t>* fb_
   return true;
 }
 
+std::string RunSerialOp(BridgeCore& core, const std::function<void()>& op) {
+  try {
+    op();
+    return {};
+  } catch (const std::exception& e) {
+    core.DropLink();
+    return e.what();
+  }
+}
+
 }  // namespace umeonigiri_serial_bridge

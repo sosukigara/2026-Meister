@@ -56,7 +56,7 @@
 | `include/.../serial_io.hpp` | `SerialIo` 抽象（`Read` / `Write` / `Flush` / DTR / RTS） | libserial 1.0.0 の `Read(numberOfBytes=0, msTimeout=0)` は何も読まない。到着済みバイトは `GetNumberOfBytesAvailable()` で取る |
 | `include/.../kinematics.hpp` | `Twist` → (舵角, 速度) の変換 | 純粋関数。丸めは `std::nearbyint` で Python の `round()`（偶数丸め）に揃える |
 | `include/.../bridge_core.hpp` | ROS 非依存の中核（ウォッチドッグ・隔離・再オープン・受信ループ） | `Clock` を注入するので gtest から実時間なしで検証できる。壊れたリンクは libserial の dtor 例外を避けて隔離する |
-| `src/serial_bridge_node.cpp` | rclcpp ノード。`BridgeCore` の薄い適応層だけ | 実機排他的に UART を持つ |
+| `src/serial_bridge_node.cpp` | rclcpp ノード。`BridgeCore` の薄い適応層だけ | 実機排他的に UART を持つ。395 行（R1 分割は別計画） |
 | `src/comm_check.cpp` + `comm_check_main.cpp` | ベンチ確認 CLI（uplink / downlink / err_flag の 3 手順） | ROS 非依存 |
 | `src/feedback_hz_measure.cpp` + `feedback_hz_measure_main.cpp` | FB_STATE 周期の実測 CLI | ROS 非依存 |
 
@@ -205,7 +205,7 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 | 対象 | コマンド | 現状 |
 |---|---|---|
 | firmware プロトコル / バス codec / 運動学 | `cd firmware/main_board && pio test -e native` | 55 cases |
-| bridge (C++, gtest) | `colcon test --packages-select umeonigiri_serial_bridge` | 64 cases |
+| bridge (C++, gtest) | `colcon test --packages-select umeonigiri_serial_bridge` | 67 tests（gtest 61 + CTest 6） |
 | vision (C++, gtest) | `colcon test --packages-select meister_vision` | 54 cases（実モデル不要） |
 | firmware ビルド | `cd firmware/main_board && pio run -e esp32dev -e esp32dev_usbuart` | 2 env |
 | 全体ビルド | `./build.sh` | 6 packages |

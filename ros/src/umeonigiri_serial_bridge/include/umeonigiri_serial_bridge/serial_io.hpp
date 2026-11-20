@@ -46,7 +46,12 @@ class SerialIo {
 };
 
 /// libserial でポートを開く。開けないときは std::runtime_error。
-std::unique_ptr<SerialIo> OpenSerialPort(const std::string& path, int baud);
+///
+/// control_modem_lines=false は pty など DTR/RTS を持たない仮想 tty 用。
+/// 実機は true（既定）のまま。DTR/RTS の失敗を黙って握りつぶすと、
+/// 配線が効かない実機で起動だけ成功して原因が見えなくなる。
+std::unique_ptr<SerialIo> OpenSerialPort(const std::string& path, int baud,
+                                         bool control_modem_lines = true);
 
 /// FB_STATE 1 フレームのデコード結果。
 struct Feedback {

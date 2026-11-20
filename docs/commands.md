@@ -34,7 +34,7 @@ pio run -e esp32dev -t upload
 cd firmware/main_board
 pio test -e native
 
-# ROS ブリッジ（C++/gtest、64 cases）
+# ROS ブリッジ（C++/gtest、gtest 61 cases。colcon test-result は CTest 6 件を含め 67）
 cd ros
 colcon test --packages-select umeonigiri_serial_bridge
 colcon test-result --verbose

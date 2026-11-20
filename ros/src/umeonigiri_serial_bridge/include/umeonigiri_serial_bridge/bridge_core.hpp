@@ -95,4 +95,11 @@ class BridgeCore {
   bool arm_idle_logged_ = false;
 };
 
+/// I/O 操作の例外をリンク隔離に変換する。成功なら空、失敗なら理由。
+///
+/// ROS 層の購読コールバック・ウォッチドッグ・受信ループはこの 1 経路だけを使う。
+/// 例外を rclcpp の spin まで通すとプロセスごと落ちるため、捕捉と DropLink を
+/// ここに閉じる（テストから実 I/O 例外で検証できる）。
+std::string RunSerialOp(BridgeCore& core, const std::function<void()>& op);
+
 }  // namespace umeonigiri_serial_bridge

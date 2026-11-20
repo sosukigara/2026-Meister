@@ -1,26 +1,12 @@
 #include "umeonigiri_serial_bridge/serial_io.hpp"
 
 #include <algorithm>
-#include <cerrno>
 #include <stdexcept>
 
 #include <libserial/SerialPort.h>
 
 namespace umeonigiri_serial_bridge {
 namespace {
-
-/// pty など modem control を持たない tty は DTR/RTS の ioctl に ENOTTY を返す。
-/// ESP32 の自動リセットは実 UART でのみ意味を持つので、open 自体は続行する。
-template <typename Fn>
-void IgnoreUnsupportedModemControl(Fn&& fn) {
-  try {
-    fn();
-  } catch (const std::exception&) {
-    if (errno != ENOTTY) {
-      throw;
-    }
-  }
-}
 
 /// libserial の BaudRate は termios の speed_t 定数 (B115200 等) であり、
 /// 生の整数 (115200) ではない。対応表をここ 1 か所に閉じる。
@@ -41,7 +27,7 @@ bool ToLibSerialBaud(int baud, LibSerial::BaudRate* out) {
 /// libserial 実装。pyserial の serial_for_url に相当する URL 対応はしない。
 class LibSerialIo final : public SerialIo {
  public:
-  LibSerialIo(const std::string& path, int baud) {
+  LibSerialIo(const std::string& path, int baud, bool control_modem_lines) {
     LibSerial::BaudRate br = LibSerial::BaudRate::BAUD_DEFAULT;
     if (!ToLibSerialBaud(baud, &br)) {
       throw std::invalid_argument("unsupported baud rate: " + std::to_string(baud));
@@ -49,8 +35,10 @@ class LibSerialIo final : public SerialIo {
     port_.Open(path);
     port_.SetBaudRate(br);
     // pyserial も open 直後に DTR を assert する。EN 線の制御は呼出側に任せる。
-    IgnoreUnsupportedModemControl([this] { port_.SetDTR(false); });
-    IgnoreUnsupportedModemControl([this] { port_.SetRTS(false); });
+    if (control_modem_lines) {
+      port_.SetDTR(false);
+      port_.SetRTS(false);
+    }
   }
 
   std::size_t Read(uint8_t* buf, std::size_t max, int timeout_ms) override {
@@ -109,9 +97,10 @@ class LibSerialIo final : public SerialIo {
 
 }  // namespace
 
-std::unique_ptr<SerialIo> OpenSerialPort(const std::string& path, int baud) {
+std::unique_ptr<SerialIo> OpenSerialPort(const std::string& path, int baud,
+                                         bool control_modem_lines) {
   try {
-    return std::make_unique<LibSerialIo>(path, baud);
+    return std::make_unique<LibSerialIo>(path, baud, control_modem_lines);
   } catch (const LibSerial::OpenFailed& e) {
     throw std::runtime_error("cannot open " + path + ": " + e.what());
   } catch (const std::invalid_argument& e) {

@@ -27,7 +27,8 @@
 
 namespace umeonigiri_serial_bridge {
 
-/// ノード名と logger 名の唯一の定義。launch 側の name= もこれに合わせる。
+/// C++ 側の唯一の定義。launch は言語をまたぐため同じ文字列を別に持ち、
+/// serial_bridge.launch.py と real_robot.launch.py の name= も揃える。
 constexpr char kNodeName[] = "umeonigiri_serial_bridge";
 
 namespace {
@@ -112,12 +113,11 @@ class SerialBridgeNode final : public rclcpp::Node {
             std::lock_guard<std::mutex> lk(odom_mutex_);
             odometry_->UpdateTwistCommand(msg.linear.x, msg.angular.z, NowSeconds());
           }
-          try {
-            core_->OnCmdVel(msg.linear.x, msg.angular.z);
-          } catch (const std::exception& e) {
+          const std::string error =
+              RunSerialOp(*core_, [&] { core_->OnCmdVel(msg.linear.x, msg.angular.z); });
+          if (!error.empty()) {
             RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5000,
-                                  "serial bridge I/O error: %s", e.what());
-            core_->DropLink();
+                                  "serial bridge I/O error: %s", error.c_str());
           }
         });
     arm_sub_ = create_subscription<std_msgs::msg::Int16MultiArray>(
@@ -125,12 +125,10 @@ class SerialBridgeNode final : public rclcpp::Node {
         [this](const std_msgs::msg::Int16MultiArray& msg) { OnArmJoint(msg); });
     gripper_sub_ = create_subscription<std_msgs::msg::UInt8>(
         "/cmd_gripper", 10, [this](const std_msgs::msg::UInt8& msg) {
-          try {
-            core_->OnGripper(msg.data);
-          } catch (const std::exception& e) {
+          const std::string error = RunSerialOp(*core_, [&] { core_->OnGripper(msg.data); });
+          if (!error.empty()) {
             RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5000,
-                                  "serial bridge I/O error: %s", e.what());
-            core_->DropLink();
+                                  "serial bridge I/O error: %s", error.c_str());
           }
         });
 
@@ -172,11 +170,9 @@ class SerialBridgeNode final : public rclcpp::Node {
   /// 速度 0 を送る。rclcpp::init は SIGINT と SIGTERM の両方を捕捉するので、
   /// どちらで終了しても main() のこの行を通る。
   void SendStopFrames() {
-    try {
-      core_->SendStop();
-    } catch (const std::exception& e) {
-      RCLCPP_ERROR(get_logger(), "failed to send stop frames: %s", e.what());
-      core_->DropLink();
+    const std::string error = RunSerialOp(*core_, [&] { core_->SendStop(); });
+    if (!error.empty()) {
+      RCLCPP_ERROR(get_logger(), "failed to send stop frames: %s", error.c_str());
     }
   }
 
@@ -186,12 +182,11 @@ class SerialBridgeNode final : public rclcpp::Node {
     // 無視して警告だけ出して核心には到達させない。
     const std::vector<int16_t> angles(msg.data.begin(), msg.data.end());
     bool accepted = false;
-    try {
-      accepted = core_->OnArmJoint(angles);
-    } catch (const std::exception& e) {
+    const std::string error =
+        RunSerialOp(*core_, [&] { accepted = core_->OnArmJoint(angles); });
+    if (!error.empty()) {
       RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5000,
-                            "serial bridge I/O error: %s", e.what());
-      core_->DropLink();
+                            "serial bridge I/O error: %s", error.c_str());
       return;
     }
     if (!accepted) {
@@ -203,12 +198,11 @@ class SerialBridgeNode final : public rclcpp::Node {
 
   void OnWatchdog() {
     WatchdogVerdict verdict;
-    try {
-      verdict = core_->OnWatchdog(NowSeconds());
-    } catch (const std::exception& e) {
+    const std::string error =
+        RunSerialOp(*core_, [&] { verdict = core_->OnWatchdog(NowSeconds()); });
+    if (!error.empty()) {
       RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5000,
-                            "serial bridge I/O error: %s", e.what());
-      core_->DropLink();
+                            "serial bridge I/O error: %s", error.c_str());
       return;
     }
     if (verdict.arm_idle_started) {
@@ -299,12 +293,11 @@ class SerialBridgeNode final : public rclcpp::Node {
         continue;
       }
       bool rx_ok = false;
-      try {
-        rx_ok = core_->RxOnce(&states, &fb_errors, kRxTimeoutMs, &imus);
-      } catch (const std::exception& e) {
+      const std::string rx_error = RunSerialOp(
+          *core_, [&] { rx_ok = core_->RxOnce(&states, &fb_errors, kRxTimeoutMs, &imus); });
+      if (!rx_error.empty()) {
         RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5000,
-                              "serial bridge I/O error: %s", e.what());
-        core_->DropLink();
+                              "serial bridge I/O error: %s", rx_error.c_str());
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         continue;
       }

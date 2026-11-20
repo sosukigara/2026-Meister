@@ -93,9 +93,15 @@ class FakeEsp32 final : public SerialIo {
   }
 
   void SetRts(bool high) override {
-    if (high) {
-      ++rts_high_count_;
+    if (!high) {
+      return;
     }
+    ++rts_high_count_;
+    // 実機の自動リセット: 再起動で rxErrorCount_ が消え、アプリも初期化される。
+    error_flags_ = 0;
+    app_running_ = false;
+    rx_.clear();
+    parser_.Clear();
   }
 
   /// テスト側から受信列を流し込む（実機では UART から来るのと同じ枠）。

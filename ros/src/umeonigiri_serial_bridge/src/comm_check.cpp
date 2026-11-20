@@ -196,7 +196,7 @@ CheckResult RunCommCheck(const std::string& port, int baud, double timeout_s, bo
     parser.Clear();
     result.note =
         "reset pulse を送り error_flags をクリアしました"
-        "（実機の自動リセット配線は未検証。Task 10 で確認）";
+        "（実機の自動リセット配線は ✗ 未検証）";
   } else {
     result.note =
         "error_flags は ESP32 の再起動まで残ります。"

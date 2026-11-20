@@ -160,10 +160,11 @@ LostFrames() = max(0, nbytes - decoded_bytes - buffered_bytes) / kMaxFrameSize
 
 ### 6.9 R1 の扱い（F10）
 
-`serial_bridge_node.cpp` は 327 行。オドメトリ出版（約 90 行）を
-`odometry_publisher.{hpp,cpp}` へ分離すれば 300 行以下になるが、rclcpp 依存の
-テストが難しく、今回の実機ゲート（後日）と同時に挙動を変えるリスクを避けたい。
-本計画では**分割を別計画へ送る**。判断と残行数を commit 本文に記録する。
+`serial_bridge_node.cpp` は 327 行で、本ブランチの例外処理・検証を加えて 395 行に
+なった。オドメトリ出版（約 90 行）を `odometry_publisher.{hpp,cpp}` へ分離すれば
+300 行以下になるが、rclcpp 依存のテストが難しく、今回の実機ゲート（後日）と同時に
+挙動を変えるリスクを避けたい。本計画では**分割を別計画へ送り、395 行のまま着地する**。
+判断と残行数は設計書のこの節と `docs/code-map.md` に記録する。
 
 ## 7. 受入基準
 
