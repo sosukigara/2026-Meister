@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <atomic>
 #include <chrono>
+#include <exception>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -91,14 +92,27 @@ class SerialBridgeNode final : public rclcpp::Node {
             std::lock_guard<std::mutex> lk(odom_mutex_);
             odometry_->UpdateTwistCommand(msg.linear.x, msg.angular.z, NowSeconds());
           }
-          core_->OnCmdVel(msg.linear.x, msg.angular.z);
+          try {
+            core_->OnCmdVel(msg.linear.x, msg.angular.z);
+          } catch (const std::exception& e) {
+            RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5000,
+                                  "serial bridge I/O error: %s", e.what());
+            core_->DropLink();
+          }
         });
     arm_sub_ = create_subscription<std_msgs::msg::Int16MultiArray>(
         "/cmd_arm_joint", 10,
         [this](const std_msgs::msg::Int16MultiArray& msg) { OnArmJoint(msg); });
     gripper_sub_ = create_subscription<std_msgs::msg::UInt8>(
-        "/cmd_gripper", 10,
-        [this](const std_msgs::msg::UInt8& msg) { core_->OnGripper(msg.data); });
+        "/cmd_gripper", 10, [this](const std_msgs::msg::UInt8& msg) {
+          try {
+            core_->OnGripper(msg.data);
+          } catch (const std::exception& e) {
+            RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5000,
+                                  "serial bridge I/O error: %s", e.what());
+            core_->DropLink();
+          }
+        });
 
     state_pub_ = create_publisher<std_msgs::msg::Int16MultiArray>("/esp32/state", 10);
     imu_pub_ = create_publisher<sensor_msgs::msg::Imu>("/imu/data", 10);
@@ -137,14 +151,30 @@ class SerialBridgeNode final : public rclcpp::Node {
 
   /// 速度 0 を送る。rclcpp::init は SIGINT と SIGTERM の両方を捕捉するので、
   /// どちらで終了しても main() のこの行を通る。
-  void SendStopFrames() { core_->SendStop(); }
+  void SendStopFrames() {
+    try {
+      core_->SendStop();
+    } catch (const std::exception& e) {
+      RCLCPP_ERROR(get_logger(), "failed to send stop frames: %s", e.what());
+      core_->DropLink();
+    }
+  }
 
  private:
   void OnArmJoint(const std_msgs::msg::Int16MultiArray& msg) {
     // 軸数が違うメッセージでコールバックを落とすとノードごと死ぬので、
     // 無視して警告だけ出して核心には到達させない。
     const std::vector<int16_t> angles(msg.data.begin(), msg.data.end());
-    if (!core_->OnArmJoint(angles)) {
+    bool accepted = false;
+    try {
+      accepted = core_->OnArmJoint(angles);
+    } catch (const std::exception& e) {
+      RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5000,
+                            "serial bridge I/O error: %s", e.what());
+      core_->DropLink();
+      return;
+    }
+    if (!accepted) {
       RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
                            "cmd_arm_joint: expected %zu values, got %zu; ignored",
                            kArmChannels, angles.size());
@@ -152,7 +182,15 @@ class SerialBridgeNode final : public rclcpp::Node {
   }
 
   void OnWatchdog() {
-    const WatchdogVerdict verdict = core_->OnWatchdog(NowSeconds());
+    WatchdogVerdict verdict;
+    try {
+      verdict = core_->OnWatchdog(NowSeconds());
+    } catch (const std::exception& e) {
+      RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5000,
+                            "serial bridge I/O error: %s", e.what());
+      core_->DropLink();
+      return;
+    }
     if (verdict.arm_idle_started) {
       RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
                            "arm command timeout -> holding last target");
@@ -240,7 +278,17 @@ class SerialBridgeNode final : public rclcpp::Node {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         continue;
       }
-      if (!core_->RxOnce(&states, &fb_errors, kRxTimeoutMs, &imus)) {
+      bool rx_ok = false;
+      try {
+        rx_ok = core_->RxOnce(&states, &fb_errors, kRxTimeoutMs, &imus);
+      } catch (const std::exception& e) {
+        RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5000,
+                              "serial bridge I/O error: %s", e.what());
+        core_->DropLink();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        continue;
+      }
+      if (!rx_ok) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         continue;
       }

@@ -262,3 +262,40 @@ TEST(BridgeCore, RxOnceKeepsPartialFrameAcrossCalls) {
   ASSERT_EQ(states.size(), 1u);
   EXPECT_EQ(states[0].encoders[0], 7);
 }
+
+// libserial の ~SerialPort() は noexcept のまま I/O error を投げるため、壊れた
+// リンクを破棄すると terminate する。DropLink は隔離し、次の指令で再オープンする。
+TEST(BridgeCore, DropLinkQuarantinesBrokenLinkAndReopens) {
+  int opens = 0;
+  int destroyed = 0;
+  FakeClock clock;
+
+  msb::BridgeParams params;
+  params.serial_port = "fake";
+  params.baud = msb::kDefaultBaud;
+  params.kinematics.wheelbase_m = 0.3;
+  params.kinematics.max_linear_vel_mps = 1.0;
+  params.kinematics.max_steering_deg = 30.0;
+  params.cmd_timeout_s = 0.5;
+
+  auto factory = [&](const std::string&, int) -> std::shared_ptr<msb::SerialIo> {
+    ++opens;
+    auto* esp = new msb::test::FakeEsp32();
+    return std::shared_ptr<msb::SerialIo>(esp, [&destroyed](msb::SerialIo* p) {
+      ++destroyed;
+      delete p;
+    });
+  };
+
+  msb::BridgeCore core(params, factory, [&clock] { return clock.now(); });
+  core.OnCmdVel(0.5, 0.0);
+  ASSERT_EQ(opens, 1);
+
+  core.DropLink();
+  EXPECT_EQ(destroyed, 0);
+
+  clock.Advance(2.1);
+  core.OnCmdVel(0.5, 0.0);
+  EXPECT_EQ(opens, 2);
+  EXPECT_EQ(destroyed, 0);
+}

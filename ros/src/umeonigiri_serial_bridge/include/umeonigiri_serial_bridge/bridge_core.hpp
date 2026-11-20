@@ -67,7 +67,10 @@ class BridgeCore {
   /// error に理由が入る（試行を待っている間は空）。呼び出し側がログを出すのに使う。
   std::shared_ptr<SerialIo> CurrentLink(std::string* error = nullptr);
 
-  /// 読み取り失敗でリンクを捨てる。以降の送信は再オープンまで保留。
+  /// 読み取り失敗でリンクを隔離する。以降の送信は再オープンまで保留。
+  ///
+  /// 壊れた libserial オブジェクトは破棄せずプロセス寿命の隔離リストへ移す
+  /// （~SerialPort() が noexcept のまま I/O error を投げるため）。
   void DropLink();
 
   const BridgeParams& params() const { return params_; }

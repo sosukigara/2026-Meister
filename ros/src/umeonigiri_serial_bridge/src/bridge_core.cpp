@@ -8,6 +8,22 @@ namespace proto = meister::proto;
 
 namespace {
 constexpr std::size_t kRxBufBytes = 256;
+
+/// 壊れたリンクをプロセス終了まで保持する。
+///
+/// libserial 1.0.0 の ~SerialPort() は noexcept のまま I/O error を投げるため、
+/// ハングアップ後にリンクを破棄すると terminate する（pty 実測）。隔離リストは
+/// USB 抜け回数で有界。termios 実装へ置き換えたらこのリークごと削除する。
+std::vector<std::shared_ptr<SerialIo>>& QuarantinedLinks() {
+  static auto* links = new std::vector<std::shared_ptr<SerialIo>>();
+  return *links;
+}
+
+std::mutex& QuarantineMutex() {
+  static auto* mutex = new std::mutex();
+  return *mutex;
+}
+
 }  // namespace
 
 BridgeCore::BridgeCore(BridgeParams params, LinkFactory factory, Clock clock)
@@ -42,8 +58,16 @@ std::shared_ptr<SerialIo> BridgeCore::CurrentLink(std::string* error) {
 }
 
 void BridgeCore::DropLink() {
-  std::lock_guard<std::mutex> lock(link_mutex_);
-  link_.reset();
+  std::shared_ptr<SerialIo> broken;
+  {
+    std::lock_guard<std::mutex> lock(link_mutex_);
+    broken = std::move(link_);
+  }
+  if (!broken) {
+    return;
+  }
+  std::lock_guard<std::mutex> lock(QuarantineMutex());
+  QuarantinedLinks().push_back(std::move(broken));
 }
 
 void BridgeCore::WriteJoined(const std::vector<uint8_t>& bytes) {
