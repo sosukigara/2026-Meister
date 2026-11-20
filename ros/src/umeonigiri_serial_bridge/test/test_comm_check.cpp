@@ -102,3 +102,24 @@ TEST(CommCheck, NeutralFramesAreAllZero) {
   }
   EXPECT_EQ(frames[3][2], proto::kGripperStop);
 }
+
+// 手順 3 は意図的に error_flags を立てる。firmware は再起動までクリアしないので、
+// reset 有効なら最後にもう一度パルスしてから終了する。
+TEST(CommCheck, ResetsAgainAfterErrFlagStepWhenResetEnabled) {
+  msb::test::FakeEsp32 esp;
+  const auto result = msb::RunCommCheck("fake", msb::kDefaultBaud, 0.2, /*reset=*/true,
+                                        Opener(&esp));
+  EXPECT_TRUE(result.ok());
+  EXPECT_EQ(esp.rts_high_count(), 2);
+}
+
+// reset 無効で終わるとフラグが残り、直後の hz_measure が NG になる。
+// 少なくとも次の実行に --reset が必要であることを結果に残す。
+TEST(CommCheck, ReportsResidualErrorFlagWhenResetDisabled) {
+  msb::test::FakeEsp32 esp;
+  const auto result = msb::RunCommCheck("fake", msb::kDefaultBaud, 0.2, /*reset=*/false,
+                                        Opener(&esp));
+  EXPECT_TRUE(result.ok());
+  EXPECT_NE(result.note.find("error_flags"), std::string::npos);
+  EXPECT_NE(result.note.find("--reset"), std::string::npos);
+}

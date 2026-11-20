@@ -72,6 +72,9 @@ int main(int argc, char** argv) {
     std::printf("  [%s] %-9s %s\n", step.ok ? "OK" : "NG", step.name.c_str(),
                 step.detail.c_str());
   }
+  if (!result.note.empty()) {
+    std::printf("note: %s\n", result.note.c_str());
+  }
   std::printf("PASS: PC と ESP32 の通信を確認しました。\n");
   return 0;
 }

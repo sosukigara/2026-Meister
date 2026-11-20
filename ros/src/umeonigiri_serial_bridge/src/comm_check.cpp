@@ -152,6 +152,9 @@ CheckResult RunCommCheck(const std::string& port, int baud, double timeout_s, bo
   // 最初の FB_STATE がそれに対する応答になる。フラグが立たなければ ESP32 側は
   // 全フレームを正常に受理している。
   const auto names = CommandNames();
+  // 手順 1 の時点で飛んでいる FB_STATE を、指令への応答と誤認しない。
+  link->ResetInputBuffer();
+  parser.Clear();
   WriteAll(*link, NeutralCommandFrames());
   const auto reply = CollectFeedback(*link, parser, NowSeconds() + timeout_s, 1);
   if (reply.empty()) {
@@ -184,6 +187,21 @@ CheckResult RunCommCheck(const std::string& port, int baud, double timeout_s, bo
   std::snprintf(flags, sizeof(flags), "0x%02X", proto::kFbErrorProtocol);
   result.steps.push_back(
       {"err_flag", true, std::string("corrupt frame -> error_flags |= ") + flags});
+
+  // firmware の rxErrorCount_ は再起動まで減らない。ここで終わると、直後の
+  // hz_measure が protocol error を検出して NG になる。
+  if (reset) {
+    ResetEsp32(*link);
+    link->ResetInputBuffer();
+    parser.Clear();
+    result.note =
+        "reset pulse を送り error_flags をクリアしました"
+        "（実機の自動リセット配線は未検証。Task 10 で確認）";
+  } else {
+    result.note =
+        "error_flags は ESP32 の再起動まで残ります。"
+        "直後の計測が NG になる場合は --reset を付けて再実行してください";
+  }
 
   return result;
 }

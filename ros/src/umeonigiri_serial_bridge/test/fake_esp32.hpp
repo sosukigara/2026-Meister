@@ -92,7 +92,11 @@ class FakeEsp32 final : public SerialIo {
     }
   }
 
-  void SetRts(bool) override {}
+  void SetRts(bool high) override {
+    if (high) {
+      ++rts_high_count_;
+    }
+  }
 
   /// テスト側から受信列を流し込む（実機では UART から来るのと同じ枠）。
   void InjectRx(const uint8_t* data, std::size_t len) {
@@ -100,6 +104,7 @@ class FakeEsp32 final : public SerialIo {
   }
 
   uint8_t error_flags() const { return error_flags_; }
+  int rts_high_count() const { return rts_high_count_; }
   const std::vector<uint8_t>& written() const { return written_; }
 
  private:
@@ -128,6 +133,7 @@ class FakeEsp32 final : public SerialIo {
   bool dtr_;
   bool app_running_ = false;
   uint8_t error_flags_ = 0;
+  int rts_high_count_ = 0;
   std::vector<uint8_t> rx_;
   std::vector<uint8_t> written_;
   StreamFrameParser parser_;
