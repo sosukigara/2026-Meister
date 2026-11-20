@@ -77,6 +77,25 @@ install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY rviz DESTINATION share/${PROJECT_NAME})
 # モデルは git 管理外（*.onnx は ignore）。取得済みのものだけ配備する。
 # launch.sh はこのパスを見て 320/640 を切り替える（R2: 参照は 1 箇所）。
+# --- NPU(RKNN) 版の検出ノード ---------------------------------------------
+# librknnrt が無い環境でも configure が落ちないよう存在チェックで切り替える。
+find_path(RKNN_INCLUDE_DIR rknn_api.h PATHS /usr/local/include/rknn /usr/include)
+find_library(RKNN_LIBRARY NAMES rknnrt PATHS /usr/lib /usr/local/lib)
+if(RKNN_INCLUDE_DIR AND RKNN_LIBRARY)
+  add_executable(yolo_grasp_node
+    src/yolo_grasp_node.cpp
+    src/rknn_yolo.cpp)
+  target_include_directories(yolo_grasp_node PRIVATE
+    include ${RKNN_INCLUDE_DIR} ${OpenCV_INCLUDE_DIRS})
+  target_link_libraries(yolo_grasp_node
+    ${OpenCV_LIBS} ${RKNN_LIBRARY} rclcpp::rclcpp
+    ${sensor_msgs_TARGETS} ${vision_msgs_TARGETS})
+  install(TARGETS yolo_grasp_node DESTINATION lib/${PROJECT_NAME})
+  message(STATUS "yolo_grasp_node: 有効 (RKNN ${RKNN_LIBRARY})")
+else()
+  message(STATUS "yolo_grasp_node: 無効 (librknnrt が見つからない)")
+endif()
+
 # models/ が無い fresh clone でも configure が落ちないよう EXISTS 付き。
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/models")
   install(DIRECTORY models DESTINATION share/${PROJECT_NAME})
