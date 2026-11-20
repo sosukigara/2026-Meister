@@ -5,16 +5,26 @@
 
 ![RViz での表示](grasp_rviz_window.png)
 
-## 使い方
+## 使い方（既定の経路）
+
+**NPU 実装が既定**になった。`launch.sh` の実機モードは、RKNN モデルがあれば
+自動で NPU を選ぶ。ROS から直接起動する場合:
 
 ```bash
-# モデルは tools/rknn の手順で用意する（tools/rknn/models/yolov8n-zoo.rknn）
-python3 tools/grasp/yolo_grasp_stream.py \
-  --model tools/rknn/models/yolov8n-zoo.rknn \
-  --labels tools/grasp/coco_labels.txt
+# 既定 backend:=npu（RKNN）。ONNX(CPU) へ戻すなら backend:=onnx
+ros2 launch meister_vision pc_vision.launch.py
+ros2 launch meister_vision pc_vision.launch.py backend:=onnx
 
-rviz2 -d tools/grasp/grasp_view.rviz
+rviz2 -d tools/grasp/grasp_view.rviz   # /grasp_image を見る場合
 ```
+
+- 実体は `ros/src/meister_vision/scripts/yolo_grasp_stream.py`（パッケージに install 済み）。
+- モデルは `ros/src/meister_vision/models/yolov8n-zoo.rknn` に置くと share へ入る。
+  `tools/rknn/README.md` の手順で生成する（`.rknn` は git 管理外）。
+- ラベルは `ros/src/meister_vision/config/coco_labels.txt`。
+- 出力は既存と同じ `./detections`（vision_msgs/Detection2DArray）、
+  `./detection_image`、`./target`。加えて `./grasp_image`（把持候補の描画）。
+  **Web UI とアーム制御は ONNX 版と共通のまま**で、backend を切り替えられる。
 
 - 一番大きい枠（＝手前にあるとみなす）を **把持ターゲット**として緑枠で強調し、
   画面下に `TARGET <名前> (x,y) angle <度> width <px>` を出す。

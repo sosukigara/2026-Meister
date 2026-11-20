@@ -85,7 +85,10 @@ endif()
 # モデル DL は Python のまま残す（ネットワーク取得だけなので C++ にしても
 # 得られるものが libcurl 依存の追加だけ）。実行ファイル名は download_model で
 # 維持し、`ros2 run meister_vision download_model` を壊さない。
+install(FILES config/coco_labels.txt
+  DESTINATION share/${PROJECT_NAME}/config)
 install(PROGRAMS scripts/download_model.py scripts/record_detections.py
+  scripts/yolo_grasp_stream.py
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)

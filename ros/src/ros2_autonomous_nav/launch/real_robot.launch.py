@@ -33,6 +33,9 @@ def generate_launch_description():
         'vision_model', default_value='',
         description='YOLO model path (empty=auto 640. 320=model small/fast)')
 
+    vision_backend_arg = DeclareLaunchArgument(
+        'vision_backend', default_value='npu',
+        description='推論の実行先。npu=RKNN、onnx=ONNX Runtime(CPU)'),
     vision_threads_arg = DeclareLaunchArgument(
         'vision_threads', default_value='4',
         description='ONNX inference threads (320x2 reaches 10Hz on RK3588)')
@@ -204,6 +207,7 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(os.path.join(pkg_vision, 'launch', 'pc_vision.launch.py')),
         launch_arguments={
             'use_pc_camera': 'true',
+            'backend': LaunchConfiguration('vision_backend'),
             'model_path': LaunchConfiguration('vision_model'),
             'inference_threads': LaunchConfiguration('vision_threads'),
         }.items()
@@ -214,6 +218,7 @@ def generate_launch_description():
         serial_baud_arg,
         lidar_port_arg,
         vision_model_arg,
+        vision_backend_arg,
         vision_threads_arg,
         LogInfo(msg='=== Starting Real Robot Navigation (use_sim_time: False) ==='),
         LogInfo(msg='Make sure your hardware (LD-D500 LiDAR, ESP32) is connected!'),
