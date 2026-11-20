@@ -6,7 +6,7 @@
 ## 設計メモ
 
 - **アーキテクチャ**: 半分散型。リアルタイム制御（PWM 生成・サーボバス制御）は ESP32、高度な判断（ナビ・認識・把持計画）は PC の ROS 2。
-- **cmd_vel → アクチュエータ変換**: PC 側ブリッジ `meister_serial_bridge`（`/cmd_vel` → 自転車モデルで舵角 `atan(wheelbase·wz/vx)` と駆動千分率 `vx/vmax` に変換し、全 6 チャネルへ同一値を送信）。アッカーマン系のためその場旋回は不可（|vx|≈0 で |wz|>0 のときは最大舵角 + 前進 0%）。実機 nav は `use_rotate_to_heading: false` 推奨。
+- **cmd_vel → アクチュエータ変換**: PC 側ブリッジ `umeonigiri_serial_bridge`（`/cmd_vel` → 自転車モデルで舵角 `atan(wheelbase·wz/vx)` と駆動千分率 `vx/vmax` に変換し、全 6 チャネルへ同一値を送信）。アッカーマン系のためその場旋回は不可（|vx|≈0 で |wz|>0 のときは最大舵角 + 前進 0%）。実機 nav は `use_rotate_to_heading: false` 推奨。
 - **プロトコル推奨**: カスタムバイナリ（固定長フレーム + チェックサム）が決定的で堅牢。テキスト（JSON/改行区切り）はデバッグに有利だが非決定的。
 - **ボーレート目安**: 115200 bps（最低ライン）。必要に応じて 921600 bps まで拡張。
 - **配線**: PC ↔ ESP32 は USB-UART 変換 or ESP32 内蔵 USB。GND 共通必須。
@@ -55,10 +55,10 @@ ESP32 ファームウェアのベース実装（[firmware/main_board/](../../fir
 
 - ESP32 ファームウェアのベース実装済み（PlatformIO、`pio run` でコンパイル検証済み）
 - 受信パース（ヘッダ/種別/ペイロード/チェックサムのステートマシン）、LEDC PWM によるモータ 6ch・サーボ（ステアリング 6ch / アーム 4ch / グリッパー 1ch）制御、FB_STATE の定期送信を実装
-- PC 側ブリッジ実装済み（`meister_serial_bridge`、/cmd_vel → 舵角+PWM 変換）。モック ESP32 は未実装（後続）
+- PC 側ブリッジ実装済み（`umeonigiri_serial_bridge`、/cmd_vel → 舵角+PWM 変換）。モック ESP32 は未実装（後続）
 - 2026-09-27: PC 側とファームウェアが別々の UART を指していた不具合を修正
   （`omp/FIXES_2026-09-27.md`）。`esp32dev_usbuart` 環境とベンチ確認 CLI
-  `meister_comm_check` を追加し、USB ケーブル 1 本で双方向通信を確認できるようにした
+  `umeonigiri_comm_check` を追加し、USB ケーブル 1 本で双方向通信を確認できるようにした
 
 ## 設計図化対象
 

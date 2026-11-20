@@ -17,7 +17,7 @@
 - エラー時: <返す値 / 例外 / err_flag>
 
 ## 受入基準（Acceptance Criteria）
-- [ ] テストがすべてパスすること（`pio test -e native` / `pytest`）
+- [ ] テストがすべてパスすること（`pio test -e native` / `colcon test`）
 - [ ] 実機 `comm_check` 3 手順が PASS すること（実機挙動を変える場合）
 - [ ] 4 通りのビルドが通ること
 - [ ] 1 ファイル 300 行以内を維持すること
