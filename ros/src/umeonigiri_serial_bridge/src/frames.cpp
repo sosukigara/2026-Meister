@@ -1,5 +1,7 @@
 #include "umeonigiri_serial_bridge/frames.hpp"
 
+#include <algorithm>
+
 namespace umeonigiri_serial_bridge {
 namespace {
 
@@ -16,30 +18,39 @@ void ClampAll(std::array<int16_t, N>* values, int16_t lo, int16_t hi) {
   }
 }
 
+/// firmware の Encode* は C 配列の参照を取る。軸数を変えたときに初期化子の
+/// 個数で壊れないよう、配列長はプロトコル定数から取る。
+template <std::size_t N>
+void CopyChannels(const std::array<int16_t, N>& src, int16_t (&dst)[N]) {
+  std::copy(src.begin(), src.end(), dst);
+}
+
 }  // namespace
 
 size_t EncodeSteering(uint8_t* buf, std::size_t cap, const SteeringArray& tenths) {
   SteeringArray clamped = tenths;
   ClampAll(&clamped, meister::proto::kMinSteering, meister::proto::kMaxSteering);
-  const int16_t channels[kSteerChannels] = {clamped[0], clamped[1], clamped[2],
-                                           clamped[3], clamped[4], clamped[5]};
+  int16_t channels[kSteerChannels];
+  CopyChannels(clamped, channels);
   return meister::proto::EncodeSteeringAngle(buf, cap, channels);
 }
 
 size_t EncodeVelocity(uint8_t* buf, std::size_t cap, const VelocityArray& permille) {
   VelocityArray clamped = permille;
   ClampAll(&clamped, meister::proto::kMinVelocity, meister::proto::kMaxVelocity);
-  const int16_t channels[kDriveChannels] = {clamped[0], clamped[1], clamped[2],
-                                            clamped[3], clamped[4], clamped[5]};
+  int16_t channels[kDriveChannels];
+  CopyChannels(clamped, channels);
   return meister::proto::EncodeMotorVelocity(buf, cap, channels);
 }
 
 size_t EncodeArm(uint8_t* buf, std::size_t cap, const ArmArray& tenths) {
   ArmArray clamped = tenths;
-  // firmware の ClampArm は肘と手首に kMinJoint/kMaxJoint を使う。別の表だと
-  // PC 側だけ先に効いて、線上のバイトが firmware の解釈と食い違う。
-  ClampAll(&clamped, meister::config::kMinJoint, meister::config::kMaxJoint);
-  const int16_t channels[kArmChannels] = {clamped[0], clamped[1], clamped[2], clamped[3]};
+  // CMD_ARM_ANGLE は Arm::setAngles -> PwmServoChannel::setAngleTenths の経路で
+  // kMinArmAngle/kMaxArmAngle に丸められる。ClampArm（kMinJoint/kMaxJoint）は
+  // 別経路の表であり、ここで使うと PC 側だけ先に効いて食い違う。
+  ClampAll(&clamped, meister::config::kMinArmAngle, meister::config::kMaxArmAngle);
+  int16_t channels[kArmChannels];
+  CopyChannels(clamped, channels);
   return meister::proto::EncodeArmAngle(buf, cap, channels);
 }
 

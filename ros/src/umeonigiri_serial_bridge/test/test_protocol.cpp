@@ -89,8 +89,8 @@ TEST(Frames, ArmAndGripperLayout) {
 }
 
 TEST(Frames, ArmClampsToJointRange) {
-  // firmware の ClampArm は肘と手首に kMinJoint/kMaxJoint を使う。PC 側も同じ表で
-  // 丸めないと int16 を折り返して別の角度が送られる。
+  // CMD_ARM_ANGLE は Arm::setAngles とサーボチャネルの kMinArmAngle/kMaxArmAngle で
+  // 丸められる。PC 側も同じ表で丸めないと int16 を折り返して別の角度が送られる。
   msb::ArmArray arm{0, 900, 1800, 2500};
   uint8_t buf[proto::kMaxFrameSize];
   msb::EncodeArm(buf, sizeof(buf), arm);
