@@ -38,16 +38,18 @@ async function request(path, options, timeoutMs = TIMEOUT_MS) {
     if (!response.ok) {
       // サーバーが理由を返しているなら捨てない。"切り替えできません" の一言では
       // 何が起きたか分からない（409 の error に理由が入っている）。
-      let detail = '';
+      let reason = '';
       try {
         const body = await response.json();
         if (body && typeof body.error === 'string' && body.error.length > 0) {
-          detail = `: ${body.error}`;
+          reason = body.error;
         }
       } catch {
         // 本文が JSON でない。status だけ伝える。
       }
-      throw new Error(`${path} が ${response.status} を返しました${detail}`);
+      // サーバーが理由を返したなら、操作者に意味のあるその 1 文だけを出す。
+      // 経路と HTTP 番号は開発時の情報で、現場の画面には要らない。
+      throw new Error(reason || `${path} が ${response.status} を返しました`);
     }
     const body = await response.json();
     consecutiveFailures = 0;

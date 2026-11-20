@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Meister 運行コンソール</title>
+<title>運行コンソール — Meister</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 <noscript><p class="noscript">このコンソールは JavaScript で動作します。ブラウザの設定を有効にしてください。</p></noscript>
 <p id="offline" class="offline" hidden role="status" aria-live="polite">
-  サーバーに接続できません — 画面は最後の受信値のままです（<span id="offline-age">—</span>）
+  サーバーに接続できません。画面は最後の受信値のままです（<span id="offline-age">—</span>）
 </p>
 
 <header class="topbar">
@@ -22,8 +22,10 @@
       <path d="M8.4 15h7.2v4.2c0 .4-.3.6-.6.6H9c-.3 0-.6-.2-.6-.6V15Z" fill="var(--bg)"/>
       <circle cx="12" cy="10.2" r="1.5" fill="var(--red)"/>
     </svg>
-    <span class="brand-name">Meister</span>
-    <span class="brand-sub">運行コンソール</span>
+    <span class="brand-text">
+      <span class="brand-name">Meister</span>
+      <span class="brand-sub">運行コンソール</span>
+    </span>
   </div>
 
   <div id="signals" class="signals">
@@ -49,24 +51,26 @@
     </div>
   </div>
 
-  <div class="mode-bar">
+  <div class="topbar-actions">
     <span class="mode-badge" id="mode-badge" data-tone="idle">—</span>
     <button id="btn-switch-mode" class="btn btn-quiet" type="button" hidden>
       保存地図ナビへ
     </button>
+    <span class="rule" aria-hidden="true"></span>
     <input id="map-name" class="map-name" type="text" maxlength="64"
            placeholder="地図名（空なら自動）" aria-label="保存する地図の名前">
     <button id="btn-save-map" class="btn btn-quiet" type="button">地図を保存</button>
+    <span class="rule" aria-hidden="true"></span>
+    <button id="btn-vision-toggle" class="btn btn-toggle" type="button"
+            aria-pressed="true" data-tone="ok">認識モニター オン</button>
   </div>
-
-  <button id="btn-vision-toggle" class="btn btn-quiet" type="button"
-          aria-pressed="true" data-tone="ok">認識モニター ON</button>
 </header>
 
 <main class="layout">
+  <div class="main-column">
   <section class="panel map-panel" aria-label="地図">
     <div class="panel-head">
-      <h2>地図</h2>
+      <h2 class="panel-title">地図</h2>
       <div class="panel-tools">
         <button id="btn-fit" class="btn btn-quiet" type="button" title="全体表示 (F)" aria-label="全体表示">全体</button>
         <button id="btn-zoom-in" class="btn btn-icon" type="button" title="拡大 (+)" aria-label="拡大">
@@ -83,34 +87,70 @@
       <canvas id="map-canvas" tabindex="0"
               aria-label="地図キャンバス。クリックで目的地を追加、ドラッグで向きを指定"
               aria-describedby="map-hint"></canvas>
-      <p class="map-empty" id="map-empty">地図を待っています…（/map 未受信）</p>
-      <p class="map-hint" id="map-hint">クリックで目的地 · ドラッグで向き · Shift+クリックで初期位置 · ホイールで拡大 · 右ドラッグで移動</p>
+      <p class="map-empty" id="map-empty">地図を待っています</p>
+      <p class="map-hint" id="map-hint">
+        <span>クリックで目的地 · ドラッグで向き</span>
+        <span>Shift+クリックで初期位置</span>
+      </p>
     </div>
 
-    <div class="tour-summary">
-      <span>目的地 <b id="tour-count">0</b> 地点</span>
-      <span>合計 <b id="tour-distance">0.0</b> m</span>
-      <span class="shortcut-note">
+  </section>
+
+  </div>
+
+  <aside class="side">
+    <section class="panel waypoint-panel" aria-label="目的地と航行">
+      <div class="panel-head">
+        <h2 class="panel-title">目的地</h2>
+        <div class="panel-tools">
+          <button id="btn-undo" class="btn btn-icon" type="button"
+                  title="1つ戻す (Z)" aria-label="1つ戻す">
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6.5 4 3 7.5 6.5 11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 7.5h6a3.5 3.5 0 0 1 0 7H7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+          <button id="btn-clear" class="btn btn-icon" type="button"
+                  title="全消去 (C)" aria-label="全消去">
+            <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 5h9M6.5 5V3.5h3V5M5 5l.5 7.5h5L11 5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <span class="badge" id="nav-badge" data-tone="idle">—</span>
+        </div>
+      </div>
+      <p class="nav-message" id="nav-message" role="status">—</p>
+
+      <ol class="waypoint-list" id="waypoint-list"></ol>
+      <p class="empty-note" id="waypoint-empty">地図をクリックして目的地を追加</p>
+
+      <div class="tour-summary">
+        <span class="tour-figure">目的地 <b id="tour-count">0</b> 地点</span>
+        <span class="tour-figure">合計 <b id="tour-distance">0.0</b> m</span>
+      </div>
+
+      <div class="btn-row route-actions">
+        <button id="btn-send" class="btn btn-primary" type="button">ルート送信</button>
+        <button id="btn-cancel" class="btn btn-danger" type="button">停止</button>
+      </div>
+
+      <div class="shortcut-note">
         <span class="shortcut"><kbd>F</kbd>全体</span>
         <span class="shortcut"><kbd>Z</kbd>戻す</span>
         <span class="shortcut"><kbd>C</kbd>全消去</span>
         <span class="shortcut"><kbd>Enter</kbd>送信</span>
         <span class="shortcut"><kbd>Esc</kbd>停止</span>
         <span class="shortcut"><kbd>V</kbd>認識</span>
-      </span>
-    </div>
-  </section>
+      </div>
+    </section>
 
-  <aside class="side">
-    <section class="panel" aria-label="認識モニター">
+  </aside>
+
+  <aside class="aux">
+    <section class="panel vision-panel" aria-label="認識モニター">
       <div class="panel-head">
-        <h2>認識モニター</h2>
+        <h2 class="panel-title">認識モニター</h2>
         <span class="badge" id="vision-badge" data-tone="idle">待機</span>
       </div>
 
       <div class="vision-stage">
         <img id="vision-stream" alt="物体検出の枠を描いた認識画像" hidden>
-        <p class="vision-empty" id="vision-empty">認識画像を待っています…</p>
+        <p class="vision-empty" id="vision-empty">認識画像を待っています</p>
       </div>
 
       <dl class="vision-stats">
@@ -124,29 +164,9 @@
       <p class="vision-source" id="vision-source">配信 —</p>
     </section>
 
-    <section class="panel" aria-label="目的地と航行">
+    <section class="panel event-panel" aria-label="イベント">
       <div class="panel-head">
-        <h2>目的地</h2>
-        <span class="badge" id="nav-badge" data-tone="idle">—</span>
-      </div>
-      <p class="nav-message" id="nav-message" role="status">—</p>
-
-      <ol class="waypoint-list" id="waypoint-list"></ol>
-      <p class="empty-note" id="waypoint-empty">地図をクリックして目的地を追加</p>
-
-      <div class="btn-row">
-        <button id="btn-undo" class="btn" type="button">1つ戻す</button>
-        <button id="btn-clear" class="btn" type="button">全消去</button>
-      </div>
-      <div class="btn-row route-actions">
-        <button id="btn-send" class="btn btn-primary" type="button">ルート送信</button>
-        <button id="btn-cancel" class="btn btn-danger" type="button">停止</button>
-      </div>
-    </section>
-
-    <section class="panel" aria-label="イベント">
-      <div class="panel-head">
-        <h2>イベント</h2>
+        <h2 class="panel-title">イベント</h2>
         <button id="btn-log-clear" class="btn btn-quiet" type="button">消去</button>
       </div>
       <ol class="event-log" id="event-log"></ol>
