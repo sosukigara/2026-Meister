@@ -167,3 +167,25 @@ ros2 bag play /tmp/bag_cam --rate 1.0
 
 前回の結果と「比較にならなかった理由」は
 [bench/2026-11-20-cpu-analysis.md](../bench/2026-11-20-cpu-analysis.md) §5。
+
+## 10. 画像認識の内訳を測る
+
+`MEISTER_VISION_PROFILE=1` を付けると、1 フレームの前処理・推論・後処理の
+平均が 20 フレームごとに stderr に出る。**入力は計算より速く流す**こと
+（カメラは 1〜8 Hz で頭打ちになるため、bag 再生で 3〜5 倍速にする）。
+
+```bash
+MEISTER_VISION_PROFILE=1 \
+ros/install/meister_vision/lib/meister_vision/detection_node --ros-args \
+  -p image_topic:=/camera/image_raw -p rate:=30.0 -p inference_threads:=2 \
+  -p model_path:=ros/install/meister_vision/share/meister_vision/models/yolov8n-320.onnx &
+
+# 購読者がいないと推論しないので、記録器か rqt を同時に動かす
+python3 ros/src/meister_vision/scripts/record_detections.py --seconds 30 --out /tmp/p.json &
+ros2 bag play /tmp/bag_cam --rate 5.0
+```
+
+出力例（320 入力・A76 固定・2 スレッド）:
+`[vision-profile] pre 0.9 ms  infer 57.0 ms  post 0.4 ms  (input 320)`
+
+現状は**推論が 98%** なので、前処理・後処理の最適化では速くならない。

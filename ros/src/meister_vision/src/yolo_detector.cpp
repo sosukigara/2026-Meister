@@ -2,8 +2,10 @@
 #include "meister_vision/yolo_detector.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
@@ -233,6 +235,15 @@ std::vector<Detection> YoloDetector::Detect(const cv::Mat& image_bgr) const {
   thread_local cv::Mat blob_mat;
   thread_local std::vector<float> output_buf;
 
+  // MEISTER_VISION_PROFILE=1 のときだけ、前処理・推論・後処理の内訳を出す。
+  // 「どこが重いか」を推測せずに済ませるための計測点。
+  static const bool profiling = std::getenv("MEISTER_VISION_PROFILE") != nullptr;
+  auto mark = [](bool on) {
+    return on ? std::chrono::steady_clock::now()
+              : std::chrono::steady_clock::time_point{};
+  };
+  const auto t0 = mark(profiling);
+
   const LetterboxResult lb =
       LetterboxInto(image_bgr, letterbox_canvas, input_size_, kYoloPadColor);
 
@@ -247,11 +258,36 @@ std::vector<Detection> YoloDetector::Detect(const cv::Mat& image_bgr) const {
                          cv::Size(input_size_, input_size_), cv::Scalar(),
                          /*swapRB=*/true, /*crop=*/false, CV_32F);
 
+  const auto t1 = mark(profiling);
+
   session_->RunInto(blob_mat.ptr<float>(), blob_mat.total(), output_buf);
 
-  return YoloPostprocess(output_buf, grid_cells_, lb.ratio, lb.pad_w,
-                         lb.pad_h, image_bgr.cols, image_bgr.rows,
-                         conf_threshold_, iou_threshold_);
+  const auto t2 = mark(profiling);
+  std::vector<Detection> detections =
+      YoloPostprocess(output_buf, grid_cells_, lb.ratio, lb.pad_w,
+                      lb.pad_h, image_bgr.cols, image_bgr.rows,
+                      conf_threshold_, iou_threshold_);
+
+  if (profiling) {
+    auto ms = [](auto a, auto b) {
+      return std::chrono::duration<double, std::milli>(b - a).count();
+    };
+    static double acc_pre = 0.0, acc_infer = 0.0, acc_post = 0.0;
+    static int frames = 0;
+    acc_pre += ms(t0, t1);
+    acc_infer += ms(t1, t2);
+    acc_post += ms(t2, std::chrono::steady_clock::now());
+    if (++frames == 20) {
+      std::fprintf(stderr,
+                   "[vision-profile] pre %.1f ms  infer %.1f ms  post %.1f ms  "
+                   "(input %d)\n",
+                   acc_pre / frames, acc_infer / frames, acc_post / frames,
+                   input_size_);
+      acc_pre = acc_infer = acc_post = 0.0;
+      frames = 0;
+    }
+  }
+  return detections;
 }
 
 std::string ResolveYoloModelPath() {
