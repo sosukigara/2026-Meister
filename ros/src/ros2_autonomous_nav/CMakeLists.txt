@@ -35,6 +35,11 @@ target_include_directories(map_generator PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 target_compile_features(map_generator PUBLIC cxx_std_17)
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  # Python 版の golden とバイト一致させる。壁の境界セルはちょうど半セルに
+  # あり、FMA 融合の有無で 136 セルが変わる（-ffp-contract=off で一致を実測）。
+  target_compile_options(map_generator PRIVATE -ffp-contract=off)
+endif()
 
 add_library(waypoint_tour src/waypoint_tour.cpp)
 target_include_directories(waypoint_tour PUBLIC

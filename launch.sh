@@ -126,16 +126,26 @@ else
     # 320 モデルがあれば 2 スレッドで 10Hz (実測)。なければ 640 既定＋警告。
     VISION_MODEL=""
     VISION_THREADS="4"
-    if [ -f "$WORKSPACE_ROOT/ros/install/meister_vision/share/meister_vision/models/yolov8n-320.onnx" ]; then
+    VISION_BACKEND="onnx"
+    VISION_RKNN="$WORKSPACE_ROOT/ros/install/meister_vision/share/meister_vision/models/yolov8n-zoo.rknn"
+    # NPU (RKNN) のモデルがあればそちらを使う。CPU 実装より速く、CPU も食わない。
+    # 生成手順は tools/rknn/README.md。無い場合だけ ONNX へ落とす。
+    if [ -f "$VISION_RKNN" ]; then
+        VISION_BACKEND="npu"
+        echo "=== Vision: NPU (RKNN yolov8n, 601/80 クラス) ==="
+    fi
+    if [ "$VISION_BACKEND" = "onnx" ] && \
+       [ -f "$WORKSPACE_ROOT/ros/install/meister_vision/share/meister_vision/models/yolov8n-320.onnx" ]; then
         VISION_MODEL="$WORKSPACE_ROOT/ros/install/meister_vision/share/meister_vision/models/yolov8n-320.onnx"
         VISION_THREADS="2"
         echo "=== Vision: yolov8n-320 + 2 threads (10Hz eco) ==="
-    else
+    elif [ "$VISION_BACKEND" = "onnx" ]; then
         echo "=== Vision: yolov8n-640 既定 (320 が無いため。5Hz 級) ==="
     fi
     ros2 launch ros2_autonomous_nav real_robot.launch.py \
         "serial_port:=$MEISTAR_SERIAL_PORT" "lidar_port:=$MEISTAR_LIDAR_PORT" \
-        "vision_model:=$VISION_MODEL" "vision_threads:=$VISION_THREADS" &
+        "vision_model:=$VISION_MODEL" "vision_threads:=$VISION_THREADS" \
+        "vision_backend:=$VISION_BACKEND" &
 fi
 LAUNCH_PID=$!
 

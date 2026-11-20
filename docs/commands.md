@@ -222,3 +222,19 @@ DISPLAY=:0 ros/src/meister_vision/scripts/vision_view.sh
 - 検出ノードは購読者が 0 の間は推論しないので、RViz が立ち上がるまで
   `/detections` は流れない（異常ではない）。
 - レート確認: `ros2 topic hz /detections`、`ros2 topic hz /detection_image`。
+
+## 12. 画像認識のバックエンド切り替え
+
+既定は NPU（RKNN）。CPU 版（ONNX Runtime）へ戻すときは `backend:=onnx`。
+
+```bash
+ros2 launch meister_vision pc_vision.launch.py                # NPU（既定）
+ros2 launch meister_vision pc_vision.launch.py backend:=onnx  # CPU
+```
+
+- どちらも `./detections` / `./detection_image` / `./target` を出すので、
+  Web UI とアーム制御は変更不要。
+- NPU 版は自前でカメラを開く。**`use_pc_camera:=true` と併用しないこと**（排他）。
+- RKNN モデルは `ros/src/meister_vision/models/yolov8n-zoo.rknn`。
+  生成手順は [tools/rknn/README.md](../tools/rknn/README.md)。
+- 実機モードの `launch.sh` は、モデルがあれば自動で NPU を選ぶ。

@@ -5,16 +5,26 @@
 
 ![RViz での表示](grasp_rviz_window.png)
 
-## 使い方
+## 使い方（既定の経路）
+
+**NPU 実装が既定**になった。`launch.sh` の実機モードは、RKNN モデルがあれば
+自動で NPU を選ぶ。ROS から直接起動する場合:
 
 ```bash
-# モデルは tools/rknn の手順で用意する（tools/rknn/models/yolov8n-zoo.rknn）
-python3 tools/grasp/yolo_grasp_stream.py \
-  --model tools/rknn/models/yolov8n-zoo.rknn \
-  --labels tools/grasp/coco_labels.txt
+# 既定 backend:=npu（RKNN）。ONNX(CPU) へ戻すなら backend:=onnx
+ros2 launch meister_vision pc_vision.launch.py
+ros2 launch meister_vision pc_vision.launch.py backend:=onnx
 
-rviz2 -d tools/grasp/grasp_view.rviz
+rviz2 -d tools/grasp/grasp_view.rviz   # /grasp_image を見る場合
 ```
+
+- 実体は `ros/src/meister_vision/scripts/yolo_grasp_stream.py`（パッケージに install 済み）。
+- モデルは `ros/src/meister_vision/models/yolov8n-zoo.rknn` に置くと share へ入る。
+  `tools/rknn/README.md` の手順で生成する（`.rknn` は git 管理外）。
+- ラベルは `ros/src/meister_vision/config/coco_labels.txt`。
+- 出力は既存と同じ `./detections`（vision_msgs/Detection2DArray）、
+  `./detection_image`、`./target`。加えて `./grasp_image`（把持候補の描画）。
+  **Web UI とアーム制御は ONNX 版と共通のまま**で、backend を切り替えられる。
 
 - 一番大きい枠（＝手前にあるとみなす）を **把持ターゲット**として緑枠で強調し、
   画面下に `TARGET <名前> (x,y) angle <度> width <px>` を出す。
@@ -30,7 +40,29 @@ rviz2 -d tools/grasp/grasp_view.rviz
 | 推論（NPU のみ） | 20.7 ms（`tools/rknn` のベンチ、48 fps） |
 | 推論（このノードの実測） | 114 ms（アイドル時）／176 ms（RViz 同居時） |
 
-### CPU 使用率（2026-11-20 実測）
+### C++ 移植後の実測（2026-11-20）
+
+| 実装 | 推論 | CPU（1 コア換算） |
+|---|---|---|
+| Python（rknnlite） | 157 ms | 133% |
+| **C++（librknnrt 直叩き）** | **24.6〜25.7 ms** | **33%** |
+
+**目標（30 fps / CPU 40%）を両方満たした。** 25 ms は約 40 fps 相当。
+理由は単純で、C++ 版は NPU の出力を int8 のまま受け取り、しきい値を超えた
+アンカーだけ逆量子化して DFL を回す。Python 版は `rknnlite` が 9 本の出力
+（54 万要素）を毎フレーム float へ展開し、さらに配信スレッドと GIL を奪い合っていた。
+
+`yolov8n-zoo.rknn` はキャリブ画像が暗所のフレームだったため、クラス確率の
+量子化レンジが 0〜0.5 に圧縮されている（実測: cls の scale 0.00196 / zp -128）。
+明るい画像で再キャリブすれば、より高い確信度が出せる。★要確認★
+
+### Python 実装（参考・予備）
+
+`ros/src/meister_vision/scripts/yolo_grasp_stream.py` は同じ処理の Python 版。
+既定では使わない（C++ 版が既定）。挙動比較や、librknnrt が無い環境での
+代替として残してある。
+
+### 旧: CPU 使用率（C++ 移植前の記録）
 
 | 条件 | CPU（1 コア換算） | 推論 |
 |---|---|---|

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import math
+import sys
 import threading
 import time
 from typing import List, Optional, Tuple
@@ -20,7 +21,9 @@ import numpy as np
 
 import rclpy
 from rclpy.node import Node
+from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
 from sensor_msgs.msg import Image
+from vision_msgs.msg import Detection2D, Detection2DArray, ObjectHypothesisWithPose
 
 IMG_SIZE = (640, 640)          # モデル入力 (w, h)
 OBJ_THRES = 0.45          # 既定。--conf で変えられる
@@ -159,7 +162,16 @@ class GraspNode(Node):
         self._conf = conf
         self._display_period = 1.0 / display_fps if display_fps > 0 else 0.0
         self._grasp = GraspTarget()
+        # 既存の Web UI とアーム制御はこの 2 本を見ている。NPU 実装でも同じ名前に
+        # 出すことで、ONNX 版と差し替え可能にする。
         self._pub = self.create_publisher(Image, topic, 1)
+        self._pub_detections = self.create_publisher(Detection2DArray, "detections", 10)
+        self._pub_image = self.create_publisher(Image, "detection_image", 10)
+        # アームは最新の 1 件だけ見る。depth=1 で古い指令を捨てる。
+        self._pub_target = self.create_publisher(
+            Detection2DArray, "target",
+            QoSProfile(depth=1, history=HistoryPolicy.KEEP_LAST,
+                       reliability=ReliabilityPolicy.RELIABLE))
         self._device = device
         self._topic = topic
 
@@ -184,8 +196,15 @@ class GraspNode(Node):
         self._infer_ms = 0.0
         self._frames = 0
         self._last_publish = 0.0
+        self._read_failures = 0
+        self._capture_w = capture_w
+        self._capture_h = capture_h
         self._stop = False
         self.get_logger().info(f"入力 {IMG_SIZE} / ラベル {len(labels)} 件 / {device}")
+
+    def stop(self) -> None:
+        self._stop = True
+        self._cap.release()
 
     def run(self) -> None:
         infer = threading.Thread(target=self._infer_loop, daemon=True)
@@ -201,7 +220,17 @@ class GraspNode(Node):
         while rclpy.ok() and not self._stop:
             ok, frame = self._cap.read()
             if not ok or frame is None:
+                self._read_failures += 1
+                if self._read_failures % 50 == 0:
+                    self.get_logger().warn("カメラを開き直します")
+                    self._cap.release()
+                    self._cap = cv2.VideoCapture(self._device, cv2.CAP_V4L2)
+                    self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, self._capture_w)
+                    self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self._capture_h)
+                    self._cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                time.sleep(0.005)
                 continue
+            self._read_failures = 0
             with self._lock:
                 self._latest = frame
                 self._has_frame = True
@@ -210,7 +239,12 @@ class GraspNode(Node):
                 continue  # 配信は上限レートに抑える（カメラは読み続けて最新を保つ）
             self._last_publish = now
             canvas = self._compose(frame)
-            self._publish(canvas)
+            stamp = self.get_clock().now().to_msg()
+            self._publish(canvas, stamp)
+            self._publish_annotated(canvas, stamp)
+            with self._lock:
+                detections = list(self._detections)
+            self._publish_detections(stamp, detections)
             self._frames += 1
             if self._frames % 60 == 0:
                 self.get_logger().info(
@@ -301,16 +335,46 @@ class GraspNode(Node):
                     (8, 22), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
         return canvas
 
-    def _publish(self, canvas: np.ndarray) -> None:
+    def _publish_detections(self, stamp, detections: List[dict]) -> None:
+        message = Detection2DArray()
+        message.header.stamp = stamp
+        message.header.frame_id = "camera_link"
+        for index, det in enumerate(detections):
+            box = Detection2D()
+            x0, y0, x1, y1 = det["box"]
+            box.bbox.center.position.x = float((x0 + x1) / 2)
+            box.bbox.center.position.y = float((y0 + y1) / 2)
+            box.bbox.size_x = float(x1 - x0)
+            box.bbox.size_y = float(y1 - y0)
+            hypothesis = ObjectHypothesisWithPose()
+            hypothesis.hypothesis.class_id = det["label"]
+            hypothesis.hypothesis.score = det["score"]
+            box.results.append(hypothesis)
+            message.detections.append(box)
+        self._pub_detections.publish(message)
+        # 先頭（最も手前）だけをアーム向けに流す
+        if detections:
+            target = Detection2DArray()
+            target.header = message.header
+            target.detections = [message.detections[0]]
+            self._pub_target.publish(target)
+
+    def _publish_annotated(self, canvas: np.ndarray, stamp) -> None:
+        self._pub_image.publish(self._to_msg(canvas, stamp))
+
+    def _to_msg(self, canvas: np.ndarray, stamp) -> Image:
         msg = Image()
-        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.stamp = stamp
         msg.header.frame_id = "camera_link"
         msg.height, msg.width = canvas.shape[:2]
         msg.encoding = "bgr8"
         msg.is_bigendian = 0
         msg.step = canvas.shape[1] * 3
         msg.data = canvas.tobytes()
-        self._pub.publish(msg)
+        return msg
+
+    def _publish(self, canvas: np.ndarray, stamp) -> None:
+        self._pub.publish(self._to_msg(canvas, stamp))
 
 
 def main() -> int:
@@ -325,19 +389,28 @@ def main() -> int:
                         help="信頼度しきい値。誤検出が多いときは上げる")
     parser.add_argument("--display-fps", type=float, default=15.0,
                         help="配信レート上限。CPU を下げたいときは下げる")
-    args = parser.parse_args()
+    # launch から起動されると --ros-args -r __node:=... が後ろに付く。
+    # 自前の引数だけ解釈し、ROS 用は rclpy.init に渡す。
+    args, ros_args = parser.parse_known_args()
 
-    rclpy.init()
+    rclpy.init(args=[sys.argv[0], *ros_args])
+    node = None
     try:
         node = GraspNode(args.model, load_labels(args.labels), args.device,
                          args.topic, args.width, args.height, args.conf,
                          args.display_fps)
         node.run()
+    except KeyboardInterrupt:
+        pass
     except Exception as exc:  # noqa: BLE001 - 起動失敗はそのまま出して終わる
         print(f"起動に失敗: {exc}")
-        rclpy.shutdown()
         return 1
-    rclpy.shutdown()
+    finally:
+        if node is not None:
+            node.stop()
+        # SIGTERM では rclpy 側が先に shutdown している。二重に呼ぶと例外になる。
+        if rclpy.ok():
+            rclpy.shutdown()
     return 0
 
 

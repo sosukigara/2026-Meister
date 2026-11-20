@@ -65,6 +65,17 @@ TEST(MapGenerator, WallIsOneCellWideOnTheGrid) {
   EXPECT_EQ(At(spec, grid, 0.0, 4.875), kFreePixel);
 }
 
+TEST(MapGenerator, WallBoundaryMatchesPythonRounding) {
+  const MapSpec spec;
+  const auto grid = BuildNavWorldGrid(spec);
+  // wall_i1 の西端 x=-1.575 と wall_i4 の南端 y=-1.575 はちょうど半セル。
+  // Python 版は乗算と加算を別々に丸めるので自由、FMA に融合されると占有になる。
+  EXPECT_EQ(At(spec, grid, -1.575, -1.025), kFreePixel);
+  EXPECT_EQ(At(spec, grid, -1.525, -1.025), kOccupiedPixel);
+  EXPECT_EQ(At(spec, grid, 3.5, -1.575), kFreePixel);
+  EXPECT_EQ(At(spec, grid, 3.5, -1.525), kOccupiedPixel);
+}
+
 TEST(MapGenerator, MatchesGoldenPgmByteForByte) {
   std::ifstream in(MAP_GOLDEN_PATH, std::ios::binary);
   ASSERT_TRUE(in.good()) << "missing golden " << MAP_GOLDEN_PATH;
