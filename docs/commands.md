@@ -6,12 +6,13 @@
 
 - PlatformIO CLI（`pio`）が使えること。
 - ROS 2 Jazzy が source 済みであること。
+- `libserial-dev` が入っていること（`pkg_check_modules` で検出）。
 - 実機接続時は `upload_port` / `monitor_port` が `platformio.ini` で by-id 指定されている（別ボード誤書き込み防止）。
 
 ## 2. ビルド
 
 ```bash
-# 全体ビルド（4 パッケージ並列）
+# 全体ビルド（6 パッケージ並列）
 ./build.sh
 
 # ファームウェア（両 env）
@@ -33,12 +34,10 @@ pio run -e esp32dev -t upload
 cd firmware/main_board
 pio test -e native
 
-# Python ブリッジ（22 cases）
-cd ros/src/meister_serial_bridge
-PYTHONPATH=. python3 -m pytest test/
-
-# リポジトリルートから
-python3 -m pytest ros/src/meister_serial_bridge/test/
+# ROS ブリッジ（C++/gtest、gtest 61 cases。colcon test-result は CTest 6 件を含め 67）
+cd ros
+colcon test --packages-select umeonigiri_serial_bridge
+colcon test-result --verbose
 ```
 
 ## 4. 実機検証（comm_check）
@@ -47,11 +46,11 @@ python3 -m pytest ros/src/meister_serial_bridge/test/
 
 ```bash
 # リポジトリルート
-ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0
+ros2 run umeonigiri_serial_bridge umeonigiri_comm_check --port /dev/ttyUSB0
 # 手順: uplink / downlink / err_flag
 
 # FB_STATE 周期の実測
-ros2 run meister_serial_bridge meister_hz_measure --port /dev/ttyUSB0 --expect-hz 100
+ros2 run umeonigiri_serial_bridge umeonigiri_hz_measure --port /dev/ttyUSB0 --expect-hz 100
 ```
 
 ## 5. 起動
@@ -160,9 +159,9 @@ bash .omo/session-work/check_header.sh
 ## 8. 設定変更時のチェックリスト
 
 - `platformio.ini` の `MSTE_*` を変える → `meister_config.h` のフォールバックも変える
-- プロトコルの軸数を変える → `meister_protocol.h` **と** `protocol.py` **と** 両方のテストの期望値を変える
+- プロトコルの軸数を変える → firmware の `generated_config.h`（`ros/config/meister_robot.yaml` から生成）と、firmware / PC 両方のテストの期待値を変える
 - ピン番号を変える → `pio run -e esp32dev -e esp32dev_usbuart`（両 env）と実機 `comm_check`
-- Python のみの変更 → `pytest`。C++ 変更 → `pio test -e native`
+- PC の C++ 変更 → `colcon test --packages-select umeonigiri_serial_bridge`。firmware の変更 → `pio test -e native`
 - 実機挙動を変更 → `comm_check` 3 手順
 
 ## 9. 画像認識の A/B（同一入力でモデルを比べる）

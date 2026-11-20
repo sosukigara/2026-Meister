@@ -5,7 +5,7 @@ ROS 2 (Jazzy) ロボット「Meister」の**実機側マイコン層**。
 ESP32 側を PlatformIO + Arduino framework で実装する。
 
 - プロトコル仕様: [docs/design/07-esp32-uart.md](../../docs/design/07-esp32-uart.md)
-- PC 側の ROS 2 シリアルブリッジ: `src/meister_serial_bridge/` として実装済み。モック ESP32 は別 Wave（対象外）
+- PC 側の ROS 2 シリアルブリッジ: `ros/src/umeonigiri_serial_bridge/` として実装済み。モック ESP32 は別 Wave（対象外）
 
 ## ディレクトリ構成
 
@@ -131,7 +131,7 @@ pio run -e esp32dev -t upload           # 実機用（GPIO16/17 経由）
 
 ```bash
 cd firmware/main_board && pio run -e esp32dev_usbuart -t upload
-ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0
+ros2 run umeonigiri_serial_bridge umeonigiri_comm_check --port /dev/ttyUSB0
 ```
 
 ```
@@ -155,7 +155,7 @@ PASS: PC と ESP32 の通信を確認しました。
 `comm_check` は既定で計測開始前に ESP32 を再起動する（`--no-reset` で無効化）。
 受信エラーは再起動でしか消えないため、手順 2 の前提になっている。
 
-ROS 2 経由の動作は `ros2 launch meister_serial_bridge serial_bridge.launch.py` で
+ROS 2 経由の動作は `ros2 launch umeonigiri_serial_bridge umeonigiri_serial_bridge.launch.py` で
 `/esp32/state` を購読して確認する。
 
 ## 通信周期の測定
@@ -169,7 +169,7 @@ ROS 2 経由の動作は `ros2 launch meister_serial_bridge serial_bridge.launch
 ```bash
 cd firmware/main_board
 pio run -e esp32dev_usbuart -t upload
-ros2 run meister_serial_bridge meister_hz_measure \
+ros2 run umeonigiri_serial_bridge umeonigiri_hz_measure \
     --port /dev/ttyUSB0 --duration 5 --with-commands --expect-hz 100
 ```
 

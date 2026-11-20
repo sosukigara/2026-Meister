@@ -12,7 +12,7 @@
 │  umeonigiri_webnav       Web UI (HTTP + WebSocket :8088)           │
 │  ros2_autonomous_nav    Nav2 / SLAM / launch                       │
 │  meister_vision         YOLOv8n ONNX 物体検出                      │
-│  meister_serial_bridge  ⇅ UART ⇅ ESP32 ブリッジ（唯一の接点）       │
+│  umeonigiri_serial_bridge  ⇅ UART ⇅ ESP32 ブリッジ（唯一の接点）       │
 └──────────────────────────────┬────────────────────────────────────┘
                                │ USB-UART, 115200 bps
                                │ 固定長バイナリ + XOR チェックサム
@@ -38,7 +38,7 @@ hal/bus_protocol ← Arduino 非依存（pio test -e native でテストでき�
 
 - `hal/` は上位 (`arm/`, `base_chassis/`, `main.cpp`) を知らない（R8）。
 - `hal/bus_protocol` だけが Arduino を include しない。これによりホスト側テスト可能。
-- `meister_protocol.*` も Arduino 非依存。C++ 版と Python 版（`protocol.py`）は**バイト単位で一致**しなければならない。
+- `meister_protocol.*` は Arduino 非依存。PC 側の CMake が同じソースを直接コンパイルするので、バイト単位の一致はビルドで保証される。
 
 ## 3. モジュール責務
 
@@ -56,15 +56,16 @@ hal/bus_protocol ← Arduino 非依存（pio test -e native でテストでき�
 | `hal/bus_servo` | バスサーボ（STS3215 等） | |
 | `meister_protocol` | TypeId・軸数・値域・サイズ・Frame 構造 | PC 側とバイト一致 |
 | `meister_config` | 設定の唯一の出所 | 生成物 `generated_config.h` を include |
-| `meister_serial_bridge/protocol.py` | フレーム codec（C++ 版とバイト一致） | rclpy 非依存、単体 import 可 |
-| `meister_serial_bridge/kinematics.py` | Twist → (舵角, 速度) | 純粋関数 |
+| `umeonigiri_serial_bridge/include/.../serial_io.hpp` | UART I/O 抽象と libserial 実装 | gtest からフェイクを注入できる |
+| `umeonigiri_serial_bridge/include/.../bridge_core.hpp` | ROS 非依存の中核（ウォッチドッグ・再オープン・受信） | `Clock` を注入する |
+| `umeonigiri_serial_bridge/src/frames.cpp` / `kinematics.cpp` | フレーム組み立てと Twist → (舵角, 速度) | 値域は firmware の生成 config を 1 箇所で使う |
 
 ## 4. データフロー
 
 ### PC → ESP32（指令）
 1. Nav2 が `/cmd_vel` (Twist) を配信
-2. `serial_bridge_node` が購読 → `kinematics.py` で (舵角, 速度) に変換
-3. `protocol.py` でフレーム encode → UART 送信（到着時、10〜20 Hz）
+2. `serial_bridge_node` が購読 → `kinematics.cpp` で (舵角, 速度) に変換
+3. `firmware` の `meister_protocol.cpp` を直接リンクした `frames.cpp` でフレーム encode → UART 送信（到着時、10〜20 Hz）
 4. ESP32 `command_dispatch` が受信 FSM で decode → `base_chassis` / `arm` へ振り分け
 5. ESP32 は `MSTE_CONTROL_HZ` (100 Hz) で最新指令を再適用
 
@@ -91,7 +92,7 @@ hal/bus_protocol ← Arduino 非依存（pio test -e native でテストでき�
 - **HAL 分離**: ハードウェア依存は `hal/` に閉じ込め、上位は抽象 (`IServoChannel`) を使う。
 - **設定の単一出所**: `meister_config.h`（コンパイル時 `-D` → フォールバックの 1 経路）。
 - **生成物**: `ros/config/meister_robot.yaml` → `tools/gen_config.py` → `hal/generated_config.h`。機構は生成定数表を読む。
-- **プロトコルの双方向一致**: C++ `meister_protocol.h` と Python `protocol.py` はバイト単位で一致。軸数変更時は両方直す。
+- **プロトコルの双方向一致**: PC と firmware は同じ `meister_protocol.*` をコンパイルする。軸数変更時は firmware の config と両テストを直す。
 - **静的グローバル禁止**: `setup()` 内で 1 か所に aggregate 構築（R11）。翻訳単位をまたぐ静的初期化順は未規定。
 - **未確定値のゲート**: `MSTE_ENABLE_BUS_SERVO=0` の間はバスを駆動しない。未取得を表す値は到達不能値（`0xFF`）を使い、`kRegisterMapVerified=false` の間は WRITE をゲート（R4）。
 - **幾何未確定のフェイルクローズ**: `kinematics.cpp` の `kGeometryNotFilled` のように、幾何が埋まるまで `Solve()` は必ず失敗し指令を出さない（R4 延長）。
@@ -122,9 +123,9 @@ hal/bus_protocol ← Arduino 非依存（pio test -e native でテストでき�
 ## 9. 設定変更時のチェックリスト
 
 - `platformio.ini` の `MSTE_*` を変える → `meister_config.h` のフォールバックも変える（`ros/src/` はマクロを直接参照しない）
-- プロトコルの軸数を変える → `meister_protocol.h` **と** `protocol.py` **と** 両方のテストの期望値を変える
+- プロトコルの軸数を変える → firmware の `generated_config.h` と、firmware / PC 両方のテストの期待値を変える
 - ピン番号を変える → `pio run -e esp32dev -e esp32dev_usbuart`（両 env）と実機 `comm_check`
-- Python のみの変更 → `pytest`。C++ 変更 → `pio test -e native`
+- PC の C++ 変更 → `colcon test --packages-select umeonigiri_serial_bridge`。firmware の変更 → `pio test -e native`
 - 実機挙動を変更 → `comm_check` 3 手順（uplink / downlink / err_flag）
 
 詳細コマンドは [docs/commands.md](commands.md)。罠は [docs/pitfalls.md](pitfalls.md)。

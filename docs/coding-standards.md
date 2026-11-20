@@ -16,12 +16,12 @@
 
 | 用途 | 採用 | 禁止・注意 |
 |---|---|---|
-| シリアル通信 (PC) | pyserial | — |
+| シリアル通信 (PC) | libserial（`pkg_check_modules`） | pyserial は使わない |
 | 物体検出 | onnxruntime | — |
 | HTTP/WebSocket (UI) | 既存 `umeonigiri_webnav`（cpp-httplib） | 新規 FW 追加は要相談 |
 | ファームウェア PWM | LEDC（`hal/ledc_pwm`） | 直接 `ledcXxx` を呼ばない |
 | テスト (C++) | Unity (`pio test`) | Arduino 依存コードは native テスト不可 |
-| テスト (Python) | pytest | rclpy 依存は分離してテスト |
+| テスト (ROS/C++) | gtest (`colcon test`) | rclpy 依存はノード側に閉じ込める |
 
 - 新しい依存を追加する前に、標準ライブラリ / 既存コードで代替できないか確認する。
 
@@ -85,8 +85,8 @@
 ## 10. テスト配置と実行
 
 - C++: `firmware/main_board/test/test_protocol/`, `test/test_bus_protocol/`, `test/test_kinematics/`（Unity、`pio test -e native`）。
-- Python: `ros/src/meister_serial_bridge/test/`（pytest）。
-- プロトコル変更時は C++ と Python の両テストの期望値を更新する。
+- ROS/C++: `ros/src/umeonigiri_serial_bridge/test/`（gtest、`colcon test --packages-select umeonigiri_serial_bridge`）。
+- プロトコル変更時は firmware のテストと PC 側のテストの期待値を更新する。
 
 ## 11. コミット単位 (R12)
 

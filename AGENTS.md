@@ -37,7 +37,7 @@ Goals: G1 auto-drive / G2 arm retrieval / G3 manual operation ([docs/やりた�
 | Detection | ONNX Runtime + YOLOv8n |
 | FW framework | Arduino (both arduino-esp32 2.x/3.x supported) |
 | Tests (C++) | Unity (`pio test -e native`) |
-| Tests (Python) | pytest |
+| Tests (ROS/C++) | gtest (`colcon test`) |
 
 Details: [docs/coding-standards.md](docs/coding-standards.md) §1-2.
 
@@ -51,10 +51,10 @@ Use `firmware/main_board/` as cwd for pio commands, `ros/` as cwd for ros2 comma
 cd firmware/main_board && pio run -e esp32dev -e esp32dev_usbuart
 # Tests
 cd firmware/main_board && pio test -e native
-cd ros && python3 -m pytest src/meister_serial_bridge/test/
+cd ros && colcon test --packages-select umeonigiri_serial_bridge && colcon test-result --verbose
 # Real-machine verification
-ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0
-ros2 run meister_serial_bridge meister_hz_measure --port /dev/ttyUSB0 --expect-hz 100
+ros2 run umeonigiri_serial_bridge umeonigiri_comm_check --port /dev/ttyUSB0
+ros2 run umeonigiri_serial_bridge umeonigiri_hz_measure --port /dev/ttyUSB0 --expect-hz 100
 ```
 
 Do not commit until the real-machine `comm_check` passes all 3 steps. Run all 4 builds.
@@ -80,7 +80,7 @@ Additional NGs:
 - Avoid abusing `Any` (add type hints)
 - `hal/` must not know its upper layers. Never call into `hal/*` internals from above
 - `ros/src/` must not reference `MSTE_*` macros directly
-- When changing the protocol axis count, fix C++ and Python together
+- When changing the protocol axis count, update the firmware config and the firmware/PC tests together
 - Never break what already works in order to move forward
 - Never edit files, build, or commit in the main checkout (`/home/so/Meistar`) as part of a task
 - Never `git push` from inside a feature worktree; only the main checkout pushes after merging
@@ -120,7 +120,7 @@ Additional NGs:
 
 ## 6. Tacit Knowledge (Excerpt — Not Obvious from Code Alone)
 
-- Protocol: `protocol.py` (Python) and `meister_protocol.h` (C++) must match **byte for byte**. Fix both when changing the axis count.
+- Protocol: `firmware/main_board/include/meister_protocol.h` / `src/meister_protocol.cpp` is the single implementation. `ros/src/umeonigiri_serial_bridge/CMakeLists.txt` compiles the same source, so PC and firmware stay byte-identical. Change the axis count in the firmware config and both test suites.
 - Timing: PC→ESP32 on arrival, ESP32 applies at 100 Hz, FB_STATE at 100 Hz, STS read-back round-robin at 30–40 ms.
 - Unverified values: `MSTE_BUS_RESP_TIMEOUT_US=3000µs`, `MSTE_BUS_INTER_FRAME_GAP_US=200µs`, `reg::*` addresses, `kStepsPerRev=4096` are not datasheet-checked. Do not guess them.
 - Web search is blocked for all providers. pip is available.

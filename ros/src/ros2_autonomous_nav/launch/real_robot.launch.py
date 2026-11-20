@@ -67,7 +67,7 @@ def generate_launch_description():
         output='screen'
     )
 
-    # --- odom->base_footprint は meister_serial_bridge が配信する ---
+    # --- odom->base_footprint は umeonigiri_serial_bridge が配信する ---
     # 静的 identity 変換を置くと、走行中もロボットが静止していると SLAM/Nav2 に
     # 誤認させる（旧実装の欠陥）。serial_bridge が /cmd_vel と IMU ヨーを融合して
     # 50 Hz で /odom と odom->base_footprint を出すので、ここでは何も置かない。
@@ -117,9 +117,9 @@ def generate_launch_description():
     # /cmd_vel -> ESP32 UART (ステアリング舵角 + モータ PWM フレーム)
     # /odom と odom->base_footprint はこのノードが 50 Hz で配信する。
     serial_bridge = Node(
-        package='meister_serial_bridge',
-        executable='serial_bridge',
-        name='serial_bridge',
+        package='umeonigiri_serial_bridge',
+        executable='umeonigiri_serial_bridge',
+        name='umeonigiri_serial_bridge',
         output='screen',
         parameters=[{
             'serial_port': serial_port,

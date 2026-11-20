@@ -14,7 +14,7 @@
 │  umeonigiri_webnav    Web UI (HTTP + MJPEG, :8088)                            │
 │  ros2_autonomous_nav  Nav2 / SLAM / 起動スクリプト                          │
 │  meister_vision    YOLOv8n ONNX 物体検出                                    │
-│  meister_serial_bridge  ⇅ UART ⇅ ESP32 ブリッジ  ← ★ PC と ESP32 の唯一の接点 │
+│  umeonigiri_serial_bridge  ⇅ UART ⇅ ESP32 ブリッジ  ← ★ PC と ESP32 の唯一の接点 │
 └────────────────────────────────┬──────────────────────────────────────────┘
                                  │  USB-UART / USB ケーブル
                                  │  115200 bps・固定長バイナリ・XOR チェックサム
@@ -37,25 +37,26 @@
 | パッケージ | 役割 | エントリポイント | 依存 |
 |---|---|---|---|
 | `umeonigiri_description` | URDF / spawn / 全システム起動 | `launch/all_system.launch.py` `launch/spawn.launch.py` | — |
-| `ros2_autonomous_nav` | Nav2 / SLAM / 評価ツール (ament_cmake) | 各 `launch/*.launch.py`、`bench_nav` / `generate_map` / `waypoint_follower`（いずれも C++） | umeonigiri_description, meister_serial_bridge |
+| `ros2_autonomous_nav` | Nav2 / SLAM / 評価ツール (ament_cmake) | 各 `launch/*.launch.py`、`bench_nav` / `generate_map` / `waypoint_follower`（いずれも C++） | umeonigiri_description, umeonigiri_serial_bridge |
 | `meister_vision` | YOLOv8n ONNX 検出 → `detections` | `detection_node` / `hand_landmarks_node` / `pc_camera`（いずれも C++） | OpenCV, ONNX Runtime |
 | `umeonigiri_webnav` | Web UI（地図・現在地・経路・認識モニター） | `umeonigiri_webnav_server`（C++） | umeonigiri_description |
-| `meister_serial_bridge` | **`/cmd_vel` → UART フレーム、`/esp32/state` ← FB_STATE** | `serial_bridge` / `meister_comm_check` / `meister_hz_measure`（いずれも C++） | libserial, firmware の protocol ソース |
+| `umeonigiri_serial_bridge` | **`/cmd_vel` → UART フレーム、`/esp32/state` ← FB_STATE** | `umeonigiri_serial_bridge` / `umeonigiri_comm_check` / `umeonigiri_hz_measure`（いずれも C++） | libserial, firmware の protocol ソース |
 | `ros2_ldlidar_d500` | LD-D500 LiDAR → `/scan` (vendored, MIT) | `d500_node`（C++） | なし (termios のみ) |
 
-### `meister_serial_bridge` 内部（PC 側と ESP32 側の接点。ここ最重要）
+### `umeonigiri_serial_bridge` 内部（PC 側と ESP32 側の接点。ここ最重要）
 
-2026-10-05 に `ament_python` から `ament_cmake` へ移行した。実行ファイル名は
-Python 版から変えていないので `launch/` と `kill.sh` は無変更で動く。
+2026-10-05 に `ament_python` から `ament_cmake` へ移行し、2026-11-20 に
+パッケージ名・namespace・実行ファイル名を `umeonigiri_serial_bridge` / `umeonigiri_*` に
+統一した。`launch/` の名前も同じ日に揃えた。
 
 | ファイル | 役割 | 備考 |
 |---|---|---|
 | `include/.../frames.hpp` / `src/frames.cpp` | フレーム組み立てと**値域クランプ** | `hal/generated_config.h` の値域を唯一の定義として使う |
 | `include/.../stream_parser.hpp` | 増分パーサ（UART の途中分割に耐える） | `firmware/src/meister_protocol.cpp` の `ParseFrame` を包むだけ |
-| `include/.../serial_io.hpp` | `SerialIo` 抽象（`Read` / `Write` / `Flush` / DTR / RTS） | libserial 1.0.0 には pyserial の `timeout` 相当が無いので引数で渡す |
+| `include/.../serial_io.hpp` | `SerialIo` 抽象（`Read` / `Write` / `Flush` / DTR / RTS） | libserial 1.0.0 の `Read(numberOfBytes=0, msTimeout=0)` は何も読まない。到着済みバイトは `GetNumberOfBytesAvailable()` で取る |
 | `include/.../kinematics.hpp` | `Twist` → (舵角, 速度) の変換 | 純粋関数。丸めは `std::nearbyint` で Python の `round()`（偶数丸め）に揃える |
-| `include/.../bridge_core.hpp` | ROS 非依存の中核（ウォッチドッグ・再オープン・受信ループ） | `Clock` を注入するので gtest から実時間なしで検証できる |
-| `src/serial_bridge_node.cpp` | rclcpp ノード。`BridgeCore` の薄い適応層だけ | 実機排他的に UART を持つ |
+| `include/.../bridge_core.hpp` | ROS 非依存の中核（ウォッチドッグ・隔離・再オープン・受信ループ） | `Clock` を注入するので gtest から実時間なしで検証できる。壊れたリンクは libserial の dtor 例外を避けて隔離する |
+| `src/serial_bridge_node.cpp` | rclcpp ノード。`BridgeCore` の薄い適応層だけ | 実機排他的に UART を持つ。395 行（R1 分割は別計画） |
 | `src/comm_check.cpp` + `comm_check_main.cpp` | ベンチ確認 CLI（uplink / downlink / err_flag の 3 手順） | ROS 非依存 |
 | `src/feedback_hz_measure.cpp` + `feedback_hz_measure_main.cpp` | FB_STATE 周期の実測 CLI | ROS 非依存 |
 
@@ -205,12 +206,12 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 | 対象 | コマンド | 現状 |
 |---|---|---|
 | firmware プロトコル / バス codec / 運動学 | `cd firmware/main_board && pio test -e native` | 55 cases |
-| bridge (C++, gtest) | `colcon test --packages-select meister_serial_bridge` | 43 cases |
+| bridge (C++, gtest) | `colcon test --packages-select umeonigiri_serial_bridge` | 67 tests（gtest 61 + CTest 6） |
 | vision (C++, gtest) | `colcon test --packages-select meister_vision` | 54 cases（実モデル不要） |
 | firmware ビルド | `cd firmware/main_board && pio run -e esp32dev -e esp32dev_usbuart` | 2 env |
-| 全体ビルド | `./build.sh` | 5 packages |
-| 通信の動作確認 | `ros2 run meister_serial_bridge meister_comm_check --port /dev/ttyUSB0` | 3 手順 |
-| FB_STATE 周期の実測 | `ros2 run meister_serial_bridge meister_hz_measure --port /dev/ttyUSB0 --expect-hz 100` | — |
+| 全体ビルド | `./build.sh` | 6 packages |
+| 通信の動作確認 | `ros2 run umeonigiri_serial_bridge umeonigiri_comm_check --port /dev/ttyUSB0` | 3 手順 |
+| FB_STATE 周期の実測 | `ros2 run umeonigiri_serial_bridge umeonigiri_hz_measure --port /dev/ttyUSB0 --expect-hz 100` | — |
 
 ---
 
