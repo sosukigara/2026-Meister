@@ -46,7 +46,8 @@ def generate_launch_description():
 
     # 5. Web UI (map view + click-to-send waypoints) — http://localhost:8088
     web_nav = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(pkg_web_nav, 'launch', 'web_nav.launch.py'))
+        PythonLaunchDescriptionSource(os.path.join(pkg_web_nav, 'launch', 'web_nav.launch.py')),
+        launch_arguments={'use_sim_time': 'true'}.items()
     )
 
     # 6. Vision (Gazeboロボット目線カメラ+YOLOv8n検出。/camera/image_raw→/detections,/detection_image)
