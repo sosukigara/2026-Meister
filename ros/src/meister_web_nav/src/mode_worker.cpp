@@ -148,8 +148,15 @@ void ModeWorker::SetInitialPose(double x, double y, double yaw) {
   message.pose.covariance[0] = 0.25;
   message.pose.covariance[7] = 0.25;
   message.pose.covariance[35] = 0.07;
-  publisher->publish(message);
-  rclcpp::sleep_for(std::chrono::milliseconds(50));  // 配送を待つ
+  // 1 回だけだと落とすことがある。モード切替で AMCL を起こした直後は購読が
+  // まだ張られておらず、単発 publish が捨てられて
+  // 「Please set the initial pose...」のまま固まる（実測で再現）。
+  // 0.5 秒かけて複数回流し、確実に届かせる。
+  for (int attempt = 0; attempt < 10; ++attempt) {
+    message.header.stamp = node_->now();
+    publisher->publish(message);
+    rclcpp::sleep_for(std::chrono::milliseconds(50));
+  }
 }
 
 }  // namespace meister_web_nav
