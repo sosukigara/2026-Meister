@@ -9,10 +9,12 @@ Python 版と同じ丸めへ戻す。
 ## 確定した原因（一次情報 / 実測）
 
 - 失敗は row 140 col 88（world x=-1.575, y=-1.025）で、golden は free (254)、
-  C++ 生成器は occupied (0)。差分は **136 セル**で、内部壁 `wall_i1`
-  （center -1.5, size 0.15）の両端（ちょうど半セル）に集中している。
-- 削除前の Python 実装（`2439065^:scripts/generate_map.py`）を numpy で実行すると、
-  出力 PGM は **golden とバイト一致**（`cmp` exit 0）。境界判定は同じ `<=`。
+  C++ 生成器は occupied (0)。差分は **136 セル**: `wall_i1` の西端 x=-1.575 が
+  78 セル（PGM col 88）、`wall_i4` の南端 y=-1.575 が 58 セル（PGM row 151）。
+  どちらもちょうど半セルの境界。wall_i1 の東端 x=-1.425 は変わらない。
+- 削除前の Python 実装
+  （`2439065^:ros/src/ros2_autonomous_nav/scripts/generate_map.py`）を numpy で
+  実行すると、出力 PGM は **golden とバイト一致**（`cmp` exit 0）。境界判定は同じ `<=`。
 - 同一セルの `lx` は、Python / 分離丸めでは `-0.07500000000000018`（free）、
   GCC の `-O3`（既定 `-ffp-contract=fast`）では `-0.07499999999999973`（occupied）。
   `origin + (px+0.5)*resolution` が FMA に融合され、丸めが 1 回になるため。
@@ -22,9 +24,11 @@ Python 版と同じ丸めへ戻す。
 ## 修正
 
 - `map_generator` ターゲットだけに `-ffp-contract=off` を付ける（GNU/Clang）。
-  Python 版の「乗算と加算を別々に丸める」契約をビルドで固定する。
-- `WallBoundaryMatchesPythonRounding` を追加し、壁の両端が free、内部が occupied で
-  あることをピン留めする。golden テストは既存のまま使う。
+  Python 版の「乗算と加算を別々に丸める」契約をビルドで固定する。フラグは
+  `map_generator.cpp` の翻訳単位に閉じるため、計算をヘッダへ移すときは再適用が要る。
+- `WallBoundaryMatchesPythonRounding` を追加し、wall_i1 西端と wall_i4 南端が free、
+  その内側が occupied であることをピン留めする（前者だけでは後者の 58 セルを
+  検出できない）。golden テストは既存のまま使う。
 - golden / SDF / Python 互換の契約は変更しない。
 
 ## 検証
