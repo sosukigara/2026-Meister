@@ -139,3 +139,49 @@ obj 6: conf=0.53  bbox=(525,304)-(640,478)  center=(582,391)  norm=(0.910, 0.815
 ```bash
 ./rknn_FastSAM_demo <model.rknn> <input.jpg> <output.jpg>
 ```
+
+## リアルタイム表示（RViz ウィンドウ）
+
+カメラ → NPU 推論 → `/fastsam_image` 配信 → RViz の Image 表示、までを繋いだ。
+
+![RViz ウィンドウ](fastsam_rviz_window.png)
+
+実測（640x480 カメラ、FastSAM-x）: **配信 4.4 Hz**、推論 182 ms、後処理 2 ms、
+18 物体。画面左上に「18 obj infer 182ms post 2ms」を焼き込んでいる。
+
+### ビルド
+
+```bash
+git clone --depth 1 https://github.com/cqu20160901/FastSAM_rknn_Cplusplus.git /tmp/fastsam_rknn
+cmake -S tools/fastsam -B /tmp/fastsam_node/build \
+  -DFASTSAM_THIRD_PARTY=/tmp/fastsam_rknn/examples/rknn_fastSAM
+cmake --build /tmp/fastsam_node/build -j4
+```
+
+`postprocess.cc` は参照実装のものをそのまま使う（Apache-2.0）。
+自前実装に置き換えるのは別作業。
+
+### 実行
+
+```bash
+# 1) 配信ノード（モデル / カメラ / トピック名）
+/tmp/fastsam_node/build/fastsam_stream \
+  /tmp/fastsam_rknn/examples/rknn_fastSAM/model/RK3588/FastSAM-x_640x352.rknn \
+  /dev/video0 /fastsam_image &
+
+# 2) RViz（Image 表示のみの設定）
+rviz2 -d tools/fastsam/fastsam_view.rviz
+```
+
+`--fullscreen` は付けても動くが、**Wayland では画面キャプチャが黒くなる**
+（直接スキャンアウトのため）。確認用途ならウィンドウ表示のまま撮ること。
+
+### 注意
+
+- この機体では 4.4 Hz。**推論 182 ms が支配的**で、
+  カメラ（12 Hz 前後）より遅い。滑らかに見たいなら点数を落とすか、
+  入力解像度を下げた `.rknn` を作る必要がある（`tools/rknn/README.md`）。
+- 毎フレーム `cvtColor` + `resize` をかけている（RGA は使っていない）。
+  ここは 2〜3 ms 程度で、ボトルネックではない。
+- `postprocess.cc` が標準出力へ `=== FastSAM MeshGrid Generate success!` を
+  毎フレーム出す。ログが埋まるので、常用するなら抑制する。
