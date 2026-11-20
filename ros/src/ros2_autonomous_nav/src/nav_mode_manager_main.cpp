@@ -83,10 +83,11 @@ class NavModeManager : public rclcpp::Node {
   }
 
   bool ApplyTransition(const rclcpp::Client<ChangeState>::SharedPtr& client, uint8_t transition) {
-    for (int i = 0; i < 40 && !client->service_is_ready(); ++i) {
-      rclcpp::spin_some(shared_from_this());
-      rclcpp::sleep_for(std::chrono::milliseconds(50));
-    }
+    // この Node は MultiThreadedExecutor が回している。探索を進めようとして自分で
+    // spin_some(shared_from_this()) を呼ぶと、rclcpp は「既に executor に載っている」
+    // として std::runtime_error を投げ、モード管理ごと落ちる（起動直後に
+    // slam_toolbox がまだ configure されていないと必ずここへ入る。実測で再現）。
+    // 探索は他のスレッドが進めるので、ここは待つだけでよい。
     if (!client->wait_for_service(kServiceWait)) {
       RCLCPP_ERROR(get_logger(), "%s が見つかりません", client->get_service_name());
       return false;
