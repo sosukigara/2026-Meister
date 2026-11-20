@@ -146,7 +146,7 @@ PC (ROS 2)
 
 ### PC 側の変更点
 
-- `meister_serial_bridge` は `serial_port` 1 本前提。MSTE（ステアリング・アーム）1 本 +
+- `umeonigiri_serial_bridge` は `serial_port` 1 本前提。MSTE（ステアリング・アーム）1 本 +
   FOC 3 本の**4 リンク**になる。`/cmd_vel` を舵角系と車輪速度系に分けるノード構成が要る。
 - 現行 `kinematics.cpp` は自転車モデルで 6 ch に同じ速度を送る。6 輪で旋回すると内外輪の
   速度差が出るため、FOC の閉ループなら車輪ごとの速度を出せる。どのモデルにするかは

@@ -27,7 +27,7 @@ find_package(nlohmann_json REQUIRED)
 find_package(ament_cmake_gtest REQUIRED)
 
 # cpp-httplib は CMake config を同梱しない (0.14.3 時点) ので pkg-config で引く。
-# libserial を引く meister_serial_bridge と同じ流儀。
+# libserial を引く umeonigiri_serial_bridge と同じ流儀。
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(HTTPLIB REQUIRED IMPORTED_TARGET cpp-httplib)
 
