@@ -86,11 +86,11 @@
 ## P11. 文字化けスキャンの罠
 
 - 判定範囲は 3 個に限る: (1) 日本語の直後に英単語 3 文字以上、(2) ハングル、(3) U+FFFD。
-- 日本語の漢字も CJK 範囲 `[\x{4E00}-\x{9FFF}]` に含まれるので、CJK 範囲で判定すると正常な日本語が全滅する（`meister_web_nav` で実際に全滅した）。
+- 日本語の漢字も CJK 範囲 `[\x{4E00}-\x{9FFF}]` に含まれるので、CJK 範囲で判定すると正常な日本語が全滅する（`umeonigiri_webnav` で実際に全滅した）。
 
 ## P12. ROS 2 ノード名・購読の罠（2026-11-11 実測）
 
-- launch の `Node(..., name='X')` は `-r __node:=X` になり、プロセス内手作りノードの**明示名も上書き**する。1 実行ファイル多ノード（`web_nav_server` 内の map/vision/commander）で `name` を付けると 3 ノードが同名 3 重登録になり、`ros2 node info` が「3 nodes with the exact name」と言う。対策: 多ノード実行ファイルの launch には `name` を付けない（`web_nav.launch.py`）。
+- launch の `Node(..., name='X')` は `-r __node:=X` になり、プロセス内手作りノードの**明示名も上書き**する。1 実行ファイル多ノード（`umeonigiri_webnav_server` 内の map/vision/commander）で `name` を付けると 3 ノードが同名 3 重登録になり、`ros2 node info` が「3 nodes with the exact name」と言う。対策: 多ノード実行ファイルの launch には `name` を付けない（`umeonigiri_webnav.launch.py`）。
 - `create_subscription` の戻りを捨てると Jazzy では購読が破棄される。「Node が保持する」は誤り。`vision_listener`（メンバ保持、生存）と `map_listener`（破棄、死亡）で実証済み。購読はメンバで持つ。
 - 実機に odom 発行源がないと SLAM の message filter が `/scan` を全捨てする（`discarding message because the queue is full`）。対策: `real_robot.launch.py` の static `odom->base_footprint`（不動仮定。ずれは SLAM の `map->odom` が補正）。ESP32 odom ができたら置き換える。
 - 実機 launch の SLAM 起動は固定秒数 `activate` 禁止。`configure` 前に走ると両方 exit 1 で SLAM が `unconfigured` のまま固まる。`slam.launch.py` と同じ `OnStateTransition(inactive)` 駆動にする。
@@ -137,12 +137,12 @@
 - 症状: `/api/mode` で localization に切り替えても
   `AMCL cannot publish a pose or update the transform. Please set the initial pose...`
   が続き、`/api/nav` が即座に `failed` になる。
-- 原因: `web_nav_server` のプロセス内ノードが **`use_sim_time` を持たない**ため、
+- 原因: `umeonigiri_webnav_server` のプロセス内ノードが **`use_sim_time` を持たない**ため、
   `/api/initialpose` が実時間でスタンプされる。ログには
   `Requested time 14.900 but the earliest data is at time 69.160` のように
   シミュレーション時刻とのずれが出る。AMCL のメッセージフィルタが一致せず、
   `map→odom` が永遠に張られない。
-- 対策: `web_nav.launch.py` に `use_sim_time` 引数を足し、
+- 対策: `umeonigiri_webnav.launch.py` に `use_sim_time` 引数を足し、
   `mapping_nav.launch.py` から `true` を渡す（実機は既定の `false`）。
   多ノード実行ファイルでもコマンドラインのパラメータ上書きは全ノードに効く。
 - **もう 1 段の罠**: `use_sim_time` を直しても、`/api/initialpose` は
@@ -152,3 +152,62 @@
   流すように直した（`mode_worker.cpp`）。
 - 確認: 切り替え後に `/api/pose` が設定した座標付近を返せば初期化できている。
   `-4.0, -4.0` が**そのまま**返るなら初期化できていない（AMCL が補正していない）。
+
+## P16. HTTP ハンドラを秒単位で待たせると、画面全体が無応答になる（2026-11-20 実測）
+
+- 症状: Web UI を開いたまま 30 秒ほどで、地図 (`/api/map`) も姿勢 (`/api/pose`) も
+  **タイムアウトして返らなくなる**。サーバーのスレッドは 25 本すべて `futex_wait` で
+  止まっていた。ブラウザ側では `/api/mode` が 13 回すべて 4999 ms（`AbortSignal` の上限）
+  で失敗していた。
+- 原因: `/api/mode` が `get_mode` サービスを**呼び出しごとに新しいクライアントで探索**し、
+  見つからない構成（`nav_mode_manager` 無し）では 2 秒探索 + 3 秒待ちの 5 秒を
+  1 リクエストで消費していた。UI は 2 秒間隔で引くので待ち行列が伸び続け、
+  8 本のプールが全部その待ちで埋まると、無関係な要求も通らなくなる
+  （httplib は 1 接続 1 スレッド。プールが埋まった時点で受付が止まる）。
+- 対策: (1) モード照会は `service_is_ready()` だけ見て、居なければ即 `unknown` を返す。
+  (2) `get_mode` / `switch_to_localization` / `map_saver` / `/initialpose` を扱う
+  `ModeWorker` は**専用 executor スレッドで常に回す**。HTTP 側は `spin` せず
+  `future.wait_for(上限)` で待つだけにした。(3) UI のモード入力も
+  `polling` フラグで多重要求を止める（地図・姿勢・認識は元から止めていた）。
+- 確認: 40 本の `/api/mode` を同時に投げても 137 ms で全部返り、直後の `/api/map` は 1 ms。
+- 教訓: **ポーリングされる API に「見つからなければ数秒待つ」を入れてはいけない**。
+  待つのは人間が押した操作（切替・保存）だけにする。
+
+## P17. httplib の既定設定で、同じ接続の 2 回目以降が 40 ms 遅れる（2026-11-20 実測）
+
+- 症状: ポーリング API の p50 が 42 ms。`curl`（毎回新しい接続）では 0.7 ms なので
+  気づきにくい。Python の keep-alive クライアントでは 1 本の接続で
+  **5 回に 4 回が 42 ms**、5 回目（`Connection: close`）だけ速かった。
+- 原因: cpp-httplib 0.14.3 は `CPPHTTPLIB_TCP_NODELAY` 既定 false。応答ヘッダと本文を
+  別々の `send` で書くため、Nagle と delayed ACK が噛み合って 40 ms 待つ。
+  さらに `CPPHTTPLIB_KEEPALIVE_MAX_COUNT` 既定 5 で、5 要求ごとに TCP を張り直す。
+- 対策: `Server::set_tcp_nodelay(true)` / `set_keep_alive_max_count(1000)` /
+  `set_keep_alive_timeout(10)`（`http_app.cpp` の `ConfigureServer`）。
+  いずれも実行時 API なので、配布物の共有ライブラリでも効く。
+- 実測: 同一接続 200 連続で p50 42.6 ms → 0.44 ms、`/app.js` 42.2 ms → 1.3 ms。
+  `Keep-Alive: timeout=10, max=1000` になり、12 連続でも接続は切れない。
+- 注意: `CPPHTTPLIB_LISTEN_BACKLOG` は**マクロなので効かない**。この環境の
+  `libcpp-httplib` は共有ライブラリとして配布されており、`listen_internal()` は
+  そちらに焼き込まれている。受付待ち行列を変えたいなら自前ビルドが要る。
+
+## P18. 起動直後に `nav_mode_manager` が落ちて `/map` が出ない（2026-11-20 実測）
+
+- 症状: シミュレーションを起動すると `nav_mode_manager` が
+  `Node '/nav_mode_manager' has already been added to an executor.` で
+  `abort`（`process has died, exit code -6`）。モード管理が死ぬので
+  `slam_toolbox` が configure されず、Web UI は「地図を待っています」のまま。
+  Nav2 の `global_costmap` も `Received map message is malformed` を出し続ける。
+- 原因: `ApplyTransition()` のサービス探索ループが `rclcpp::spin_some(shared_from_this())`
+  を呼んでいた。この Node は `main()` で `MultiThreadedExecutor` に載っているので、
+  `spin_some` 内部の `executor.add_node()` が例外を投げる。起動 2 秒の BringUp 時点で
+  `/slam_toolbox/change_state` がまだ見えていないと必ずここへ入る（＝毎回ではなく競合）。
+- 対策: 探索ループを消し、`wait_for_service()` で待つだけにした。探索は
+  MultiThreadedExecutor の他スレッドが進める。
+- 教訓: **executor に載っている Node を `spin_some` してはいけない**。
+  `spin_some` は「その場で executor を作って add_node する」実装なので、
+  多重登録として弾かれる（同じ罠を webnav の `ModeWorker` からも外した）。
+- 確認: 同じ maze ワールドで、修正前は起動のたびに落ち（1/1）、修正後は落ちずに
+  `/api/mode` が `mapping`、`/api/map` が slam_toolbox の地図（例 71x69,
+  origin -4.93/-4.91）を返した（1/1）。empty ワールドでは修正前も落ちなかった
+  ので、これは起動順の競合であって常時再現ではない。★要確認★ 修正後に複数回の
+  起動を繰り返した統計はまだ無い。

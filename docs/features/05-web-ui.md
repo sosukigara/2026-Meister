@@ -7,7 +7,7 @@
 
 ## 概要
 
-`meister_web_nav` パッケージがローカルホストの Web UI（`127.0.0.1:8088`）を提供する。
+`umeonigiri_webnav` パッケージがローカルホストの Web UI（`127.0.0.1:8088`）を提供する。
 ブラウザ上にライブ地図と**認識モニター（物体検出の枠つきカメラ画像）**を表示し、
 地図上のクリック/ドラッグで複数ウェイポイントを指定して Nav2 巡回を実行できる。
 
@@ -15,7 +15,7 @@
 
 ## 実装済み機能
 
-- [ ] サーバ起動: `web_nav_server`（C++）が HTTP サーバ・ROS executor・ナビワーカーを起動する
+- [ ] サーバ起動: `umeonigiri_webnav_server`（C++）が HTTP サーバ・ROS executor・ナビワーカーを起動する
 - [ ] ライブ地図表示: `map_listener` が `/map`（TRANSIENT_LOCAL QoS）を購読し、OccupancyGrid を
       PNG に描く。`map_cache` が crop・PNG エンコード・版（ETag）を 1 箇所で持つ
 - [ ] 認識モニター: `vision_listener` が `/detection_image`・`/detections` を購読し、
@@ -40,8 +40,18 @@
 - [ ] 非表示タブの停止: 非表示中は JSON 取得と MJPEG を止め、復帰時に再取得する
 - [ ] 認識モニターの再接続: 切断・初回フレーム停止時は新しい URL で張り直す
       （失敗間隔は最大 30 秒まで倍々）
-- [ ] launch 組込み: `launch/web_nav.launch.py` で単体起動でき、`mapping_nav.launch.py` からも
-      起動される（実行ファイル名を変えていないので launch は無変更）
+- [ ] launch 組込み: `launch/umeonigiri_webnav.launch.py` で単体起動でき、
+      `mapping_nav.launch.py` / `real_robot.launch.py` からも起動される。
+      `world` 引数は保存地図の既定名 `<world>_<timestamp>` に使う
+- [ ] 応答時間: 同じ接続で 2 回目以降の要求が 40 ms 待たされない（TCP_NODELAY・keep-alive）。
+      地図が変わっていないときの `/api/map.png` は 0 バイトの 304 を返す
+- [ ] ハンドラを詰まらせない: `/api/mode` はサービスが居なくても即座に `unknown` を返す。
+      モード照会・切替・保存の ROS 呼び出しは専用 executor スレッドで回す
+- [ ] 地図の保存: 名前を空にすると `<world>_<timestamp>` で保存する。削除は `.yaml` と
+      画像（`.png` / `.pgm`）をまとめて消す
+- [ ] 初期位置の設定: 地図の上で **Shift+クリック**（ドラッグで向き）すると
+      `POST /api/initialpose` を送り、AMCL を初期化する。保存地図ナビへ切り替えた後、
+      RViz を開かずに Web UI だけで自己位置推定を始められる
 
 ## 計画中機能
 

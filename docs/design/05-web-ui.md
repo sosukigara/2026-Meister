@@ -15,15 +15,16 @@
         │  ports.hpp の口だけを見る (ROS 型を出さない)
    ├ MapSource    ← MapListener  (/map TRANSIENT_LOCAL, /tf)   ┐ 同一 executor
    ├ VisionSource ← VisionListener (/detection_image, /detections) ┘ (別スレッド)
-   └ NavSink      ← NavWorker    (/navigate_to_pose action)     … 専用スレッド
+   ├ NavSink      ← NavWorker    (/navigate_to_pose action)     … 専用スレッド
+   └ ModeSink     ← ModeWorker   (get_mode / map_saver / initialpose) … 専用 executor
 ```
 
 | 層 | ファイル | 責務 |
 |---|---|---|
-| HTTP | `http_app.cpp` `/ `vision_routes.cpp` / `http_support.cpp` | 経路登録、ETag/304、JSON、MJPEG、静的ファイル |
+| HTTP | `http_app.cpp` / `vision_routes.cpp` / `http_support.cpp` | 経路登録、ETag/304、JSON、MJPEG、静的ファイル |
 | 変換 | `map_cache.cpp` / `vision_cache.cpp` | メッセージ → ブラウザが貼れる画像と状態 JSON |
-| ROS | `map_listener.cpp` / `vision_listener.cpp` / `nav_worker.cpp` | 購読・アクション・スレッド |
-| 口 | `ports.hpp` | `MapSource` / `VisionSource` / `NavSink`（gtest はここを stub する） |
+| ROS | `map_listener.cpp` / `vision_listener.cpp` / `nav_worker.cpp` / `mode_worker.cpp` | 購読・アクション・サービス・スレッド |
+| 口 | `ports.hpp` | `MapSource` / `VisionSource` / `NavSink` / `ModeSink`（gtest はここを stub する） |
 
 `ports.hpp` に ROS 型を出さないので、HTTP 面は ROS グラフ無しでテストできる（AGENTS.md R8）。
 
@@ -41,6 +42,23 @@
   `ResizeObserver` のときだけ測って、描画前の強制レイアウトを避ける。
 - **非表示タブでは取得と MJPEG を止める**。戻ったときに取り直す。推論は監視 ON の間
   サーバー側で続く（購読は張ったまま）ので、止めるのは転送と描画だけ。
+- **地図 PNG は共有したまま配る**。`MapSource::RenderPng` は `shared_ptr<const string>` を
+  返し、キャッシュと同じ実体を指す。地図が変わっていないときは 304 で捨てるだけなので、
+  1 MB 級のバイト列をコピーしない。crop は `/map` を受けたスレッドで済ませ、PNG だけを
+  要求時に作る（encode 中も `/api/map` は待たない）。
+- **PNG は圧縮レベル 0**。配信先は同じホストのブラウザだけで、loopback のバイト数は
+  ほぼ無料。既定（レベル 3）の 62 ms が 18 ms になり、地図が動いている間の
+  HTTP スレッド占有が減る（1000x1000 の実測）。
+- **静的ファイルは (mtime, size) を版にしてメモリに持つ**。1 画面で 13 本の asset を
+  取るので、毎回ディスクから読むとページ表示のたびに無駄が積まる。ETag を付けて
+  再読み込みは 304 で済ませる。
+- **TCP は TCP_NODELAY・keep-alive 多め**。既定のままだと、応答ヘッダと本文を別々に
+  送ったときに Nagle と delayed ACK が噛み合い、同じ接続の 2 回目以降が 40 ms
+  待たされる（実測 p50 42 ms）。keep-alive の既定 5 要求も、1 秒おきに引く画面では
+  すぐ TCP を張り直すことになる。
+- **HTTP ハンドラで秒単位に待たない**。1 本詰まるとスレッドプールが枯れ、無関係な
+  要求まで止まる（実測: `/api/mode` を 2 秒ごとに引く画面で地図も姿勢も返らなくなった）。
+  モード照会は待ち時間ゼロ、切替と保存だけは上限付きで待つ。
 - **PNG は `cv::imencode`、認識画像は JPEG（品質 80）**。認識画像は 3 Hz で流れ続けるので、
   可逆圧縮の PNG を毎フレーム送ると帯域もブラウザのデコードも無駄になる。JPEG への変換は
   購読コールバックで 1 回だけ行い、`/api/vision.jpg` と MJPEG は同じバイト列を共有する。
@@ -56,6 +74,10 @@
 - **既定は ON**。認識モニターは「見たいときだけ見る」機能ではなく、遠隔でロボットの
   見え方を確認する主要な計器なので、起動直後から映る方を既定にする。CPU を空けたいときは
   UI の 1 ボタンで切る。
+- **初期位置は地図の Shift+クリック**。保存地図ナビへ切り替えると AMCL は
+  初期姿勢を待つ。UI に専用のボタンを増やさず、目的地と同じ「クリック＋ドラッグ」で
+  位置と向きを渡せるようにした（押した瞬間の修飾キーを覚えるので、押下中に
+  Shift を離しても取り違えない）。
 - **`Cache-Control` の使い分け**: 地図 PNG は `no-cache`（保存してよいが必ず再検証 = ETag で
   304）、認識画像は `no-store`（1 枚ごとに別の絵なので保存に意味が無い）。
 - **MJPEG は切れたら張り直す**。`<img>` の `error` だけに頼らず、最初のフレームが
@@ -81,21 +103,36 @@
 - **マークは梅おにぎり**。米は文字色・海苔は背景色の抜き・梅は赤のフラットな SVG。
   ヘッダと favicon で同じ形を使う（`webui/favicon.svg`）。絵文字やグラデーションの
   ロゴタイルは使わない。
-- **文字は役割で3段階**。日本語は Noto Sans CJK JP、数字とメタは JetBrains Mono。
-  見出しの大文字化・過剰な太字・装飾的な罫は使わず、等幅数字で位置と値を揃える。
-- **主操作だけを明るく**。`ルート送信` は面を白くし、`停止` は赤い文字だけ。
-  効いていない操作は面を塗らず、キーボードショートカットは `kbd` で出す。
-- **776px 幅以下の幅では縦積み**。ヘッダの計器は 2×2 に折り返し、地図→認識→
-  目的地→イベントの順で1列になる。送信・停止は一覧の下端に固定し、
-  最後の行が隠れないだけの余白をリスト末尾に取る。
+- **文字は 6 段**（メタ 11 / ラベル 12 / 本文 13 / 強調 14 / 計器の値 16 / 見出し 20）。
+  日本語は Noto Sans CJK JP、数字とメタは JetBrains Mono。階層は太さではなく
+  大きさと色で作り、11px 未満は使わない。数字はすべて等幅数字で桁を揃える。
+- **余白は 4px の目盛り**、角丸は 4 / 8 / 12。パネルの中の入れ子は
+  「外の半径 − 余白」で決める。同じ役割のものは同じ高さ・同じ間隔にする。
+- **面は 4 段のグラファイト + hairline**。地図と認識映像だけを一段沈めた
+  「ライトテーブル」に置き、色はルート（amber）とテレメトリ（cyan）に残す。
+  状態は塗りではなく 5px の点と注記の色で言う（計器・記章・認識モニターの点）。
+- **主操作だけを塗る**。`ルート送信` だけがアンバーで、`停止` は赤い文字、
+  それ以外は静かな面に置く。復帰できない操作 (`地図を保存` など) は塗らない。
+- **3 列**: 地図 / 目的地 / 認識 + イベント。地図は正方形なので、横に広い箱に
+  入れると左右が黒く余る。縦長の列に入れると同じ画面で地図に使える画素が増える
+  （1280x800 で 428² → 590²）。イベントは時系列ログなので右端の縦列に置き、
+  追記時は最新行へ追従する（遡って読んでいる間は飛ばさない）。
+- **目的地パネルは 1 か所に集める**。一覧・合計 (目的地 N 地点 / 合計 X m)・
+  ルート送信・停止・キー操作。副操作 (戻す・全消去) は見出しのアイコンへ上げ、
+  下端は主操作 2 つだけにする。
+- **981px 以下では 1 列**。地図→目的地→認識→イベントの順で縦に積み、
+  ページがスクロールする。ヘッダの計器は折り返して 1 段使う。
+- **焦点と動き**。`:focus-visible` はアンバーの輪 (形は変えない)、
+  `prefers-reduced-motion: reduce` では遷移を止める。ループする装飾的な動きは無し。
 
 ## スレッド構成
 
 | スレッド | 動くもの | 注意 |
 |---|---|---|
-| httplib のプール | 経路ハンドラ。MJPEG のフレーム待ちは条件変数で最大 1 秒 | executor を掴まない |
-| ROS executor (SingleThreaded) | `/map`・`/tf`・`/detection_image`・`/detections` のコールバックと監視 ON/OFF タイマー | 画像の JPEG 化はここで 1 回だけ |
-| NavWorker | action client と結果待ち | 専用スレッドなので executor と競合しない |
+| httplib のプール | 経路ハンドラ。MJPEG のフレーム待ちは条件変数で最大 1 秒 | executor を掴まない。秒単位で待たない |
+| ROS executor (SingleThreaded) | `/map`・`/tf`・`/detection_image`・`/detections` のコールバックと監視 ON/OFF タイマー | 画像の JPEG 化はここで 1 回だけ。crop もここで済ませる |
+| NavWorker | action client と結果待ち | 専用スレッドなので executor と競合しない。待ちには上限を付ける |
+| ModeWorker | `get_mode` / `switch_to_localization` / `map_saver` / `/initialpose` | 専用 executor で常に回す。HTTP 側は「待つだけ」で spin しない |
 
 ## 実装上の逸脱（Python 版との差）
 
@@ -108,7 +145,7 @@
 
 ## 未検証（✗）
 
-- ブラウザでの描画結果: ヘッドレス Chrome でモック API と実 `web_nav_server` の空状態を
+- ブラウザでの描画結果: ヘッドレス Chrome でモック API と実 `umeonigiri_webnav_server` の空状態を
   確認（2026-11-18）。実機の運用ブラウザでの長時間表示は ✗ 未検証（配線は `id` の
   突き合わせ・`/api/*` の突き合わせ・ES モジュールの構文と解決で機械検証している）
 - 認識モニター ON のときの Orange Pi 5 Max での CPU 使用率（開発機では 3 Hz 動作を実測）

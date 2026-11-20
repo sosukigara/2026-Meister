@@ -1,0 +1,1013 @@
+/* SPDX-License-Identifier: MIT
+   夜間の運用席で 1 人が使う運行コンソール。計器の前板のように、面は静かな
+   グラファイト、色は「操作者が引いたルート」(amber) と「生きているロボット」
+   シアンだけに置く。地図と認識映像が画面の明るいところで、それ以外は黙る。
+
+   寸法の決まり: 余白は 4px の目盛り (--s1..--s8)、文字は 6 段
+   (meta 11 / label 12 / body 13 / lead 14 / value 16 / display 20)、
+   角丸は 4 / 8 / 12。パネルの中の入れ子は「外の半径 − 余白」で決める。 */
+
+:root {
+  /* 面。青みをほぼ持たないグラファイトを 1 本だけ使う。 */
+  --bg: #0a0d11;
+  --surface: #0e1218;
+  --surface-2: #131922;
+  --surface-3: #1a212c;
+  --sunken: #06090c;
+  --line: rgba(233, 238, 245, 0.08);
+  --line-strong: rgba(233, 238, 245, 0.16);
+
+  /* 文字は 3 役だけ。meta は 4.5:1 を割らない範囲で落とす。 */
+  --ink: #e9edf2;
+  --ink-2: #a4aebb;
+  --ink-3: #78828e;
+
+  /* 意味を持つ色。amber はルートと主操作、cyan は生きたテレメトリ。 */
+  --accent: #e0a83f;
+  --accent-strong: #eebc62;
+  --accent-ink: #1a1305;
+  --accent-dim: rgba(224, 168, 63, 0.42);
+  --cyan: #6fd0de;
+  --green: #57c08a;
+  --red: #e2685c;
+
+  /* 4px の目盛り。中間の 12/20 も含めて全部ここから取る。 */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s7: 32px;
+  --s8: 40px;
+
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-pill: 999px;
+
+  --fs-meta: 11px;
+  --fs-label: 12px;
+  --fs-body: 13px;
+  --fs-lead: 14px;
+  --fs-value: 16px;
+  --fs-display: 20px;
+
+  --topbar: 60px;
+  --side-width: 296px;
+  --aux-width: 312px;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --fast: 120ms;
+  --slow: 180ms;
+
+  --font-sans: "Noto Sans CJK JP", "Noto Sans JP", "Hiragino Sans", "Yu Gothic UI",
+    system-ui, sans-serif;
+  --font-mono: "JetBrainsMono Nerd Font", "JetBrains Mono", ui-monospace,
+    SFMono-Regular, Menlo, monospace;
+
+  color-scheme: dark;
+}
+
+/* 状態の色は 1 か所で決める。data-tone を付けた要素は --tone を読むだけ。 */
+[data-tone='idle'] { --tone: var(--ink-3); }
+[data-tone='ok'] { --tone: var(--green); }
+[data-tone='active'] { --tone: var(--cyan); }
+[data-tone='warn'] { --tone: var(--accent); }
+[data-tone='bad'] { --tone: var(--red); }
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "palt" 1, "kern" 1;
+  font-synthesis: none;
+}
+
+/* 数字は全部等幅数字で揃える。桁が揺れると計器が読めない。 */
+b, .gauge-value, .gauge-note, .tour-figure b, dd, .waypoint-coords,
+.waypoint-heading, .detection, .event time, .badge, .mode-badge, kbd, .map-name {
+  font-variant-numeric: tabular-nums;
+}
+
+b { font-weight: 500; }
+
+h2 { margin: 0; font-size: inherit; font-weight: inherit; }
+
+/* キーボードで操作する人のための焦点。形は変えず輪だけ足す
+   (border-radius をここで書くと、焦点が当たった瞬間に角が変わる)。 */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection { background: rgba(224, 168, 63, 0.26); }
+
+/* 細いスクロールバーは面の一部として黙らせる。 */
+.event-log, .waypoint-list, .detections {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+.event-log::-webkit-scrollbar,
+.waypoint-list::-webkit-scrollbar,
+.detections::-webkit-scrollbar { width: 8px; }
+.event-log::-webkit-scrollbar-thumb,
+.waypoint-list::-webkit-scrollbar-thumb,
+.detections::-webkit-scrollbar-thumb {
+  background: var(--line-strong);
+  border-radius: var(--r-pill);
+}
+.event-log::-webkit-scrollbar-track,
+.waypoint-list::-webkit-scrollbar-track,
+.detections::-webkit-scrollbar-track { background: transparent; }
+
+/* ---------- 帯: 接続断 / no-JS ---------- */
+
+.noscript,
+.offline {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0;
+  padding: var(--s2) var(--s5);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  color: var(--ink-2);
+  font-size: var(--fs-label);
+}
+
+.offline { border-bottom-color: rgba(226, 104, 92, 0.35); }
+.offline[hidden] { display: none; }
+
+.offline::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  flex: none;
+}
+
+#offline-age { color: var(--ink-3); }
+
+/* ---------- ヘッダ ---------- */
+
+.topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+  height: var(--topbar);
+  padding: 0 var(--s5);
+  border-bottom: 1px solid var(--line);
+  z-index: 3;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex: none;
+}
+
+.brand-mark {
+  width: 22px;
+  height: 22px;
+  color: var(--ink);
+  flex: none;
+}
+
+.brand-text {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  white-space: nowrap;
+}
+
+.brand-name {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* 副題は名乗りではなく役割。区切りの細線で 1 語だけ添える。 */
+.brand-sub {
+  font-size: var(--fs-meta);
+  color: var(--ink-3);
+  padding-left: var(--s2);
+  border-left: 1px solid var(--line);
+}
+
+/* 4 つの計器はカードではなく 1 列の目盛り。区切りは細線だけ。 */
+.signals {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.gauge {
+  display: grid;
+  gap: 1px;
+  align-content: center;
+  min-width: 104px;
+  padding: 0 var(--s4);
+  border-left: 1px solid var(--line);
+}
+
+.gauge:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.gauge-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-meta);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* 状態は色の面ではなく、5px の点と注記の色で示す。 */
+.gauge-label::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--tone);
+  flex: none;
+}
+
+.gauge-value {
+  font-family: var(--font-mono);
+  font-size: var(--fs-value);
+  font-weight: 500;
+  line-height: 1.2;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.gauge-note {
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.gauge[data-tone='bad'] .gauge-note { color: var(--red); }
+.gauge[data-tone='warn'] .gauge-note { color: var(--accent); }
+.gauge[data-tone='active'] .gauge-note { color: var(--cyan); }
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-left: auto;
+  flex: none;
+}
+
+/* 群と群のあいだだけに縦の細線。ボタンごとに枠を付けない。 */
+.rule {
+  width: 1px;
+  height: 20px;
+  background: var(--line);
+  margin: 0 var(--s1);
+}
+
+/* ---------- 部品: ボタン / 入力 / 記章 / キーキャップ ---------- */
+
+.btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: var(--fs-label);
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color var(--fast) var(--ease),
+    border-color var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
+.btn:active:not(:disabled) { background: var(--surface); }
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-quiet {
+  background: transparent;
+  border-color: transparent;
+}
+
+.btn-quiet:hover:not(:disabled) { background: var(--surface-2); }
+
+.btn-icon {
+  width: 30px;
+  padding: 0;
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-3);
+}
+
+.btn-icon:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+/* 主操作は 1 つだけ。アンバーはルートの色でもあるので、送信と結び付く。 */
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--accent-strong);
+  border-color: var(--accent-strong);
+  color: var(--accent-ink);
+}
+
+.btn-danger {
+  background: transparent;
+  border-color: var(--line-strong);
+  color: var(--red);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(226, 104, 92, 0.1);
+  border-color: rgba(226, 104, 92, 0.45);
+  color: var(--red);
+}
+
+/* 認識モニターの ON/OFF は、点の色だけで状態が分かるようにする。 */
+.btn-toggle::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--tone);
+  flex: none;
+}
+
+.map-name {
+  width: 156px;
+  height: 30px;
+  padding: 0 var(--s3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: var(--fs-label);
+  transition: border-color var(--fast) var(--ease),
+    background-color var(--fast) var(--ease);
+}
+
+.map-name::placeholder { color: var(--ink-3); }
+.map-name:hover { border-color: rgba(233, 238, 245, 0.24); }
+
+.map-name:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+/* 記章は塗らずに、点と文字だけで状態を言う。 */
+.badge,
+.mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  line-height: 1;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.badge::before,
+.mode-badge::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--tone);
+  flex: none;
+}
+
+.mode-badge {
+  padding: 0 var(--s1) 0 0;
+  color: var(--tone);
+}
+
+kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 var(--s1);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-xs);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+}
+
+/* ---------- 骨格 ---------- */
+
+/* 地図は正方形なので、横に広い箱に入れると左右が黒く余る。列を 3 つにして
+   地図の列を縦長にすると、同じ画面でも地図に使える画素が増える
+   (1280x800 で 428² -> 575²)。 */
+.layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--side-width) var(--aux-width);
+  gap: var(--s3);
+  padding: var(--s3);
+}
+
+.main-column {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  gap: var(--s3);
+  min-height: 0;
+}
+
+.panel {
+  display: grid;
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  overflow: hidden;
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  height: 42px;
+  padding: 0 var(--s4);
+  border-bottom: 1px solid var(--line);
+}
+
+.panel-title {
+  font-family: var(--font-sans);
+  font-size: var(--fs-body);
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.panel-tools {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* ---------- 地図 ---------- */
+
+.map-panel { grid-template-rows: auto minmax(0, 1fr); }
+
+/* 地図は「暗い部屋に置いたライトテーブル」。面より一段沈める。 */
+.map-stage {
+  position: relative;
+  margin: 0 var(--s3);
+  border-radius: var(--r-md);
+  /* border ではなく内側の hairline。border だと stage の矩形が canvas の
+     内容箱より 2px 大きくなり、map_view の bitmap と CSS 実寸がずれて
+     地図がわずかに縮む。 */
+  box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+  background: var(--sunken);
+  overflow: hidden;
+  min-height: 0;
+}
+
+#map-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+#map-canvas:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: 0;
+}
+
+#map-canvas.is-panning { cursor: grabbing; }
+
+/* 空状態は地図の代わりに立つ 1 行。飾りは置かない。 */
+.map-empty,
+.vision-empty {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+  font-size: var(--fs-label);
+  pointer-events: none;
+}
+
+.map-empty[hidden],
+.vision-empty[hidden] { display: none; }
+
+/* 操作の説明は地図の左下に小さな札で置く。縮尺 (右下) と重ならない幅で折り返す。 */
+.map-hint {
+  position: absolute;
+  left: var(--s3);
+  bottom: var(--s3);
+  margin: 0;
+  max-width: 340px;
+  display: grid;
+  gap: 1px;
+  padding: 6px var(--s2);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: rgba(6, 9, 12, 0.78);
+  color: var(--ink-3);
+  font-size: var(--fs-meta);
+  line-height: 1.45;
+  pointer-events: none;
+}
+
+/* 合計はルートの情報なので、一覧の足元 (送信のすぐ上) に置く。 */
+.tour-summary {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s5);
+  padding: var(--s2) var(--s4);
+  border-top: 1px solid var(--line);
+  font-size: var(--fs-meta);
+  color: var(--ink-3);
+  overflow: hidden;
+}
+
+.tour-figure { white-space: nowrap; }
+
+.tour-figure b {
+  font-family: var(--font-mono);
+  font-size: var(--fs-lead);
+  color: var(--ink);
+  margin: 0 2px;
+}
+
+/* 6 個のキー操作は 2 列 3 行。1 行に流すと狭い列で切れる。 */
+.shortcut-note {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, auto));
+  justify-content: start;
+  align-items: center;
+  gap: var(--s2) var(--s4);
+  padding: var(--s2) var(--s4) var(--s3);
+  border-top: 1px solid var(--line);
+}
+
+.shortcut {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* ---------- 右列 ---------- */
+
+.side {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  gap: var(--s3);
+  min-height: 0;
+}
+
+/* 右端は「見るもの」と「履歴」。認識は高さ固定、履歴は残りを取る。 */
+.aux {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: var(--s3);
+  min-height: 0;
+}
+
+/* ---------- 認識モニター ---------- */
+
+.vision-panel { grid-template-rows: auto auto auto auto auto; }
+
+/* 4:3 のまま小さく置く。広い枠に 4:3 を入れると左右が黒く空くだけで、
+   カメラの中身は増えない。 */
+.vision-stage {
+  position: relative;
+  margin: var(--s3) auto 0;
+  width: min(100%, 212px);
+  aspect-ratio: 4 / 3;
+  border-radius: var(--r-md);
+  box-shadow: inset 0 0 0 1px var(--line);
+  background: var(--sunken);
+  overflow: hidden;
+}
+
+#vision-stream {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transition: opacity var(--slow) var(--ease);
+}
+
+#vision-stream[hidden] { display: none; }
+
+/* 古い絵は隠さない。落として「今は信用できない」と言う。 */
+#vision-stream.is-stale { opacity: 0.45; }
+
+.vision-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--s2);
+  margin: var(--s3) 0 0;
+  padding: 0 var(--s4) var(--s2);
+  border-bottom: 1px solid var(--line);
+}
+
+.vision-stats dt {
+  font-size: var(--fs-meta);
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.vision-stats dd {
+  margin: 1px 0 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.detections {
+  list-style: none;
+  margin: var(--s2) 0 0;
+  padding: 0 var(--s4);
+  max-height: 78px;
+  overflow-y: auto;
+}
+
+.detection {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: var(--s3);
+  align-items: center;
+  height: 26px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  color: var(--ink-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.detection:last-child { border-bottom: 0; }
+
+.detection-label {
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detection-score { color: var(--accent); }
+.detection-size { color: var(--ink-3); }
+
+.detection-empty {
+  display: block;
+  height: 26px;
+  color: var(--ink-3);
+  font-family: var(--font-sans);
+  font-size: var(--fs-meta);
+  line-height: 26px;
+  border-bottom: 0;
+}
+
+.vision-source {
+  margin: 0;
+  padding: var(--s2) var(--s4);
+  border-top: 1px solid var(--line);
+  color: var(--ink-3);
+  font-size: var(--fs-meta);
+  line-height: 1.5;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- 目的地と航行 ---------- */
+
+/* 見出し / 状態 / 一覧 / 空注記 / 操作。副操作 (戻す・全消去) は見出しへ上げ、
+   下端は主操作 2 つだけにして、狭い画面でも一覧が潰れないようにする。 */
+.waypoint-panel {
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
+}
+
+.waypoint-panel .panel-tools { gap: var(--s1); }
+.waypoint-panel .badge { margin-left: var(--s2); }
+
+.nav-message {
+  margin: 0;
+  padding: var(--s2) var(--s4) 0;
+  color: var(--ink-2);
+  font-size: var(--fs-label);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.waypoint-list {
+  /* 空注記と同じ升目に重ねる。列を明示しないと auto-placement が
+     2 列目を作ってしまい、パネルが 2 列に割れる。 */
+  grid-area: 3 / 1;
+  list-style: none;
+  margin: 0;
+  padding: var(--s1) var(--s4) 0;
+  min-height: 0;
+  overflow-y: auto;
+  align-content: start;
+}
+
+/* 地図の破線ルートを、リストでも縦のルート線として繰り返す (この製品の合図)。 */
+.waypoint {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 24px;
+  gap: var(--s3);
+  align-items: center;
+  min-height: 40px;
+  padding: var(--s1) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.waypoint:last-child { border-bottom: 0; }
+
+.waypoint:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 9.5px;
+  top: 30px;
+  bottom: -8px;
+  border-left: 1px dashed var(--accent-dim);
+}
+
+.waypoint-order {
+  position: relative;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--accent-dim);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.waypoint-body {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.waypoint-coords {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.waypoint-heading {
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  color: var(--ink-3);
+}
+
+.waypoint-remove {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: background-color var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+
+.waypoint-remove:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+/* 空のときは一覧と同じ場所に置く。下に積むと、空の一覧の下に
+   ぽつんと 1 行だけ落ちて読み手が探すことになる。 */
+.empty-note {
+  grid-area: 3 / 1;
+  align-self: center;
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  color: var(--ink-3);
+  font-size: var(--fs-meta);
+  text-align: center;
+}
+
+.empty-note[hidden] { display: none; }
+
+.btn-row {
+  display: grid;
+  gap: var(--s2);
+  padding: 0 var(--s4);
+}
+
+/* 送信が主、停止は従。幅の比で順位を言う。 */
+.route-actions {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  padding-bottom: var(--s3);
+}
+
+.route-actions .btn { height: 34px; }
+
+/* ---------- イベント ---------- */
+
+.event-panel {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.event-log {
+  list-style: none;
+  margin: 0;
+  padding: var(--s2) var(--s4);
+  min-height: 0;
+  overflow-y: auto;
+  font-size: var(--fs-meta);
+}
+
+.event {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: var(--s3);
+  align-items: baseline;
+  padding: 2px 0;
+  line-height: 1.45;
+}
+
+.event time {
+  font-family: var(--font-mono);
+  color: var(--ink-3);
+  font-size: 10px;
+}
+
+.event span { color: var(--ink-2); }
+
+.event-ok span { color: var(--ink-2); }
+.event-warn span { color: var(--accent); }
+.event-error span { color: var(--red); }
+
+/* ---------- トースト ---------- */
+
+.toasts {
+  position: fixed;
+  right: var(--s4);
+  bottom: var(--s4);
+  z-index: 5;
+  display: grid;
+  gap: var(--s2);
+  justify-items: end;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: 0;
+  max-width: 380px;
+  padding: var(--s2) var(--s3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: var(--ink-2);
+  font-size: var(--fs-label);
+  animation: toast-in var(--slow) var(--ease);
+}
+
+.toast::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  flex: none;
+}
+
+.toast-warn::before { background: var(--accent); }
+.toast-error::before { background: var(--red); }
+.toast-ok::before { background: var(--green); }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---------- 狭い画面 ---------- */
+
+@media (max-width: 1359px) {
+  :root { --side-width: 268px; --aux-width: 288px; }
+  .brand-sub { display: none; }
+  .gauge { min-width: 88px; padding: 0 var(--s3); }
+  .map-name { width: 120px; }
+}
+
+@media (max-width: 980px) {
+  body { overflow: auto; }
+  .topbar { height: auto; flex-wrap: wrap; gap: var(--s3); padding: var(--s3); }
+  .signals {
+    order: 3;
+    width: 100%;
+    overflow: visible;
+    flex-wrap: wrap;
+    gap: var(--s2) 0;
+  }
+  .gauge:first-child { padding-left: var(--s3); }
+  .gauge { border-left: 0; min-width: 72px; padding: 0 var(--s3) 0 0; }
+  .topbar-actions { margin-left: auto; }
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-auto-rows: min-content;
+    padding: var(--s3);
+  }
+  .map-panel { min-height: 62vh; }
+  .main-column { grid-template-rows: none; grid-auto-rows: min-content; }
+  .side, .aux { grid-template-rows: none; grid-auto-rows: min-content; }
+  .waypoint-list { max-height: 240px; }
+  .event-log { max-height: 200px; }
+  /* タッチでも「叩くと目的地」は効くので、1 行だけ残す。 */
+  .map-hint { max-width: calc(100% - 24px); }
+  .map-hint span + span { display: none; }
+}
+
+@media (max-width: 640px) {
+  .topbar-actions { gap: var(--s1); flex-wrap: wrap; }
+  .map-name { width: 100%; order: 5; }
+  .tour-summary { gap: var(--s3); }
+  .shortcut-note { display: none; }
+  .vision-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* 動きを減らしたい人には、状態の変化だけ残して移動を止める。 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
