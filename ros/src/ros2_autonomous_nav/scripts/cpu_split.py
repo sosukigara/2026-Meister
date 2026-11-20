@@ -22,7 +22,7 @@ PATTERNS = (
     "detection_node", "pc_camera", "hand_landmarks",
     "rviz2", "controller_server", "planner_server", "bt_navigator",
     "behavior_server", "velocity_smoother", "amcl", "map_server",
-    "map_saver", "slam_toolbox", "web_nav_server", "robot_state_publisher",
+    "map_saver", "slam_toolbox", "umeonigiri_webnav_server", "robot_state_publisher",
     "parameter_bridge", "lifecycle_manager", "nav_mode_manager",
     "gnome-shell", "Xwayland", "firefox", "chrome", "node",
 )

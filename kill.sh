@@ -18,7 +18,7 @@ PATTERNS=(
   "gz sim"
   "gz launch"
   "slam_toolbox"
-  "web_nav_server"
+  "umeonigiri_webnav_server"
   "robot_state_publisher"
   "ros_gz_bridge"
   "parameter_bridge"

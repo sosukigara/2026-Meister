@@ -14,7 +14,7 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
 
     pkg_share = get_package_share_directory('ros2_autonomous_nav')
-    pkg_web_nav = get_package_share_directory('meister_web_nav')
+    pkg_web_nav = get_package_share_directory('umeonigiri_webnav')
     pkg_vision = get_package_share_directory('meister_vision')
 
     serial_port_arg = DeclareLaunchArgument(
@@ -196,7 +196,7 @@ def generate_launch_description():
 
     # --- Web UI (map view + click-to-send waypoints) — http://localhost:8088 ---
     web_nav = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(pkg_web_nav, 'launch', 'web_nav.launch.py'))
+        PythonLaunchDescriptionSource(os.path.join(pkg_web_nav, 'launch', 'umeonigiri_webnav.launch.py'))
     )
 
     # --- Vision (PCカメラ+YOLOv8n検出。実機に Gazeboカメラはないため use_pc_camera=true 固定) ---
