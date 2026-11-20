@@ -180,3 +180,51 @@ Nav2・SLAM・画像認識・Web UI を同時に起動した状態の実測。
 
 **✗ 未検証**: 30 ゴールでの成功率・最小クリアランス等の品質指標は、
 このワールド・このセンサ設定でまだ測っていない（`measure.sh` は `warehouse` 前提）。
+
+## 11. 自動走行と画像認識の安定両立（2026-11-20 実測）
+
+条件: `MEISTER_GUI=0 MEISTER_RVIZ=0 ./launch.sh --sim maze`（ソフトウェア描画、
+`sensor_profile=lite`）。起動後に `/api/mode` で **localization へ切り替え**、
+`/api/initialpose` で (-4, -4) を与え、AMCL + 保存地図で走らせた。
+画像認識は Web UI の認識モニターを ON のまま（走行中も推論が動く）。
+
+### 11.1 結果（6 ゴール × 2 周）
+
+| 周 | 成功率 | 最終誤差 最大 | 平均 | 所要時間 |
+|---|---|---|---|---|
+| 1 | **6/6** | 0.150 m | 0.130 m | 9〜22 秒 |
+| 2 | **6/6** | 0.128 m | 0.104 m | 8〜22 秒 |
+
+**合計 12/12 成功。** 同じゴール列を 2 周して再現した。
+
+ゴールは保存地図 `nav_world.pgm` のクリアランス 0.5 m 以上の点から選んだ。
+座標は `stability_test.py` に固定してある。
+
+### 11.2 同時に動いていたもの（実測）
+
+- `/scan` 4.5 Hz、`/camera/image_raw` 4.4 Hz、`/detections` **3.2 Hz**
+  （Gazebo カメラの供給が上限）、Web UI 認識モニター `fps 3.1`。
+- CPU 合計 **482.8%（1 コア換算）= 8 コアの 60.4%**。
+  内訳: `gz sim` 159% / `parameter_bridge` 48% / `bt_navigator` 40% /
+  `planner_server` 35% / `controller_server` 32% / `behavior_server` 31% /
+  `lifecycle_manager` 24% / `slam_toolbox` 21%。
+- 走行中も画像認識は止まらず、`/api/vision` の `seq` が増え続けた。
+
+### 11.3 なぜ localization モードで測ったか
+
+mapping モード（SLAM）で同じゴールを投げると、走行中に地図が伸びるため
+コストマップの境界と自己位置がずれ、**同じゴールでも成功したり失敗したりした**
+（実測: 1 回目成功・2 回目失敗）。アルゴリズムの安定性を測るには、
+地図を固定した localization モードの方が再現性が高い。
+地図生成（mapping）は別工程として扱う。
+
+### 11.4 再現手順
+
+```bash
+MEISTER_GUI=0 MEISTER_RVIZ=0 ./launch.sh --sim maze &
+curl -s -X POST localhost:8088/api/mode -H 'Content-Type: application/json' \
+     -d '{"mode":"localization"}'
+curl -s -X POST localhost:8088/api/initialpose -H 'Content-Type: application/json' \
+     -d '{"x":-4.0,"y":-4.0,"yaw":0.0}'
+python3 ros/src/ros2_autonomous_nav/scripts/stability_test.py
+```

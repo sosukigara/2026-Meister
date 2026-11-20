@@ -118,3 +118,18 @@
   YUYV 専用機では `CAP_PROP_FOURCC` を要求しても YUYV のままで、これは正常。
 - 検出がカメラに追随しているかは、`record_detections.py` のフレーム数と
   `ros2 topic hz /camera/image_raw` を並べれば判定できる（同数なら取りこぼし無し）。
+
+## P15. シミュレーションで AMCL が初期化できない（2026-11-20 実測）
+
+- 症状: `/api/mode` で localization に切り替えても
+  `AMCL cannot publish a pose or update the transform. Please set the initial pose...`
+  が続き、`/api/nav` が即座に `failed` になる。
+- 原因: `web_nav_server` のプロセス内ノードが **`use_sim_time` を持たない**ため、
+  `/api/initialpose` が実時間でスタンプされる。ログには
+  `Requested time 14.900 but the earliest data is at time 69.160` のように
+  シミュレーション時刻とのずれが出る。AMCL のメッセージフィルタが一致せず、
+  `map→odom` が永遠に張られない。
+- 対策: `web_nav.launch.py` に `use_sim_time` 引数を足し、
+  `mapping_nav.launch.py` から `true` を渡す（実機は既定の `false`）。
+  多ノード実行ファイルでもコマンドラインのパラメータ上書きは全ノードに効く。
+- 確認: 切り替え後に `/api/pose` が設定した座標付近を返せば初期化できている。
