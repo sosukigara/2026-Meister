@@ -74,3 +74,43 @@ pip install --break-system-packages rknn-toolkit2 rknn-toolkit-lite2
 - 変換ログに `size_with_stride larger than model origin size` の警告が大量に出るが、
   推論結果は得られている（実測）。抑制方法は未確認。
 - `.rknn` は生成物なので git 管理外（`.gitignore`）。
+
+## 任意モデル（yolov8n-oiv7 など）を変換する場合の現状 — 2026-11-20 実測
+
+yolov8n-oiv7（601 クラス）を 30 fps で回すために変換を試した記録。
+**変換は未完了**。詰まっている点を残す。
+
+### できたこと
+
+- `yolo export model=yolov8n-oiv7.pt format=onnx opset=12 imgsz=640` は成功する。
+  出力は `[1, 605, 8400]`（4 box + 601 クラス、objectness 無し）14 MB。
+- `rknn-toolkit2` はこの機体で動く（numpy 1.26 / torch 2.2.0 で確認）。
+
+### 詰まっている点
+
+1. **標準エクスポートの ONNX は RKNN に変換できない。**
+   `rknn.build()` がグラフ融合で落ちる:
+   `IndexError: list index out of range`（`rules/conv.py:4860 _p_seperate_conv_rs_split`）。
+   `optimization_level=0`、`do_quantization=False` でも同じ。
+   Rockchip 配布の最適化 ONNX（`rknn_model_zoo`）はこの規則に当たらないので通る
+   （yolov8n で実測済み）。
+2. **Rockchip 版 ultralytics（`airockchip/ultralytics_yolov8`）でのエクスポートが未完。**
+   フォーク自体は読み込める（8.2.82）が、エクスポート時に `onnxscript` を要求し、
+   その依存 `ml_dtypes` が numpy 2 前提で、システムの numpy 1.26 と衝突する。
+
+### 依存を触った結果（重要）
+
+`pip install ultralytics` は **torch 2.15 と numpy 2 を入れてしまい**、
+- `rknn-toolkit2` の要求（torch<=2.2.0）に反する
+- システムの matplotlib が壊れる（numpy 2 非対応ビルド）
+- `colcon` と競合する setuptools 84 が入る
+
+復旧として `torch==2.2.0` / `numpy<2` / `setuptools<80` に固定し、
+`colcon build` と `rknn` の import が通ることを確認した。
+**次に試すなら venv を切ってから**（システム Python を汚さない）。
+
+### 代替（今すぐ 30 fps を出す方法）
+
+`rknn_model_zoo` の `yolov8n.onnx`（80 クラス、Rockchip 最適化済み）は変換でき、
+**NPU で 20.7 ms = 48 fps**（実測、`tools/rknn/README.md` 冒頭）。
+クラス数は 80 だが速度は要件を満たす。
