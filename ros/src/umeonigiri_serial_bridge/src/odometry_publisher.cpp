@@ -3,6 +3,8 @@
 #include <memory>
 #include <utility>
 
+#include <geometry_msgs/msg/transform_stamped.hpp>
+
 namespace umeonigiri_serial_bridge {
 
 OdometryPublisher::OdometryPublisher(rclcpp::Node& node, const OdometryConfig& config,

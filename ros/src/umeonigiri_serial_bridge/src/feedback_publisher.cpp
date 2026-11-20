@@ -1,6 +1,7 @@
 #include "umeonigiri_serial_bridge/feedback_publisher.hpp"
 
 #include <memory>
+#include <utility>
 
 namespace umeonigiri_serial_bridge {
 
