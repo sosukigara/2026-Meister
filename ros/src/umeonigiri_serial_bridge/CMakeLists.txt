@@ -75,6 +75,8 @@ if(BUILD_TESTING)
   target_link_libraries(test_hz_measure umeonigiri_serial_bridge_core)
   ament_add_gtest(test_bridge_core test/test_bridge_core.cpp)
   target_link_libraries(test_bridge_core umeonigiri_serial_bridge_core)
+  ament_add_gtest(test_serial_link test/test_serial_link.cpp)
+  target_link_libraries(test_serial_link umeonigiri_serial_bridge_core)
 endif()
 
 ament_package()
