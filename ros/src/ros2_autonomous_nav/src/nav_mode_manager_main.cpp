@@ -51,7 +51,16 @@ class NavModeManager : public rclcpp::Node {
     switch_service_ = create_service<Trigger>(
         "switch_to_localization",
         [this](const std::shared_ptr<Trigger::Request>,
-               std::shared_ptr<Trigger::Response> response) { SwitchToLocalization(response); });
+               std::shared_ptr<Trigger::Response> response) {
+          SwitchMode(ros2_autonomous_nav::NavMode::kLocalization, response);
+        });
+    // 逆方向。slam_toolbox を再 activate してもポーズグラフは保持されることを
+    // 実測済み (332x302 / 55233 cells が前後で一致) なので、地図を捨てずに戻せる。
+    mapping_service_ = create_service<Trigger>(
+        "switch_to_mapping", [this](const std::shared_ptr<Trigger::Request>,
+                                    std::shared_ptr<Trigger::Response> response) {
+          SwitchMode(ros2_autonomous_nav::NavMode::kMapping, response);
+        });
     get_service_ = create_service<Trigger>(
         "get_mode",
         [this](const std::shared_ptr<Trigger::Request>,
@@ -113,36 +122,76 @@ class NavModeManager : public rclcpp::Node {
     return ApplyTransition(client, Transition::TRANSITION_ACTIVATE);
   }
 
-  void SwitchToLocalization(const std::shared_ptr<Trigger::Response>& response) {
-    const auto plan = ros2_autonomous_nav::PlanTransition(
-        mode_, ros2_autonomous_nav::NavMode::kLocalization);
+  /// target へ切り替える。旧 owner の deactivate が終わってから新 owner を
+  /// activate する（map→odom の publisher を 2 つにしない）。
+  void SwitchMode(ros2_autonomous_nav::NavMode target,
+                  const std::shared_ptr<Trigger::Response>& response) {
+    const auto plan = ros2_autonomous_nav::PlanTransition(mode_, target);
     if (!plan.allowed) {
       response->success = false;
       response->message = plan.reason;
       return;
     }
 
-    RCLCPP_INFO(get_logger(), "地図生成 → 保存地図ナビ へ切り替えます");
-    if (!ApplyTransition(slam_client_, Transition::TRANSITION_DEACTIVATE)) {
+    RCLCPP_INFO(get_logger(), "%s", plan.reason.c_str());
+    const bool to_localization = target == ros2_autonomous_nav::NavMode::kLocalization;
+    const char* const old_side = to_localization ? "地図生成側" : "自己位置推定側";
+    const char* const new_side = to_localization ? "自己位置推定" : "地図生成";
+
+    if (!DeactivateCurrent(to_localization)) {
       response->success = false;
-      response->message = "地図生成側を止められませんでした";
+      response->message = std::string(old_side) + "を止められませんでした";
       return;
     }
-    if (!BringUp(map_server_client_) || !BringUp(amcl_client_)) {
-      // 自己位置推定側が立ち上がらないなら、地図生成側に戻す。
-      ApplyTransition(map_server_client_, Transition::TRANSITION_DEACTIVATE);
-      ApplyTransition(amcl_client_, Transition::TRANSITION_DEACTIVATE);
-      const bool rolled_back = ApplyTransition(slam_client_, Transition::TRANSITION_ACTIVATE);
+    if (!ActivateTarget(to_localization)) {
+      DeactivateTarget(to_localization);
+      const bool rolled_back = ActivateCurrent(to_localization);
       response->success = false;
-      response->message = rolled_back ? "自己位置推定を起動できず、地図生成に戻しました"
-                                      : "自己位置推定を起動できず、地図生成にも戻せません";
+      response->message = std::string(new_side) + "を起動できず、" +
+                          (rolled_back ? std::string(old_side) + "に戻しました"
+                                       : std::string(old_side) + "にも戻せません");
       return;
     }
 
-    mode_ = ros2_autonomous_nav::NavMode::kLocalization;
+    mode_ = target;
     PublishMode();
     response->success = true;
     response->message = plan.reason;
+  }
+
+  /// これから離れる側を止める。
+  bool DeactivateCurrent(bool to_localization) {
+    if (to_localization) {
+      return ApplyTransition(slam_client_, Transition::TRANSITION_DEACTIVATE);
+    }
+    // map_server と amcl は両方止める。片方だけ残ると map→odom が二重になる。
+    const bool map_ok = ApplyTransition(map_server_client_, Transition::TRANSITION_DEACTIVATE);
+    const bool amcl_ok = ApplyTransition(amcl_client_, Transition::TRANSITION_DEACTIVATE);
+    return map_ok && amcl_ok;
+  }
+
+  bool ActivateTarget(bool to_localization) {
+    if (to_localization) {
+      return BringUp(map_server_client_) && BringUp(amcl_client_);
+    }
+    return BringUp(slam_client_);
+  }
+
+  void DeactivateTarget(bool to_localization) {
+    if (to_localization) {
+      ApplyTransition(map_server_client_, Transition::TRANSITION_DEACTIVATE);
+      ApplyTransition(amcl_client_, Transition::TRANSITION_DEACTIVATE);
+    } else {
+      ApplyTransition(slam_client_, Transition::TRANSITION_DEACTIVATE);
+    }
+  }
+
+  /// 失敗時に元のモードへ戻す。
+  bool ActivateCurrent(bool to_localization) {
+    if (to_localization) {
+      return ApplyTransition(slam_client_, Transition::TRANSITION_ACTIVATE);
+    }
+    return BringUp(map_server_client_) && BringUp(amcl_client_);
   }
 
   void PublishMode() {
@@ -162,6 +211,7 @@ class NavModeManager : public rclcpp::Node {
   rclcpp::Client<ChangeState>::SharedPtr amcl_client_;
   rclcpp::Publisher<std_msgs::msg::String>::SharedPtr mode_publisher_;
   rclcpp::Service<Trigger>::SharedPtr switch_service_;
+  rclcpp::Service<Trigger>::SharedPtr mapping_service_;
   rclcpp::Service<Trigger>::SharedPtr get_service_;
   rclcpp::TimerBase::SharedPtr startup_timer_;
 };

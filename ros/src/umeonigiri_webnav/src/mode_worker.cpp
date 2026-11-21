@@ -39,6 +39,7 @@ ModeWorker::ModeWorker(const std::string& maps_dir)
 
   mode_client_ = node_->create_client<Trigger>("get_mode");
   switch_client_ = node_->create_client<Trigger>("switch_to_localization");
+  mapping_client_ = node_->create_client<Trigger>("switch_to_mapping");
   save_client_ = node_->create_client<SaveMapService>("/map_saver/save_map");
   pose_publisher_ =
       node_->create_publisher<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -91,17 +92,25 @@ std::string ModeWorker::Mode() {
 }
 
 std::string ModeWorker::SwitchToLocalization() {
+  return SwitchVia(switch_client_, "switch_to_localization");
+}
+
+std::string ModeWorker::SwitchToMapping() {
+  return SwitchVia(mapping_client_, "switch_to_mapping");
+}
+
+std::string ModeWorker::SwitchVia(const rclcpp::Client<Trigger>::SharedPtr& client,
+                                  const char* name) {
   std::unique_lock<std::mutex> guard(busy_, std::try_to_lock);
   if (!guard.owns_lock()) {
     return "別の操作を実行中です";
   }
-  if (!switch_client_->wait_for_service(kServiceWait)) {
-    return "switch_to_localization が見つかりません";
+  if (!client->wait_for_service(kServiceWait)) {
+    return std::string(name) + " が見つかりません";
   }
-  auto future = switch_client_->async_send_request(
-      std::make_shared<Trigger::Request>());
+  auto future = client->async_send_request(std::make_shared<Trigger::Request>());
   if (future.wait_for(kSwitchResponseWait) != std::future_status::ready) {
-    return "switch_to_localization が応答しません";
+    return std::string(name) + " が応答しません";
   }
   const auto response = future.get();
   if (response->success) {

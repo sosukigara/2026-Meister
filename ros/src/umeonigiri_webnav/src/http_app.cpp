@@ -176,17 +176,14 @@ void RegisterRoutes(httplib::Server& server, const std::filesystem::path& webui_
       return;
     }
     const std::string mode = body["mode"].get<std::string>();
-    if (mode == "mapping") {
-      // 地図生成へ戻るのは launch 再起動のみ（設計書 §6.4）。
-      SendJson(res, json{{"error",
-                          "地図生成へ戻るには launch を再起動してください"}}, 409);
-      return;
-    }
-    if (mode != "localization") {
+    if (mode != "mapping" && mode != "localization") {
       SendJson(res, json{{"error", "unknown mode"}}, 400);
       return;
     }
-    const std::string error = mode_sink.SwitchToLocalization();
+    // どちらの向きも受ける。map→odom の持ち主は 1 つに保たれる
+    // (nav_mode_manager が旧 owner の deactivate を待ってから新 owner を起こす)。
+    const std::string error =
+        mode == "mapping" ? mode_sink.SwitchToMapping() : mode_sink.SwitchToLocalization();
     if (!error.empty()) {
       // 切り替わっていないのに成功を返すと、以後の操作が全部嘘になる。
       SendJson(res, json{{"error", error}}, 409);

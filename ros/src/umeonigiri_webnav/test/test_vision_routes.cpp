@@ -95,6 +95,7 @@ class StubModeSink : public ModeSink {
  public:
   std::string Mode() override { return "mapping"; }
   std::string SwitchToLocalization() override { return {}; }
+  std::string SwitchToMapping() override { return {}; }
   std::vector<std::string> ListMaps() override { return {}; }
   std::string SaveMap(const std::string&) override { return {}; }
   std::string DeleteMap(const std::string&) override { return {}; }
