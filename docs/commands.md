@@ -109,7 +109,7 @@ MEISTER_LAUNCH_ARGS="controller:=mppi" \
   両方が立ち上がるまで待ってから計測する（spawn 失敗時は起動し直す）。
 - **launch と計測は同じプロセス内で行うこと。** 別プロセスからは DDS が
   見えないことがある（VPN 環境のマルチキャスト障害）。
-- 結果の読み方と過去の計測は [docs/bench/](../bench/) を参照。
+- 結果の読み方と過去の計測は [docs/bench/](bench/) を参照。
 
 ## 5.6 CPU 内訳の計測
 
@@ -120,7 +120,7 @@ python3 ros/src/ros2_autonomous_nav/scripts/cpu_split.py --seconds 20 --label "h
 
 `/proc/<pid>/stat` の utime+stime の差分を使う。`top` の瞬間値は数秒で振れるため、
 比較には区間積分を使う。**シミュレーションの値は `/clock` の配信量に比例して
-膨らむ**ので、実機の見積りに流用しないこと（[bench/2026-11-20-cpu-analysis.md](../bench/2026-11-20-cpu-analysis.md) §1）。
+膨らむ**ので、実機の見積りに流用しないこと（[bench/2026-11-20-cpu-analysis.md](bench/2026-11-20-cpu-analysis.md) §1）。
 
 ## 6. 4 通りのビルド（条件コンパイル確認）
 
@@ -185,7 +185,7 @@ ros2 bag play /tmp/bag_cam --rate 1.0
 ```
 
 前回の結果と「比較にならなかった理由」は
-[bench/2026-11-20-cpu-analysis.md](../bench/2026-11-20-cpu-analysis.md) §5。
+[bench/2026-11-20-cpu-analysis.md](bench/2026-11-20-cpu-analysis.md) §5。
 
 ## 10. 画像認識の内訳を測る
 
