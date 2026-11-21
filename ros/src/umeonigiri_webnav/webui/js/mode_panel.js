@@ -28,6 +28,15 @@ export function createModePanel({ badgeEl, switchEl, saveEl, nameEl, onNotice })
   // 応答を待つ間に次の要求を積まない。積むと待ち行列が伸びて、同じ画面の
   // 地図や姿勢の要求まで詰まらせる。
   let polling = false;
+  // 切替の往復中と、航行中は切り替えさせない。航行中に lifecycle を動かすと
+  // 走っているルートの足元が変わる。
+  let switching = false;
+  let locked = false;
+
+  function syncSwitch() {
+    switchEl.disabled = switching || locked;
+    switchEl.title = locked ? '航行中はモードを切り替えられません' : '';
+  }
 
   function render(next) {
     mode = next;
@@ -37,6 +46,7 @@ export function createModePanel({ badgeEl, switchEl, saveEl, nameEl, onNotice })
     const target = next === 'mapping' ? 'localization' : 'mapping';
     switchEl.textContent = target === 'localization' ? '保存地図ナビへ' : '地図生成へ戻す';
     switchEl.hidden = next !== 'mapping' && next !== 'localization';
+    syncSwitch();
   }
 
   async function poll() {
@@ -53,7 +63,8 @@ export function createModePanel({ badgeEl, switchEl, saveEl, nameEl, onNotice })
   }
 
   switchEl.addEventListener('click', async () => {
-    switchEl.disabled = true;
+    switching = true;
+    syncSwitch();
     // 押した時点のモードから行き先を決める（応答待ちの間に表示が変わっても追従しない）。
     const target = mode === 'mapping' ? 'localization' : 'mapping';
     try {
@@ -68,7 +79,8 @@ export function createModePanel({ badgeEl, switchEl, saveEl, nameEl, onNotice })
       onNotice(`切り替えできません: ${error.message}`, 'error');
       await poll();
     } finally {
-      switchEl.disabled = false;
+      switching = false;
+      syncSwitch();
     }
   });
 
@@ -103,5 +115,13 @@ export function createModePanel({ badgeEl, switchEl, saveEl, nameEl, onNotice })
 
   poll();
 
-  return { poll, render, currentMode: () => mode };
+  return {
+    poll,
+    render,
+    currentMode: () => mode,
+    setLocked(next) {
+      locked = Boolean(next);
+      syncSwitch();
+    },
+  };
 }

@@ -78,6 +78,12 @@
         <button id="btn-clear-trail" class="btn btn-icon" type="button" title="軌跡を消す" aria-label="軌跡を消す">
           <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 12.5 6 8.5l3 2.5 4-7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="3" cy="12.5" r="1.2" fill="currentColor"/></svg>
         </button>
+        <!-- タッチでは 1 本指が「目的地を置く」に使われる。地図をずらす手段として
+             明示のモードを用意する (マウスは右/Alt ドラッグで移動できるので非表示)。 -->
+        <button id="btn-pan" class="btn btn-icon btn-pan" type="button"
+                title="地図を移動 (ドラッグ)" aria-label="地図を移動" aria-pressed="false">
+          <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M8 2.5v11M2.5 8h11M8 2.5 6 5M8 2.5 10 5M8 13.5 6 11M8 13.5 10 11M2.5 8 5 6M2.5 8 5 10M13.5 8 11 6M13.5 8 11 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
     </div>
 
@@ -93,10 +99,14 @@
 
     <div class="map-foot">
       <p class="map-hint" id="map-hint">
-        <span class="hint-pointer">クリックで目的地</span>
-        <span class="hint-touch">タップで目的地</span>
-        <span>ドラッグで向き</span>
+        <span class="hint-place">
+          <span class="hint-pointer">クリックで目的地</span>
+          <span class="hint-touch">タップで目的地</span>
+        </span>
+        <span class="hint-drag">ドラッグで向き</span>
+        <span class="hint-pan">ドラッグで移動</span>
         <span class="hint-pose">Shift+クリックで初期位置</span>
+        <span class="hint-mouse">ホイールで拡大・右ドラッグで移動</span>
         <span class="visually-hidden">矢印キーで地図を移動、プラスとマイナスで拡大縮小できます。</span>
       </p>
       <p class="map-readout" id="map-readout" aria-hidden="true">—</p>

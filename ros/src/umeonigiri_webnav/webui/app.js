@@ -29,6 +29,8 @@ const log = createEventLog({
 });
 const signals = createSignalStrip();
 let busy = false;
+// Nav2 が受け付けられる状態か。準備前に送信ボタンを押させない。
+let navReady = false;
 // 応答が遅いときに interval が要求を積み上げないようにする。古い応答が
 // 新しい値を上書きするのも防げる。
 let mapBusy = false;
@@ -41,6 +43,11 @@ const mapView = createMapView({
   stage: el('map-stage'),
   onCursor: readout.update,
   onPlace: (point, yaw) => {
+    // 航行中に足すと、画面のルートと実際に走っているルートが別物になる。
+    if (busy) {
+      log.warn('航行中は目的地を追加できません');
+      return;
+    }
     waypoints.add({ x: point.x, y: point.y, yaw });
     // 履歴の 1 行は狭い列で折り返さない長さにする。向きは一覧と地図の矢印で読める。
     log.info(`目的地 ${waypoints.count()}: ${position(point.x, point.y)} m`);
@@ -48,6 +55,10 @@ const mapView = createMapView({
   // 保存地図ナビへ切り替えると AMCL は初期位置を待つ。RViz を開かずに済むよう、
   // 地図の上で Shift+クリック (ドラッグで向き) した点をそのまま初期位置にする。
   onPose: async (point, yaw) => {
+    if (busy) {
+      log.warn('航行中は初期位置を設定できません');
+      return;
+    }
     try {
       await postJson('/api/initialpose', { x: point.x, y: point.y, yaw });
       log.ok(`初期位置を設定 (${position(point.x, point.y)} m / 向き ${degrees(yaw)})`);
@@ -124,6 +135,19 @@ const nav = createNavStatus({
       note: status.nav2_ready ? 'Nav2 準備完了' : 'Nav2 待ち',
       tone: status.nav2_ready ? stateTone(status.state) : 'warn',
     });
+    const ready = Boolean(status.nav2_ready);
+    if (ready !== navReady) {
+      navReady = ready;
+      refreshActions();
+    }
+    // 巡回中の 1 点を地図とリストで共有する。busy でないときは何も光らせない。
+    const current =
+      (status.state === 'navigating' || status.state === 'sending') &&
+      Number.isInteger(status.current_waypoint)
+        ? status.current_waypoint
+        : null;
+    waypoints.setActive(current);
+    mapView.setActiveWaypoint(current);
   },
   onState: (status) => {
     busy = BUSY_STATES.has(status.state);
@@ -135,10 +159,22 @@ const nav = createNavStatus({
 
 function refreshActions() {
   const count = waypoints.count();
-  el('btn-send').disabled = count === 0 || busy;
+  const send = el('btn-send');
+  send.disabled = count === 0 || busy || !navReady;
+  // スマホでは計器の注記を隠している。無効の理由が画面に出ないと
+  // 「押せないボタン」に見えるので、ラベル自体で待ち状態を言う。
+  send.textContent = navReady ? 'ルート送信' : 'Nav2 待ち';
+  send.title = !navReady
+    ? 'Nav2 の準備を待っています'
+    : count === 0
+      ? '目的地を追加してください'
+      : '';
   el('btn-cancel').disabled = !busy;
   el('btn-undo').disabled = count === 0 || busy;
   el('btn-clear').disabled = count === 0 || busy;
+  // 航行中はリストとモード切替を凍結する。地図の追加は onPlace で止める。
+  waypoints.setLocked(busy);
+  mode.setLocked(busy);
 }
 
 async function loadMap() {
@@ -223,6 +259,10 @@ function clearRoute() {
   const snapshot = waypoints.list();
   waypoints.clear();
   log.undoable('目的地をすべて消しました', '元に戻す', () => {
+    if (busy) {
+      log.warn('航行中は元に戻せません');
+      return;
+    }
     if (waypoints.count() > 0) {
       log.warn('新しい目的地があるため、全消去は元に戻せません');
       return;
@@ -249,6 +289,16 @@ el('btn-zoom-out').addEventListener('click', () => mapView.zoomBy(1 / 1.25));
 el('btn-clear-trail').addEventListener('click', () => {
   mapView.clearTrail();
   log.info('軌跡を消しました');
+});
+
+// タッチで地図をずらすモード。マウスでは右/Alt ドラッグがあるのでボタンは隠す。
+let panMode = false;
+const panButton = el('btn-pan');
+panButton.addEventListener('click', () => {
+  panMode = !panMode;
+  panButton.setAttribute('aria-pressed', String(panMode));
+  mapView.setPanMode(panMode);
+  document.documentElement.classList.toggle('pan-mode', panMode);
 });
 
 createShortcuts({

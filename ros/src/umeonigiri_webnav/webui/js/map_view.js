@@ -38,6 +38,10 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice, onCurs
   let robot = null;
   let trail = [];
   let hovered = null;
+  // タッチ用の「地図を移動」モード。左ドラッグの意味を置く/ずらすで切り替える。
+  let panMode = false;
+  // Nav2 が向かっている地点。地図上でも 1 点だけ輪で示す。
+  let activeWaypoint = null;
   let drag = null;
   let dpr = 1;
   // 利用者がパン・ズームしたか。していない間だけ、リサイズに合わせて全体表示を
@@ -191,24 +195,35 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice, onCurs
     waypoints.forEach((point, index) => {
       const p = mapToScreen(point.x, point.y);
       const length = 22;
-      const active = hovered === index;
+      const highlighted = hovered === index;
+      const current = activeWaypoint === index;
       drawArrow(
         p,
         { x: p.x + Math.cos(point.yaw) * length, y: p.y - Math.sin(point.yaw) * length },
-        active ? palette.accentStrong : palette.accent,
-        active ? 2 : 1.5,
+        highlighted || current ? palette.accentStrong : palette.accent,
+        highlighted || current ? 2 : 1.5,
       );
       ctx.save();
+      if (current) {
+        // 巡回中の 1 点。色を足すだけでなく輪を足し、番号の並びの中で目が止まる。
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, MARKER_RADIUS + 4, 0, Math.PI * 2);
+        ctx.strokeStyle = palette.accent;
+        ctx.globalAlpha = 0.45;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
       ctx.beginPath();
       ctx.arc(p.x, p.y, MARKER_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = active ? palette.accent : palette.surface;
+      ctx.fillStyle = highlighted || current ? palette.accent : palette.surface;
       ctx.fill();
       ctx.lineWidth = 1.5;
-      ctx.strokeStyle = active ? palette.accentStrong : palette.accent;
-      ctx.globalAlpha = active ? 1 : 0.8;
+      ctx.strokeStyle = highlighted || current ? palette.accentStrong : palette.accent;
+      ctx.globalAlpha = highlighted || current ? 1 : 0.8;
       ctx.stroke();
       ctx.globalAlpha = 1;
-      ctx.fillStyle = active ? palette.bg : palette.ink;
+      ctx.fillStyle = highlighted || current ? palette.bg : palette.ink;
       ctx.font = labelFont(10);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -313,7 +328,8 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice, onCurs
     // アンバーの輪が付く。canvas は tabindex を持つので、クリック時の焦点は
     // ブラウザの既定に任せる (キーボードのときだけ輪が出る)。
     // 右/中ドラッグと Alt+ドラッグは移動。左クリックは目的地の追加に使う。
-    if (event.button === 1 || event.button === 2 || event.altKey) {
+    // タッチで「移動」を選んでいるときは左ドラッグも移動にする。
+    if (panMode || event.button === 1 || event.button === 2 || event.altKey) {
       drag = { mode: 'pan', clientX: event.clientX, clientY: event.clientY, x: view.x, y: view.y };
       canvas.setPointerCapture(event.pointerId);
       canvas.classList.add('is-panning');
@@ -473,6 +489,7 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice, onCurs
     },
     setWaypoints(list) {
       waypoints = list;
+      if (activeWaypoint !== null && activeWaypoint >= list.length) activeWaypoint = null;
       requestDraw();
     },
     setRobot(pose) {
@@ -492,6 +509,16 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice, onCurs
       if (hovered === index) return;
       hovered = index;
       requestDraw();
+    },
+    setActiveWaypoint(index) {
+      const next = Number.isInteger(index) ? index : null;
+      if (next === activeWaypoint) return;
+      activeWaypoint = next;
+      requestDraw();
+    },
+    setPanMode(on) {
+      panMode = Boolean(on);
+      canvas.classList.toggle('is-pan-mode', panMode);
     },
     hasMap: () => Boolean(meta && image),
     resize,
