@@ -36,8 +36,16 @@ int main(int argc, char** argv) {
 
   const std::string pgm = out_dir + "/nav_world.pgm";
   const std::string yaml = out_dir + "/nav_world.yaml";
-  ros2_autonomous_nav::WritePgm(pgm, spec, grid);
-  ros2_autonomous_nav::WriteMapYaml(yaml, spec, "nav_world.pgm");
+  // 書けなかったのに "map written" と出して 0 で終わると、地図が無いまま
+  // 成功したように見える。1 つでも失敗したら非 0 で止める。
+  if (!ros2_autonomous_nav::WritePgm(pgm, spec, grid)) {
+    std::fprintf(stderr, "ERROR: cannot write %s\n", pgm.c_str());
+    return 1;
+  }
+  if (!ros2_autonomous_nav::WriteMapYaml(yaml, spec, "nav_world.pgm")) {
+    std::fprintf(stderr, "ERROR: cannot write %s\n", yaml.c_str());
+    return 1;
+  }
 
   std::printf("map written:\n  %s\n  %s\n  %dx%d px, %.2fx%.2f m\n", pgm.c_str(),
               yaml.c_str(), spec.width(), spec.height(), spec.width_m, spec.height_m);

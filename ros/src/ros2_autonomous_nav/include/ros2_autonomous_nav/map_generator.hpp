@@ -34,12 +34,12 @@ std::vector<uint8_t> BuildNavWorldGrid(const MapSpec& spec = MapSpec{});
 /// Python 版と同じ表記で小数を書く（-6.0 を -6 にしない）。
 std::string FormatDouble(double value);
 
-/// P5 (binary) PGM を書く。
-void WritePgm(const std::string& path, const MapSpec& spec,
+/// P5 (binary) PGM を書く。書けなければ false。
+bool WritePgm(const std::string& path, const MapSpec& spec,
               const std::vector<uint8_t>& grid);
 
-/// nav2_map_server が読む YAML を書く。image はファイル名だけを持つ。
-void WriteMapYaml(const std::string& path, const MapSpec& spec,
+/// nav2_map_server が読む YAML を書く。image はファイル名だけを持つ。書けなければ false。
+bool WriteMapYaml(const std::string& path, const MapSpec& spec,
                   const std::string& image_name);
 
 }  // namespace ros2_autonomous_nav
