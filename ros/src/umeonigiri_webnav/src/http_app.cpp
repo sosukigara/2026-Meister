@@ -2,6 +2,7 @@
 #include "umeonigiri_webnav/http_app.hpp"
 
 #include <cctype>
+#include <cmath>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -21,14 +22,39 @@ using nlohmann::json;
 
 /// Python 版の float(value) と同じ受容（数値と数値文字列）。型が違うだけで 400 に
 /// すると、旧クライアントが送っていた "1.5" 形式を落とす。
+///
+/// ただし有限値しか受けない。NaN / 無限大がそのまま Nav2 のゴールになると
+/// controller の制御周期が inf になりゴールが落ちる（実測）。数値文字列は全体が
+/// 数値でなければ受けない: "1.5abc" を 1.5 として黙って通すと、画面に出した値と
+/// 実際に走る値がずれる。
 double ToDouble(const json& value, const char* key) {
+  const std::string not_a_number = std::string(key) + " must be a number";
+  double result = 0.0;
   if (value.is_number()) {
-    return value.get<double>();
+    result = value.get<double>();
+  } else if (value.is_string()) {
+    // std::stod は "nan" / "inf" も数値として通すので、文字列経由でも下の
+    // 有限性チェックを必ず通す。
+    const std::string text = value.get<std::string>();
+    std::size_t consumed = 0;
+    try {
+      result = std::stod(text, &consumed);
+    } catch (const std::exception&) {
+      throw std::invalid_argument(not_a_number);
+    }
+    // std::stod は 16 進浮動小数 ("0x10") も通すが、Python 版の float() は
+    // ValueError にする。互換の範囲を揃えるため 16 進は明示的に落とす。
+    if (consumed != text.size() ||
+        text.find_first_of("xX") != std::string::npos) {
+      throw std::invalid_argument(not_a_number);
+    }
+  } else {
+    throw std::invalid_argument(not_a_number);
   }
-  if (value.is_string()) {
-    return std::stod(value.get<std::string>());
+  if (!std::isfinite(result)) {
+    throw std::invalid_argument(std::string(key) + " must be finite");
   }
-  throw std::invalid_argument(std::string(key) + " must be a number");
+  return result;
 }
 
 /// 本文から地点列を取り出す。空文字なら成功、それ以外は 400 に載せる理由。

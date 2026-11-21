@@ -468,6 +468,61 @@ TEST(HttpAppNavApi, CancelRequestsCancellation) {
   EXPECT_TRUE(server.sink().canceled);
 }
 
+TEST(HttpAppNavApi, RejectsNonFiniteWaypoints) {
+  // NaN / 無限大をそのまま Nav2 に送ると controller の制御周期が inf になり、
+  // ゴールが失敗する（実測）。文字列経由でも std::stod が "nan" / "inf" を
+  // 数値として通すので、両方の入口で弾く。
+  HttpServer server;
+  for (const std::string body : {R"({"waypoints":[{"x":"nan","y":0}]})",
+                                 R"({"waypoints":[{"x":"inf","y":0}]})",
+                                 R"({"waypoints":[{"x":"-inf","y":0}]})",
+                                 R"({"waypoints":[{"x":"NaN","y":0}]})",
+                                 R"({"waypoints":[{"x":0,"y":"infinity"}]})",
+                                 R"({"waypoints":[{"x":0,"y":0,"yaw":"nan"}]})"}) {
+    const Reply response = server.Post("/api/nav", body);
+    EXPECT_EQ(response.status, 400) << body;
+    EXPECT_FALSE(json::parse(response.body).at("error").get<std::string>().empty())
+        << body;
+  }
+  EXPECT_TRUE(server.sink().submitted.empty());
+}
+
+TEST(HttpAppNavApi, RejectsPartiallyNumericStrings) {
+  // "1.5abc" を 1.5 として通すと、画面に出した値と実際に走る値がずれる。
+  HttpServer server;
+  for (const std::string body : {R"({"waypoints":[{"x":"1.5abc","y":0}]})",
+                                 R"({"waypoints":[{"x":"1.5.2","y":0}]})",
+                                 R"({"waypoints":[{"x":"0x10","y":0}]})"}) {
+    const Reply response = server.Post("/api/nav", body);
+    EXPECT_EQ(response.status, 400) << body;
+  }
+  EXPECT_TRUE(server.sink().submitted.empty());
+}
+
+TEST(HttpAppNavApi, KeepsAcceptingNumericStrings) {
+  // 旧クライアント互換（Python 版の float(value) と同じ受容）は維持する。
+  HttpServer server;
+  const Reply response = server.Post(
+      "/api/nav", R"({"waypoints":[{"x":"1.5","y":"-2","yaw":"0.5"}]})");
+  ASSERT_EQ(response.status, 200);
+  ASSERT_EQ(server.sink().submitted.size(), 1u);
+  EXPECT_DOUBLE_EQ(server.sink().submitted[0].x, 1.5);
+  EXPECT_DOUBLE_EQ(server.sink().submitted[0].y, -2.0);
+  EXPECT_DOUBLE_EQ(server.sink().submitted[0].yaw, 0.5);
+}
+
+TEST(HttpAppInitialPoseApi, RejectsNonFinitePose) {
+  // 初期姿勢も同じ ToDouble を通る。NaN が入ると AMCL の姿勢が壊れる。
+  HttpServer server;
+  for (const std::string body : {R"({"x":"nan","y":0})", R"({"x":0,"y":"inf"})",
+                                 R"({"x":0,"y":0,"yaw":"nan"})"}) {
+    const Reply response = server.Post("/api/initialpose", body);
+    EXPECT_EQ(response.status, 400) << body;
+  }
+  // 1 つも通していないので、AMCL へは姿勢が飛ばない。
+  EXPECT_EQ(server.mode().pose, (std::array<double, 3>{0.0, 0.0, 0.0}));
+}
+
 TEST(HttpAppStaticFiles, ServesExplicitAssetsAndRejectsTraversal) {
   HttpServer server;
   const Reply index = server.Get("/");
