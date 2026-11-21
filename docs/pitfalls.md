@@ -63,7 +63,7 @@
 
 ## P8. 環境特有の挙動
 
-- **VPN 環境**: `start_meister.sh:44-48` で `ROS_LOCALHOST_ONLY=1` を設定するが子プロセスのみ。別ターミナルの `ros2` CLI には継承されない。
+- **VPN 環境**: `launch.sh:59` で `ROS_LOCALHOST_ONLY=1` を設定するが子プロセスのみ。別ターミナルの `ros2` CLI には継承されない。
 - **upload_port**: `platformio.ini` で by-id パスを明示指定。M5Stack ESP32-P4 (`/dev/ttyACM0`) が同時に接続されている状態でポート未指定の `pio run -t upload` が誤ったボードへ書き込むのを防ぐ。別の ESP32 本体に書き込む場合はここを変更。
 - **GPIO12 はストラップピン**: グリッパーサーボ PWM ピン (`MSTE_GRIPPER_PIN=12`) は実機配線時に変更推奨。
 - **web search 遮断**: 全プロバイダ遮断。pip は使える。
