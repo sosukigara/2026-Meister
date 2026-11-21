@@ -23,8 +23,9 @@ enum class TourAction {
   kSkip,  ///< 失敗。この地点だけ飛ばして続ける
 };
 
-/// `rclcpp_action::ResultCode` の整数値を受ける（0=UNKNOWN, 1=SUCCEEDED, 2=CANCELED,
-/// 3=ABORTED）。ROS 型に依存させないため int で受ける。
+/// `rclcpp_action::ResultCode` の整数値を受ける。値は action_msgs/msg/GoalStatus の
+/// 定数そのもの（UNKNOWN=0, ACCEPTED=1, EXECUTING=2, CANCELING=3,
+/// SUCCEEDED=4, CANCELED=5, ABORTED=6）。ROS 型に依存させないため int で受ける。
 TourAction ActionForResult(int result_code);
 
 }  // namespace ros2_autonomous_nav

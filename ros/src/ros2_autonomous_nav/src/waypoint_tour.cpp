@@ -2,6 +2,13 @@
 #include "ros2_autonomous_nav/waypoint_tour.hpp"
 
 namespace ros2_autonomous_nav {
+namespace {
+
+// action_msgs/msg/GoalStatus の定数。ROS 型に依存させないため整数で持つ。
+constexpr int kStatusSucceeded = 4;
+constexpr int kStatusCanceled = 5;
+
+}  // namespace
 
 const std::vector<TourWaypoint>& TourWaypoints() {
   static const std::vector<TourWaypoint> kWaypoints{
@@ -19,12 +26,17 @@ const std::vector<TourWaypoint>& TourWaypoints() {
 }
 
 TourAction ActionForResult(int result_code) {
+  // 値は action_msgs/msg/GoalStatus の定数そのもの。rclcpp_action::ResultCode は
+  // この値へ直接対応する (client_goal_handle.hpp)。
+  //   UNKNOWN=0 ACCEPTED=1 EXECUTING=2 CANCELING=3 SUCCEEDED=4 CANCELED=5 ABORTED=6
+  // 以前は 1/2/3 で判定していたため、成功 (4) が default に落ちて「失敗」と
+  // 表示されていた (実測: Nav2 は "Goal succeeded" なのに Failed to reach)。
   switch (result_code) {
-    case 1:  // SUCCEEDED
+    case kStatusSucceeded:
       return TourAction::kNext;
-    case 2:  // CANCELED
+    case kStatusCanceled:
       return TourAction::kStop;
-    default:  // UNKNOWN / ABORTED
+    default:  // UNKNOWN / ABORTED / その他は この地点だけ飛ばす
       return TourAction::kSkip;
   }
 }
