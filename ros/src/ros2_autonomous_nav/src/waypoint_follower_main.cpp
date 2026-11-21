@@ -21,6 +21,10 @@ namespace {
 
 using NavigateToPose = nav2_msgs::action::NavigateToPose;
 
+/// ゴール要求の応答待ち。サーバ側は受けたらすぐ応答するので、これを超えるのは
+/// 異常（サーバが詰まっている）とみなして次へ進む。
+constexpr auto kGoalResponseTimeout = std::chrono::seconds(10);
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -58,13 +62,33 @@ int main(int argc, char** argv) {
           std::fflush(stdout);
         };
 
-    auto handle = client->async_send_goal(goal, send_options).get();
+    // future を .get() で直接待つと駄目。アクションの応答は executor が回って
+    // 初めて配送されるので、何も spin しないまま待つと永久に返らない。
+    // 実測: Nav2 側はゴールを受けて走行まで完了しているのに、このツアーは
+    // 1 地点目で futex_wait のまま止まり、フィードバックも出なかった。
+    auto goal_future = client->async_send_goal(goal, send_options);
+    if (rclcpp::spin_until_future_complete(node, goal_future, kGoalResponseTimeout) !=
+        rclcpp::FutureReturnCode::SUCCESS) {
+      std::fprintf(stderr, "  goal request timed out, skipping...\n");
+      continue;
+    }
+    auto handle = goal_future.get();
     if (handle == nullptr) {
       std::fprintf(stderr, "  goal rejected, skipping...\n");
       continue;
     }
 
-    const auto result = client->async_get_result(handle).get();
+    // 走行中は結果が返るまで spin し続ける。ここで回すことで feedback_callback も届く。
+    auto result_future = client->async_get_result(handle);
+    if (rclcpp::spin_until_future_complete(node, result_future) !=
+        rclcpp::FutureReturnCode::SUCCESS) {
+      // Ctrl+C で止められた場合もここに来る。走行を残さないようキャンセルする。
+      client->async_cancel_goal(handle);
+      std::printf("\nWaypoint tour interrupted.\n");
+      rclcpp::shutdown();
+      return 1;
+    }
+    const auto result = result_future.get();
 
     switch (ros2_autonomous_nav::ActionForResult(static_cast<int>(result.code))) {
       case ros2_autonomous_nav::TourAction::kNext:
@@ -76,7 +100,10 @@ int main(int argc, char** argv) {
         rclcpp::shutdown();
         return 0;
       case ros2_autonomous_nav::TourAction::kSkip:
-        std::printf("  Failed to reach %s, skipping...\n", waypoint.label);
+        // 結果コードを出す。Nav2 側は "Goal succeeded" なのに失敗として扱われる
+        // ような食い違いを、現場で切り分けられるようにするため。
+        std::printf("  Failed to reach %s (result code %d), skipping...\n",
+                    waypoint.label, static_cast<int>(result.code));
         break;
     }
   }
