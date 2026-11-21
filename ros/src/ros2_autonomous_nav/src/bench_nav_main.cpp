@@ -375,7 +375,9 @@ int main(int argc, char** argv) {
         (void)cpu_after;
         RunRecord timed_out;
         timed_out.success = false;
-        timed_out.result_code = 3;  // CANCELED（ゴールタイムアウト）
+        // コードは action_msgs/GoalStatus の値そのもの (CANCELED=5)。3 を書くと
+        // CANCELING になり、JSON を読む側が取り違える。
+        timed_out.result_code = static_cast<int>(rclcpp_action::ResultCode::CANCELED);
         runs.push_back(timed_out);
         continue;
       }
