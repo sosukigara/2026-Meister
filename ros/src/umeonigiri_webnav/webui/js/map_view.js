@@ -520,6 +520,13 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice, onCurs
       panMode = Boolean(on);
       canvas.classList.toggle('is-pan-mode', panMode);
     },
+    /// 現在位置。座標ダイアログの初期値に使う。
+    getRobot: () => (robot ? { ...robot } : null),
+    /// 地図範囲の判定。地図クリックと同じ境界を、座標入力にも適用する。
+    contains(x, y) {
+      if (!meta) return false;
+      return insideMap(worldToMapPixels(x, y));
+    },
     hasMap: () => Boolean(meta && image),
     resize,
   };

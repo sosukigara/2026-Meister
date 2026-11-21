@@ -863,9 +863,26 @@ kbd {
 }
 
 .waypoint-body {
+  appearance: none;
   display: grid;
   gap: 1px;
   min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.waypoint-body:disabled { cursor: not-allowed; }
+
+.waypoint-body:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .waypoint-coords {
@@ -1189,6 +1206,112 @@ kbd {
   to { opacity: 1; transform: none; }
 }
 
+/* ---------- 座標ダイアログ ---------- */
+
+.dialog {
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  margin: auto;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6);
+}
+
+.dialog::backdrop { background: rgba(4, 6, 9, 0.66); }
+
+.dialog form {
+  display: grid;
+  gap: var(--s4);
+  padding: var(--s5);
+}
+
+.dialog-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.dialog-head h2 {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.dialog-note {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: var(--fs-label);
+  line-height: 1.5;
+}
+
+.dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s3);
+}
+
+.dialog-grid label {
+  display: grid;
+  gap: 5px;
+  color: var(--ink-3);
+  font-size: var(--fs-meta);
+}
+
+.dialog-grid .dialog-wide { grid-column: 1 / -1; }
+
+.dialog-grid input {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--fs-body);
+}
+
+.dialog-grid input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.dialog-grid input[aria-invalid='true'] { border-color: rgba(226, 104, 92, 0.7); }
+
+.form-error {
+  margin: 0;
+  color: var(--red);
+  font-size: var(--fs-label);
+  line-height: 1.5;
+}
+
+.form-error[hidden] { display: none; }
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: var(--s2);
+}
+
+.dialog-reorder {
+  display: flex;
+  gap: 4px;
+  margin-right: auto;
+}
+
+.dialog-reorder[hidden] { display: none; }
+
+.dialog-actions .btn { height: 40px; }
+
 /* ---------- 狭い画面 ---------- */
 
 @media (max-width: 1359px) {
@@ -1330,6 +1453,9 @@ kbd {
   .map-foot { padding: 0 var(--s3); }
   .hint-mouse { display: none; }
   .vision-stage { width: 100%; max-width: none; }
+  .dialog form { padding: var(--s4); gap: var(--s3); }
+  .dialog-grid { grid-template-columns: 1fr; }
+  .dialog-grid .dialog-wide { grid-column: auto; }
 }
 
 /* 320px 級では 4 列にすると値が省略される。2 列にして読める大きさを残す。 */
@@ -1337,6 +1463,9 @@ kbd {
   .signals { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s2); }
   .gauge-value { font-size: 14px; }
   .toasts { top: 142px; }
+  /* 320px では前へ/後ろへ + キャンセル + 保存が 1 行に収まらない。
+     並べ替えを独立した行にし、決定は右下へ揃える。 */
+  .dialog-reorder { flex: 1 0 100%; margin-right: 0; }
 }
 
 /* タッチでは押せる面積を広げ、入力欄の文字を 16px にして自動ズームを防ぐ。 */
@@ -1345,6 +1474,8 @@ kbd {
   .btn-icon { width: 40px; }
   .switch { height: 36px; }
   .waypoint-remove { width: 36px; height: 36px; }
+  .dialog-grid input { height: 44px; font-size: 16px; }
+  .dialog-actions .btn { height: 40px; }
   .map-name { font-size: 16px; }
   .hint-pointer { display: none; }
   .hint-touch { display: inline; }

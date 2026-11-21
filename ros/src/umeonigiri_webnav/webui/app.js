@@ -79,6 +79,23 @@ const waypoints = createWaypointPanel({
     mapView.setWaypoints(waypoints.list());
     refreshActions();
   },
+  // 座標の直接入力。地図クリックの代替として、ロボットの現在位置を初期値にする。
+  defaults: () => mapView.getRobot(),
+  isInside: (x, y) => mapView.contains(x, y),
+  onNotice: (text) => log.info(text),
+  dialogEl: el('point-dialog'),
+  formEl: el('point-form'),
+  titleEl: el('point-dialog-title'),
+  xEl: el('point-x'),
+  yEl: el('point-y'),
+  yawEl: el('point-yaw'),
+  errorEl: el('point-error'),
+  submitEl: el('point-submit'),
+  cancelEl: el('point-cancel'),
+  closeEl: el('point-close'),
+  prevEl: el('point-prev'),
+  nextEl: el('point-next'),
+  reorderEl: el('point-reorder'),
 });
 
 const vision = createVisionPanel({
@@ -172,6 +189,9 @@ function refreshActions() {
   el('btn-cancel').disabled = !busy;
   el('btn-undo').disabled = count === 0 || busy;
   el('btn-clear').disabled = count === 0 || busy;
+  const addCoord = el('btn-add-coord');
+  addCoord.disabled = busy;
+  addCoord.title = busy ? '航行中は目的地を追加できません' : '座標から目的地を追加';
   // 航行中はリストとモード切替を凍結する。地図の追加は onPlace で止める。
   waypoints.setLocked(busy);
   mode.setLocked(busy);
@@ -283,6 +303,7 @@ el('btn-send').addEventListener('click', sendTour);
 el('btn-cancel').addEventListener('click', cancelTour);
 el('btn-undo').addEventListener('click', undoLast);
 el('btn-clear').addEventListener('click', clearRoute);
+el('btn-add-coord').addEventListener('click', () => waypoints.openAdd());
 el('btn-fit').addEventListener('click', () => mapView.fit());
 el('btn-zoom-in').addEventListener('click', () => mapView.zoomBy(1.25));
 el('btn-zoom-out').addEventListener('click', () => mapView.zoomBy(1 / 1.25));

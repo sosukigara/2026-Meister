@@ -12,6 +12,22 @@ export function createWaypointPanel({
   distanceEl,
   onHover,
   onCountChange,
+  onNotice,
+  defaults,
+  isInside,
+  dialogEl,
+  formEl,
+  titleEl,
+  xEl,
+  yEl,
+  yawEl,
+  errorEl,
+  submitEl,
+  cancelEl,
+  closeEl,
+  prevEl,
+  nextEl,
+  reorderEl,
 }) {
   let waypoints = [];
   // 航行中はリストを凍結する。地図の追加・削除・全消去と食い違うと、
@@ -19,6 +35,8 @@ export function createWaypointPanel({
   let locked = false;
   // いま Nav2 が向かっている地点 (0 始まり)。地図とリストで同じ点を光らせる。
   let active = null;
+  // 座標ダイアログで編集中の index。null は新規追加。
+  let editing = null;
 
   function legDistance(index) {
     if (index === 0) return null;
@@ -50,8 +68,17 @@ export function createWaypointPanel({
       order.className = 'waypoint-order';
       order.textContent = String(index + 1);
 
-      const body = document.createElement('span');
+      // 本文はボタン。座標・向きを読みながら、そのまま編集へ入れる。
+      const body = document.createElement('button');
+      body.type = 'button';
       body.className = 'waypoint-body';
+      body.title = locked ? '航行中は編集できません' : `${index + 1} 番目の目的地を編集`;
+      body.setAttribute(
+        'aria-label',
+        `${index + 1} 番目の目的地を編集。${position(point.x, point.y)} m、向き ${degrees(point.yaw)}`,
+      );
+      body.disabled = locked;
+      body.addEventListener('click', () => openEdit(index));
       const coords = document.createElement('span');
       coords.className = 'waypoint-coords';
       coords.textContent = `${position(point.x, point.y)} m`;
@@ -111,12 +138,141 @@ export function createWaypointPanel({
     });
   }
 
+  function addPoint(point) {
+    if (locked) return;
+    waypoints.push(point);
+    update();
+    scrollToEnd();
+  }
+
+  // ---------- 座標の入力・編集・並べ替え ----------
+
+  function readNumber(input) {
+    const raw = input.value.trim();
+    if (raw === '') return NaN;
+    return Number(raw);
+  }
+
+  function clearError() {
+    errorEl.hidden = true;
+    errorEl.textContent = '';
+    [xEl, yEl, yawEl].forEach((input) => input.removeAttribute('aria-invalid'));
+  }
+
+  function showError(message) {
+    errorEl.textContent = message;
+    errorEl.hidden = false;
+    [xEl, yEl, yawEl].forEach((input) => input.setAttribute('aria-invalid', 'true'));
+  }
+
+  function fillPoint(point) {
+    xEl.value = point.x.toFixed(2);
+    yEl.value = point.y.toFixed(2);
+    yawEl.value = String(Math.round((point.yaw * 180) / Math.PI));
+  }
+
+  function syncEditor() {
+    if (editing === null) {
+      reorderEl.hidden = true;
+      return;
+    }
+    reorderEl.hidden = false;
+    prevEl.disabled = editing === 0;
+    nextEl.disabled = editing === waypoints.length - 1;
+  }
+
+  function openAdd() {
+    if (locked || dialogEl.open) return;
+    editing = null;
+    const base = defaults?.() ?? { x: 0, y: 0, yaw: 0 };
+    titleEl.textContent = '目的地を追加';
+    submitEl.textContent = '追加';
+    fillPoint(base);
+    clearError();
+    syncEditor();
+    dialogEl.showModal();
+    xEl.focus();
+    xEl.select();
+  }
+
+  function openEdit(index) {
+    if (locked || dialogEl.open || !waypoints[index]) return;
+    editing = index;
+    titleEl.textContent = `目的地 ${index + 1} を編集`;
+    submitEl.textContent = '保存';
+    fillPoint(waypoints[index]);
+    clearError();
+    syncEditor();
+    dialogEl.showModal();
+    xEl.focus();
+    xEl.select();
+  }
+
+  function moveEditing(delta) {
+    if (locked || editing === null) return;
+    const to = editing + delta;
+    if (to < 0 || to >= waypoints.length) return;
+    const [moved] = waypoints.splice(editing, 1);
+    waypoints.splice(to, 0, moved);
+    editing = to;
+    update();
+    fillPoint(waypoints[to]);
+    titleEl.textContent = `目的地 ${to + 1} を編集`;
+    syncEditor();
+    onNotice?.(`目的地 ${to + 1} を${delta < 0 ? '前へ' : '後ろへ'}移動しました`);
+  }
+
+  formEl.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (locked) {
+      showError('航行中は目的地を編集できません');
+      return;
+    }
+    const x = readNumber(xEl);
+    const y = readNumber(yEl);
+    const yawDeg = readNumber(yawEl);
+    clearError();
+    if (![x, y, yawDeg].every(Number.isFinite)) {
+      showError('x・y・向きには数値を入力してください');
+      return;
+    }
+    if (isInside && !isInside(x, y)) {
+      showError('地図の範囲外です');
+      return;
+    }
+    // 入力は度、内部と Nav2 へは rad。±180° を超える値も同じ向きに畳む。
+    const yaw = Math.atan2(
+      Math.sin((yawDeg * Math.PI) / 180),
+      Math.cos((yawDeg * Math.PI) / 180),
+    );
+    if (editing === null) {
+      addPoint({ x, y, yaw });
+      onNotice?.(`目的地 ${waypoints.length} を追加 (${position(x, y)} m)`);
+    } else {
+      waypoints[editing] = { x, y, yaw };
+      update();
+      onNotice?.(`目的地 ${editing + 1} を更新しました`);
+    }
+    dialogEl.close();
+  });
+
+  [xEl, yEl, yawEl].forEach((input) => input.addEventListener('input', clearError));
+  cancelEl.addEventListener('click', () => dialogEl.close());
+  closeEl.addEventListener('click', () => dialogEl.close());
+  prevEl.addEventListener('click', () => moveEditing(-1));
+  nextEl.addEventListener('click', () => moveEditing(1));
+  // 背景 (dialog 自身) を押したときだけ閉じる。中身の余白では閉じない。
+  dialogEl.addEventListener('click', (event) => {
+    if (event.target === dialogEl) dialogEl.close();
+  });
+  dialogEl.addEventListener('close', () => {
+    editing = null;
+    clearError();
+  });
+
   return {
     add(point) {
-      if (locked) return;
-      waypoints.push(point);
-      update();
-      scrollToEnd();
+      addPoint(point);
     },
     /// 全消去の取り消しなど、一覧をまるごと差し替えるときに使う。
     set(points) {
@@ -141,6 +297,11 @@ export function createWaypointPanel({
         button.disabled = locked;
         button.title = locked ? '航行中は編集できません' : `${index + 1} 番目を削除`;
       });
+      listEl.querySelectorAll('.waypoint-body').forEach((button, index) => {
+        button.disabled = locked;
+        button.title = locked ? '航行中は編集できません' : `${index + 1} 番目の目的地を編集`;
+      });
+      if (locked && dialogEl.open) dialogEl.close();
     },
     setActive(index) {
       const next = Number.isInteger(index) ? index : null;
@@ -167,5 +328,6 @@ export function createWaypointPanel({
     count: () => waypoints.length,
     totalDistance,
     render,
+    openAdd,
   };
 }
