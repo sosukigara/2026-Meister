@@ -84,6 +84,9 @@ struct ModeSink {
   /// 保存地図モードへ切り替える。空文字列なら成功、失敗なら理由。
   virtual std::string SwitchToLocalization() = 0;
 
+  /// 地図生成モードへ戻す。空文字列なら成功、失敗なら理由。
+  virtual std::string SwitchToMapping() = 0;
+
   /// 保存済み地図の名前（拡張子なし、昇順）。
   virtual std::vector<std::string> ListMaps() = 0;
 

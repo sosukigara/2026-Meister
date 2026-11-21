@@ -139,6 +139,14 @@ class StubModeSink : public ModeSink {
     switch_called = true;
     return {};
   }
+  std::string SwitchToMapping() override {
+    if (!switch_error.empty()) {
+      return switch_error;
+    }
+    mode = "mapping";
+    mapping_called = true;
+    return {};
+  }
   std::vector<std::string> ListMaps() override { return maps; }
   std::string SaveMap(const std::string& name) override {
     saved_name = name;
@@ -160,6 +168,7 @@ class StubModeSink : public ModeSink {
   std::string saved_name;
   std::string deleted_name;
   bool switch_called{false};
+  bool mapping_called{false};
   std::array<double, 3> pose{0.0, 0.0, 0.0};
 };
 
@@ -582,11 +591,22 @@ TEST(HttpModeRoutes, ReportsCurrentMode) {
   EXPECT_EQ(json::parse(reply.body)["mode"], "mapping");
 }
 
-TEST(HttpModeRoutes, SwitchingToMappingIsRejectedWith409) {
+TEST(HttpModeRoutes, SwitchingBackToMappingIsAccepted) {
+  // 以前は 409 で「launch を再起動してください」を返していた。いまは双方向。
   HttpServer server;
   const auto reply = server.Post("/api/mode", R"({"mode":"mapping"})");
-  EXPECT_EQ(reply.status, 409);
+  ASSERT_EQ(reply.status, 200);
+  EXPECT_EQ(json::parse(reply.body)["mode"], "mapping");
+  EXPECT_TRUE(server.mode().mapping_called);
   EXPECT_FALSE(server.mode().switch_called);
+}
+
+TEST(HttpModeRoutes, FailedSwitchBackIsReportedNotSwallowed) {
+  HttpServer server;
+  server.mode().switch_error = "自己位置推定側を止められませんでした";
+  const auto reply = server.Post("/api/mode", R"({"mode":"mapping"})");
+  EXPECT_EQ(reply.status, 409);
+  EXPECT_EQ(json::parse(reply.body)["error"], "自己位置推定側を止められませんでした");
 }
 
 TEST(HttpModeRoutes, UnknownModeIsRejectedWith400) {

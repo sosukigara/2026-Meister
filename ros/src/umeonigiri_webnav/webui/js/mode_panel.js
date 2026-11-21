@@ -31,8 +31,10 @@ export function createModePanel({ badgeEl, switchEl, saveEl, nameEl, onNotice })
     mode = next;
     badgeEl.textContent = MODE_LABELS[next] ?? next;
     badgeEl.dataset.tone = MODE_TONES[next] ?? 'warn';
-    // 地図生成 → 保存地図ナビ の一方通行。戻すのは launch 再起動だけ。
-    switchEl.hidden = next !== 'mapping';
+    // 双方向に切り替えられる。今と反対のモードを行き先としてボタンに出す。
+    const target = next === 'mapping' ? 'localization' : 'mapping';
+    switchEl.textContent = target === 'localization' ? '保存地図ナビへ' : '地図生成へ戻す';
+    switchEl.hidden = next !== 'mapping' && next !== 'localization';
   }
 
   async function poll() {
@@ -50,14 +52,16 @@ export function createModePanel({ badgeEl, switchEl, saveEl, nameEl, onNotice })
 
   switchEl.addEventListener('click', async () => {
     switchEl.disabled = true;
+    // 押した時点のモードから行き先を決める（応答待ちの間に表示が変わっても追従しない）。
+    const target = mode === 'mapping' ? 'localization' : 'mapping';
     try {
-      const payload = await postJson(
-        '/api/mode',
-        { mode: 'localization' },
-        SWITCH_TIMEOUT_MS,
-      );
+      const payload = await postJson('/api/mode', { mode: target }, SWITCH_TIMEOUT_MS);
       render(payload.mode);
-      onNotice('保存地図ナビに切り替えました');
+      onNotice(
+        target === 'localization'
+          ? '保存地図ナビに切り替えました'
+          : '地図生成に切り替えました（地図は引き継ぎます）',
+      );
     } catch (error) {
       onNotice(`切り替えできません: ${error.message}`, 'error');
       await poll();

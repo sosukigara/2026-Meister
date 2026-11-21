@@ -22,12 +22,13 @@ TEST(NavMode, SwitchingToLocalizationDeactivatesBeforeActivating) {
   EXPECT_EQ(plan.activate_after, MapToOdomOwner::kAmcl);
 }
 
-TEST(NavMode, SwitchingBackIsNotAllowed) {
-  // 設計書 §6.4: 保存地図 → 地図生成 は launch 再起動。
+TEST(NavMode, SwitchingBackIsAllowed) {
+  // 設計書 §6.4 は「slam_toolbox の再 activate でポーズグラフが残るか未定義」
+  // を理由に一方通行だった。実測すると保持されたので双方向にしてある。
   const auto plan = PlanTransition(NavMode::kLocalization, NavMode::kMapping);
-  EXPECT_FALSE(plan.allowed);
-  EXPECT_EQ(plan.deactivate_first, MapToOdomOwner::kNone);
-  EXPECT_EQ(plan.activate_after, MapToOdomOwner::kNone);
+  EXPECT_TRUE(plan.allowed);
+  EXPECT_EQ(plan.deactivate_first, MapToOdomOwner::kAmcl);
+  EXPECT_EQ(plan.activate_after, MapToOdomOwner::kSlamToolbox);
   EXPECT_FALSE(plan.reason.empty());
 }
 

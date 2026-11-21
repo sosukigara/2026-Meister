@@ -41,6 +41,7 @@ class ModeWorker : public ModeSink {
 
   std::string Mode() override;
   std::string SwitchToLocalization() override;
+  std::string SwitchToMapping() override;
   std::vector<std::string> ListMaps() override;
   std::string SaveMap(const std::string& name) override;
   std::string DeleteMap(const std::string& name) override;
@@ -55,6 +56,10 @@ class ModeWorker : public ModeSink {
   bool CallTrigger(const rclcpp::Client<Trigger>::SharedPtr& client,
                    std::string* message);
 
+  /// 切替サービスを叩く。name はログ用。
+  std::string SwitchVia(const rclcpp::Client<Trigger>::SharedPtr& client,
+                        const char* name);
+
   rclcpp::Node::SharedPtr node_;
   rclcpp::executors::SingleThreadedExecutor executor_;
   std::thread spinner_;
@@ -64,6 +69,7 @@ class ModeWorker : public ModeSink {
   std::string world_;
   rclcpp::Client<Trigger>::SharedPtr mode_client_;
   rclcpp::Client<Trigger>::SharedPtr switch_client_;
+  rclcpp::Client<Trigger>::SharedPtr mapping_client_;
   rclcpp::Client<SaveMapService>::SharedPtr save_client_;
   rclcpp::Publisher<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr
       pose_publisher_;
