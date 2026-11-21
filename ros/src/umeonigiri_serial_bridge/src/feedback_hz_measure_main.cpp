@@ -3,6 +3,7 @@
 #include <exception>
 #include <string>
 
+#include "umeonigiri_serial_bridge/cli_number.hpp"
 #include "umeonigiri_serial_bridge/feedback_hz_measure.hpp"
 #include "umeonigiri_serial_bridge/serial_io.hpp"
 
@@ -44,15 +45,15 @@ int main(int argc, char** argv) {
     if (arg == "--port") {
       port = next("--port");
     } else if (arg == "--baud") {
-      baud = std::stoi(next("--baud"));
+      baud = ParseIntArgument(next("--baud").c_str(), "--baud");
     } else if (arg == "--duration") {
-      duration = std::stod(next("--duration"));
+      duration = ParseDoubleArgument(next("--duration").c_str(), "--duration");
     } else if (arg == "--with-commands") {
       with_commands = true;
     } else if (arg == "--no-reset") {
       reset = false;
     } else if (arg == "--expect-hz") {
-      expect_hz = std::stod(next("--expect-hz"));
+      expect_hz = ParseDoubleArgument(next("--expect-hz").c_str(), "--expect-hz");
       expect_given = true;
     } else if (arg == "-h" || arg == "--help") {
       PrintUsage();

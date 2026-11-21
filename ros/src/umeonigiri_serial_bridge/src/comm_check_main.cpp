@@ -3,6 +3,7 @@
 #include <exception>
 #include <string>
 
+#include "umeonigiri_serial_bridge/cli_number.hpp"
 #include "umeonigiri_serial_bridge/comm_check.hpp"
 #include "umeonigiri_serial_bridge/serial_io.hpp"
 
@@ -40,9 +41,9 @@ int main(int argc, char** argv) {
     if (arg == "--port") {
       port = next("--port");
     } else if (arg == "--baud") {
-      baud = std::stoi(next("--baud"));
+      baud = ParseIntArgument(next("--baud").c_str(), "--baud");
     } else if (arg == "--timeout") {
-      timeout = std::stod(next("--timeout"));
+      timeout = ParseDoubleArgument(next("--timeout").c_str(), "--timeout");
     } else if (arg == "--no-reset") {
       reset = false;
     } else if (arg == "-h" || arg == "--help") {
