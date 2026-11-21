@@ -625,6 +625,7 @@ kbd {
 }
 
 #map-canvas.is-pose-mode { cursor: cell; }
+#map-canvas.is-pan-mode { cursor: grab; }
 #map-canvas.is-panning { cursor: grabbing; }
 
 #map-canvas:focus-visible {
@@ -698,7 +699,36 @@ kbd {
   color: var(--ink-3);
 }
 
+.hint-place { display: inline-flex; align-items: center; }
+/* 内側のタップ/クリック表記は 1 つだけ見せる。先頭に区切り点を出さない。 */
+.hint-place .hint-touch::before { content: none; }
 .hint-touch { display: none; }
+.hint-pan { display: none; }
+.hint-pan::before { content: none !important; }
+.hint-mouse { display: inline; }
+
+/* タッチの「移動」モード中は、目的地の説明を移動の説明へ差し替える。 */
+.pan-mode .hint-place,
+.pan-mode .hint-drag,
+.pan-mode .hint-pose,
+.pan-mode .hint-mouse { display: none; }
+.pan-mode .hint-pan { display: inline; }
+
+/* タッチでは指の操作が既に説明されている。マウス固有の説明は出さない。 */
+@media (any-pointer: coarse) {
+  .hint-mouse { display: none; }
+}
+
+/* マウスの右/Alt ドラッグがある環境では、移動ボタンは出さない。 */
+.btn-pan { display: none; }
+.btn-pan[aria-pressed='true'] {
+  color: var(--accent);
+  background: var(--surface-2);
+}
+/* タッチ対応のノート PC でも、ペン/指で地図をずらせるようにする。 */
+@media (any-pointer: coarse) {
+  .btn-pan { display: inline-flex; }
+}
 
 .map-readout {
   flex: none;
@@ -796,6 +826,17 @@ kbd {
   border-color: var(--line);
 }
 
+/* 巡回中の 1 点。塗りではなく、面と番号の反転で「いまここ」を言う。 */
+.waypoint.is-active {
+  background: rgba(224, 168, 63, 0.08);
+  border-color: var(--accent-dim);
+}
+.waypoint.is-active .waypoint-order {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
 .waypoint:not(:last-child)::after {
   content: "";
   position: absolute;
@@ -864,6 +905,12 @@ kbd {
   background: var(--surface-3);
   color: var(--ink);
 }
+
+.waypoint-remove:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+.waypoint-remove:disabled:hover { background: none; color: var(--ink-3); }
 
 /* 空のときは一覧と同じ場所に置く。下に積むと、空の一覧の下に
    ぽつんと 1 行だけ落ちて読み手が探すことになる。 */
@@ -1102,7 +1149,8 @@ kbd {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   color: var(--ink-2);
   font-size: var(--fs-label);
-  pointer-events: auto;
+  /* トーストは下の画面を操作可能なままにする。押せるのは取り消しの口だけ。 */
+  pointer-events: none;
   animation: toast-in var(--slow) var(--ease);
 }
 
@@ -1121,6 +1169,7 @@ kbd {
 
 .toast-action {
   appearance: none;
+  pointer-events: auto;
   margin-left: var(--s1);
   padding: 2px var(--s1);
   border: 0;
@@ -1279,6 +1328,7 @@ kbd {
 
 @media (max-width: 420px) {
   .map-foot { padding: 0 var(--s3); }
+  .hint-mouse { display: none; }
   .vision-stage { width: 100%; max-width: none; }
 }
 
