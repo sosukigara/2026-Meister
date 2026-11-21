@@ -91,6 +91,9 @@ void ConfigureServer(httplib::Server& server) {
   server.set_tcp_nodelay(true);
   server.set_keep_alive_max_count(kKeepAliveMaxCount);
   server.set_keep_alive_timeout(kKeepAliveTimeoutSec);
+  // 既定プール (max(8, コア数)) では、映像を見ているクライアントが数枚あると
+  // 他の API 要求がスレッド待ちで止まる。listen より前に差し替える。
+  server.new_task_queue = [] { return new httplib::ThreadPool(kThreadPoolSize); };
 }
 
 void RegisterRoutes(httplib::Server& server, const std::filesystem::path& webui_dir,
