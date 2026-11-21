@@ -85,7 +85,7 @@
 | `include/.../http_app.hpp` / `src/http_app.cpp` | httplib ルーティング・ conditional GET・ JSON 解析 | ETag は quoted 形式、weak 比較、multi-header 対応。`ConfigureServer` で TCP_NODELAY と keep-alive を設定 |
 | `include/.../vision_routes.hpp` / `src/vision_routes.cpp` | 認識モニターの経路（状態・1 枚・MJPEG・ON/OFF） | MJPEG は chunked。監視 OFF は 204 |
 | `include/.../http_support.hpp` / `src/http_support.cpp` | JSON/ETag・MIME・静的配信・パストラバーサル対策 | 静的配信は (mtime, size) を版にしてメモリ保持。`..` は lexical に潰す |
-| `src/umeonigiri_webnav_server.cpp` | エントリポイント。MapListener / VisionListener / NavWorker / ModeWorker を束ねる | bind `127.0.0.1:8088`、起動メッセージ `[umeonigiri_webnav] Web UI ready at http://localhost:8088` |
+| `src/umeonigiri_webnav_server.cpp` | エントリポイント。MapListener / VisionListener / NavWorker / ModeWorker を束ねる | bind `0.0.0.0:8088`（`MEISTER_WEBUI_BIND` で絞れる。既定は LAN の別 PC から使えるようにするため全インタフェース）、起動メッセージ `[umeonigiri_webnav] Web UI ready at http://localhost:8088 (bind ...)` |
 | `test/test_map_cache.cpp` `test/test_http_app.cpp` `test/test_map_listener.cpp` `test/test_vision_cache.cpp` `test/test_vision_routes.cpp` | gtest | ROS 非依存。MapCache/ETag/metadata/認識の契約を固定 |
 | `launch/umeonigiri_webnav.launch.py` | 起動 | Python のまま据え置き |
 | `webui/index.html` `webui/style.css` `webui/app.js` `webui/js/*.js` | 計器盤 UI と ES モジュール | ビルド無し・バニラ JS。MJPEG は `load` 後に張る |

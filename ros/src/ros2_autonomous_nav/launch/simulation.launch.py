@@ -1,4 +1,6 @@
 import os
+
+import yaml
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, OpaqueFunction, SetLaunchConfiguration
@@ -6,17 +8,28 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
-WORLDS = {
-    'warehouse': {'sdf': 'warehouse.sdf', 'world_name': 'warehouse', 'spawn': (0, 0, 0.1)},
-    'maze': {'sdf': 'maze.sdf', 'world_name': 'my_custom_world', 'spawn': (-4.0, -4.0, 0.1)},
-    'empty': {'sdf': 'empty.sdf', 'world_name': 'empty', 'spawn': (0, 0, 0.1)},
+# ロボットの出現位置。world 名と SDF の対応は config/worlds.yaml が持つ
+# （robot_nav.launch.py と共有）。高さは機体の足回りで決まるのでここに置く。
+SPAWN = {
+    'warehouse': (0, 0, 0.1),
+    'maze': (-4.0, -4.0, 0.1),
+    'empty': (0, 0, 0.1),
 }
+
+
+def load_worlds():
+    """config/worlds.yaml を読む。SDF 名と gz の world 名の唯一の定義。"""
+    path = os.path.join(get_package_share_directory('ros2_autonomous_nav'),
+                        'config', 'worlds.yaml')
+    with open(path, encoding='utf-8') as handle:
+        return yaml.safe_load(handle)
 
 
 def _resolve_world(context):
     world_key = context.launch_configurations['world']
     gui = context.launch_configurations.get('gui', 'true') == 'true'
-    entry = WORLDS[world_key]
+    entry = load_worlds()[world_key]
+    spawn = SPAWN[world_key]
     pkg_nav = get_package_share_directory('ros2_autonomous_nav')
     world_path = os.path.join(pkg_nav, 'worlds', entry['sdf'])
     # GUI は表示だけ。計測やヘッドレス運用では切ってよい（物理とセンサはサーバ側）。
@@ -25,17 +38,15 @@ def _resolve_world(context):
     gz_args = f'-r {world_path}' if gui else f'-s -r {world_path}'
     return [
         SetLaunchConfiguration('gz_args', gz_args),
-        SetLaunchConfiguration('spawn_x', str(entry['spawn'][0])),
-        SetLaunchConfiguration('spawn_y', str(entry['spawn'][1])),
-        SetLaunchConfiguration('spawn_z', str(entry['spawn'][2])),
+        SetLaunchConfiguration('spawn_x', str(spawn[0])),
+        SetLaunchConfiguration('spawn_y', str(spawn[1])),
+        SetLaunchConfiguration('spawn_z', str(spawn[2])),
         SetLaunchConfiguration('world_name', entry['world_name']),
         SetLaunchConfiguration('clock_topic', f'/world/{entry["world_name"]}/clock'),
     ]
 
 
 def generate_launch_description():
-    pkg_nav = get_package_share_directory('ros2_autonomous_nav')
-
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')

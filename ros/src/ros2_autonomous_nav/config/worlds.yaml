@@ -1,0 +1,19 @@
+# Gazebo のワールド定義。SDF ファイル名と gz 側の world 名を持つ。
+#
+# world 名は `/world/<name>/clock` のトピック名になるため、SDF の
+# `<world name="...">` と必ず一致させること。一致しないと /clock が流れず、
+# use_sim_time のノードが全部止まる（無言で動かなくなる）。
+#
+# ここを 1 箇所に置くのは、simulation.launch.py と robot_nav.launch.py の
+# 両方が同じ対応表を必要とするため。以前はそれぞれに同じ表を持っており、
+# 片方だけ直すと壊れる状態だった。ロボットの出現位置 (spawn) は機体ごとに
+# 違うので、この表ではなく各 launch ファイルが持つ。
+warehouse:
+  sdf: warehouse.sdf
+  world_name: warehouse
+maze:
+  sdf: maze.sdf
+  world_name: my_custom_world
+empty:
+  sdf: empty.sdf
+  world_name: empty

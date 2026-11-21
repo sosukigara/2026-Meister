@@ -11,6 +11,9 @@
 - 地図上のクリック/ドラッグでウェイポイント（ヨー角含む）を指定する
 - 指定したウェイポイントを Nav2 へ送信し、巡回を開始/キャンセルする
 - ナビゲーション状態（初期化中/待機中/送信中/移動中/到着/失敗/停止）を表示する
+- 地図生成モードと保存地図ナビモードを双方向に切り替える（地図は引き継ぐ）
+- 地図を名前付きで保存し、保存済み地図の一覧を出す
+- 保存地図ナビでは初期位置を地図の Shift+クリックで指定する（AMCL）
 - サーバ（httplib）・ROS executor（地図 + 認識）・ナビワーカーの 3 系統で並行動作する
 
 ## HTTP 経路
@@ -26,8 +29,13 @@
 | `/api/vision.jpg` | GET | 最新フレーム 1 枚（`image/jpeg`、`no-store`）。未着なら 404 |
 | `/api/vision.mjpg` | GET | MJPEG（`multipart/x-mixed-replace`）。監視 OFF のときは 204 |
 | `/api/vision` | POST | `{"enabled": bool}` で監視 ON/OFF。真偽値以外は 400 |
-| `/api/nav` | POST | `{"waypoints":[{x,y,yaw?}, ...]}`。空・非配列・数値でない値は 400 |
+| `/api/nav` | POST | `{"waypoints":[{x,y,yaw?}, ...]}`。空・非配列・数値でない値・非有限値は 400 |
 | `/api/cancel` | POST | 巡回のキャンセル要求 |
+| `/api/mode` | GET | `{"mode"}`。`mapping` / `localization` / `unknown` |
+| `/api/mode` | POST | `{"mode": "mapping" \| "localization"}` で双方向に切替。失敗は 409 に理由 |
+| `/api/maps` | GET | 保存済み地図名の一覧（拡張子なし、昇順） |
+| `/api/map/save` | POST | `{"name"?}` で地図を保存。名前は 1〜64 文字の `[A-Za-z0-9_-]` |
+| `/api/initialpose` | POST | `{"x","y","yaw"?}`。AMCL の初期位置。非有限値は 400 |
 
 ## 画面（`webui/`）
 
@@ -38,6 +46,7 @@
 | 目的地 | `js/waypoints.js` | 一覧（座標・向き・削除）、地点数、合計距離 |
 | 認識モニター | `js/vision_panel.js` | MJPEG 表示、fps・遅延・解像度・検出件数、検出一覧、ON/OFF |
 | 航行 | `js/nav_status.js` | 状態バッジと文言、地点の進捗 |
+| モード | `js/mode_panel.js` | 現在のモード、双方向の切替ボタン、地図の保存 |
 | イベント | `js/events.js` | 時刻つき履歴（80 件）とトースト |
 | 取得 | `js/api.js` | JSON 取得の共通化と接続断の通知 |
 

@@ -1,6 +1,6 @@
 # 設計: コマンドモデルとロッカーボギー運動学
 
-> 対象機能: [features/07-esp32-uart.md](../features/07-esp32-uart.md) [features/08-rocker-bogie.md](../features/08-rocker-bogie.md)
+> 対象機能: [features/07-esp32-uart.md](../../features/07-esp32-uart.md) [features/08-rocker-bogie.md](../../features/08-rocker-bogie.md)
 > 作成日: 2026-09-27 | ステータス: 設計合意済み（実装は未着手）
 
 ## 背景
@@ -214,6 +214,6 @@ kinematics:
 
 ## 関連
 
-- 設計: [07-esp32-uart.md](07-esp32-uart.md) / [08-rocker-bogie.md](08-rocker-bogie.md) / [09-object-grasping.md](09-object-grasping.md)
-- 設定の唯一の出所: [ros/config/meister_robot.yaml](../../ros/config/meister_robot.yaml)
-- コードマップ: [code-map.md](../code-map.md)
+- 設計: [07-esp32-uart.md](../../features/07-esp32-uart.md) / [08-rocker-bogie.md](../../features/08-rocker-bogie.md) / [09-object-grasping.md](../../features/09-object-grasping.md)
+- 設定の唯一の出所: [ros/config/meister_robot.yaml](../../../ros/config/meister_robot.yaml)
+- コードマップ: [code-map.md](../../code-map.md)
