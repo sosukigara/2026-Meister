@@ -7,6 +7,8 @@ import { clock } from './format.js';
 
 const MAX_ENTRIES = 80;
 const TOAST_MS = 4200;
+// 取り消せる操作は、押し直す時間を長めに取る。
+const UNDO_TOAST_MS = 8000;
 
 export function createEventLog({ listEl, toastsEl, clearButton }) {
   const entries = [];
@@ -39,12 +41,32 @@ export function createEventLog({ listEl, toastsEl, clearButton }) {
     render(follow);
   }
 
-  function toast(kind, text) {
+  function toast(kind, text, action) {
     const node = document.createElement('p');
     node.className = `toast toast-${kind}`;
-    node.textContent = text;
+    const label = document.createElement('span');
+    label.textContent = text;
+    node.append(label);
+
+    let timer = null;
+    const dismiss = () => {
+      if (timer !== null) clearTimeout(timer);
+      node.remove();
+    };
+    if (action) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'toast-action';
+      button.textContent = action.label;
+      button.addEventListener('click', () => {
+        dismiss();
+        action.onClick();
+      });
+      node.append(button);
+    }
+
     toastsEl.append(node);
-    setTimeout(() => node.remove(), TOAST_MS);
+    timer = setTimeout(dismiss, action ? UNDO_TOAST_MS : TOAST_MS);
   }
 
   function report(kind, text) {
@@ -62,5 +84,10 @@ export function createEventLog({ listEl, toastsEl, clearButton }) {
     ok: (text) => add('ok', text),
     warn: (text) => report('warn', text),
     error: (text) => report('error', text),
+    /// 消したものを戻せる操作。トーストに取り消しの口を付ける。
+    undoable: (text, label, onClick) => {
+      add('warn', text);
+      toast('warn', text, { label, onClick });
+    },
   };
 }

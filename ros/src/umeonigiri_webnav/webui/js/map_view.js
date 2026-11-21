@@ -11,10 +11,25 @@ const TRAIL_MIN_SPACING = 0.05; // meters: 間引きして点の塊を防ぐ
 const ZOOM_MIN = 0.15;
 const ZOOM_MAX = 14;
 const MARKER_RADIUS = 8;
+const KEY_PAN_STEP = 40;
 const SCALE_CHOICES = [0.5, 1, 2, 5, 10, 20, 50];
 
-export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
+export function createMapView({ canvas, stage, onPlace, onPose, onNotice, onCursor }) {
   const ctx = canvas.getContext('2d');
+  // 色とフォントは style.css の 1 か所から読む。canvas だけ別の色を持たない。
+  const rootStyle = getComputedStyle(document.documentElement);
+  const token = (name) => rootStyle.getPropertyValue(name).trim();
+  const palette = {
+    accent: token('--accent'),
+    accentStrong: token('--accent-strong'),
+    cyan: token('--cyan'),
+    ink: token('--ink'),
+    surface: token('--surface'),
+    bg: token('--bg'),
+  };
+  const monoFont = token('--font-mono') || 'monospace';
+  const labelFont = (size) => `500 ${size}px ${monoFont}`;
+
   let meta = null; // {resolution, origin:{x,y}, width, height}
   let image = null;
   let metaKey = null; // 地図の同一性。変わったら表示を合わせ直す
@@ -63,6 +78,28 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
     return { x: event.clientX - rect.left, y: event.clientY - rect.top };
   }
 
+  /// 地図のピクセル矩形の内側か。黒い余白 (縦横比の違い) を目的地にしない。
+  function insideMap(mapPoint) {
+    return (
+      mapPoint.x >= 0 &&
+      mapPoint.y >= 0 &&
+      mapPoint.x <= meta.width &&
+      mapPoint.y <= meta.height
+    );
+  }
+
+  /// 読み手に「いま地図のどこを指しているか」を返す。drag 中は向きも渡す。
+  function emitCursor(screenX, screenY, yaw) {
+    if (!onCursor) return;
+    if (!meta) {
+      onCursor(null);
+      return;
+    }
+    const mapPoint = toMapPixels(screenX, screenY);
+    const world = mapPixelsToWorld(mapPoint.x, mapPoint.y);
+    onCursor({ x: world.x, y: world.y, yaw, outside: !insideMap(mapPoint) });
+  }
+
   function resize() {
     const rect = stage.getBoundingClientRect();
     size = { width: Math.max(1, rect.width), height: Math.max(1, rect.height) };
@@ -91,6 +128,7 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
   }
 
   function zoomAt(factor, anchor) {
+    if (!meta) return;
     const center = anchor ?? { x: size.width / 2, y: size.height / 2 };
     const next = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, view.scale * factor));
     if (next === view.scale) return;
@@ -112,7 +150,8 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
       if (index === 0) ctx.moveTo(p.x, p.y);
       else ctx.lineTo(p.x, p.y);
     });
-    ctx.strokeStyle = 'rgba(99, 199, 214, 0.42)';
+    ctx.strokeStyle = palette.cyan;
+    ctx.globalAlpha = 0.38;
     ctx.lineWidth = 1.5;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
@@ -130,7 +169,8 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
       else ctx.lineTo(p.x, p.y);
     });
     ctx.setLineDash([5, 4]);
-    ctx.strokeStyle = 'rgba(217, 164, 65, 0.7)';
+    ctx.strokeStyle = palette.accent;
+    ctx.globalAlpha = 0.72;
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.restore();
@@ -151,22 +191,25 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
     waypoints.forEach((point, index) => {
       const p = mapToScreen(point.x, point.y);
       const length = 22;
+      const active = hovered === index;
       drawArrow(
         p,
         { x: p.x + Math.cos(point.yaw) * length, y: p.y - Math.sin(point.yaw) * length },
-        hovered === index ? '#f0c05a' : 'rgba(217, 164, 65, 0.8)',
-        1.5,
+        active ? palette.accentStrong : palette.accent,
+        active ? 2 : 1.5,
       );
       ctx.save();
       ctx.beginPath();
       ctx.arc(p.x, p.y, MARKER_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = hovered === index ? '#d9a441' : '#111419';
+      ctx.fillStyle = active ? palette.accent : palette.surface;
       ctx.fill();
       ctx.lineWidth = 1.5;
-      ctx.strokeStyle = hovered === index ? '#f0c05a' : 'rgba(217, 164, 65, 0.8)';
+      ctx.strokeStyle = active ? palette.accentStrong : palette.accent;
+      ctx.globalAlpha = active ? 1 : 0.8;
       ctx.stroke();
-      ctx.fillStyle = hovered === index ? '#14181c' : '#e7e9ec';
-      ctx.font = '500 10px "JetBrainsMono Nerd Font", ui-monospace, monospace';
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = active ? palette.bg : palette.ink;
+      ctx.font = labelFont(10);
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(String(index + 1), p.x, p.y + 0.5);
@@ -178,10 +221,11 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
     if (!drag || drag.mode !== 'place') return;
     const distance = Math.hypot(drag.currentX - drag.startX, drag.currentY - drag.startY);
     if (distance < DRAG_THRESHOLD_PX) return;
+    // 目的地は amber、初期位置は「生きているロボット」の cyan。色で意味を分ける。
     drawArrow(
       { x: drag.startX, y: drag.startY },
       { x: drag.currentX, y: drag.currentY },
-      '#f0c05a',
+      drag.shiftKey ? palette.cyan : palette.accentStrong,
       2,
     );
   }
@@ -193,15 +237,15 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
     drawArrow(
       p,
       { x: p.x + Math.cos(robot.yaw) * length, y: p.y - Math.sin(robot.yaw) * length },
-      '#63c7d6',
+      palette.cyan,
       2,
     );
     ctx.save();
     ctx.beginPath();
     ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-    ctx.fillStyle = '#63c7d6';
+    ctx.fillStyle = palette.cyan;
     ctx.fill();
-    ctx.strokeStyle = '#0b0d10';
+    ctx.strokeStyle = palette.bg;
     ctx.lineWidth = 1;
     ctx.stroke();
     ctx.restore();
@@ -213,7 +257,7 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
     const target = 120 / view.scale * meta.resolution; // 120 px に収まる距離
     const distance = SCALE_CHOICES.find((value) => value >= target) ?? SCALE_CHOICES.at(-1);
     const width = (distance / meta.resolution) * view.scale;
-    // 左下は操作ヒントの場所なので、縮尺は右下に置く。
+    // 左下は操作ヒントの場所だった。いまは地図の外に置いたので右下に縮尺だけ残す。
     const x = size.width - 16 - width;
     const y = size.height - 18;
     ctx.save();
@@ -225,20 +269,24 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
     ctx.moveTo(x + width, y - 4);
     ctx.lineTo(x + width, y + 4);
     // 地図が明るい場所でも読めるように、暗い下敷きを1回敷いてから細線を描く。
-    ctx.strokeStyle = 'rgba(9, 11, 14, 0.85)';
+    ctx.strokeStyle = palette.bg;
+    ctx.globalAlpha = 0.85;
     ctx.lineWidth = 3;
     ctx.stroke();
-    ctx.strokeStyle = 'rgba(231, 233, 236, 0.72)';
+    ctx.strokeStyle = palette.ink;
+    ctx.globalAlpha = 0.72;
     ctx.lineWidth = 1;
     ctx.stroke();
     const label = `${meters(distance, distance < 1 ? 1 : 0)} m`;
-    ctx.font = '11px "JetBrainsMono Nerd Font", ui-monospace, monospace';
+    ctx.font = labelFont(11);
     ctx.textAlign = 'right';
     ctx.textBaseline = 'bottom';
-    ctx.strokeStyle = 'rgba(9, 11, 14, 0.85)';
+    ctx.strokeStyle = palette.bg;
+    ctx.globalAlpha = 0.85;
     ctx.lineWidth = 3;
     ctx.strokeText(label, x + width, y - 6);
-    ctx.fillStyle = 'rgba(231, 233, 236, 0.72)';
+    ctx.fillStyle = palette.ink;
+    ctx.globalAlpha = 0.72;
     ctx.fillText(label, x + width, y - 6);
     ctx.restore();
   }
@@ -261,6 +309,9 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
   }
 
   canvas.addEventListener('pointerdown', (event) => {
+    // ここで canvas.focus() を呼ぶと、マウスで触っただけでも :focus-visible の
+    // アンバーの輪が付く。canvas は tabindex を持つので、クリック時の焦点は
+    // ブラウザの既定に任せる (キーボードのときだけ輪が出る)。
     // 右/中ドラッグと Alt+ドラッグは移動。左クリックは目的地の追加に使う。
     if (event.button === 1 || event.button === 2 || event.altKey) {
       drag = { mode: 'pan', clientX: event.clientX, clientY: event.clientY, x: view.x, y: view.y };
@@ -284,17 +335,26 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
   });
 
   canvas.addEventListener('pointermove', (event) => {
-    if (!drag) return;
+    const point = screenPoint(event);
+    if (!drag) {
+      emitCursor(point.x, point.y);
+      return;
+    }
     if (drag.mode === 'pan') {
       view.x = drag.x + (event.clientX - drag.clientX);
       view.y = drag.y + (event.clientY - drag.clientY);
       userAdjusted = true;
+      emitCursor(point.x, point.y);
       requestDraw();
       return;
     }
-    const point = screenPoint(event);
     drag.currentX = point.x;
     drag.currentY = point.y;
+    const dx = drag.currentX - drag.startX;
+    const dy = drag.currentY - drag.startY;
+    const distance = Math.hypot(dx, dy);
+    // 動かしていないクリックに向きは無い。ドラッグ中だけ角度を読む。
+    emitCursor(point.x, point.y, distance < DRAG_THRESHOLD_PX ? undefined : Math.atan2(-dy, dx));
     requestDraw();
   });
 
@@ -321,6 +381,11 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
     // 動かしていないクリックは向き 0。ドラッグの向きがそのまま姿勢になる。
     const yaw = distance < DRAG_THRESHOLD_PX ? 0 : Math.atan2(-dy, dx);
     const mapPoint = toMapPixels(finished.startX, finished.startY);
+    if (!insideMap(mapPoint)) {
+      onNotice('地図の範囲外です');
+      requestDraw();
+      return;
+    }
     const world = mapPixelsToWorld(mapPoint.x, mapPoint.y);
     if (finished.shiftKey) {
       onPose(world, yaw);
@@ -332,6 +397,9 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
 
   canvas.addEventListener('pointerup', endDrag);
   canvas.addEventListener('pointercancel', endDrag);
+  canvas.addEventListener('pointerleave', () => {
+    if (!drag) onCursor?.(null);
+  });
   canvas.addEventListener('contextmenu', (event) => event.preventDefault());
 
   canvas.addEventListener(
@@ -339,10 +407,41 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
     (event) => {
       if (!meta) return;
       event.preventDefault();
-      zoomAt(event.deltaY < 0 ? 1.12 : 1 / 1.12, screenPoint(event));
+      const point = screenPoint(event);
+      zoomAt(event.deltaY < 0 ? 1.12 : 1 / 1.12, point);
+      emitCursor(point.x, point.y);
     },
     { passive: false },
   );
+
+  // 焦点が地図にあるときは矢印で視点を動かせる。+/- は画面共通のショートカット。
+  canvas.addEventListener('keydown', (event) => {
+    const step = KEY_PAN_STEP;
+    let dx = 0;
+    let dy = 0;
+    if (event.key === 'ArrowLeft') dx = step;
+    else if (event.key === 'ArrowRight') dx = -step;
+    else if (event.key === 'ArrowUp') dy = step;
+    else if (event.key === 'ArrowDown') dy = -step;
+    else return;
+    view.x += dx;
+    view.y += dy;
+    userAdjusted = true;
+    requestDraw();
+    event.preventDefault();
+  });
+
+  // Shift を押している間は「初期位置モード」であることをカーソルで示す。
+  function setPoseMode(on) {
+    canvas.classList.toggle('is-pose-mode', on);
+  }
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Shift') setPoseMode(true);
+  });
+  window.addEventListener('keyup', (event) => {
+    if (event.key === 'Shift') setPoseMode(false);
+  });
+  window.addEventListener('blur', () => setPoseMode(false));
 
   if (typeof ResizeObserver === 'function') {
     new ResizeObserver(resize).observe(stage);
@@ -366,7 +465,7 @@ export function createMapView({ canvas, stage, onPlace, onPose, onNotice }) {
       }
     },
     setImage(next) {
-      // 地図は 5 秒ごとに再取得される。見た目が同じでも Image は作り直されるので、
+      // 地図は 2 秒ごとに再取得される。見た目が同じでも Image は作り直されるので、
       // ここで fit すると操作中のパン・ズームが定期的に巻き戻る。合わせ直すのは
       // 地図の同一性が変わったとき (setMapMeta) だけにする。
       image = next;

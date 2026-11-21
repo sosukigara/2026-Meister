@@ -3,24 +3,29 @@
    グラファイト、色は「操作者が引いたルート」(amber) と「生きているロボット」
    シアンだけに置く。地図と認識映像が画面の明るいところで、それ以外は黙る。
 
+   構成は「命令する側」と「観測する側」の 2 列。左に地図とルート、右に
+   認識とイベント。地図は地図の縦横比で高さが決まるので、横長の地図でも
+   黒い余白が画面を占領しない。ルートは地図の下の横帯に置き、地図で引いた
+   破線をそのまま番号付きの停止点として繰り返す。
+
    寸法の決まり: 余白は 4px の目盛り (--s1..--s8)、文字は 6 段
    (meta 11 / label 12 / body 13 / lead 14 / value 16 / display 20)、
-   角丸は 4 / 8 / 12。パネルの中の入れ子は「外の半径 − 余白」で決める。 */
+   角丸は 4 / 6 / 8 / 12。パネルの中の入れ子は「外の半径 − 余白」で決める。 */
 
 :root {
   /* 面。青みをほぼ持たないグラファイトを 1 本だけ使う。 */
   --bg: #0a0d11;
   --surface: #0e1218;
-  --surface-2: #131922;
-  --surface-3: #1a212c;
+  --surface-2: #141a22;
+  --surface-3: #1b232e;
   --sunken: #06090c;
   --line: rgba(233, 238, 245, 0.08);
   --line-strong: rgba(233, 238, 245, 0.16);
 
   /* 文字は 3 役だけ。meta は 4.5:1 を割らない範囲で落とす。 */
   --ink: #e9edf2;
-  --ink-2: #a4aebb;
-  --ink-3: #78828e;
+  --ink-2: #a9b3c0;
+  --ink-3: #8a94a1;
 
   /* 意味を持つ色。amber はルートと主操作、cyan は生きたテレメトリ。 */
   --accent: #e0a83f;
@@ -55,8 +60,12 @@
   --fs-display: 20px;
 
   --topbar: 60px;
-  --side-width: 296px;
-  --aux-width: 312px;
+  --head: 44px;
+  --rail-width: 304px;
+  --map-foot: 32px;
+  /* 地図の下にルート帯 (220) と見出し/足 (76) を残すための上限。 */
+  --map-max: calc(100vh - 392px);
+
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   --fast: 120ms;
   --slow: 180ms;
@@ -96,14 +105,27 @@ body {
 }
 
 /* 数字は全部等幅数字で揃える。桁が揺れると計器が読めない。 */
-b, .gauge-value, .gauge-note, .tour-figure b, dd, .waypoint-coords,
-.waypoint-heading, .detection, .event time, .badge, .mode-badge, kbd, .map-name {
+b, .gauge-value, .gauge-note, .route-figure b, dd, .waypoint-coords,
+.waypoint-heading, .detection, .event time, .badge,
+.mode-badge, kbd, .map-name, .map-readout, .route-stats b {
   font-variant-numeric: tabular-nums;
 }
 
 b { font-weight: 500; }
 
-h2 { margin: 0; font-size: inherit; font-weight: inherit; }
+h1, h2 { margin: 0; font-size: inherit; font-weight: inherit; }
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
 
 /* キーボードで操作する人のための焦点。形は変えず輪だけ足す
    (border-radius をここで書くと、焦点が当たった瞬間に角が変わる)。 */
@@ -115,21 +137,21 @@ h2 { margin: 0; font-size: inherit; font-weight: inherit; }
 ::selection { background: rgba(224, 168, 63, 0.26); }
 
 /* 細いスクロールバーは面の一部として黙らせる。 */
-.event-log, .waypoint-list, .detections {
+.waypoint-list, .event-log, .detections {
   scrollbar-width: thin;
   scrollbar-color: var(--line-strong) transparent;
 }
-.event-log::-webkit-scrollbar,
 .waypoint-list::-webkit-scrollbar,
-.detections::-webkit-scrollbar { width: 8px; }
-.event-log::-webkit-scrollbar-thumb,
+.event-log::-webkit-scrollbar,
+.detections::-webkit-scrollbar { width: 8px; height: 8px; }
 .waypoint-list::-webkit-scrollbar-thumb,
+.event-log::-webkit-scrollbar-thumb,
 .detections::-webkit-scrollbar-thumb {
   background: var(--line-strong);
   border-radius: var(--r-pill);
 }
-.event-log::-webkit-scrollbar-track,
 .waypoint-list::-webkit-scrollbar-track,
+.event-log::-webkit-scrollbar-track,
 .detections::-webkit-scrollbar-track { background: transparent; }
 
 /* ---------- 帯: 接続断 / no-JS ---------- */
@@ -163,14 +185,16 @@ h2 { margin: 0; font-size: inherit; font-weight: inherit; }
 
 /* ---------- ヘッダ ---------- */
 
+/* ヘッダは名乗りと計器だけ。操作はその対象のパネルの中に置く。 */
 .topbar {
   flex: none;
   display: flex;
   align-items: center;
-  gap: var(--s5);
+  gap: var(--s6);
   height: var(--topbar);
   padding: 0 var(--s5);
   border-bottom: 1px solid var(--line);
+  background: var(--bg);
   z-index: 3;
 }
 
@@ -198,6 +222,7 @@ h2 { margin: 0; font-size: inherit; font-weight: inherit; }
 .brand-name {
   font-size: 15px;
   font-weight: 500;
+  line-height: 1;
   color: var(--ink);
 }
 
@@ -221,8 +246,8 @@ h2 { margin: 0; font-size: inherit; font-weight: inherit; }
   display: grid;
   gap: 1px;
   align-content: center;
-  min-width: 104px;
-  padding: 0 var(--s4);
+  min-width: 124px;
+  padding: 0 var(--s3);
   border-left: 1px solid var(--line);
 }
 
@@ -251,6 +276,9 @@ h2 { margin: 0; font-size: inherit; font-weight: inherit; }
 }
 
 .gauge-value {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: var(--font-mono);
   font-size: var(--fs-value);
   font-weight: 500;
@@ -270,22 +298,6 @@ h2 { margin: 0; font-size: inherit; font-weight: inherit; }
 .gauge[data-tone='warn'] .gauge-note { color: var(--accent); }
 .gauge[data-tone='active'] .gauge-note { color: var(--cyan); }
 
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--s2);
-  margin-left: auto;
-  flex: none;
-}
-
-/* 群と群のあいだだけに縦の細線。ボタンごとに枠を付けない。 */
-.rule {
-  width: 1px;
-  height: 20px;
-  background: var(--line);
-  margin: 0 var(--s1);
-}
-
 /* ---------- 部品: ボタン / 入力 / 記章 / キーキャップ ---------- */
 
 .btn {
@@ -294,7 +306,7 @@ h2 { margin: 0; font-size: inherit; font-weight: inherit; }
   align-items: center;
   justify-content: center;
   gap: 6px;
-  height: 30px;
+  height: 32px;
   padding: 0 var(--s3);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-sm);
@@ -318,7 +330,8 @@ h2 { margin: 0; font-size: inherit; font-weight: inherit; }
 .btn:active:not(:disabled) { background: var(--surface); }
 
 .btn:disabled {
-  opacity: 0.4;
+  opacity: 1;
+  color: var(--ink-3);
   cursor: not-allowed;
 }
 
@@ -330,7 +343,7 @@ h2 { margin: 0; font-size: inherit; font-weight: inherit; }
 .btn-quiet:hover:not(:disabled) { background: var(--surface-2); }
 
 .btn-icon {
-  width: 30px;
+  width: 32px;
   padding: 0;
   background: transparent;
   border-color: transparent;
@@ -342,7 +355,8 @@ h2 { margin: 0; font-size: inherit; font-weight: inherit; }
   color: var(--ink);
 }
 
-/* 主操作は 1 つだけ。アンバーはルートの色でもあるので、送信と結び付く。 */
+/* 主操作は 1 つだけ。アンバーはルートの色でもあるので、送信と結び付く。
+   無効のときはアンバーを残さない (押せるのか押せないのか曖昧にしない)。 */
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
@@ -353,6 +367,12 @@ h2 { margin: 0; font-size: inherit; font-weight: inherit; }
   background: var(--accent-strong);
   border-color: var(--accent-strong);
   color: var(--accent-ink);
+}
+
+.btn-primary:disabled {
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+  color: var(--ink-3);
 }
 
 .btn-danger {
@@ -367,19 +387,10 @@ h2 { margin: 0; font-size: inherit; font-weight: inherit; }
   color: var(--red);
 }
 
-/* 認識モニターの ON/OFF は、点の色だけで状態が分かるようにする。 */
-.btn-toggle::before {
-  content: "";
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--tone);
-  flex: none;
-}
-
 .map-name {
-  width: 156px;
-  height: 30px;
+  width: 148px;
+  min-width: 96px;
+  height: 32px;
   padding: 0 var(--s3);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-sm);
@@ -398,6 +409,19 @@ h2 { margin: 0; font-size: inherit; font-weight: inherit; }
   outline: none;
   border-color: var(--accent);
   background: var(--surface);
+}
+
+.map-name[aria-invalid='true'] {
+  border-color: rgba(226, 104, 92, 0.6);
+}
+
+/* 群と群のあいだだけに縦の細線。ボタンごとに枠を付けない。 */
+.rule {
+  width: 1px;
+  height: 20px;
+  background: var(--line);
+  margin: 0 var(--s1);
+  flex: none;
 }
 
 /* 記章は塗らずに、点と文字だけで状態を言う。 */
@@ -439,34 +463,100 @@ kbd {
   background: var(--surface-2);
   color: var(--ink-2);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1;
+}
+
+/* 認識モニターの ON/OFF。文字は状態で変えず、つまみの位置と色で言う。 */
+.switch {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  height: 32px;
+  padding: 0 var(--s2);
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--ink-2);
+  font-family: inherit;
+  font-size: var(--fs-meta);
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+
+.switch:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.switch:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.switch-track {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface-3);
+  transition: background-color var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+
+.switch-dot {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  transition: transform var(--fast) var(--ease),
+    background-color var(--fast) var(--ease);
+}
+
+.switch[aria-checked='true'] .switch-track {
+  border-color: rgba(111, 208, 222, 0.55);
+  background: rgba(111, 208, 222, 0.16);
+}
+
+.switch[aria-checked='true'] .switch-dot {
+  transform: translateX(12px);
+  background: var(--cyan);
 }
 
 /* ---------- 骨格 ---------- */
 
-/* 地図は正方形なので、横に広い箱に入れると左右が黒く余る。列を 3 つにして
-   地図の列を縦長にすると、同じ画面でも地図に使える画素が増える
-   (1280x800 で 428² -> 575²)。 */
+/* 命令する側 (地図 + ルート) と、観測する側 (認識 + イベント)。
+   地図は縦横比で高さが決まるので、行 1 は auto、ルートが残りを取る。 */
 .layout {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--side-width) var(--aux-width);
+  grid-template-columns: minmax(0, 1fr) var(--rail-width);
+  grid-template-rows: auto minmax(220px, 1fr);
   gap: var(--s3);
   padding: var(--s3);
 }
 
-.main-column {
+.map-panel { grid-area: 1 / 1; }
+.route-panel { grid-area: 2 / 1; }
+
+.rail {
+  grid-area: 1 / 2 / 3 / 3;
   display: grid;
-  grid-template-rows: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: var(--s3);
   min-height: 0;
+  min-width: 0;
 }
 
 .panel {
   display: grid;
   min-height: 0;
+  min-width: 0;
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   background: var(--surface);
@@ -477,9 +567,8 @@ kbd {
 .panel-head {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--s2);
-  height: 42px;
+  min-height: var(--head);
   padding: 0 var(--s4);
   border-bottom: 1px solid var(--line);
 }
@@ -489,30 +578,42 @@ kbd {
   font-size: var(--fs-body);
   font-weight: 500;
   color: var(--ink);
+  white-space: nowrap;
 }
 
 .panel-tools {
   display: flex;
   align-items: center;
   gap: 2px;
+  margin-left: auto;
+  min-width: 0;
 }
 
 /* ---------- 地図 ---------- */
 
-.map-panel { grid-template-rows: auto minmax(0, 1fr); }
+.map-panel {
+  grid-template-rows: auto auto var(--map-foot);
+}
 
-/* 地図は「暗い部屋に置いたライトテーブル」。面より一段沈める。 */
+/* 地図は「暗い部屋に置いたライトテーブル」。面より一段沈める。
+   aspect-ratio は app.js が地図メタデータから --map-aspect に入れる。
+   border ではなく内側の hairline。border だと stage の矩形が canvas の
+   内容箱より 2px 大きくなり、map_view の bitmap と CSS 実寸がずれる。 */
 .map-stage {
   position: relative;
+  /* 幅は必ず列いっぱい。aspect-ratio だけで放置すると、正方形の地図のときに
+     grid の自動幅が縮み、パネルの半分が空く (実測: 956px の列で 420px)。
+     縦は aspect-ratio と max-height に任せ、地図は fit() が中央に置く。 */
+  width: calc(100% - var(--s6));
+  aspect-ratio: var(--map-aspect, 1.75);
+  max-height: var(--map-max);
+  min-height: 120px;
   margin: 0 var(--s3);
   border-radius: var(--r-md);
-  /* border ではなく内側の hairline。border だと stage の矩形が canvas の
-     内容箱より 2px 大きくなり、map_view の bitmap と CSS 実寸がずれて
-     地図がわずかに縮む。 */
   box-shadow: inset 0 0 0 1px var(--line), inset 0 1px 0 rgba(255, 255, 255, 0.02);
   background: var(--sunken);
   overflow: hidden;
-  min-height: 0;
+  min-width: 0;
 }
 
 #map-canvas {
@@ -523,13 +624,14 @@ kbd {
   touch-action: none;
 }
 
+#map-canvas.is-pose-mode { cursor: cell; }
+#map-canvas.is-panning { cursor: grabbing; }
+
 #map-canvas:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
   border-radius: 0;
 }
-
-#map-canvas.is-panning { cursor: grabbing; }
 
 /* 空状態は地図の代わりに立つ 1 行。飾りは置かない。 */
 .map-empty,
@@ -538,64 +640,263 @@ kbd {
   inset: 0;
   margin: 0;
   display: grid;
-  place-items: center;
-  color: var(--ink-3);
-  font-size: var(--fs-label);
+  place-content: center;
+  gap: 2px;
+  padding: var(--s4);
+  text-align: center;
   pointer-events: none;
+}
+
+.map-empty p,
+.vision-empty p { margin: 0; }
+
+.map-empty p:first-child,
+.vision-empty p:first-child {
+  font-size: var(--fs-label);
+  color: var(--ink-2);
+}
+
+.map-empty p + p,
+.vision-empty p + p {
+  font-size: var(--fs-meta);
+  color: var(--ink-3);
 }
 
 .map-empty[hidden],
 .vision-empty[hidden] { display: none; }
 
-/* 操作の説明は地図の左下に小さな札で置く。縮尺 (右下) と重ならない幅で折り返す。 */
-.map-hint {
-  position: absolute;
-  left: var(--s3);
-  bottom: var(--s3);
-  margin: 0;
-  max-width: 340px;
-  display: grid;
-  gap: 1px;
-  padding: 6px var(--s2);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  background: rgba(6, 9, 12, 0.78);
-  color: var(--ink-3);
-  font-size: var(--fs-meta);
-  line-height: 1.45;
-  pointer-events: none;
+/* 操作の説明と現在のカーソル位置は、地図の外の計器面に出す。
+   地図の上に札を重ねると、狭い画面で地図そのものを隠す。 */
+.map-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  min-height: var(--map-foot);
+  padding: 0 var(--s4);
+  border-top: 1px solid var(--line);
+  min-width: 0;
 }
 
-/* 合計はルートの情報なので、一覧の足元 (送信のすぐ上) に置く。 */
-.tour-summary {
+.map-hint {
   display: flex;
-  align-items: baseline;
-  gap: var(--s5);
-  padding: var(--s2) var(--s4);
-  border-top: 1px solid var(--line);
-  font-size: var(--fs-meta);
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0;
+  margin: 0;
+  min-width: 0;
   color: var(--ink-3);
+  font-size: var(--fs-label);
+  line-height: 1.4;
+  white-space: nowrap;
   overflow: hidden;
 }
 
-.tour-figure { white-space: nowrap; }
+.map-hint span + span::before {
+  content: "·";
+  margin: 0 6px;
+  color: var(--ink-3);
+}
 
-.tour-figure b {
+.hint-touch { display: none; }
+
+.map-readout {
+  flex: none;
+  min-width: 8ch;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.map-readout.is-active { color: var(--accent); }
+
+/* ---------- 目的地と航行 ---------- */
+
+/* 見出し / 一覧 / 足。空注記は一覧と同じ升目に重ねる。 */
+.route-panel {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.route-stats {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s3);
+  min-width: 0;
+  color: var(--ink-3);
+  font-size: var(--fs-meta);
+  white-space: nowrap;
+}
+
+.route-figure { white-space: nowrap; }
+
+.route-figure b {
   font-family: var(--font-mono);
   font-size: var(--fs-lead);
   color: var(--ink);
   margin: 0 2px;
 }
 
-/* 6 個のキー操作は 2 列 3 行。1 行に流すと狭い列で切れる。 */
-.shortcut-note {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, auto));
-  justify-content: start;
+.route-state {
+  display: flex;
   align-items: center;
-  gap: var(--s2) var(--s4);
-  padding: var(--s2) var(--s4) var(--s3);
+  gap: var(--s2);
+  margin-left: auto;
+  min-width: 0;
+}
+
+.route-panel .panel-tools { margin-left: 0; }
+
+.nav-message {
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-2);
+  font-size: var(--fs-meta);
+  line-height: 1.5;
+}
+
+/* 地図の破線ルートを、リストでも横のルート線として繰り返す (この製品の合図)。
+   1 地点 = 1 つの停止点。区間距離を添えて、合計だけでは見えない長さを出す。 */
+.waypoint-list {
+  grid-area: 2 / 1;
+  display: flex;
+  align-items: center;
+  gap: var(--s6);
+  list-style: none;
+  margin: 0;
+  padding: var(--s2) var(--s4);
+  min-height: 0;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.waypoint {
+  position: relative;
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) 28px;
+  gap: var(--s2);
+  align-items: center;
+  width: 192px;
+  min-height: 48px;
+  padding: var(--s1) var(--s1) var(--s1) var(--s2);
+  border: 1px solid transparent;
+  border-radius: var(--r-md);
+  transition: background-color var(--fast) var(--ease),
+    border-color var(--fast) var(--ease);
+}
+
+.waypoint:hover,
+.waypoint:focus-within {
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+
+.waypoint:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: calc(-1 * var(--s6) - 1px);
+  width: var(--s6);
+  border-top: 1px dashed var(--accent-dim);
+}
+
+.waypoint-order {
+  position: relative;
+  z-index: 1;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--accent-dim);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--accent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.waypoint-body {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.waypoint-coords {
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.waypoint-heading {
+  font-family: var(--font-mono);
+  font-size: var(--fs-meta);
+  color: var(--ink-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.waypoint-remove {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: background-color var(--fast) var(--ease),
+    color var(--fast) var(--ease);
+}
+
+.waypoint-remove:hover {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+
+/* 空のときは一覧と同じ場所に置く。下に積むと、空の一覧の下に
+   ぽつんと 1 行だけ落ちて読み手が探すことになる。 */
+.empty-note {
+  grid-area: 2 / 1;
+  align-self: center;
+  justify-self: center;
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  color: var(--ink-3);
+  font-size: var(--fs-label);
+  text-align: center;
+}
+
+.empty-note[hidden] { display: none; }
+
+.route-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: var(--s2) var(--s4);
   border-top: 1px solid var(--line);
+  min-width: 0;
+}
+
+/* 6 個のキー操作は 1 行に流し、入りきらない幅では折り返す。 */
+.shortcut-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--s3);
+  min-width: 0;
 }
 
 .shortcut {
@@ -603,36 +904,40 @@ kbd {
   align-items: center;
   gap: 5px;
   color: var(--ink-3);
+  font-size: var(--fs-meta);
   white-space: nowrap;
 }
 
-/* ---------- 右列 ---------- */
-
-.side {
+.btn-row {
   display: grid;
-  grid-template-rows: minmax(0, 1fr);
-  gap: var(--s3);
-  min-height: 0;
+  gap: var(--s2);
 }
 
-/* 右端は「見るもの」と「履歴」。認識は高さ固定、履歴は残りを取る。 */
-.aux {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: var(--s3);
-  min-height: 0;
+/* 送信が主、停止は従。幅の比で順位を言う。 */
+.route-actions {
+  flex: none;
+  width: 308px;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
 }
+
+.route-actions .btn { height: 34px; }
 
 /* ---------- 認識モニター ---------- */
 
-.vision-panel { grid-template-rows: auto auto auto auto auto; }
+.vision-panel {
+  grid-template-rows: auto auto auto auto auto;
+  align-content: start;
+}
 
-/* 4:3 のまま小さく置く。広い枠に 4:3 を入れると左右が黒く空くだけで、
+.vision-panel .switch { margin-left: auto; }
+
+/* 4:3 のまま置く。広い枠に 4:3 を入れると左右が黒く空くだけで、
    カメラの中身は増えない。 */
 .vision-stage {
   position: relative;
   margin: var(--s3) auto 0;
-  width: min(100%, 212px);
+  width: calc(100% - 32px);
+  max-width: 320px;
   aspect-ratio: 4 / 3;
   border-radius: var(--r-md);
   box-shadow: inset 0 0 0 1px var(--line);
@@ -653,12 +958,13 @@ kbd {
 /* 古い絵は隠さない。落として「今は信用できない」と言う。 */
 #vision-stream.is-stale { opacity: 0.45; }
 
+/* 4 つの数値は 2×2。狭い列で 4 列にすると「640×480」が省略される。 */
 .vision-stats {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--s2);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s2) var(--s3);
   margin: var(--s3) 0 0;
-  padding: 0 var(--s4) var(--s2);
+  padding: 0 var(--s4) var(--s3);
   border-bottom: 1px solid var(--line);
 }
 
@@ -682,7 +988,7 @@ kbd {
   list-style: none;
   margin: var(--s2) 0 0;
   padding: 0 var(--s4);
-  max-height: 78px;
+  max-height: 96px;
   overflow-y: auto;
 }
 
@@ -691,7 +997,7 @@ kbd {
   grid-template-columns: minmax(0, 1fr) auto auto;
   gap: var(--s3);
   align-items: center;
-  height: 26px;
+  height: 28px;
   font-family: var(--font-mono);
   font-size: var(--fs-label);
   color: var(--ink-2);
@@ -712,11 +1018,11 @@ kbd {
 
 .detection-empty {
   display: block;
-  height: 26px;
+  height: 28px;
   color: var(--ink-3);
   font-family: var(--font-sans);
-  font-size: var(--fs-meta);
-  line-height: 26px;
+  font-size: var(--fs-label);
+  line-height: 28px;
   border-bottom: 0;
 }
 
@@ -732,149 +1038,6 @@ kbd {
   white-space: nowrap;
 }
 
-/* ---------- 目的地と航行 ---------- */
-
-/* 見出し / 状態 / 一覧 / 空注記 / 操作。副操作 (戻す・全消去) は見出しへ上げ、
-   下端は主操作 2 つだけにして、狭い画面でも一覧が潰れないようにする。 */
-.waypoint-panel {
-  grid-template-rows: auto auto minmax(0, 1fr) auto auto auto;
-}
-
-.waypoint-panel .panel-tools { gap: var(--s1); }
-.waypoint-panel .badge { margin-left: var(--s2); }
-
-.nav-message {
-  margin: 0;
-  padding: var(--s2) var(--s4) 0;
-  color: var(--ink-2);
-  font-size: var(--fs-label);
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.waypoint-list {
-  /* 空注記と同じ升目に重ねる。列を明示しないと auto-placement が
-     2 列目を作ってしまい、パネルが 2 列に割れる。 */
-  grid-area: 3 / 1;
-  list-style: none;
-  margin: 0;
-  padding: var(--s1) var(--s4) 0;
-  min-height: 0;
-  overflow-y: auto;
-  align-content: start;
-}
-
-/* 地図の破線ルートを、リストでも縦のルート線として繰り返す (この製品の合図)。 */
-.waypoint {
-  position: relative;
-  display: grid;
-  grid-template-columns: 20px minmax(0, 1fr) 24px;
-  gap: var(--s3);
-  align-items: center;
-  min-height: 40px;
-  padding: var(--s1) 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.waypoint:last-child { border-bottom: 0; }
-
-.waypoint:not(:last-child)::before {
-  content: "";
-  position: absolute;
-  left: 9.5px;
-  top: 30px;
-  bottom: -8px;
-  border-left: 1px dashed var(--accent-dim);
-}
-
-.waypoint-order {
-  position: relative;
-  z-index: 1;
-  width: 20px;
-  height: 20px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--accent-dim);
-  border-radius: 50%;
-  background: var(--surface);
-  color: var(--accent);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  line-height: 1;
-}
-
-.waypoint-body {
-  display: grid;
-  gap: 1px;
-  min-width: 0;
-}
-
-.waypoint-coords {
-  font-family: var(--font-mono);
-  font-size: var(--fs-label);
-  color: var(--ink);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.waypoint-heading {
-  font-family: var(--font-mono);
-  font-size: var(--fs-meta);
-  color: var(--ink-3);
-}
-
-.waypoint-remove {
-  width: 24px;
-  height: 24px;
-  display: grid;
-  place-items: center;
-  padding: 0;
-  border: 1px solid transparent;
-  border-radius: var(--r-sm);
-  background: none;
-  color: var(--ink-3);
-  cursor: pointer;
-  transition: background-color var(--fast) var(--ease),
-    color var(--fast) var(--ease);
-}
-
-.waypoint-remove:hover {
-  background: var(--surface-2);
-  color: var(--ink);
-}
-
-/* 空のときは一覧と同じ場所に置く。下に積むと、空の一覧の下に
-   ぽつんと 1 行だけ落ちて読み手が探すことになる。 */
-.empty-note {
-  grid-area: 3 / 1;
-  align-self: center;
-  margin: 0;
-  padding: var(--s3) var(--s4);
-  color: var(--ink-3);
-  font-size: var(--fs-meta);
-  text-align: center;
-}
-
-.empty-note[hidden] { display: none; }
-
-.btn-row {
-  display: grid;
-  gap: var(--s2);
-  padding: 0 var(--s4);
-}
-
-/* 送信が主、停止は従。幅の比で順位を言う。 */
-.route-actions {
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-  padding-bottom: var(--s3);
-}
-
-.route-actions .btn { height: 34px; }
-
 /* ---------- イベント ---------- */
 
 .event-panel {
@@ -887,22 +1050,22 @@ kbd {
   padding: var(--s2) var(--s4);
   min-height: 0;
   overflow-y: auto;
-  font-size: var(--fs-meta);
+  font-size: var(--fs-label);
 }
 
 .event {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: var(--s3);
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: var(--s2);
   align-items: baseline;
-  padding: 2px 0;
+  padding: var(--s1) 0;
   line-height: 1.45;
 }
 
 .event time {
   font-family: var(--font-mono);
   color: var(--ink-3);
-  font-size: 10px;
+  font-size: var(--fs-meta);
 }
 
 .event span { color: var(--ink-2); }
@@ -913,10 +1076,12 @@ kbd {
 
 /* ---------- トースト ---------- */
 
+/* トーストは上に出す。右下は「ルート送信」の場所で、警告が 4 秒間
+   主操作を塞いでしまう (実測: 範囲外クリックの警告が送信ボタンに重なった)。 */
 .toasts {
   position: fixed;
   right: var(--s4);
-  bottom: var(--s4);
+  top: calc(var(--topbar) + var(--s3));
   z-index: 5;
   display: grid;
   gap: var(--s2);
@@ -929,7 +1094,7 @@ kbd {
   align-items: center;
   gap: var(--s2);
   margin: 0;
-  max-width: 380px;
+  max-width: 400px;
   padding: var(--s2) var(--s3);
   border: 1px solid var(--line-strong);
   border-radius: var(--r-md);
@@ -937,6 +1102,7 @@ kbd {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
   color: var(--ink-2);
   font-size: var(--fs-label);
+  pointer-events: auto;
   animation: toast-in var(--slow) var(--ease);
 }
 
@@ -953,6 +1119,22 @@ kbd {
 .toast-error::before { background: var(--red); }
 .toast-ok::before { background: var(--green); }
 
+.toast-action {
+  appearance: none;
+  margin-left: var(--s1);
+  padding: 2px var(--s1);
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font-family: inherit;
+  font-size: var(--fs-label);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.toast-action:hover { color: var(--accent-strong); }
+
 @keyframes toast-in {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: none; }
@@ -961,46 +1143,162 @@ kbd {
 /* ---------- 狭い画面 ---------- */
 
 @media (max-width: 1359px) {
-  :root { --side-width: 268px; --aux-width: 288px; }
-  .brand-sub { display: none; }
-  .gauge { min-width: 88px; padding: 0 var(--s3); }
-  .map-name { width: 120px; }
+  :root { --rail-width: 288px; }
+  .gauge { min-width: 112px; padding: 0 10px; }
+  .gauge-value { max-width: 136px; }
+}
+
+/* 見出しが 1 行に収まらない幅では、操作を次の行へ落とす。折り返した分だけ
+   縦が伸びるので、はみ出しを切らずにスクロールできるようにする。 */
+@media (max-width: 1100px) {
+  body { overflow: auto; }
+  .panel-head { flex-wrap: wrap; row-gap: var(--s2); padding-top: var(--s2); padding-bottom: var(--s2); }
+  .map-panel .panel-tools { flex-wrap: wrap; row-gap: var(--s1); }
 }
 
 @media (max-width: 980px) {
   body { overflow: auto; }
-  .topbar { height: auto; flex-wrap: wrap; gap: var(--s3); padding: var(--s3); }
-  .signals {
-    order: 3;
-    width: 100%;
-    overflow: visible;
-    flex-wrap: wrap;
-    gap: var(--s2) 0;
-  }
-  .gauge:first-child { padding-left: var(--s3); }
-  .gauge { border-left: 0; min-width: 72px; padding: 0 var(--s3) 0 0; }
-  .topbar-actions { margin-left: auto; }
   .layout {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
     grid-auto-rows: min-content;
-    padding: var(--s3);
   }
-  .map-panel { min-height: 62vh; }
-  .main-column { grid-template-rows: none; grid-auto-rows: min-content; }
-  .side, .aux { grid-template-rows: none; grid-auto-rows: min-content; }
-  .waypoint-list { max-height: 240px; }
-  .event-log { max-height: 200px; }
-  /* タッチでも「叩くと目的地」は効くので、1 行だけ残す。 */
-  .map-hint { max-width: calc(100% - 24px); }
-  .map-hint span + span { display: none; }
+  .map-panel { grid-area: auto; }
+  .route-panel { grid-area: auto; min-height: 0; }
+  .rail { grid-area: auto; grid-template-rows: none; grid-auto-rows: min-content; }
+  /* 縦積みでは地図が主役になりすぎる。正方形の地図で 748px まで伸び、
+     ルートと認識が画面外へ落ちたので、操作が見える高さで止める。 */
+  .map-stage { max-height: 56vh; }
+  .map-panel { grid-template-rows: auto auto var(--map-foot); }
+  /* 縦積みでは、横スクロールより縦の一覧の方が読みやすい。 */
+  .waypoint-list {
+    display: grid;
+    gap: 0;
+    max-height: 260px;
+    padding: var(--s1) var(--s4) 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    align-content: start;
+  }
+  .waypoint {
+    width: auto;
+    min-height: 44px;
+    padding: var(--s1) 0;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+  }
+  .waypoint:hover,
+  .waypoint:focus-within { background: none; }
+  .waypoint:not(:last-child)::after { display: none; }
+  .waypoint:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    left: 10px;
+    top: 32px;
+    bottom: -8px;
+    border-left: 1px dashed var(--accent-dim);
+  }
+  .waypoint-order { background: var(--surface); }
+  .route-panel { grid-template-rows: auto auto auto; }
+  .empty-note { grid-area: 2 / 1; min-height: 96px; display: grid; place-items: center; }
+  .event-log { max-height: 240px; }
+  .vision-panel { width: 100%; }
+  .vision-stage { max-width: 320px; }
+  .route-actions { width: 280px; }
+}
+
+/* 701px ではブランド + 4 計器 (約 710px) が入りきらず 4 つ目が切れる。
+   720px を境に、計器を 1 行 4 列のコンパクト表示へ切り替える。 */
+@media (max-width: 720px) {
+  .toasts { top: 102px; }
+  .topbar {
+    height: auto;
+    flex-wrap: wrap;
+    gap: var(--s3);
+    padding: var(--s3) var(--s4);
+  }
+  /* 4 つを 1 行に畳む。注記 (m/px・Nav2 など) はパネル側で読めるので、
+     ここでは状態と値を優先し、ヘッダの高さを抑える。 */
+  .signals {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--s1);
+    width: 100%;
+    overflow: visible;
+  }
+  .gauge {
+    min-width: 0;
+    padding: 0;
+    border-left: 0;
+    gap: 0;
+  }
+  .gauge:first-child { padding-left: 0; }
+  .gauge-label { font-size: 11px; gap: var(--s1); }
+  .gauge-label::before { width: 4px; height: 4px; }
+  .gauge-value { max-width: none; font-size: 13px; }
+  .gauge-note { display: none; }
 }
 
 @media (max-width: 640px) {
-  .topbar-actions { gap: var(--s1); flex-wrap: wrap; }
-  .map-name { width: 100%; order: 5; }
-  .tour-summary { gap: var(--s3); }
+  .brand-sub { display: none; }
+  .layout { padding: var(--s2); gap: var(--s2); }
+  .panel-head { padding-left: var(--s3); padding-right: var(--s3); }
+  .map-name { flex: 1 1 100%; width: 100%; min-width: 0; }
+  .map-panel .panel-tools { width: 100%; justify-content: flex-end; }
+  .route-stats { gap: var(--s2); }
+  .route-state { width: 100%; margin-left: 0; order: 5; }
+  .nav-message { max-width: none; flex: 1 1 auto; }
+  /* 地図で追加した直後に送信できるよう、スマホでは操作帯を画面下に固定する。
+     パネルの中に置いたままだと、地点が増えるほど送信ボタンが折り返しの下へ落ちる
+     (実測: 390x844 で 3 地点のとき y=849)。 */
+  .route-foot {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 4;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--s2);
+    padding: 6px var(--s3) calc(6px + env(safe-area-inset-bottom));
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+  }
+  body { padding-bottom: calc(60px + env(safe-area-inset-bottom)); }
   .shortcut-note { display: none; }
-  .vision-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .route-actions { width: 100%; }
+  .route-actions .btn { height: 40px; }
+  .map-hint { font-size: var(--fs-meta); }
+  .hint-pose { display: none; }
+  .map-readout { min-width: 0; }
+  .toasts { left: var(--s3); right: var(--s3); top: 102px; justify-items: stretch; }
+  .toast { max-width: none; }
+}
+
+@media (max-width: 420px) {
+  .map-foot { padding: 0 var(--s3); }
+  .vision-stage { width: 100%; max-width: none; }
+}
+
+/* 320px 級では 4 列にすると値が省略される。2 列にして読める大きさを残す。 */
+@media (max-width: 340px) {
+  .signals { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s2); }
+  .gauge-value { font-size: 14px; }
+  .toasts { top: 142px; }
+}
+
+/* タッチでは押せる面積を広げ、入力欄の文字を 16px にして自動ズームを防ぐ。 */
+@media (pointer: coarse) {
+  .btn { height: 40px; }
+  .btn-icon { width: 40px; }
+  .switch { height: 36px; }
+  .waypoint-remove { width: 36px; height: 36px; }
+  .map-name { font-size: 16px; }
+  .hint-pointer { display: none; }
+  .hint-touch { display: inline; }
+  .shortcut-note { display: none; }
 }
 
 /* 動きを減らしたい人には、状態の変化だけ残して移動を止める。 */
@@ -1009,5 +1307,6 @@ kbd {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

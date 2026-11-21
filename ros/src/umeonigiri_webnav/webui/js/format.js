@@ -2,9 +2,17 @@
 // 数値の表示形式。UI 側で単位と桁を揃えるため、整形はここに集める。
 'use strict';
 
+/// -0 を 0 にする。度や座標で "-0°" "-0.00" と出ると、符号に意味があるように
+/// 見えてしまう (実測: 起動直後の姿勢が "-0°" と表示された)。
+function fixed(value, digits) {
+  const factor = 10 ** digits;
+  const rounded = Math.round(value * factor) / factor;
+  return (Object.is(rounded, -0) ? 0 : rounded).toFixed(digits);
+}
+
 export function meters(value, digits = 1) {
   if (!Number.isFinite(value)) return '—';
-  return value.toFixed(digits);
+  return fixed(value, digits);
 }
 
 export function pixels(value) {
@@ -19,8 +27,9 @@ export function percent(value) {
 
 export function degrees(radians) {
   if (!Number.isFinite(radians)) return '—';
-  const deg = (radians * 180) / Math.PI;
-  return `${deg >= 0 ? '+' : ''}${deg.toFixed(0)}°`;
+  const rounded = Math.round((radians * 180) / Math.PI);
+  const deg = Object.is(rounded, -0) ? 0 : rounded;
+  return `${deg > 0 ? '+' : ''}${deg}°`;
 }
 
 /// 経過時間。1 秒未満は ms、それ以上は s で出す (桁が飛ぶと読み取りにくい)。
@@ -37,5 +46,5 @@ export function clock(date = new Date()) {
 
 export function position(x, y) {
   if (!Number.isFinite(x) || !Number.isFinite(y)) return '—';
-  return `${x.toFixed(2)}, ${y.toFixed(2)}`;
+  return `${fixed(x, 2)}, ${fixed(y, 2)}`;
 }
