@@ -23,6 +23,13 @@ RawCostmap ParseRawCostmap(const nav2_msgs::msg::Costmap& msg) {
   out.view.origin_y = msg.metadata.origin.position.y;
   out.view.data.assign(msg.data.begin(), msg.data.end());
 
+  // 幅 0 のコストマップ（未初期化のまま配信された場合）で i % 0 を踏むと、
+  // 整数のゼロ除算で未定義動作になる。x86 では SIGFPE、ARM では 0 が返って
+  // 全てのセルが原点に重なる壊れた座標になる。セルが無いのと同じ扱いにする。
+  if (out.view.width <= 0) {
+    return out;
+  }
+
   const double res = out.view.resolution;
   for (std::size_t i = 0; i < msg.data.size(); ++i) {
     if (msg.data[i] < kLethalRaw) {
