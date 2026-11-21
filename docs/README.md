@@ -53,7 +53,7 @@ Meister/
 └── ros/                            # ROS 2 ワークスペース（colcon はここで実行）
     ├── src/
     │   ├── umeonigiri_description/  # ロボットモデル・シミュレーション定義
-    │   ├── meister_vision/          # 画像認識（ONNX Runtime + YOLOv8n）
+    │   ├── umeonigiri_vision/          # 画像認識（ONNX Runtime + YOLOv8n）
     │   ├── ros2_autonomous_nav/     # SLAM・ナビゲーションの中核パッケージ
     │   └── umeonigiri_webnav/       # Web UI（:8088）
     └── config/

@@ -12,16 +12,16 @@
 
 ```bash
 # 既定 backend:=npu（RKNN）。ONNX(CPU) へ戻すなら backend:=onnx
-ros2 launch meister_vision pc_vision.launch.py
-ros2 launch meister_vision pc_vision.launch.py backend:=onnx
+ros2 launch umeonigiri_vision pc_vision.launch.py
+ros2 launch umeonigiri_vision pc_vision.launch.py backend:=onnx
 
 rviz2 -d tools/grasp/grasp_view.rviz   # /grasp_image を見る場合
 ```
 
-- 実体は `ros/src/meister_vision/scripts/yolo_grasp_stream.py`（パッケージに install 済み）。
-- モデルは `ros/src/meister_vision/models/yolov8n-zoo.rknn` に置くと share へ入る。
+- 実体は `ros/src/umeonigiri_vision/scripts/yolo_grasp_stream.py`（パッケージに install 済み）。
+- モデルは `ros/src/umeonigiri_vision/models/yolov8n-zoo.rknn` に置くと share へ入る。
   `tools/rknn/README.md` の手順で生成する（`.rknn` は git 管理外）。
-- ラベルは `ros/src/meister_vision/config/coco_labels.txt`。
+- ラベルは `ros/src/umeonigiri_vision/config/coco_labels.txt`。
 - 出力は既存と同じ `./detections`（vision_msgs/Detection2DArray）、
   `./detection_image`、`./target`。加えて `./grasp_image`（把持候補の描画）。
   **Web UI とアーム制御は ONNX 版と共通のまま**で、backend を切り替えられる。
@@ -58,7 +58,7 @@ rviz2 -d tools/grasp/grasp_view.rviz   # /grasp_image を見る場合
 
 ### Python 実装（参考・予備）
 
-`ros/src/meister_vision/scripts/yolo_grasp_stream.py` は同じ処理の Python 版。
+`ros/src/umeonigiri_vision/scripts/yolo_grasp_stream.py` は同じ処理の Python 版。
 既定では使わない（C++ 版が既定）。挙動比較や、librknnrt が無い環境での
 代替として残してある。
 

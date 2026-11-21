@@ -127,7 +127,7 @@ else
     VISION_MODEL=""
     VISION_THREADS="4"
     VISION_BACKEND="onnx"
-    VISION_RKNN="$WORKSPACE_ROOT/ros/install/meister_vision/share/meister_vision/models/yolov8n-zoo.rknn"
+    VISION_RKNN="$WORKSPACE_ROOT/ros/install/umeonigiri_vision/share/umeonigiri_vision/models/yolov8n-zoo.rknn"
     # NPU (RKNN) のモデルがあればそちらを使う。CPU 実装より速く、CPU も食わない。
     # 生成手順は tools/rknn/README.md。無い場合だけ ONNX へ落とす。
     if [ -f "$VISION_RKNN" ]; then
@@ -135,8 +135,8 @@ else
         echo "=== Vision: NPU (RKNN yolov8n, 601/80 クラス) ==="
     fi
     if [ "$VISION_BACKEND" = "onnx" ] && \
-       [ -f "$WORKSPACE_ROOT/ros/install/meister_vision/share/meister_vision/models/yolov8n-320.onnx" ]; then
-        VISION_MODEL="$WORKSPACE_ROOT/ros/install/meister_vision/share/meister_vision/models/yolov8n-320.onnx"
+       [ -f "$WORKSPACE_ROOT/ros/install/umeonigiri_vision/share/umeonigiri_vision/models/yolov8n-320.onnx" ]; then
+        VISION_MODEL="$WORKSPACE_ROOT/ros/install/umeonigiri_vision/share/umeonigiri_vision/models/yolov8n-320.onnx"
         VISION_THREADS="2"
         echo "=== Vision: yolov8n-320 + 2 threads (10Hz eco) ==="
     elif [ "$VISION_BACKEND" = "onnx" ]; then
