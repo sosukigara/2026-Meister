@@ -24,6 +24,13 @@ inline constexpr std::size_t kMaxBodyBytes = 1000000;
 inline constexpr std::size_t kKeepAliveMaxCount = 1000;
 inline constexpr time_t kKeepAliveTimeoutSec = 10;
 
+/// 同時に処理する接続の数。httplib の既定は max(8, コア数) で、
+/// keep-alive 中の接続も MJPEG のストリームも 1 本につき 1 スレッドを
+/// 占有し続ける。既定のままだと画面 1 枚 (6 接続前後) + 映像で埋まり、
+/// 実測で MJPEG 8 本のときに /api/pose が 5 秒タイムアウトした。
+/// クライアント数 × (ポーリング接続 + 映像 1 本) に余裕を持たせる。
+inline constexpr std::size_t kThreadPoolSize = 32;
+
 /// httplib のソケット設定。経路の登録より先に呼ぶ。
 ///
 /// TCP_NODELAY を入れないと、応答ヘッダと本文を別々に送ったときに Nagle と
