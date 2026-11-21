@@ -272,8 +272,11 @@ const STATUS_PERIOD_MS = 100;
 // 認識は検出一覧の JSON を組み立てる分だけ重い。MJPEG 自体はカメラレートで
 // 流れているので、数値の更新は 2 Hz で足りる。
 const VISION_PERIOD_MS = 500;
-// 地図は /map が更新された時だけ変わる。5 秒より短くしても地図は早くならない。
-setInterval(loadMap, 5000);
+// /map は SLAM が 1 Hz で配る。2 秒に 1 回引けばその 1 枚を取りこぼさない。
+// 変わっていないときは ETag 一致で 304（本文なし）なので、通信も PNG 生成も
+// 走らない。地図生成中に地図が育つのが見えるようになる。
+const MAP_PERIOD_MS = 2000;
+setInterval(loadMap, MAP_PERIOD_MS);
 setInterval(pollPose, POSE_PERIOD_MS);
 setInterval(() => {
   if (!document.hidden) mode.poll();
