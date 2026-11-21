@@ -15,7 +15,7 @@ def generate_launch_description():
 
     pkg_share = get_package_share_directory('ros2_autonomous_nav')
     pkg_web_nav = get_package_share_directory('umeonigiri_webnav')
-    pkg_vision = get_package_share_directory('meister_vision')
+    pkg_vision = get_package_share_directory('umeonigiri_vision')
 
     serial_port_arg = DeclareLaunchArgument(
         'serial_port', default_value='/dev/ttyUSB0',

@@ -9,7 +9,7 @@
 ## 背景
 
 - 既存 `android/` は YOLOv8n 物体検出＋枠＋FPS HUD（`Detector` interface のみを UI が触る構成）。
-- ROS 側 `meister_vision` には `hand_landmark_detector`（21点・ONNX契約 `★要確認★`）があるがモデル自体はリポに無い。
+- ROS 側 `umeonigiri_vision` には `hand_landmark_detector`（21点・ONNX契約 `★要確認★`）があるがモデル自体はリポに無い。
 - 方式は A（MediaPipe HandLandmarker＋指開閉ルール）で合意。B（ROS ONNX移植）はモデル探しからで重い、C（YOLO再学習）は骨格が出ないため不採用。
 
 ## 決定事項（2026-11-11 合意）

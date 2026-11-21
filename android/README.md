@@ -1,6 +1,6 @@
 # MeisterVision (Android)
 
-ROS ノード `meister_vision` の推論をスマホに肩代わりさせるための Android アプリ。v1 基盤。
+ROS ノード `umeonigiri_vision` の推論をスマホに肩代わりさせるための Android アプリ。v1 基盤。
 
 ## v1 の範囲
 

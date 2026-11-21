@@ -174,10 +174,10 @@ bash .omo/session-work/check_header.sh
 ros2 bag record -o /tmp/bag_cam /camera/image_raw   # 25 秒ほど
 
 # 2) 各設定で /detections を採取（bag 再生 + 購読の記録）
-ros/install/meister_vision/lib/meister_vision/detection_node --ros-args \
+ros/install/umeonigiri_vision/lib/umeonigiri_vision/detection_node --ros-args \
   -p image_topic:=/camera/image_raw -p rate:=30.0 -p inference_threads:=4 \
-  -p model_path:=ros/install/meister_vision/share/meister_vision/models/yolov8n.onnx &
-python3 ros/src/meister_vision/scripts/record_detections.py \\
+  -p model_path:=ros/install/umeonigiri_vision/share/umeonigiri_vision/models/yolov8n.onnx &
+python3 ros/src/umeonigiri_vision/scripts/record_detections.py \\
   --seconds 26 --out /tmp/ab_640.json
 ros2 bag play /tmp/bag_cam --rate 1.0
 
@@ -195,12 +195,12 @@ ros2 bag play /tmp/bag_cam --rate 1.0
 
 ```bash
 MEISTER_VISION_PROFILE=1 \
-ros/install/meister_vision/lib/meister_vision/detection_node --ros-args \
+ros/install/umeonigiri_vision/lib/umeonigiri_vision/detection_node --ros-args \
   -p image_topic:=/camera/image_raw -p rate:=30.0 -p inference_threads:=2 \
-  -p model_path:=ros/install/meister_vision/share/meister_vision/models/yolov8n-320.onnx &
+  -p model_path:=ros/install/umeonigiri_vision/share/umeonigiri_vision/models/yolov8n-320.onnx &
 
 # 購読者がいないと推論しないので、記録器か rqt を同時に動かす
-python3 ros/src/meister_vision/scripts/record_detections.py --seconds 30 --out /tmp/p.json &
+python3 ros/src/umeonigiri_vision/scripts/record_detections.py --seconds 30 --out /tmp/p.json &
 ros2 bag play /tmp/bag_cam --rate 5.0
 ```
 
@@ -212,7 +212,7 @@ ros2 bag play /tmp/bag_cam --rate 5.0
 ## 11. 画像認識を RViz で見る
 
 ```bash
-DISPLAY=:0 ros/src/meister_vision/scripts/vision_view.sh
+DISPLAY=:0 ros/src/umeonigiri_vision/scripts/vision_view.sh
 # DEVICE=/dev/video0 RATE=30 THREADS=2 MODEL=/path/to/model.onnx ... vision_view.sh
 ```
 
@@ -228,13 +228,13 @@ DISPLAY=:0 ros/src/meister_vision/scripts/vision_view.sh
 既定は NPU（RKNN）。CPU 版（ONNX Runtime）へ戻すときは `backend:=onnx`。
 
 ```bash
-ros2 launch meister_vision pc_vision.launch.py                # NPU（既定）
-ros2 launch meister_vision pc_vision.launch.py backend:=onnx  # CPU
+ros2 launch umeonigiri_vision pc_vision.launch.py                # NPU（既定）
+ros2 launch umeonigiri_vision pc_vision.launch.py backend:=onnx  # CPU
 ```
 
 - どちらも `./detections` / `./detection_image` / `./target` を出すので、
   Web UI とアーム制御は変更不要。
 - NPU 版は自前でカメラを開く。**`use_pc_camera:=true` と併用しないこと**（排他）。
-- RKNN モデルは `ros/src/meister_vision/models/yolov8n-zoo.rknn`。
+- RKNN モデルは `ros/src/umeonigiri_vision/models/yolov8n-zoo.rknn`。
   生成手順は [tools/rknn/README.md](../tools/rknn/README.md)。
 - 実機モードの `launch.sh` は、モデルがあれば自動で NPU を選ぶ。

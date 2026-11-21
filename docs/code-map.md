@@ -13,7 +13,7 @@
 ┌──────────────────────── PC (Ubuntu / ROS 2 Jazzy) ────────────────────────┐
 │  umeonigiri_webnav    Web UI (HTTP + MJPEG, :8088)                            │
 │  ros2_autonomous_nav  Nav2 / SLAM / 起動スクリプト                          │
-│  meister_vision    YOLOv8n ONNX 物体検出                                    │
+│  umeonigiri_vision    YOLOv8n ONNX 物体検出                                    │
 │  umeonigiri_serial_bridge  ⇅ UART ⇅ ESP32 ブリッジ  ← ★ PC と ESP32 の唯一の接点 │
 └────────────────────────────────┬──────────────────────────────────────────┘
                                  │  USB-UART / USB ケーブル
@@ -38,7 +38,7 @@
 |---|---|---|---|
 | `umeonigiri_description` | URDF / spawn / 全システム起動 | `launch/all_system.launch.py` `launch/spawn.launch.py` | — |
 | `ros2_autonomous_nav` | Nav2 / SLAM / 評価ツール (ament_cmake) | 各 `launch/*.launch.py`、`bench_nav` / `generate_map` / `waypoint_follower`（いずれも C++） | umeonigiri_description, umeonigiri_serial_bridge |
-| `meister_vision` | YOLOv8n ONNX 検出 → `detections` | `detection_node` / `hand_landmarks_node` / `pc_camera`（いずれも C++） | OpenCV, ONNX Runtime |
+| `umeonigiri_vision` | YOLOv8n ONNX 検出 → `detections` | `detection_node` / `hand_landmarks_node` / `pc_camera`（いずれも C++） | OpenCV, ONNX Runtime |
 | `umeonigiri_webnav` | Web UI（地図・現在地・経路・認識モニター） | `umeonigiri_webnav_server`（C++） | umeonigiri_description |
 | `umeonigiri_serial_bridge` | **`/cmd_vel` → UART フレーム、`/esp32/state` ← FB_STATE** | `umeonigiri_serial_bridge` / `umeonigiri_comm_check` / `umeonigiri_hz_measure`（いずれも C++） | libserial, firmware の protocol ソース |
 | `ros2_ldlidar_d500` | LD-D500 LiDAR → `/scan` (vendored, MIT) | `d500_node`（C++） | なし (termios のみ) |
@@ -90,7 +90,7 @@
 | `launch/umeonigiri_webnav.launch.py` | 起動 | Python のまま据え置き |
 | `webui/index.html` `webui/style.css` `webui/app.js` `webui/js/*.js` | 計器盤 UI と ES モジュール | ビルド無し・バニラ JS。MJPEG は `load` 後に張る |
 
-### `meister_vision` 内部（検出基盤）
+### `umeonigiri_vision` 内部（検出基盤）
 
 2026-10-05 に `ament_python` から `ament_cmake` へ移行した。実行ファイル名は
 Python 版から変えていないので `launch/` `launch_vision.sh` `kill.sh` は
@@ -105,7 +105,7 @@ Python 版から変えていないので `launch/` `launch_vision.sh` `kill.sh` 
 | `include/.../hand_landmark_detector.hpp` / `src/hand_landmark_detector.cpp` | 手中 keypoint。NCHW / NHWC を shape から推定 | **★要確認★** モデルの一次情報は未取得。契約はヘッダ冒頭に隔離してある |
 | `include/.../image_util.hpp` / `src/image_util.cpp` | `sensor_msgs/Image` ⇄ `cv::Mat`（9 種の encoding） | `cv_bridge` 不使用。未知 encoding は拒否（uint8 のまま読むと静かに壊れる） |
 | `include/.../draw.hpp` / `src/draw.cpp` | 検出枠とラベルの描画 | 入力は破壊しない |
-| `src/detection_node.cpp` | rclcpp ノード `meister_vision`。購読者 0 なら推論を止める | 推定失敗で購読は止めない |
+| `src/detection_node.cpp` | rclcpp ノード `umeonigiri_vision`。購読者 0 なら推論を止める | 推定失敗で購読は止めない |
 | `src/hand_landmarks_node.cpp` | rclcpp ノード `hand_landmarks`。検出外れは `hand_timeout_sec` 超過で空配列を **1 度だけ** 配信 | 検出時刻は**処理完了**時刻（推論に時間がかかると猶予を消費する） |
 | `src/pc_camera_node.cpp` | rclcpp ノード `pc_camera`。`cv::VideoCapture` で `/camera/image_raw` を配信 | デバイス不在でも落とさず毎周期エラー + 開き直し |
 | `scripts/download_model.py` | モデルのダウンロード | **Python のまま据え置き**。ネットワーク取得だけで C++ にすると libcurl 依存が増えるだけ |
@@ -209,7 +209,7 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 |---|---|---|
 | firmware プロトコル / バス codec / 運動学 | `cd firmware/main_board && pio test -e native` | 55 cases |
 | bridge (C++, gtest) | `colcon test --packages-select umeonigiri_serial_bridge` | 67 tests（gtest 61 + CTest 6） |
-| vision (C++, gtest) | `colcon test --packages-select meister_vision` | 54 cases（実モデル不要） |
+| vision (C++, gtest) | `colcon test --packages-select umeonigiri_vision` | 54 cases（実モデル不要） |
 | firmware ビルド | `cd firmware/main_board && pio run -e esp32dev -e esp32dev_usbuart` | 2 env |
 | 全体ビルド | `./build.sh` | 6 packages |
 | 通信の動作確認 | `ros2 run umeonigiri_serial_bridge umeonigiri_comm_check --port /dev/ttyUSB0` | 3 手順 |

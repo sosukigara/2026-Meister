@@ -24,7 +24,7 @@ AFFINITY="${AFFINITY:-4-7}"
 # big コアを推論に明け渡す (推論と同居すると取得が詰まる)。
 CAM_AFFINITY="${CAM_AFFINITY:-0-3}"
 # 使う ONNX モデル。空なら既定 (640) を使う。320 モデル例:
-#   MODEL=ros/src/meister_vision/models/yolov8n-320.onnx ./launch_vision.sh
+#   MODEL=ros/src/umeonigiri_vision/models/yolov8n-320.onnx ./launch_vision.sh
 MODEL="${MODEL:-}"
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
@@ -94,7 +94,7 @@ if [ -n "$MODEL" ]; then
     echo "--- モデル: $MODEL ---"
     export MEISTER_VISION_MODEL="$MODEL"
 fi
-$TASKSET ros2 launch meister_vision pc_vision.launch.py \
+$TASKSET ros2 launch umeonigiri_vision pc_vision.launch.py \
     use_pc_camera:=true \
     device:="$DEVICE" \
     camera_fps:="$CAM_FPS" \
@@ -108,7 +108,7 @@ ros2 run rqt_image_view rqt_image_view /detection_image &
 VIEWER_PID=$!
 
 if [ "$RVIZ" = "1" ]; then
-    RVIZ_CFG="$(ros2 pkg prefix meister_vision)/share/meister_vision/rviz/detection.rviz"
+    RVIZ_CFG="$(ros2 pkg prefix umeonigiri_vision)/share/umeonigiri_vision/rviz/detection.rviz"
     rviz2 -d "$RVIZ_CFG" &
     RVIZ_PID=$!
 fi

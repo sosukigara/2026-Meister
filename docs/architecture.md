@@ -11,7 +11,7 @@
 ┌──────────────────── PC (Ubuntu / ROS 2 Jazzy) ────────────────────┐
 │  umeonigiri_webnav       Web UI (HTTP + WebSocket :8088)           │
 │  ros2_autonomous_nav    Nav2 / SLAM / launch                       │
-│  meister_vision         YOLOv8n ONNX 物体検出                      │
+│  umeonigiri_vision         YOLOv8n ONNX 物体検出                      │
 │  umeonigiri_serial_bridge  ⇅ UART ⇅ ESP32 ブリッジ（唯一の接点）       │
 └──────────────────────────────┬────────────────────────────────────┘
                                │ USB-UART, 115200 bps
