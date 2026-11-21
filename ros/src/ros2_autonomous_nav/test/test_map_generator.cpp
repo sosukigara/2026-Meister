@@ -14,6 +14,16 @@
 namespace ros2_autonomous_nav {
 namespace {
 
+/// 書き込みに失敗したら false を返すこと。以前は失敗しても何も返さず、
+/// generate_map が「map written」と表示して 0 で終わっていた。
+TEST(MapGenerator, ReportsWriteFailure) {
+  const MapSpec spec;
+  const auto grid = BuildNavWorldGrid(spec);
+  // 存在しないディレクトリの下は開けない。
+  EXPECT_FALSE(WritePgm("/nonexistent-dir-for-test/nav_world.pgm", spec, grid));
+  EXPECT_FALSE(WriteMapYaml("/nonexistent-dir-for-test/nav_world.yaml", spec, "nav_world.pgm"));
+}
+
 int At(const MapSpec& spec, const std::vector<uint8_t>& grid, double wx, double wy) {
   const int px = static_cast<int>((wx - spec.origin_x) / spec.resolution);
   const int py = static_cast<int>((wy - spec.origin_y) / spec.resolution);

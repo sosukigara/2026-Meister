@@ -129,15 +129,20 @@ std::vector<uint8_t> BuildNavWorldGrid(const MapSpec& spec) {
   return std::move(grid.cells);
 }
 
-void WritePgm(const std::string& path, const MapSpec& spec,
+bool WritePgm(const std::string& path, const MapSpec& spec,
               const std::vector<uint8_t>& grid) {
   std::ofstream out(path, std::ios::binary);
+  if (!out) {
+    return false;
+  }
   out << "P5\n" << spec.width() << ' ' << spec.height() << "\n255\n";
   // PGM の row 0 は画像の上端 = ワールドの最大 y。グリッドは y 昇順なので反転する。
   for (int row = spec.height() - 1; row >= 0; --row) {
     const auto offset = static_cast<std::size_t>(row) * spec.width();
     out.write(reinterpret_cast<const char*>(grid.data() + offset), spec.width());
   }
+  // 書き込み途中で失敗する（ディスク満杯など）こともあるので最後に状態を見る。
+  return static_cast<bool>(out);
 }
 
 std::string FormatDouble(double value) {
@@ -151,9 +156,12 @@ std::string FormatDouble(double value) {
   return text;
 }
 
-void WriteMapYaml(const std::string& path, const MapSpec& spec,
+bool WriteMapYaml(const std::string& path, const MapSpec& spec,
                   const std::string& image_name) {
   std::ofstream out(path);
+  if (!out) {
+    return false;
+  }
   out << "image: " << image_name << "\n";
   out << "mode: trinary\n";
   out << "resolution: " << FormatDouble(spec.resolution) << "\n";
@@ -162,6 +170,7 @@ void WriteMapYaml(const std::string& path, const MapSpec& spec,
   out << "negate: 0\n";
   out << "occupied_thresh: 0.65\n";
   out << "free_thresh: 0.25\n";
+  return static_cast<bool>(out);
 }
 
 }  // namespace ros2_autonomous_nav
