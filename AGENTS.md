@@ -126,7 +126,7 @@ Additional NGs:
 - Web search is blocked for all providers. pip is available.
 - GPIO12 is a strapping pin (gripper PWM). Change it when wiring the real machine.
 - Specify `upload_port` by-id (prevents misflashing the M5Stack).
-- `ROS_LOCALHOST_ONLY=1` in `start_meister.sh` applies to child processes only.
+- `ROS_LOCALHOST_ONLY=1` in `launch.sh` applies to child processes only.
 
 ## 7. Review Verdict Vocabulary (R10)
 
