@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-// 目的地リスト。地点の順序・合計距離・削除をここだけが持つ。
+// 目的地リスト。地点の順序・区間距離・合計距離・削除をここだけが持つ。
 // 地図側 (map_view.js) は表示のためにリストを受け取るだけで、書き換えない。
 'use strict';
 
@@ -15,12 +15,17 @@ export function createWaypointPanel({
 }) {
   let waypoints = [];
 
+  function legDistance(index) {
+    if (index === 0) return null;
+    const previous = waypoints[index - 1];
+    const current = waypoints[index];
+    return Math.hypot(current.x - previous.x, current.y - previous.y);
+  }
+
   function totalDistance() {
     let sum = 0;
     for (let index = 1; index < waypoints.length; index += 1) {
-      const previous = waypoints[index - 1];
-      const current = waypoints[index];
-      sum += Math.hypot(current.x - previous.x, current.y - previous.y);
+      sum += legDistance(index);
     }
     return sum;
   }
@@ -42,7 +47,10 @@ export function createWaypointPanel({
       coords.textContent = `${position(point.x, point.y)} m`;
       const heading = document.createElement('span');
       heading.className = 'waypoint-heading';
-      heading.textContent = `向き ${degrees(point.yaw)}`;
+      const distance = legDistance(index);
+      // 「区間」は文脈 (ルート線と合計) で分かる。狭い停止点で折れない長さにする。
+      const leg = distance === null ? '起点' : `${meters(distance)} m`;
+      heading.textContent = `向き ${degrees(point.yaw)} · ${leg}`;
       body.append(coords, heading);
 
       const remove = document.createElement('button');
@@ -82,6 +90,11 @@ export function createWaypointPanel({
   return {
     add(point) {
       waypoints.push(point);
+      update();
+    },
+    /// 全消去の取り消しなど、一覧をまるごと差し替えるときに使う。
+    set(points) {
+      waypoints = points.map((point) => ({ ...point }));
       update();
     },
     undo() {

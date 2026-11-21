@@ -11,9 +11,11 @@ import {
 } from './js/api.js';
 import { createEventLog } from './js/events.js';
 import { createSignalStrip } from './js/instruments.js';
+import { createMapReadout } from './js/map_readout.js';
 import { createMapView } from './js/map_view.js';
 import { createModePanel } from './js/mode_panel.js';
 import { BUSY_STATES, createNavStatus, stateLabel, stateTone } from './js/nav_status.js';
+import { createShortcuts } from './js/shortcuts.js';
 import { createVisionPanel } from './js/vision_panel.js';
 import { createWaypointPanel } from './js/waypoints.js';
 import { degrees, meters, position } from './js/format.js';
@@ -32,12 +34,16 @@ let busy = false;
 let mapBusy = false;
 let poseBusy = false;
 
+const readout = createMapReadout(el('map-readout'));
+
 const mapView = createMapView({
   canvas: el('map-canvas'),
   stage: el('map-stage'),
+  onCursor: readout.update,
   onPlace: (point, yaw) => {
     waypoints.add({ x: point.x, y: point.y, yaw });
-    log.info(`目的地を追加 (${position(point.x, point.y)} m / 向き ${degrees(yaw)})`);
+    // 履歴の 1 行は狭い列で折り返さない長さにする。向きは一覧と地図の矢印で読める。
+    log.info(`目的地 ${waypoints.count()}: ${position(point.x, point.y)} m`);
   },
   // 保存地図ナビへ切り替えると AMCL は初期位置を待つ。RViz を開かずに済むよう、
   // 地図の上で Shift+クリック (ドラッグで向き) した点をそのまま初期位置にする。
@@ -67,6 +73,8 @@ const waypoints = createWaypointPanel({
 const vision = createVisionPanel({
   imageEl: el('vision-stream'),
   emptyEl: el('vision-empty'),
+  emptyTitleEl: el('vision-empty-title'),
+  emptyDetailEl: el('vision-empty-detail'),
   badgeEl: el('vision-badge'),
   fpsEl: el('vision-fps'),
   ageEl: el('vision-age'),
@@ -77,10 +85,24 @@ const vision = createVisionPanel({
   toggleEl: el('btn-vision-toggle'),
   onNotice: (message, kind) => (kind === 'error' ? log.error(message) : log.info(message)),
   onState: (status) => {
+    // 計器は「信用できるか」だけを言い、件数はパネルに任せる。同じ数字を 2 か所に
+    // 出すと、片方だけ古い瞬間に矛盾して見える (実測: 計器 0 件 / パネル 2 件)。
+    let note = '受信中';
+    let tone = 'ok';
+    if (!status.monitor) {
+      note = '停止中';
+      tone = 'idle';
+    } else if (!status.has_frame) {
+      note = '映像待ち';
+      tone = 'warn';
+    } else if (status.stale) {
+      note = '古い';
+      tone = 'warn';
+    }
     signals.setVision({
       value: status.has_frame ? `${status.fps.toFixed(1)} fps` : '—',
-      note: status.monitor ? `検出 ${status.detection_count ?? 0} 件` : '停止中',
-      tone: !status.monitor ? 'idle' : status.has_frame && !status.stale ? 'ok' : 'warn',
+      note,
+      tone,
     });
   },
 });
@@ -100,7 +122,7 @@ const nav = createNavStatus({
     signals.setNav({
       value: stateLabel(status.state),
       note: status.nav2_ready ? 'Nav2 準備完了' : 'Nav2 待ち',
-      tone: stateTone(status.state),
+      tone: status.nav2_ready ? stateTone(status.state) : 'warn',
     });
   },
   onState: (status) => {
@@ -130,14 +152,18 @@ async function loadMap() {
       el('map-empty').hidden = false;
       return;
     }
+    // 地図の縦横比を CSS に渡す。横長の地図で高さを余らせないための 1 点。
+    document.documentElement.style.setProperty('--map-aspect', (meta.width / meta.height).toFixed(4));
     mapView.setMapMeta(meta);
     el('map-empty').hidden = true;
+    const widthMeters = meta.width * meta.resolution;
+    const heightMeters = meta.height * meta.resolution;
     signals.setMap({
-      value: `${meta.width}×${meta.height}`,
-      // resolution は float32 なので、素で出すと 0.05000000074505806 になる。
-      note: `${meters(meta.resolution, 3)} m/px`,
+      value: `${meters(widthMeters, 1)}×${meters(heightMeters, 1)} m`,
+      note: `${meters(meta.resolution, 2)} m/px`,
       tone: 'ok',
     });
+    el('gauge-map').title = `${meta.width}×${meta.height} セル`;
     const image = new Image();
     image.onload = () => mapView.setImage(image);
     image.onerror = () => log.warn('地図画像を読み込めませんでした');
@@ -172,7 +198,7 @@ async function pollPose() {
 
 async function sendTour() {
   const tour = waypoints.list();
-  if (tour.length === 0) return;
+  if (tour.length === 0 || busy) return;
   try {
     const result = await postJson('/api/nav', { waypoints: tour });
     log.ok(`${result.count} 地点へのルートを送信しました`);
@@ -182,6 +208,7 @@ async function sendTour() {
 }
 
 async function cancelTour() {
+  if (!busy) return;
   try {
     await postJson('/api/cancel');
     log.warn('停止を要求しました');
@@ -190,16 +217,32 @@ async function cancelTour() {
   }
 }
 
-el('btn-send').addEventListener('click', sendTour);
-el('btn-cancel').addEventListener('click', cancelTour);
-el('btn-undo').addEventListener('click', () => {
+/// 全消去は取り消せるようにする。10 地点のルートを 1 クリックで失わせない。
+function clearRoute() {
+  if (busy || waypoints.count() === 0) return;
+  const snapshot = waypoints.list();
+  waypoints.clear();
+  log.undoable('目的地をすべて消しました', '元に戻す', () => {
+    if (waypoints.count() > 0) {
+      log.warn('新しい目的地があるため、全消去は元に戻せません');
+      return;
+    }
+    waypoints.set(snapshot);
+    log.info('目的地を元に戻しました');
+  });
+}
+
+/// 1 つ戻す。ボタンと Z キーの両方から呼ぶ。
+function undoLast() {
+  if (busy || waypoints.count() === 0) return;
   waypoints.undo();
   log.info('最後の目的地を消しました');
-});
-el('btn-clear').addEventListener('click', () => {
-  waypoints.clear();
-  log.info('目的地をすべて消しました');
-});
+}
+
+el('btn-send').addEventListener('click', sendTour);
+el('btn-cancel').addEventListener('click', cancelTour);
+el('btn-undo').addEventListener('click', undoLast);
+el('btn-clear').addEventListener('click', clearRoute);
 el('btn-fit').addEventListener('click', () => mapView.fit());
 el('btn-zoom-in').addEventListener('click', () => mapView.zoomBy(1.25));
 el('btn-zoom-out').addEventListener('click', () => mapView.zoomBy(1 / 1.25));
@@ -208,36 +251,19 @@ el('btn-clear-trail').addEventListener('click', () => {
   log.info('軌跡を消しました');
 });
 
-const SHORTCUTS = [
-  ['f', () => mapView.fit()],
-  ['z', () => {
-    waypoints.undo();
-    log.info('最後の目的地を消しました');
-  }],
-  ['c', () => {
-    waypoints.clear();
-    log.info('目的地をすべて消しました');
-  }],
-  ['v', () => el('btn-vision-toggle').click()],
-  ['+', () => mapView.zoomBy(1.25)],
-  ['-', () => mapView.zoomBy(1 / 1.25)],
-];
-
-window.addEventListener('keydown', (event) => {
-  if (event.metaKey || event.ctrlKey) return;
-  if (event.target instanceof Element && event.target.closest('input, textarea, select')) {
-    return;
-  }
-  if (event.key === 'Enter') {
-    if (!el('btn-send').disabled) sendTour();
-  } else if (event.key === 'Escape') {
-    if (!el('btn-cancel').disabled) cancelTour();
-  } else {
-    const found = SHORTCUTS.find(([key]) => key === event.key.toLowerCase());
-    if (!found) return;
-    found[1]();
-  }
-  event.preventDefault();
+createShortcuts({
+  sendButton: el('btn-send'),
+  cancelButton: el('btn-cancel'),
+  actions: {
+    fit: () => mapView.fit(),
+    undo: undoLast,
+    clear: clearRoute,
+    toggleVision: () => el('btn-vision-toggle').click(),
+    zoomIn: () => mapView.zoomBy(1.25),
+    zoomOut: () => mapView.zoomBy(1 / 1.25),
+    send: sendTour,
+    cancel: cancelTour,
+  },
 });
 
 onConnectionChange((online) => {

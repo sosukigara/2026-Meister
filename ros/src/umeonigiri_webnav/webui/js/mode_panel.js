@@ -8,6 +8,8 @@ import { getJson, postJson } from './api.js';
 /// 切替は lifecycle 遷移を 2 回挟むので、サーバー側は最大 40 秒待つ。
 const SWITCH_TIMEOUT_MS = 45000;
 const SAVE_TIMEOUT_MS = 30000;
+// サーバーが受け付ける地図名。ここで先に弾いて、英語の 400 をそのまま出さない。
+const MAP_NAME = /^[A-Za-z0-9_-]{1,64}$/;
 
 const MODE_LABELS = {
   mapping: '地図生成',
@@ -70,10 +72,25 @@ export function createModePanel({ badgeEl, switchEl, saveEl, nameEl, onNotice })
     }
   });
 
+  nameEl.addEventListener('input', () => nameEl.removeAttribute('aria-invalid'));
+  nameEl.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    // 日本語入力の変換確定 Enter で保存しない。
+    if (event.isComposing) return;
+    event.preventDefault();
+    saveEl.click();
+  });
+
   saveEl.addEventListener('click', async () => {
+    const name = nameEl.value.trim();
+    if (name && !MAP_NAME.test(name)) {
+      nameEl.setAttribute('aria-invalid', 'true');
+      nameEl.focus();
+      onNotice('地図名は英数字と _ - で入力してください', 'error');
+      return;
+    }
     saveEl.disabled = true;
     try {
-      const name = nameEl.value.trim();
       await postJson('/api/map/save', name ? { name } : {}, SAVE_TIMEOUT_MS);
       onNotice(name ? `地図 ${name} を保存しました` : '地図を保存しました');
       nameEl.value = '';

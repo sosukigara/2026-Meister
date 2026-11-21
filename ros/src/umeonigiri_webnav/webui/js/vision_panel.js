@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 // 認識モニター。画像は MJPEG を <img> に張って受ける (JS で毎フレーム描き直さない)。
-// 数値と検出一覧は /api/vision を 1 秒ごとに読む。
+// 数値と検出一覧は /api/vision を 0.5 秒ごとに読む。
 'use strict';
 
 import { getJson, postJson } from './api.js';
@@ -17,6 +17,8 @@ const STALL_MAX_MS = 30000;
 export function createVisionPanel({
   imageEl,
   emptyEl,
+  emptyTitleEl,
+  emptyDetailEl,
   badgeEl,
   fpsEl,
   ageEl,
@@ -115,7 +117,7 @@ export function createVisionPanel({
     if (detections.length === 0) {
       const item = document.createElement('li');
       item.className = 'detection detection-empty';
-      item.textContent = status.monitor ? '検出なし' : '監視を停止しています';
+      item.textContent = status.monitor ? '検出なし' : '推論を停止しています';
       listEl.append(item);
       return;
     }
@@ -145,7 +147,7 @@ export function createVisionPanel({
     let badge = '待機';
     let tone = 'idle';
     if (!monitor) {
-      badge = '監視停止';
+      badge = '停止中';
     } else if (!hasFrame) {
       badge = '映像待ち';
       tone = 'warn';
@@ -166,24 +168,29 @@ export function createVisionPanel({
 
     const publishers = status.publishers ?? {};
     const source = [`配信 ${publishers.detection_image ? 'あり' : 'なし'}`];
-    if (status.frame_id) source.push(`frame ${status.frame_id}`);
+    if (status.frame_id) source.push(status.frame_id);
     if (status.detection_age_ms !== null && status.detection_age_ms !== undefined) {
-      source.push(`検出 ${age(status.detection_age_ms)} 前`);
+      source.push(`推論 ${age(status.detection_age_ms)} 前`);
     }
     sourceEl.textContent = source.join(' / ');
 
     // has_frame は「最後のフレームがあるか」で、監視中かどうかとは別。
     // 監視 OFF のときは画像を隠して「停止中」を出す。
     emptyEl.hidden = hasFrame && monitor;
-    emptyEl.textContent = monitor ? '認識画像を待っています…' : '監視を停止しています';
+    emptyTitleEl.textContent = monitor ? '認識画像を待っています…' : 'モニターを停止しています';
+    emptyDetailEl.textContent = monitor
+      ? 'カメラと検出ノードの起動を待っています'
+      : '推論を止めて CPU を空けています';
 
     renderDetections(status);
     ensureStream(monitor && hasFrame);
     imageEl.classList.toggle('is-stale', stale || !monitor);
 
-    toggleEl.textContent = monitor ? '認識モニター オン' : '認識モニター オフ';
-    toggleEl.setAttribute('aria-pressed', String(monitor));
-    toggleEl.dataset.tone = monitor ? 'ok' : 'idle';
+    // 文字を状態で変えず、つまみの位置 (aria-checked) で言う。
+    toggleEl.setAttribute('aria-checked', String(monitor));
+    toggleEl.title = monitor
+      ? '推論を止めて CPU を空けます'
+      : '検出ノードの推論を再開します';
 
     onState(status);
   }

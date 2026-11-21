@@ -42,16 +42,28 @@ export function createNavStatus({ badgeEl, messageEl, onState, onSignal }) {
 
   function describe(status) {
     const text = status.message || STATE_LABELS[status.state] || status.state;
-    if (Number.isInteger(status.current_waypoint) && Number.isInteger(status.waypoint_count)) {
+    // サーバーの文言がすでに「地点 1 へ移動中」と番号を言っているなら重ねない。
+    const hasIndex = /地点\s*\d+/.test(text);
+    if (
+      !hasIndex &&
+      Number.isInteger(status.current_waypoint) &&
+      Number.isInteger(status.waypoint_count)
+    ) {
       return `${text} — 地点 ${status.current_waypoint + 1} / ${status.waypoint_count}`;
     }
     return text;
   }
 
   function render(status) {
-    badgeEl.textContent = STATE_LABELS[status.state] ?? status.state;
+    const label = STATE_LABELS[status.state] ?? status.state;
+    const detail = describe(status);
+    badgeEl.textContent = label;
     badgeEl.dataset.tone = STATE_TONES[status.state] ?? 'idle';
-    messageEl.textContent = describe(status);
+    messageEl.textContent = detail;
+    messageEl.title = detail;
+    // 記章と同じ文言のときは視覚的には隠す。role=status の要素としては残すので、
+    // 読み上げには状態の変化が届く (「待機中」を 2 回並べない)。
+    messageEl.classList.toggle('visually-hidden', detail === label);
     onSignal(status);
   }
 
