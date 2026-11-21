@@ -125,6 +125,8 @@
         <span class="nav-message" id="nav-message" role="status">—</span>
       </div>
       <div class="panel-tools">
+        <button id="btn-add-coord" class="btn btn-quiet" type="button"
+                title="座標から目的地を追加" aria-label="座標から目的地を追加">座標追加</button>
         <button id="btn-undo" class="btn btn-icon" type="button"
                 title="1つ戻す (Z)" aria-label="1つ戻す">
           <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M6.5 4 3 7.5 6.5 11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 7.5h6a3.5 3.5 0 0 1 0 7H7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -137,7 +139,7 @@
     </div>
 
     <ol class="waypoint-list" id="waypoint-list"></ol>
-    <p class="empty-note" id="waypoint-empty">地図をクリックして目的地を追加</p>
+    <p class="empty-note" id="waypoint-empty">地図または「座標」から追加</p>
 
     <div class="route-foot">
       <div class="shortcut-note" aria-label="キーボード操作">
@@ -195,6 +197,36 @@
     </section>
   </aside>
 </main>
+
+<!-- 座標の直接入力と並べ替え。地図クリックの代替であり、精密配置と
+     キーボードだけでの経路作成を同じ画面で行えるようにする。 -->
+<dialog id="point-dialog" class="dialog" aria-labelledby="point-dialog-title"
+        aria-describedby="point-dialog-note">
+  <form id="point-form" novalidate>
+    <div class="dialog-head">
+      <h2 id="point-dialog-title">目的地を追加</h2>
+      <button id="point-close" class="btn btn-icon" type="button"
+              title="閉じる" aria-label="閉じる">
+        <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M4 4 12 12M12 4 4 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <p class="dialog-note" id="point-dialog-note">地図の座標 (m) と向き (°) で指定します。</p>
+    <div class="dialog-grid">
+      <label>x (m)<input id="point-x" type="number" step="0.01" inputmode="decimal" required></label>
+      <label>y (m)<input id="point-y" type="number" step="0.01" inputmode="decimal" required></label>
+      <label class="dialog-wide">向き (°)<input id="point-yaw" type="number" step="1" inputmode="numeric" required></label>
+    </div>
+    <p id="point-error" class="form-error" role="alert" hidden></p>
+    <div class="dialog-actions">
+      <div class="dialog-reorder" id="point-reorder" hidden>
+        <button id="point-prev" class="btn btn-quiet" type="button">前へ</button>
+        <button id="point-next" class="btn btn-quiet" type="button">後ろへ</button>
+      </div>
+      <button id="point-cancel" class="btn btn-quiet" type="button">キャンセル</button>
+      <button id="point-submit" class="btn btn-primary" type="submit">追加</button>
+    </div>
+  </form>
+</dialog>
 
 <div class="toasts" id="toasts" aria-live="polite"></div>
 
