@@ -1,9 +1,11 @@
 import os
 import subprocess
+
+import yaml
 from launch import LaunchDescription
 from launch.actions import (
-    IncludeLaunchDescription, TimerAction, ExecuteProcess, LogInfo,
-    DeclareLaunchArgument, OpaqueFunction, SetLaunchConfiguration
+    DeclareLaunchArgument, IncludeLaunchDescription, LogInfo, OpaqueFunction,
+    SetLaunchConfiguration, TimerAction
 )
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration
@@ -22,11 +24,22 @@ def detect_gpu():
         return False
 
 
-WORLDS = {
-    'warehouse': {'sdf': 'warehouse.sdf', 'world_name': 'warehouse', 'spawn': (0, 0, 0.5)},
-    'maze': {'sdf': 'maze.sdf', 'world_name': 'my_custom_world', 'spawn': (-4.0, -4.0, 0.1)},
-    'empty': {'sdf': 'empty.sdf', 'world_name': 'empty', 'spawn': (0, 0, 0.1)},
+# ロボットの出現位置。world 名と SDF の対応は config/worlds.yaml が持つ
+# （simulation.launch.py と共有）。こちらの機体は my_robot_*.urdf なので、
+# warehouse の出現高さが simulation 側 (0.1) と違う。
+SPAWN = {
+    'warehouse': (0, 0, 0.5),
+    'maze': (-4.0, -4.0, 0.1),
+    'empty': (0, 0, 0.1),
 }
+
+
+def load_worlds():
+    """config/worlds.yaml を読む。SDF 名と gz の world 名の唯一の定義。"""
+    path = os.path.join(get_package_share_directory('ros2_autonomous_nav'),
+                        'config', 'worlds.yaml')
+    with open(path, encoding='utf-8') as handle:
+        return yaml.safe_load(handle)
 
 
 def generate_launch_description():
@@ -48,7 +61,8 @@ def generate_launch_description():
 
     def _resolve_world(context):
         world_key = context.launch_configurations['world']
-        entry = WORLDS[world_key]
+        entry = load_worlds()[world_key]
+        spawn = SPAWN[world_key]
         launch_dir = os.path.dirname(os.path.abspath(__file__))
         pkg_share = os.path.dirname(launch_dir)
         world_path = os.path.join(pkg_share, 'worlds', entry['sdf'])
@@ -57,9 +71,9 @@ def generate_launch_description():
             gz_args = f'-r --render-engine ogre2 {world_path}'
         return [
             SetLaunchConfiguration('gz_args', gz_args),
-            SetLaunchConfiguration('spawn_x', str(entry['spawn'][0])),
-            SetLaunchConfiguration('spawn_y', str(entry['spawn'][1])),
-            SetLaunchConfiguration('spawn_z', str(entry['spawn'][2])),
+            SetLaunchConfiguration('spawn_x', str(spawn[0])),
+            SetLaunchConfiguration('spawn_y', str(spawn[1])),
+            SetLaunchConfiguration('spawn_z', str(spawn[2])),
             SetLaunchConfiguration('world_name', entry['world_name']),
             SetLaunchConfiguration('clock_topic', f'/world/{entry["world_name"]}/clock'),
         ]
