@@ -6,6 +6,7 @@
 import json
 import math
 import subprocess
+import sys
 import time
 import urllib.request
 
@@ -60,11 +61,17 @@ def main():
 
     ok = sum(1 for r in results if r["state"] == "succeeded")
     errs = [r["err_m"] for r in results if r["err_m"] is not None]
-    print(f"--- success {ok}/{len(results)}  "
-          f"err max {max(errs):.3f} m  mean {sum(errs)/len(errs):.3f} m")
+    # 姿勢が 1 度も取れないと errs は空になる。max([]) と 0 除算で落ちると、
+    # 走らせた全部の結果を書く前に落ちて JSON が残らない。
+    summary = "err 不明 (姿勢が一度も取れませんでした)"
+    if errs:
+        summary = f"err max {max(errs):.3f} m  mean {sum(errs) / len(errs):.3f} m"
+    print(f"--- success {ok}/{len(results)}  {summary}")
     with open("/tmp/stability.json", "w") as f:
         json.dump(results, f, ensure_ascii=False, indent=1)
+    return 0 if ok == len(results) else 1
 
 
 if __name__ == "__main__":
-    main()
+    # 以前は常に 0 で終わっていたため、失敗しても呼び出し側から見えなかった。
+    sys.exit(main())
