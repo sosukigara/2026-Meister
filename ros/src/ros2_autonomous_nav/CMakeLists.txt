@@ -70,12 +70,22 @@ target_include_directories(bench_proc PUBLIC
   $<INSTALL_INTERFACE:include>)
 target_compile_features(bench_proc PUBLIC cxx_std_17)
 
+# ROS メッセージ → 指標の型への変換。ゼロ除算などの境界を gtest で固定したいので、
+# 実行ファイル直リンクではなくライブラリに切り出す。
+add_library(costmap_view src/costmap_view.cpp)
+target_include_directories(costmap_view PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+target_link_libraries(costmap_view bench_metrics)
+target_compile_features(costmap_view PUBLIC cxx_std_17)
+ament_target_dependencies(costmap_view nav2_msgs nav_msgs)
+
 add_executable(bench_nav
   src/bench_nav_main.cpp
   src/bench_options.cpp
-  src/costmap_view.cpp
   src/bench_report.cpp)
-target_link_libraries(bench_nav bench_metrics bench_proc nlohmann_json::nlohmann_json)
+target_link_libraries(bench_nav costmap_view bench_metrics bench_proc
+  nlohmann_json::nlohmann_json)
 ament_target_dependencies(bench_nav
   rclcpp rclcpp_action nav2_msgs nav_msgs geometry_msgs tf2 tf2_ros)
 
@@ -104,6 +114,9 @@ if(BUILD_TESTING)
 
   ament_add_gtest(test_nav_mode test/test_nav_mode.cpp)
   target_link_libraries(test_nav_mode nav_mode)
+
+  ament_add_gtest(test_costmap_view test/test_costmap_view.cpp)
+  target_link_libraries(test_costmap_view costmap_view)
 
 endif()
 
