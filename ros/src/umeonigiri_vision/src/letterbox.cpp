@@ -34,6 +34,14 @@ LetterboxResult LetterboxInto(const cv::Mat& image, cv::Mat& canvas, int side,
                        static_cast<double>(side) / w);
   const int new_h = RoundHalfToEven(h * out.ratio);
   const int new_w = RoundHalfToEven(w * out.ratio);
+  // 短辺が 0 に丸まる極端なアスペクト比 (例: 1x5000) では ROI が空になり、
+  // cv::resize が OpenCV のアサーションで落ちる。原因が分かる例外に置き換える。
+  if (new_h < 1 || new_w < 1) {
+    throw std::invalid_argument(
+        "letterbox: 縦横比が大きすぎて縮小後の短辺が 0 になります (" +
+        std::to_string(w) + "x" + std::to_string(h) + " -> " +
+        std::to_string(new_w) + "x" + std::to_string(new_h) + ")");
+  }
   out.pad_h = (side - new_h) / 2;
   out.pad_w = (side - new_w) / 2;
 

@@ -235,17 +235,24 @@ private:
         frame = latest_.clone();
         has_frame_ = false;
       }
-      auto boxes = detector_.Detect(frame, conf_, iou_);
-      std::vector<GraspTarget> grasps(boxes.size());
-      std::vector<char> valid(boxes.size(), 0);
-      for (size_t i = 0; i < boxes.size(); ++i) {
-        valid[i] = ComputeGrasp(frame, boxes[i], grasps[i]) ? 1 : 0;
+      // このスレッドで例外が外へ出ると std::terminate でプロセスごと落ちる。
+      // main() の try は join を待つ側で、スレッドの例外は拾えない。壊れた
+      // フレーム 1 枚でビジョン全体を落とさないよう、ここで受けて次のフレームへ進む。
+      try {
+        auto boxes = detector_.Detect(frame, conf_, iou_);
+        std::vector<GraspTarget> grasps(boxes.size());
+        std::vector<char> valid(boxes.size(), 0);
+        for (size_t i = 0; i < boxes.size(); ++i) {
+          valid[i] = ComputeGrasp(frame, boxes[i], grasps[i]) ? 1 : 0;
+        }
+        std::lock_guard<std::mutex> lock(mutex_);
+        frame_ = frame.clone();
+        boxes_ = std::move(boxes);
+        grasps_ = std::move(grasps);
+        valid_ = std::move(valid);
+      } catch (const std::exception & e) {
+        RCLCPP_ERROR(get_logger(), "推論に失敗しました (フレームを捨てます): %s", e.what());
       }
-      std::lock_guard<std::mutex> lock(mutex_);
-      frame_ = frame.clone();
-      boxes_ = std::move(boxes);
-      grasps_ = std::move(grasps);
-      valid_ = std::move(valid);
     }
   }
 
