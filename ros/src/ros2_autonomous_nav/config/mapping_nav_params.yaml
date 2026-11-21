@@ -52,7 +52,11 @@ bt_navigator:
     robot_base_frame: base_footprint
     odom_topic: /odom
     bt_loop_duration: 10
-    default_server_timeout: 20
+    # BT がアクションサーバの受付 (ack) を待つ時間 [ms]。Nav2 既定の 20 ms は
+    # この機体では短すぎる: 計測中 8 回中 5 回の失敗がこの ack 待ちで起き、しかも
+    # 失敗の 3.5 秒後に controller は「ゴール到達」していた (実測、CPU 飽和時)。
+    # 成功/失敗の判定は変えず、遅いだけの受付を失敗と誤認しない値にする。
+    default_server_timeout: 500
     navigators: ["navigate_to_pose", "navigate_through_poses"]
     navigate_to_pose:
       plugin: "nav2_bt_navigator::NavigateToPoseNavigator"
