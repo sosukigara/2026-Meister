@@ -5,6 +5,7 @@
 /// HTTP は httplib のスレッドプールに任せる。地図の Node を NavWorker と共有すると、
 /// worker 側の spin_until_future_complete と Executor が同じ Node を奪い合う。
 #include <chrono>
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <memory>
@@ -23,8 +24,17 @@
 
 namespace {
 
-constexpr const char* kBindAddress = "127.0.0.1";
+// 同じ LAN の別 PC から使いたいという要求があるため、全インタフェースで待ち受ける。
+// 認証は無いので、公開範囲が要らないときは MEISTER_WEBUI_BIND=127.0.0.1 で絞る。
+constexpr const char* kBindAddress = "0.0.0.0";
 constexpr int kPort = 8088;
+
+/// 待ち受けアドレスを決める。実機・シミュレーションどちらでも同じ値を環境変数から
+/// 取れるようにして、起動スクリプト側に設定を二重に持たせない。
+const char* BindAddress() {
+  const char* from_env = std::getenv("MEISTER_WEBUI_BIND");
+  return (from_env != nullptr && from_env[0] != '\0') ? from_env : kBindAddress;
+}
 
 /// Web UI の実体。install 先しか見ない。実行ファイルは colcon build 後の install
 /// から起動するので、Python 版が持っていたソースツリーへの fallback は不要。
@@ -73,8 +83,9 @@ int main(int argc, char** argv) {
   // ポートを掴んだままになる。
   rclcpp::on_shutdown([&server] { server.stop(); });
 
-  if (!server.bind_to_port(kBindAddress, kPort)) {
-    std::cerr << "[umeonigiri_webnav] " << kBindAddress << ":" << kPort
+  const char* const bind_address = BindAddress();
+  if (!server.bind_to_port(bind_address, kPort)) {
+    std::cerr << "[umeonigiri_webnav] " << bind_address << ":" << kPort
               << " を listen できない" << std::endl;
     mode_worker.Stop();
     nav_worker.Stop();
@@ -84,8 +95,9 @@ int main(int argc, char** argv) {
     return 1;
   }
   // launch の output='screen' に出る唯一の起動合図。launch.sh の案内と揃えている。
+  // 全インタフェース待ち受け時は localhost だけでは足りないので実アドレスも出す。
   std::cout << "[umeonigiri_webnav] Web UI ready at http://localhost:" << kPort
-            << std::endl;
+            << " (bind " << bind_address << ":" << kPort << ")" << std::endl;
 
   server.listen_after_bind();
 
