@@ -34,8 +34,16 @@ GZ_ALIASES = (("gz sim gui", "gz sim gui"), ("gz sim server", "gz sim server"))
 def read_ticks(pid: str) -> int | None:
     try:
         with open(f"/proc/{pid}/stat") as f:
-            fields = f.read().split()
-        return int(fields[13]) + int(fields[14])
+            raw = f.read()
+        # comm は括弧の中にあり、空白や ')' を含み得る。単純に split すると
+        # 以降のフィールドがずれ、CPU 時間を 0 と誤読する (実測: 144 tick を 0)。
+        # C++ 版 (bench_proc.cpp) と同じく最後の ')' で切る。
+        close = raw.rfind(")")
+        if close < 0:
+            return None
+        # ") " の直後が field 3 (state)。utime は field 14、stime は field 15。
+        fields = raw[close + 2:].split()
+        return int(fields[11]) + int(fields[12])
     except (OSError, IndexError, ValueError):
         return None
 
