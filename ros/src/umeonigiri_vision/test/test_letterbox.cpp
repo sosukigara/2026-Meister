@@ -52,5 +52,25 @@ TEST(Letterbox, RejectsNonPositiveSide) {
                std::invalid_argument);
 }
 
+TEST(Letterbox, RejectsDegenerateAspectRatio) {
+  // 短辺が 0 に丸まる入力。以前は cv::resize のアサーションで落ちていた
+  // (OpenCV の不可解なエラーになり、原因が分からなかった)。
+  EXPECT_THROW(Letterbox(Solid(1, 5000, cv::Scalar::all(0)), 640),
+               std::invalid_argument);
+  EXPECT_THROW(Letterbox(Solid(5000, 1, cv::Scalar::all(0)), 640),
+               std::invalid_argument);
+}
+
+TEST(Letterbox, KeepsExtremeButUsableAspectRatio) {
+  // 短辺が 1 ピクセル以上残るなら通す。ここを弾くと、細長いカメラ画像を
+  // 理由なく捨ててしまう。
+  const LetterboxResult wide = Letterbox(Solid(4, 1280, cv::Scalar::all(0)), 640);
+  EXPECT_EQ(wide.padded.rows, 640);
+  EXPECT_EQ(wide.padded.cols, 640);
+  const LetterboxResult tall = Letterbox(Solid(1280, 4, cv::Scalar::all(0)), 640);
+  EXPECT_EQ(tall.padded.rows, 640);
+  EXPECT_EQ(tall.padded.cols, 640);
+}
+
 }  // namespace
 }  // namespace umeonigiri_vision
