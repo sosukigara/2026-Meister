@@ -35,7 +35,7 @@ def generate_launch_description():
 
     vision_backend_arg = DeclareLaunchArgument(
         'vision_backend', default_value='npu',
-        description='推論の実行先。npu=RKNN、onnx=ONNX Runtime(CPU)'),
+        description='推論の実行先。npu=RKNN、onnx=ONNX Runtime(CPU)')
     vision_threads_arg = DeclareLaunchArgument(
         'vision_threads', default_value='4',
         description='ONNX inference threads (320x2 reaches 10Hz on RK3588)')
