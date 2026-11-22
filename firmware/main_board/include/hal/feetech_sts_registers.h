@@ -94,8 +94,11 @@ constexpr Endianness kEndianness = Endianness::kLittle;
 // 要確認: レジスタマップ
 //
 // ★未検証★ 以下のアドレスは一次情報で取得できていない。SDK 1.0.0 にレジスタ
-// マップは含まれず（モデル別モジュールが別パッケージ）、web search も遮断。
-// 記憶で書いた値を確定値として使わないこと。STS3215 のデータシートで照合する。
+// マップは含まれず（モデル別モジュールが別パッケージ）、仕様書にもアドレス表が
+// 無い（docs/datasheets/FEETECH_STS3235_datasheet.pdf を 2026-11-22 に確認。
+// 4〜5 ページは本文説明のみ）。記憶で書いた値を確定値として使わないこと。
+// 次の一手: FEETECH のメモリマップ資料、または実機から読み出して照合する。
+// なお分解能 4096 と 360° は仕様書 7-8 で確定している（kStepsPerRev を参照）。
 //
 // 照合が完了するまで WRITE 命令は使わない。READ も Present Voltage 1 バイト
 // だけで確認する。kRegisterMapVerified を true にするのは照合後だけ。
@@ -135,9 +138,12 @@ constexpr uint8_t kRealTemp     = 62;  ///< 1 °C
 constexpr uint8_t kTorqueOff = 0;
 constexpr uint8_t kTorqueOn  = 1;
 
-/// 要確認: 1 revolution あたりのステップ数。0..4095 = 0..360° が一般的。
+/// 1 revolution あたりのステップ数。0..4095 = 0..360°。
+/// 一次情報で確定（docs/datasheets/FEETECH_STS3235_datasheet.pdf 7-8:
+/// "360°(when 0～4096)", "0.088°(360°/4096)"）。同じ STS 系の分解能なので
+/// STS3225 でも同じ前提に置いているが、実機の読み出しで照合すること。
 /// ここが 0..1000 型だと角度が 4 倍ズレる。かつ PWM 側でクランプされるので
-/// 静かに不正な角度になる。照合するまで角度→ステップ変換は使わない。
+/// 静かに不正な角度になる。
 constexpr uint16_t kStepsPerRev  = 4096;
 constexpr float kDegreesPerStep = 360.0f / static_cast<float>(kStepsPerRev);
 

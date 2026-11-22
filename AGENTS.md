@@ -118,13 +118,20 @@ Additional NGs:
 | [docs/commands.md](docs/commands.md) | Run / test / verification commands |
 | [docs/pitfalls.md](docs/pitfalls.md) | Traps AI has fallen into before, project-specific constraints |
 | [docs/code-map.md](docs/code-map.md) | File-level code map — where each behaviour lives |
+| [docs/datasheets/](docs/datasheets/) | 部品の一次情報（PDF）と、値の出所。物理値はここを見る |
 
 ## 6. Tacit Knowledge (Excerpt — Not Obvious from Code Alone)
 
 - Protocol: `firmware/main_board/include/meister_protocol.h` / `src/meister_protocol.cpp` is the single implementation. `ros/src/umeonigiri_serial_bridge/CMakeLists.txt` compiles the same source, so PC and firmware stay byte-identical. Change the axis count in the firmware config and both test suites.
 - Timing: PC→ESP32 on arrival, ESP32 applies at 100 Hz, FB_STATE at 100 Hz, STS read-back round-robin at 30–40 ms.
-- Unverified values: `MSTE_BUS_RESP_TIMEOUT_US=3000µs`, `MSTE_BUS_INTER_FRAME_GAP_US=200µs`, `reg::*` addresses, `kStepsPerRev=4096` are not datasheet-checked. Do not guess them.
-- Web search is blocked for all providers. pip is available.
+- Part datasheets are in `docs/datasheets/` (LA8308, STS3235, STS3215). `kStepsPerRev=4096` and the
+  0.088°/step resolution are confirmed there; the `reg::*` addresses are **not** in those PDFs, so
+  `MSTE_BUS_RESP_TIMEOUT_US=3000µs`, `MSTE_BUS_INTER_FRAME_GAP_US=200µs` and the register map stay ★要確認★.
+- The robot's steering servo is **STS3225**, but only STS3235/STS3215 datasheets exist here. Never
+  substitute STS3235 torque/current numbers for the STS3225.
+- Network: HTTPS is reachable (curl / urllib to GitHub, PyPI, feetechrc, S3 all return 200, 2026-11-22).
+  Search engines still return empty result pages, so fetch known URLs directly instead of searching.
+  pip is available.
 - GPIO12 is a strapping pin (gripper PWM). Change it when wiring the real machine.
 - Specify `upload_port` by-id (prevents misflashing the M5Stack).
 - `ROS_LOCALHOST_ONLY=1` in `launch.sh` applies to child processes only.
