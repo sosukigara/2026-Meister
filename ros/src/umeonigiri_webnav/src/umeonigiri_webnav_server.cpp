@@ -20,6 +20,7 @@
 #include "umeonigiri_webnav/map_listener.hpp"
 #include "umeonigiri_webnav/mode_worker.hpp"
 #include "umeonigiri_webnav/nav_worker.hpp"
+#include "umeonigiri_webnav/param_worker.hpp"
 #include "umeonigiri_webnav/vision_listener.hpp"
 
 namespace {
@@ -73,10 +74,13 @@ int main(int argc, char** argv) {
   umeonigiri_webnav::NavWorker nav_worker;
   nav_worker.Start();
   umeonigiri_webnav::ModeWorker mode_worker;
+  // パラメータ操作も専用 executor で回す。HTTP ハンドラから spin すると
+  // 他のノードと executor を奪い合い、画面全体が止まる (P16/P18)。
+  umeonigiri_webnav::ParamWorker param_worker;
 
   httplib::Server server;
   umeonigiri_webnav::RegisterRoutes(server, *webui_dir, *map_listener, nav_worker,
-                                    *vision_listener, mode_worker);
+                                    *vision_listener, mode_worker, param_worker);
 
   // rclcpp の SIGINT ハンドラは rclcpp::ok() を false にしてこのコールバックを呼ぶ。
   // httplib の listen は自分で止まるまで戻らないので、ここで止めないと Ctrl+C の後も
@@ -88,6 +92,7 @@ int main(int argc, char** argv) {
     std::cerr << "[umeonigiri_webnav] " << bind_address << ":" << kPort
               << " を listen できない" << std::endl;
     mode_worker.Stop();
+    param_worker.Stop();
     nav_worker.Stop();
     ros_executor.cancel();
     ros_thread.join();
@@ -103,6 +108,7 @@ int main(int argc, char** argv) {
 
   // rclcpp::shutdown() より先に、自前スレッドを止める。
   mode_worker.Stop();
+  param_worker.Stop();
   nav_worker.Stop();
   ros_executor.cancel();
   ros_thread.join();
