@@ -18,8 +18,6 @@ struct BridgeParams {
   int baud = kDefaultBaud;
   TwistKinematics kinematics;
   double cmd_timeout_s = 0.5;
-  /// ポートを開けなかったときの再試行間隔 [秒]。
-  double reopen_interval_s = 2.0;
 };
 
 struct WatchdogVerdict {
@@ -63,8 +61,8 @@ class BridgeCore {
 
   /// 開いているリンクを返す。開けない場合は nullptr。
   ///
-  /// 次の試行は params().reopen_interval_s を空ける。開こうとしたときだけ
-  /// error に理由が入る（試行を待っている間は空）。呼び出し側がログを出すのに使う。
+  /// 再試行は kReopenIntervalS 間隔で、開こうとしたときだけ error に理由が
+  /// 入る（試行を待っている間は空）。呼び出し側がログを出すのに使う。
   std::shared_ptr<SerialIo> CurrentLink(std::string* error = nullptr);
 
   /// 読み取り失敗でリンクを隔離する。以降の送信は再オープンまで保留。
@@ -72,8 +70,6 @@ class BridgeCore {
   /// 壊れた libserial オブジェクトは破棄せずプロセス寿命の隔離リストへ移す
   /// （~SerialPort() が noexcept のまま I/O error を投げるため）。
   void DropLink();
-
-  const BridgeParams& params() const { return params_; }
 
  private:
   /// tx_mutex_ を取った状態で呼ぶ。RX スレッドは link_mutex_ だけを使う。

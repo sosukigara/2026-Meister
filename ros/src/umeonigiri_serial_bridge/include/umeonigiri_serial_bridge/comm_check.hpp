@@ -17,17 +17,13 @@ std::vector<std::vector<uint8_t>> NeutralCommandFrames();
 
 struct CheckStep {
   std::string name;
-  bool ok = false;
   std::string detail;
 };
 
 struct CheckResult {
-  std::string port;
   std::vector<CheckStep> steps;
   /// 手順の合否とは別に、後始末や再実行の条件を利用者へ伝える 1 行。
   std::string note;
-  bool ok() const { return !steps.empty() && AllStepsOk(); }
-  bool AllStepsOk() const;
 };
 
 /// 検証が成立しなかった（使用者向けの理由）。

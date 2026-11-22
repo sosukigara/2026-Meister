@@ -6,7 +6,6 @@
 #include <thread>
 #include <vector>
 
-#include "umeonigiri_serial_bridge/frames.hpp"
 #include "umeonigiri_serial_bridge/stream_parser.hpp"
 
 namespace umeonigiri_serial_bridge {
@@ -85,7 +84,6 @@ Measurement MeasureFeedbackHz(const std::string& port, int baud, double duration
       std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
   }
-  const double window = std::max(1e-9, NowSeconds() - t0);
 
   std::vector<double> gaps;
   for (std::size_t i = 1; i < stamps.size(); ++i) {
@@ -99,7 +97,6 @@ Measurement MeasureFeedbackHz(const std::string& port, int baud, double duration
   m.nbytes = nbytes;
   m.decoded_bytes = decoded_bytes;
   m.buffered_bytes = static_cast<long>(parser.buffered());
-  m.duration_s = window;
   m.measured_hz = span > 0.0 ? static_cast<double>(stamps.size() - 1) / span : 0.0;
   m.mean_ms = gaps.empty() ? 0.0
                            : std::accumulate(gaps.begin(), gaps.end(), 0.0) /

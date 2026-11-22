@@ -73,8 +73,6 @@ class HandLandmarkDetector {
   std::optional<HandLandmarks> Detect(const cv::Mat& image_bgr) const;
 
   const std::string& model_path() const { return model_path_; }
-  int input_size() const { return input_size_; }
-  TensorLayout layout() const { return layout_; }
 
  private:
   std::string model_path_;

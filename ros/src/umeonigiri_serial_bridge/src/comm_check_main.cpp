@@ -70,8 +70,7 @@ int main(int argc, char** argv) {
   }
 
   for (const auto& step : result.steps) {
-    std::printf("  [%s] %-9s %s\n", step.ok ? "OK" : "NG", step.name.c_str(),
-                step.detail.c_str());
+    std::printf("  [OK] %-9s %s\n", step.name.c_str(), step.detail.c_str());
   }
   if (!result.note.empty()) {
     std::printf("note: %s\n", result.note.c_str());

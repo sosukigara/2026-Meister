@@ -8,7 +8,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <cstdint>
 
 #include "umeonigiri_serial_bridge/serial_io.hpp"
 
@@ -39,19 +38,6 @@ class AckermannImuOdometry {
  public:
   explicit AckermannImuOdometry(const OdometryConfig& cfg = OdometryConfig{})
       : cfg_(cfg) {}
-
-  void Reset() noexcept {
-    state_ = OdometryState{};
-    has_imu_ = false;
-    imu_yaw_offset_ = 0.0;
-    last_imu_yaw_ = 0.0;
-    last_imu_time_s_ = -1.0;
-    imu_wz_ = 0.0;
-    cmd_vx_ = 0.0;
-    cmd_wz_ = 0.0;
-    last_cmd_time_s_ = -1.0;
-    last_step_time_s_ = -1.0;
-  }
 
   void UpdateTwistCommand(double vx, double wz, double now_s) noexcept {
     cmd_vx_ = vx;

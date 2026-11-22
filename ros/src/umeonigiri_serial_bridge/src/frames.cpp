@@ -5,16 +5,10 @@
 namespace umeonigiri_serial_bridge {
 namespace {
 
-int16_t ClampTo(int16_t v, int16_t lo, int16_t hi) {
-  if (v < lo) return lo;
-  if (v > hi) return hi;
-  return v;
-}
-
 template <std::size_t N>
 void ClampAll(std::array<int16_t, N>* values, int16_t lo, int16_t hi) {
   for (auto& v : *values) {
-    v = ClampTo(v, lo, hi);
+    v = std::clamp(v, lo, hi);
   }
 }
 
@@ -55,7 +49,7 @@ size_t EncodeArm(uint8_t* buf, std::size_t cap, const ArmArray& tenths) {
 }
 
 size_t EncodeGripper(uint8_t* buf, std::size_t cap, uint8_t cmd) {
-  const auto value = static_cast<meister::proto::GripperCommand>(ClampTo(cmd, 0, 2));
+  const auto value = static_cast<meister::proto::GripperCommand>(std::clamp<int>(cmd, 0, 2));
   return meister::proto::EncodeGripper(buf, cap, value);
 }
 

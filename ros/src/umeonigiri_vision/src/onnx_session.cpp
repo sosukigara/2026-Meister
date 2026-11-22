@@ -51,7 +51,7 @@ struct OnnxSession::Impl {
 };
 
 OnnxSession::OnnxSession(const std::string& model_path, int intra_op_threads)
-    : model_path_(model_path), impl_(std::make_shared<Impl>()) {
+    : impl_(std::make_shared<Impl>()) {
   Ort::SessionOptions options;
   // Orange Pi 5 / 5 Max (RK3588: 4x Cortex-A76 + 4x Cortex-A55) に合わせ、
   // 既定 4 スレッドで大コア群に収めクラスタ間キャッシュコヒーレンス遅延を防止
@@ -119,12 +119,6 @@ void OnnxSession::RunInto(const float* input_data, std::size_t input_count,
     throw std::runtime_error("ONNX 推論に失敗しました: " +
                              std::string(e.what()));
   }
-}
-
-std::vector<float> OnnxSession::Run(const std::vector<float>& input) const {
-  std::vector<float> out;
-  RunInto(input.data(), input.size(), out);
-  return out;
 }
 
 }  // namespace umeonigiri_vision

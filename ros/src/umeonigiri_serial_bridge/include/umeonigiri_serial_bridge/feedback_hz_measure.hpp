@@ -17,7 +17,6 @@ struct Measurement {
   long decoded_bytes = 0;
   /// 受信末尾に残った未完成フレームのバイト数。欠落判定から除く。
   long buffered_bytes = 0;
-  double duration_s = 0.0;
   double measured_hz = 0.0;
   double mean_ms = 0.0;
   double p95_ms = 0.0;

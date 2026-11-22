@@ -8,6 +8,8 @@ namespace proto = meister::proto;
 
 namespace {
 constexpr std::size_t kRxBufBytes = 256;
+constexpr double kReopenIntervalS = 2.0;  // [秒]
+// ponytail: 再試行間隔は固定。ポートごとに変える要件が出たら BridgeParams に戻す。
 
 /// 壊れたリンクをプロセス終了まで保持する。
 ///
@@ -42,7 +44,7 @@ std::shared_ptr<SerialIo> BridgeCore::CurrentLink(std::string* error) {
   if (now < next_open_attempt_s_) {
     return nullptr;
   }
-  next_open_attempt_s_ = now + params_.reopen_interval_s;
+  next_open_attempt_s_ = now + kReopenIntervalS;
   try {
     link_ = factory_(params_.serial_port, params_.baud);
   } catch (const std::exception& e) {

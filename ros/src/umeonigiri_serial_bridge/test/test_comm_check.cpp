@@ -27,7 +27,6 @@ TEST(CommCheck, PassesWhenEsp32AnswersBothDirections) {
   const auto result = msb::RunCommCheck("fake", msb::kDefaultBaud, 0.2, false, Opener(&esp));
 
   ASSERT_EQ(result.steps.size(), 3u);
-  EXPECT_TRUE(result.ok());
   EXPECT_EQ(result.steps[0].name, "uplink");
   EXPECT_EQ(result.steps[1].name, "downlink");
   EXPECT_EQ(result.steps[2].name, "err_flag");
@@ -82,7 +81,7 @@ TEST(CommCheck, SendsOnlyNeutralCommands) {
 // DTR は IO0 に直結している。assert のままだとブートローダで止まる。
 TEST(CommCheck, ReleasesDtrBeforeAnyIo) {
   msb::test::FakeEsp32 ok;
-  EXPECT_TRUE(msb::RunCommCheck("fake", msb::kDefaultBaud, 0.2, false, Opener(&ok)).ok());
+  EXPECT_NO_THROW(msb::RunCommCheck("fake", msb::kDefaultBaud, 0.2, false, Opener(&ok)));
 
   msb::test::FakeEsp32Options opts;
   opts.dtr_stuck = true;
@@ -110,7 +109,7 @@ TEST(CommCheck, ResetsAgainAfterErrFlagStepWhenResetEnabled) {
   msb::test::FakeEsp32 esp;
   const auto result = msb::RunCommCheck("fake", msb::kDefaultBaud, 0.2, /*reset=*/true,
                                         Opener(&esp));
-  EXPECT_TRUE(result.ok());
+  EXPECT_EQ(result.steps.size(), 3u);
   EXPECT_EQ(esp.rts_high_count(), 2);
 }
 
@@ -120,7 +119,7 @@ TEST(CommCheck, ReportsResidualErrorFlagWhenResetDisabled) {
   msb::test::FakeEsp32 esp;
   const auto result = msb::RunCommCheck("fake", msb::kDefaultBaud, 0.2, /*reset=*/false,
                                         Opener(&esp));
-  EXPECT_TRUE(result.ok());
+  EXPECT_EQ(result.steps.size(), 3u);
   EXPECT_NE(result.note.find("error_flags"), std::string::npos);
   EXPECT_NE(result.note.find("--reset"), std::string::npos);
 }
@@ -131,7 +130,7 @@ TEST(CommCheck, ClearsProtocolErrorFlagAfterFinalReset) {
   msb::test::FakeEsp32 esp;
   const auto result = msb::RunCommCheck("fake", msb::kDefaultBaud, 0.2, /*reset=*/true,
                                         Opener(&esp));
-  ASSERT_TRUE(result.ok());
+  ASSERT_EQ(result.steps.size(), 3u);
   EXPECT_EQ(esp.error_flags(), 0);
 
   const auto m = msb::MeasureFeedbackHz("fake", msb::kDefaultBaud, 0.15,
