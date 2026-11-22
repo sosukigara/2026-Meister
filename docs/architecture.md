@@ -10,7 +10,7 @@
 ```
 ┌──────────────────── PC (Ubuntu / ROS 2 Jazzy) ────────────────────┐
 │  umeonigiri_webnav       Web UI (HTTP + WebSocket :8088)           │
-│  ros2_autonomous_nav    Nav2 / SLAM / launch                       │
+│  umeonigiri_autonomy    Nav2 / SLAM / launch                       │
 │  umeonigiri_vision         YOLOv8n ONNX 物体検出                      │
 │  umeonigiri_serial_bridge  ⇅ UART ⇅ ESP32 ブリッジ（唯一の接点）       │
 └──────────────────────────────┬────────────────────────────────────┘

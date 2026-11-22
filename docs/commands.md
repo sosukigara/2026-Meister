@@ -64,7 +64,7 @@ ros2 run umeonigiri_serial_bridge umeonigiri_hz_measure --port /dev/ttyUSB0 --ex
 ./kill.sh
 ```
 
-- 実機モードは `ros2_autonomous_nav/real_robot.launch.py` を起動する
+- 実機モードは `umeonigiri_autonomy/real_robot.launch.py` を起動する
   (robot_state_publisher + LD-D500 + SLAM + Nav2 + serial_bridge + Web UI + 画像認識)。
 - ポートは環境変数で上書き可 (既定: ESP32 `/dev/ttyUSB0`、LD-D500 `/dev/ttyUSB1`。
   両方 `ttyUSB0` のままだと衝突する)。by-id / by-path 推奨。
@@ -98,11 +98,11 @@ ros2 run umeonigiri_serial_bridge umeonigiri_hz_measure --port /dev/ttyUSB0 --ex
 
 ```bash
 # 30 run のベースライン計測（起動〜計測〜片付けをまとめて行う）
-ros/src/ros2_autonomous_nav/scripts/measure.sh docs/bench/<date>-<name>.json 10 3 <map-id>
+ros/src/umeonigiri_autonomy/scripts/measure.sh docs/bench/<date>-<name>.json 10 3 <map-id>
 
 # 制御器を差し替えて比較（既定は RPP）
 MEISTER_LAUNCH_ARGS="controller:=mppi" \
-  ros/src/ros2_autonomous_nav/scripts/measure.sh docs/bench/<date>-mppi.json 10 1 mppi
+  ros/src/umeonigiri_autonomy/scripts/measure.sh docs/bench/<date>-mppi.json 10 1 mppi
 ```
 
 - ラッパーが `DISPLAY`・`ROS_DOMAIN_ID` を設定し、Nav2 と `map→base_footprint` の
@@ -115,7 +115,7 @@ MEISTER_LAUNCH_ARGS="controller:=mppi" \
 
 ```bash
 # 起動したまま、区間 20 秒でプロセス別の CPU を積分する
-python3 ros/src/ros2_autonomous_nav/scripts/cpu_split.py --seconds 20 --label "headless"
+python3 ros/src/umeonigiri_autonomy/scripts/cpu_split.py --seconds 20 --label "headless"
 ```
 
 `/proc/<pid>/stat` の utime+stime の差分を使う。`top` の瞬間値は数秒で振れるため、

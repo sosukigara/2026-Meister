@@ -33,9 +33,9 @@
 ### Task 1: モード状態機械（純ロジック）
 
 **Files:**
-- Create: `ros/src/ros2_autonomous_nav/include/ros2_autonomous_nav/nav_mode.hpp`
-- Create: `ros/src/ros2_autonomous_nav/src/nav_mode.cpp`
-- Test: `ros/src/ros2_autonomous_nav/test/test_nav_mode.cpp`
+- Create: `ros/src/umeonigiri_autonomy/include/umeonigiri_autonomy/nav_mode.hpp`
+- Create: `ros/src/umeonigiri_autonomy/src/nav_mode.cpp`
+- Test: `ros/src/umeonigiri_autonomy/test/test_nav_mode.cpp`
 
 **Interfaces:**
 - Produces:
@@ -48,11 +48,11 @@
 - [ ] **Step 1: 失敗するテストを書く**
 
 ```cpp
-// ros/src/ros2_autonomous_nav/test/test_nav_mode.cpp
+// ros/src/umeonigiri_autonomy/test/test_nav_mode.cpp
 #include <gtest/gtest.h>
-#include "ros2_autonomous_nav/nav_mode.hpp"
+#include "umeonigiri_autonomy/nav_mode.hpp"
 
-namespace ros2_autonomous_nav {
+namespace umeonigiri_autonomy {
 namespace {
 
 TEST(NavMode, MappingModeIsOwnedBySlamToolbox) {
@@ -85,12 +85,12 @@ TEST(NavMode, SwitchingToTheSameModeIsANoOp) {
 }
 
 }  // namespace
-}  // namespace ros2_autonomous_nav
+}  // namespace umeonigiri_autonomy
 ```
 
 - [ ] **Step 2: 失敗を確認する**
 
-Run: `colcon build --packages-select ros2_autonomous_nav && colcon test --packages-select ros2_autonomous_nav`
+Run: `colcon build --packages-select umeonigiri_autonomy && colcon test --packages-select umeonigiri_autonomy`
 Expected: `nav_mode.hpp` が無いためコンパイル失敗。
 
 - [ ] **Step 3: 実装する**
@@ -99,15 +99,15 @@ Expected: `nav_mode.hpp` が無いためコンパイル失敗。
 
 - [ ] **Step 4: 通ることを確認する**
 
-Run: `colcon test --packages-select ros2_autonomous_nav`
+Run: `colcon test --packages-select umeonigiri_autonomy`
 Expected: 既存 52 + 新規 5 が全て pass。
 
 - [ ] **Step 5: コミット**
 
 ```bash
-git add ros/src/ros2_autonomous_nav/include/ros2_autonomous_nav/nav_mode.hpp \
-        ros/src/ros2_autonomous_nav/src/nav_mode.cpp \
-        ros/src/ros2_autonomous_nav/test/test_nav_mode.cpp
+git add ros/src/umeonigiri_autonomy/include/umeonigiri_autonomy/nav_mode.hpp \
+        ros/src/umeonigiri_autonomy/src/nav_mode.cpp \
+        ros/src/umeonigiri_autonomy/test/test_nav_mode.cpp
 git commit -m "feat(nav): add map-odom ownership state machine"
 ```
 
@@ -116,9 +116,9 @@ git commit -m "feat(nav): add map-odom ownership state machine"
 ### Task 2: `nav_mode_manager` ノード
 
 **Files:**
-- Create: `ros/src/ros2_autonomous_nav/src/nav_mode_manager_main.cpp`
-- Modify: `ros/src/ros2_autonomous_nav/CMakeLists.txt`
-- Modify: `ros/src/ros2_autonomous_nav/package.xml`（`std_srvs`, `lifecycle_msgs`）
+- Create: `ros/src/umeonigiri_autonomy/src/nav_mode_manager_main.cpp`
+- Modify: `ros/src/umeonigiri_autonomy/CMakeLists.txt`
+- Modify: `ros/src/umeonigiri_autonomy/package.xml`（`std_srvs`, `lifecycle_msgs`）
 
 **Interfaces:**
 - Consumes: Task 1 の `PlanTransition` / `NavMode`
@@ -137,7 +137,7 @@ git commit -m "feat(nav): add map-odom ownership state machine"
 
 - [ ] **Step 2: 手動で動作確認する**
 
-Run: `ros2 run ros2_autonomous_nav nav_mode_manager --ros-args -p autostart:=false`
+Run: `ros2 run umeonigiri_autonomy nav_mode_manager --ros-args -p autostart:=false`
 Expected: サービスが現れる（`ros2 service list | grep switch_to_localization`）。
 
 - [ ] **Step 3: コミット**
@@ -151,9 +151,9 @@ git commit -am "feat(nav): add nav_mode_manager node"
 ### Task 3: launch を「全部 inactive で待たせる」形にする
 
 **Files:**
-- Modify: `ros/src/ros2_autonomous_nav/launch/navigation.launch.py`
-- Modify: `ros/src/ros2_autonomous_nav/launch/mapping_nav.launch.py`
-- Modify: `ros/src/ros2_autonomous_nav/config/mapping_nav_params.yaml`（amcl, map_server を有効化）
+- Modify: `ros/src/umeonigiri_autonomy/launch/navigation.launch.py`
+- Modify: `ros/src/umeonigiri_autonomy/launch/mapping_nav.launch.py`
+- Modify: `ros/src/umeonigiri_autonomy/config/mapping_nav_params.yaml`（amcl, map_server を有効化）
 
 **Interfaces:**
 - Consumes: Task 2 のノード
@@ -173,9 +173,9 @@ Expected: 上記2つが満たされる。
 ### Task 4: 地図ストア（純ロジック）
 
 **Files:**
-- Create: `ros/src/ros2_autonomous_nav/include/ros2_autonomous_nav/map_store.hpp`
-- Create: `ros/src/ros2_autonomous_nav/src/map_store.cpp`
-- Test: `ros/src/ros2_autonomous_nav/test/test_map_store.cpp`
+- Create: `ros/src/umeonigiri_autonomy/include/umeonigiri_autonomy/map_store.hpp`
+- Create: `ros/src/umeonigiri_autonomy/src/map_store.cpp`
+- Test: `ros/src/umeonigiri_autonomy/test/test_map_store.cpp`
 
 **Interfaces:**
 - Produces:

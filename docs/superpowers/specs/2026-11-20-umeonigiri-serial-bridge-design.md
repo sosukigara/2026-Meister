@@ -29,7 +29,7 @@ FB_STATE / FB_IMU を ROS へ戻す。2026-10-05 の Python → C++（ament_cmak
 | F6 | `RunCommCheck` の手順 3 は意図的に `error_flags` を立てる。firmware の `rxErrorCount_` は再起動まで減らない。成功後もフラグが残り、直後の `hz_measure` が protocol error で NG になる | `comm_check.cpp:167-186`、`firmware/main_board/src/command_dispatch.cpp:63,99-101` |
 | F7 | `EncodeArm` は `kMinJoint/kMaxJoint` で丸めるが、CMD_ARM_ANGLE の実経路は `Arm::setAngles` → `PwmServoChannel` の `kMinArmAngle/kMaxArmAngle`。現在値は同じ 0..1800 なので挙動は偶然一致 | `frames.cpp:200-207`、`firmware/main_board/src/arm.cpp:40-44`、`firmware/main_board/include/arm.h:20-24` |
 | F8 | 未対応ボーレートは `BAUD_DEFAULT`（= `BAUD_115200`）へ無言でフォールバックする | `serial_link.cpp:18-29`、`/usr/include/libserial/SerialPortConstants.h:208,228` |
-| F9 | `ros2_autonomous_nav/package.xml` は launch で起動する当パッケージへの `exec_depend` を持たない。ノード名は launch 経路で `serial_bridge` と `umeonigiri_serial_bridge` に分裂 | `real_robot.launch.py:70,120-122`、`serial_bridge.launch.py:22` |
+| F9 | `umeonigiri_autonomy/package.xml` は launch で起動する当パッケージへの `exec_depend` を持たない。ノード名は launch 経路で `serial_bridge` と `umeonigiri_serial_bridge` に分裂 | `real_robot.launch.py:70,120-122`、`serial_bridge.launch.py:22` |
 | F10 | `serial_bridge_node.cpp` は 327 行で R1 の 300 行目安を超える | `wc -l` |
 
 ## 3. ゴール / 非ゴール
@@ -154,7 +154,7 @@ LostFrames() = max(0, nbytes - decoded_bytes - buffered_bytes) / kMaxFrameSize
 - `constexpr char kNodeName[] = "umeonigiri_serial_bridge";` を 1 箇所に置き、
   `Node(kNodeName)` と logger の両方で使う（R2）。
 - `real_robot.launch.py` の `name=` を `umeonigiri_serial_bridge` に統一。
-- `ros2_autonomous_nav/package.xml` に `<exec_depend>umeonigiri_serial_bridge</exec_depend>`。
+- `umeonigiri_autonomy/package.xml` に `<exec_depend>umeonigiri_serial_bridge</exec_depend>`。
 - 当パッケージに `<exec_depend>launch</exec_depend>` と
   `<exec_depend>launch_ros</exec_depend>` を追加。
 

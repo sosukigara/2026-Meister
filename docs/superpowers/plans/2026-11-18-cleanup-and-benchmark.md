@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** `ros2_autonomous_nav` の死んだ資産を片付け、変更の効果を数値で比べられる計測基盤を作り、現状のベースラインを1本の JSON として残す。
+**Goal:** `umeonigiri_autonomy` の死んだ資産を片付け、変更の効果を数値で比べられる計測基盤を作り、現状のベースラインを1本の JSON として残す。
 
 **Architecture:** パッケージ直下に散らばったスクリプトを `scripts/` に集約して相対パスの階層ずれを直し、教材由来のファイルを削除する。その後、評価指標を純関数（pytest 可能）として切り出し、`rclpy` のランナーから呼ぶ。指標の計算とゴール検証は ROS に依存させず、単体テストで固定する。
 
@@ -37,17 +37,17 @@
 ### Task 1: スクリプトを `scripts/` へ移動し、相対パスを直す
 
 **Files:**
-- Move: `ros/src/ros2_autonomous_nav/{rviz,run,slam,navigate,save_map,drive,waypoints}.sh` → `ros/src/ros2_autonomous_nav/scripts/`
+- Move: `ros/src/umeonigiri_autonomy/{rviz,run,slam,navigate,save_map,drive,waypoints}.sh` → `ros/src/umeonigiri_autonomy/scripts/`
 - Modify: 移動後の各 `.sh`（下記のパス修正）
 - Modify: `launch.sh:150`
 
 **Interfaces:**
-- Produces: `ros/src/ros2_autonomous_nav/scripts/rviz.sh`（`launch.sh` から実行される唯一のスクリプト）
+- Produces: `ros/src/umeonigiri_autonomy/scripts/rviz.sh`（`launch.sh` から実行される唯一のスクリプト）
 
 - [ ] **Step 1: 移動する**
 
 ```bash
-cd ros/src/ros2_autonomous_nav
+cd ros/src/umeonigiri_autonomy
 git mv rviz.sh run.sh slam.sh navigate.sh save_map.sh drive.sh waypoints.sh scripts/
 ```
 
@@ -73,13 +73,13 @@ git mv rviz.sh run.sh slam.sh navigate.sh save_map.sh drive.sh waypoints.sh scri
 `scripts/navigate.sh`, `scripts/drive.sh`: パス参照なし。変更不要。
 
 `launch.sh:150`:
-- `"$WORKSPACE_ROOT/ros/src/ros2_autonomous_nav/rviz.sh" &` → `"$WORKSPACE_ROOT/ros/src/ros2_autonomous_nav/scripts/rviz.sh" &`
+- `"$WORKSPACE_ROOT/ros/src/umeonigiri_autonomy/rviz.sh" &` → `"$WORKSPACE_ROOT/ros/src/umeonigiri_autonomy/scripts/rviz.sh" &`
 
 - [ ] **Step 3: 構文と参照を検証する**
 
 ```bash
-for f in ros/src/ros2_autonomous_nav/scripts/*.sh; do bash -n "$f" || echo "SYNTAX FAIL: $f"; done
-grep -rn "ros2_autonomous_nav/rviz.sh\|/scripts/scripts/" --include="*.sh" --include="*.py" --include="*.md" . | grep -v "^./ros/build/\|^./ros/install/"
+for f in ros/src/umeonigiri_autonomy/scripts/*.sh; do bash -n "$f" || echo "SYNTAX FAIL: $f"; done
+grep -rn "umeonigiri_autonomy/rviz.sh\|/scripts/scripts/" --include="*.sh" --include="*.py" --include="*.md" . | grep -v "^./ros/build/\|^./ros/install/"
 ```
 Expected: 構文エラーなし。2つ目の grep が0件（旧パス参照が残っていない）。
 
@@ -93,7 +93,7 @@ Expected: 6パッケージすべて成功。
 - [ ] **Step 5: コミット**
 
 ```bash
-git add -A ros/src/ros2_autonomous_nav launch.sh
+git add -A ros/src/umeonigiri_autonomy launch.sh
 git commit -m "refactor(nav): move helper scripts under scripts/ and fix relative paths"
 ```
 
@@ -102,9 +102,9 @@ git commit -m "refactor(nav): move helper scripts under scripts/ and fix relativ
 ### Task 2: 教材由来のファイルを削除し、パッケージのメタデータを直す
 
 **Files:**
-- Delete: `ros/src/ros2_autonomous_nav/{README.md,README_JA.md,youtube_description.txt,create_short.py,edit_video.py,create_thumbnail.py,generate_voiceover.py,render_code_snippets.py,start_nav.sh,start_mapping.sh}`
-- Modify: `ros/src/ros2_autonomous_nav/setup.py:23-25`
-- Modify: `ros/src/ros2_autonomous_nav/package.xml:6-7`
+- Delete: `ros/src/umeonigiri_autonomy/{README.md,README_JA.md,youtube_description.txt,create_short.py,edit_video.py,create_thumbnail.py,generate_voiceover.py,render_code_snippets.py,start_nav.sh,start_mapping.sh}`
+- Modify: `ros/src/umeonigiri_autonomy/setup.py:23-25`
+- Modify: `ros/src/umeonigiri_autonomy/package.xml:6-7`
 
 **Interfaces:**
 - Consumes: Task 1 の移動結果（`start_nav.sh`/`start_mapping.sh` は移動していないので、未移動のまま削除する）
@@ -113,7 +113,7 @@ git commit -m "refactor(nav): move helper scripts under scripts/ and fix relativ
 - [ ] **Step 1: 削除対象を確認する**
 
 ```bash
-cd ros/src/ros2_autonomous_nav
+cd ros/src/umeonigiri_autonomy
 ls README.md README_JA.md youtube_description.txt create_short.py edit_video.py \
    create_thumbnail.py generate_voiceover.py render_code_snippets.py \
    start_nav.sh start_mapping.sh
@@ -133,7 +133,7 @@ Expected: `docs/README.md:73` の「仕様対象外」の記述のみ。それ�
 - [ ] **Step 3: 削除する**
 
 ```bash
-cd ros/src/ros2_autonomous_nav
+cd ros/src/umeonigiri_autonomy
 git rm README.md README_JA.md youtube_description.txt \
        create_short.py edit_video.py create_thumbnail.py \
        generate_voiceover.py render_code_snippets.py \
@@ -155,7 +155,7 @@ git rm README.md README_JA.md youtube_description.txt \
 
 ```bash
 cd /home/so/Meister
-grep -rn "ros2_autonomous_nav/README\|ros2_autonomous_nav/README_JA" docs/ *.md 2>/dev/null
+grep -rn "umeonigiri_autonomy/README\|umeonigiri_autonomy/README_JA" docs/ *.md 2>/dev/null
 ```
 Expected: 0件。
 
@@ -169,7 +169,7 @@ Expected: 6パッケージすべて成功。
 - [ ] **Step 7: コミット**
 
 ```bash
-git add -A ros/src/ros2_autonomous_nav
+git add -A ros/src/umeonigiri_autonomy
 git commit -m "chore(nav): drop tutorial leftovers and fix package metadata"
 ```
 
@@ -178,8 +178,8 @@ git commit -m "chore(nav): drop tutorial leftovers and fix package metadata"
 ### Task 3: 評価指標の純関数を実装する
 
 **Files:**
-- Create: `ros/src/ros2_autonomous_nav/scripts/bench_metrics.py`
-- Test: `ros/src/ros2_autonomous_nav/test/test_bench_metrics.py`
+- Create: `ros/src/umeonigiri_autonomy/scripts/bench_metrics.py`
+- Test: `ros/src/umeonigiri_autonomy/test/test_bench_metrics.py`
 
 **Interfaces:**
 - Produces:
@@ -191,7 +191,7 @@ git commit -m "chore(nav): drop tutorial leftovers and fix package metadata"
 - [ ] **Step 1: 失敗するテストを書く**
 
 ```python
-# ros/src/ros2_autonomous_nav/test/test_bench_metrics.py
+# ros/src/umeonigiri_autonomy/test/test_bench_metrics.py
 import math
 import pytest
 
@@ -243,7 +243,7 @@ def test_summarize_reports_counts_and_worst_case():
 - [ ] **Step 2: テストが失敗することを確認する**
 
 ```bash
-cd ros/src/ros2_autonomous_nav && python3 -m pytest test/test_bench_metrics.py -v
+cd ros/src/umeonigiri_autonomy && python3 -m pytest test/test_bench_metrics.py -v
 ```
 Expected: `ModuleNotFoundError: No module named 'bench_metrics'` で FAIL。
 
@@ -254,14 +254,14 @@ Expected: `ModuleNotFoundError: No module named 'bench_metrics'` で FAIL。
 - [ ] **Step 4: テストが通ることを確認する**
 
 ```bash
-cd ros/src/ros2_autonomous_nav && python3 -m pytest test/test_bench_metrics.py -v
+cd ros/src/umeonigiri_autonomy && python3 -m pytest test/test_bench_metrics.py -v
 ```
 Expected: 7 passed。
 
 - [ ] **Step 5: コミット**
 
 ```bash
-git add ros/src/ros2_autonomous_nav/scripts/bench_metrics.py ros/src/ros2_autonomous_nav/test/test_bench_metrics.py
+git add ros/src/umeonigiri_autonomy/scripts/bench_metrics.py ros/src/umeonigiri_autonomy/test/test_bench_metrics.py
 git commit -m "feat(nav): add benchmark metrics helpers with unit tests"
 ```
 
@@ -270,9 +270,9 @@ git commit -m "feat(nav): add benchmark metrics helpers with unit tests"
 ### Task 4: ゴール定義とベンチ実行ランナーを実装する
 
 **Files:**
-- Create: `ros/src/ros2_autonomous_nav/scripts/bench_nav.py`
-- Create: `ros/src/ros2_autonomous_nav/config/bench_goals.json`
-- Test: `ros/src/ros2_autonomous_nav/test/test_bench_nav.py`
+- Create: `ros/src/umeonigiri_autonomy/scripts/bench_nav.py`
+- Create: `ros/src/umeonigiri_autonomy/config/bench_goals.json`
+- Test: `ros/src/umeonigiri_autonomy/test/test_bench_nav.py`
 
 **Interfaces:**
 - Consumes: Task 3 の `path_length`, `min_footprint_clearance`, `summarize`
@@ -284,7 +284,7 @@ git commit -m "feat(nav): add benchmark metrics helpers with unit tests"
 - [ ] **Step 1: 失敗するテストを書く**
 
 ```python
-# ros/src/ros2_autonomous_nav/test/test_bench_nav.py
+# ros/src/umeonigiri_autonomy/test/test_bench_nav.py
 import json
 import pytest
 
@@ -327,7 +327,7 @@ def test_validate_rejects_empty_goal_list():
 - [ ] **Step 2: テストが失敗することを確認する**
 
 ```bash
-cd ros/src/ros2_autonomous_nav && python3 -m pytest test/test_bench_nav.py -v
+cd ros/src/umeonigiri_autonomy && python3 -m pytest test/test_bench_nav.py -v
 ```
 Expected: `ModuleNotFoundError: No module named 'bench_nav'` で FAIL。
 
@@ -351,16 +351,16 @@ Expected: `ModuleNotFoundError: No module named 'bench_nav'` で FAIL。
 - [ ] **Step 4: テストが通ることを確認する**
 
 ```bash
-cd ros/src/ros2_autonomous_nav && python3 -m pytest test/ -v
+cd ros/src/umeonigiri_autonomy && python3 -m pytest test/ -v
 ```
 Expected: Task 3 の7件と本タスクの4件、計11 passed。
 
 - [ ] **Step 5: コミット**
 
 ```bash
-git add ros/src/ros2_autonomous_nav/scripts/bench_nav.py \
-        ros/src/ros2_autonomous_nav/config/bench_goals.json \
-        ros/src/ros2_autonomous_nav/test/test_bench_nav.py
+git add ros/src/umeonigiri_autonomy/scripts/bench_nav.py \
+        ros/src/umeonigiri_autonomy/config/bench_goals.json \
+        ros/src/umeonigiri_autonomy/test/test_bench_nav.py
 git commit -m "feat(nav): add benchmark runner and fixed goal set"
 ```
 
@@ -390,8 +390,8 @@ Expected: load average が 1 以下、`gz sim` / `rviz2` / `component_container`
 - [ ] **Step 3: 1ゴールで予行する**
 
 ```bash
-python3 ros/src/ros2_autonomous_nav/scripts/bench_nav.py \
-  --goals ros/src/ros2_autonomous_nav/config/bench_goals.json \
+python3 ros/src/umeonigiri_autonomy/scripts/bench_nav.py \
+  --goals ros/src/umeonigiri_autonomy/config/bench_goals.json \
   --out /tmp/bench_dryrun.json --repeats 1 --limit 1
 ```
 Expected: 終了コード0、`/tmp/bench_dryrun.json` に `runs` が1件。`summary.success_rate` が 1.0、`min_clearance_m` が 0.10 以上。
@@ -399,8 +399,8 @@ Expected: 終了コード0、`/tmp/bench_dryrun.json` に `runs` が1件。`summ
 - [ ] **Step 4: 本計測する**
 
 ```bash
-python3 ros/src/ros2_autonomous_nav/scripts/bench_nav.py \
-  --goals ros/src/ros2_autonomous_nav/config/bench_goals.json \
+python3 ros/src/umeonigiri_autonomy/scripts/bench_nav.py \
+  --goals ros/src/umeonigiri_autonomy/config/bench_goals.json \
   --out docs/bench/2026-11-18-baseline.json --repeats 3
 ```
 Expected: 30 run が記録される。
@@ -413,7 +413,7 @@ Expected: 30 run が記録される。
 
 ```bash
 git add docs/bench/2026-11-18-baseline.json docs/bench/2026-11-18-baseline.md \
-        ros/src/ros2_autonomous_nav/config/bench_goals.json
+        ros/src/umeonigiri_autonomy/config/bench_goals.json
 git commit -m "docs(nav): record navigation baseline (30 runs)"
 ```
 

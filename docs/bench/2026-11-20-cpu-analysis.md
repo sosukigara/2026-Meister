@@ -6,7 +6,7 @@
 
 ## 1. 実測した CPU 内訳（シミュレーション、Orange Pi 実機）
 
-測定器: `ros/src/ros2_autonomous_nav/scripts/cpu_split.py --seconds 20`。
+測定器: `ros/src/umeonigiri_autonomy/scripts/cpu_split.py --seconds 20`。
 `/proc/<pid>/stat` の utime+stime を区間積分し、1 コア = 100% で表す。
 
 | 構成 | 合計（1コア換算） | 8コア比 | `/scan` | 備考 |
@@ -232,7 +232,7 @@ curl -s -X POST localhost:8088/api/mode -H 'Content-Type: application/json' \
      -d '{"mode":"localization"}'
 curl -s -X POST localhost:8088/api/initialpose -H 'Content-Type: application/json' \
      -d '{"x":-4.0,"y":-4.0,"yaw":0.0}'
-python3 ros/src/ros2_autonomous_nav/scripts/stability_test.py
+python3 ros/src/umeonigiri_autonomy/scripts/stability_test.py
 ```
 
 ## 12. 画像認識の内訳と高速化の候補（2026-11-20 実測）

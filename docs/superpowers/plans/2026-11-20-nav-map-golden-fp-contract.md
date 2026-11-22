@@ -2,7 +2,7 @@
 
 ## 目的
 
-`ros2_autonomous_nav` の `MapGenerator.MatchesGoldenPgmByteForByte` が `main` で落ちている。
+`umeonigiri_autonomy` の `MapGenerator.MatchesGoldenPgmByteForByte` が `main` で落ちている。
 原因を特定し、**golden（`maps/nav_world.pgm`）を書き換えずに** C++ 生成器を
 Python 版と同じ丸めへ戻す。
 
@@ -13,7 +13,7 @@ Python 版と同じ丸めへ戻す。
   78 セル（PGM col 88）、`wall_i4` の南端 y=-1.575 が 58 セル（PGM row 151）。
   どちらもちょうど半セルの境界。wall_i1 の東端 x=-1.425 は変わらない。
 - 削除前の Python 実装
-  （`2439065^:ros/src/ros2_autonomous_nav/scripts/generate_map.py`）を numpy で
+  （`2439065^:ros/src/umeonigiri_autonomy/scripts/generate_map.py`）を numpy で
   実行すると、出力 PGM は **golden とバイト一致**（`cmp` exit 0）。境界判定は同じ `<=`。
 - 同一セルの `lx` は、Python / 分離丸めでは `-0.07500000000000018`（free）、
   GCC の `-O3`（既定 `-ffp-contract=fast`）では `-0.07499999999999973`（occupied）。
@@ -34,7 +34,7 @@ Python 版と同じ丸めへ戻す。
 ## 検証
 
 1. 追加テストと golden テストが修正前 RED（両方失敗）、修正後 GREEN。
-2. `colcon test --packages-select ros2_autonomous_nav` が 66 tests / 0 failures。
+2. `colcon test --packages-select umeonigiri_autonomy` が 66 tests / 0 failures。
 3. ワークスペース全体の `colcon test` が 0 failures（この失敗が最後の既知の赤）。
 4. `git diff --check`。
 

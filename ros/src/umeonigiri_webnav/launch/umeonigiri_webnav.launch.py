@@ -30,7 +30,7 @@ def generate_launch_description():
                 # symlink-install ではソースの maps/ を指す。保存地図を
                 # install 側に散らかさない。
                 'maps_dir': os.path.join(
-                    get_package_share_directory('ros2_autonomous_nav'), 'maps'),
+                    get_package_share_directory('umeonigiri_autonomy'), 'maps'),
                 'world': world,
             }],
         ),

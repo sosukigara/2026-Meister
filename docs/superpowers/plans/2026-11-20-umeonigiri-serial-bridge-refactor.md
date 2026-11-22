@@ -59,8 +59,8 @@ git commit -m "docs(superpowers): add the umeonigiri_serial_bridge design and pl
 - Move: `ros/src/umeonigiri_serial_bridge/launch/serial_bridge.launch.py` → `launch/umeonigiri_serial_bridge.launch.py`
 - Modify: `package.xml`, `CMakeLists.txt`, `src/*.cpp`, `include/umeonigiri_serial_bridge/*.hpp`, `test/*.cpp`, `test/fake_esp32.hpp`
 - Modify: `build.sh`
-- Modify: `ros/src/ros2_autonomous_nav/launch/real_robot.launch.py`
-- Modify: `ros/src/ros2_autonomous_nav/package.xml`
+- Modify: `ros/src/umeonigiri_autonomy/launch/real_robot.launch.py`
+- Modify: `ros/src/umeonigiri_autonomy/package.xml`
 
 **Interfaces:**
 - Produces: package `umeonigiri_serial_bridge`; executables `umeonigiri_serial_bridge`, `umeonigiri_comm_check`, `umeonigiri_hz_measure`; namespace `umeonigiri_serial_bridge`; include prefix `umeonigiri_serial_bridge/`.
@@ -114,12 +114,12 @@ Expected: CMake の対象は `umeonigiri_serial_bridge` と `src/serial_bridge_n
 ```bash
 cd /home/so/Meistar/.worktrees/serial-bridge-refactor
 sed -i 's/meister_serial_bridge/umeonigiri_serial_bridge/g' build.sh
-sed -i 's/meister_serial_bridge/umeonigiri_serial_bridge/g' ros/src/ros2_autonomous_nav/launch/real_robot.launch.py
-sed -i "s/executable='serial_bridge'/executable='umeonigiri_serial_bridge'/" ros/src/ros2_autonomous_nav/launch/real_robot.launch.py
-sed -i "s/name='serial_bridge'/name='umeonigiri_serial_bridge'/" ros/src/ros2_autonomous_nav/launch/real_robot.launch.py
+sed -i 's/meister_serial_bridge/umeonigiri_serial_bridge/g' ros/src/umeonigiri_autonomy/launch/real_robot.launch.py
+sed -i "s/executable='serial_bridge'/executable='umeonigiri_serial_bridge'/" ros/src/umeonigiri_autonomy/launch/real_robot.launch.py
+sed -i "s/name='serial_bridge'/name='umeonigiri_serial_bridge'/" ros/src/umeonigiri_autonomy/launch/real_robot.launch.py
 ```
 
-`ros2_autonomous_nav/package.xml` の `<exec_depend>meister_web_nav</exec_depend>` の後に次を追加する。
+`umeonigiri_autonomy/package.xml` の `<exec_depend>meister_web_nav</exec_depend>` の後に次を追加する。
 
 ```xml
 <exec_depend>umeonigiri_serial_bridge</exec_depend>
@@ -138,8 +138,8 @@ Run:
 ```bash
 cd /home/so/Meistar/.worktrees/serial-bridge-refactor
 grep -rn 'meister_serial_bridge\|meister_comm_check\|meister_hz_measure' \
-  ros/src/umeonigiri_serial_bridge ros/src/ros2_autonomous_nav/launch/real_robot.launch.py \
-  build.sh ros/src/ros2_autonomous_nav/package.xml
+  ros/src/umeonigiri_serial_bridge ros/src/umeonigiri_autonomy/launch/real_robot.launch.py \
+  build.sh ros/src/umeonigiri_autonomy/package.xml
 ```
 Expected: 出力なし。文書（AGENTS/docs/firmware README）は Task 8 で更新するため、まだ残ってよい。
 

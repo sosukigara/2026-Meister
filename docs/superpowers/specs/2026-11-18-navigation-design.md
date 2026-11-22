@@ -1,6 +1,6 @@
 # 設計: ナビゲーション最適化・地図運用・実機運動学
 
-> 対象: `ros/src/ros2_autonomous_nav` / `ros/src/meister_web_nav` / `meister_serial_bridge` / `firmware/main_board`
+> 対象: `ros/src/umeonigiri_autonomy` / `ros/src/meister_web_nav` / `meister_serial_bridge` / `firmware/main_board`
 > 作成日: 2026-11-18 | ステータス: レビュー待ち（未承認）
 
 ## 1. 背景と意図
@@ -39,7 +39,7 @@
 - 舵角サーボの実数は BOM 上 4 個（`ros/config/meister_robot.yaml:97`）。ファームウェアの現行定義は 6ch（`firmware/main_board/include/hal/generated_config.h:18, 55, 59`）。**★要確認★**
 - 駆動は FOC 基板（PWM 直駆動は廃止、`generated_config.h:53`）。エンコーダは無い。
 - **メインボードから駆動モータへの経路が存在しない。** `BaseChassis` は舵角サーボ専用（`firmware/main_board/include/base_chassis.h`）、速度指令は破棄され（`command_dispatch.cpp:92-95`）、FOC ボード3枚（各2ch、それぞれ独立した ESP32）は USB シリアルのコンソールファームで、メインボードとの接続コードが無い（§6.6）。
-- LiDAR: LD-D500、720 bins、0.03–12.0 m、10 Hz（`ros/src/ros2_ldlidar_d500/config/d500.yaml:3-15`）。
+- LiDAR: LD-D500、720 bins、0.03–12.0 m、10 Hz（`ros/src/umeonigiri_lidar/config/d500.yaml:3-15`）。
 - シミュの車体は車輪を持たない自由飛行ボディ（`ros/src/umeonigiri_description/urdf/chassis.xacro`, `gazebo.xacro:7-11`）。つまりシミュはホロノミックで、実機より能力が高い。
 
 **計算資源**

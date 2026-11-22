@@ -54,7 +54,7 @@ Meister/
     ├── src/
     │   ├── umeonigiri_description/  # ロボットモデル・シミュレーション定義
     │   ├── umeonigiri_vision/          # 画像認識（ONNX Runtime + YOLOv8n）
-    │   ├── ros2_autonomous_nav/     # SLAM・ナビゲーションの中核パッケージ
+    │   ├── umeonigiri_autonomy/     # SLAM・ナビゲーションの中核パッケージ
     │   └── umeonigiri_webnav/       # Web UI（:8088）
     └── config/
         └── meister_robot.yaml       # ロボット設定の唯一の出所（tools/gen_config.py が読む）
@@ -70,7 +70,7 @@ ESP32 (6輪モータ PWM / ステアリングサーボ / アームサーボ)
 6輪ロッカーボギー + 4軸アーム + カメラ + LD-D500 LiDAR
 ```
 
-※ `ros2_autonomous_nav` 内の動画編集・ナレーション生成スクリプト群（YouTube 用）はロボット制御と無関係のため仕様対象外。
+※ `umeonigiri_autonomy` 内の動画編集・ナレーション生成スクリプト群（YouTube 用）はロボット制御と無関係のため仕様対象外。
 
 ## ロードマップ
 

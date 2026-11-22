@@ -7,7 +7,7 @@
 
 ## 概要
 
-`ros2_autonomous_nav` パッケージで SLAM（slam_toolbox）による環境地図の作成・保存・再利用を提供する。
+`umeonigiri_autonomy` パッケージで SLAM（slam_toolbox）による環境地図の作成・保存・再利用を提供する。
 シミュレーション内のワールドからリアルタイムに占有グリッド地図を生成できる。
 
 ## 実装済み機能
