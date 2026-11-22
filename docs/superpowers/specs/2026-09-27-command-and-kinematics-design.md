@@ -1,6 +1,6 @@
 # 設計: コマンドモデルとロッカーボギー運動学
 
-> 対象機能: [features/07-esp32-uart.md](../../features/07-esp32-uart.md) [features/08-rocker-bogie.md](../../features/08-rocker-bogie.md)
+> 対象: `firmware/main_board/` のプロトコルと運動学 / `ros/src/umeonigiri_serial_bridge/`（旧 features/07・08）
 > 作成日: 2026-09-27 | ステータス: 設計合意済み（実装は未着手）
 
 ## 背景
@@ -12,19 +12,20 @@
    機構の apply に渡る前に状態が分割され、整合性が取れない。
 2. **運動学が PC 側にあり、かつ自転車モデルに退行している。**
    `kinematics.py:3-4` は「全ステアリングチャネルに同一の舵角、全駆動チャネルに
-   同一の速度百分率」で、`docs/design/08-rocker-bogie.md:11` の
-   「全輪独立操舵により…超信地旋回が可能」という目標を満たせない
+   同一の速度百分率」で、`firmware/foc_rover/README.md`
+   「6-wheel rover plan」の「全輪独立操舵により…超信地旋回が可能」という目標を満たせない
    （6 輪が同じ舵角だと超信地旋回は物理的に成立しない）。
    `kinematics.py:8-11` も「アッカーマン系はその場旋回できない」と限界を明記している。
 
-`docs/design/07-esp32-uart.md:8` の「リアルタイム制御（PWM 生成・サーボバス制御）は
+[2026-11-22-esp32-uart-transport-notes.md](2026-11-22-esp32-uart-transport-notes.md) 設計メモの
+「リアルタイム制御（PWM 生成・サーボバス制御）は
 ESP32」の方針に従い、展開は ESP 側が行う。
 
 ## 決定事項（2026-09-27 合意）
 
 | # | 決定 | 理由 |
 |---|---|---|
-| D1 | **`Twist → 各輪の舵角・速度`の展開は ESP32 側** | `docs/design/07:8` の方針。PC は判断だけ担う |
+| D1 | **`Twist → 各輪の舵角・速度`の展開は ESP32 側** | [伝送メモ](2026-11-22-esp32-uart-transport-notes.md) の設計メモの方針。PC は判断だけ担う |
 | D2 | PC が送る指令は **`vx, vy, wz` の 3 成分** | 逆キネマティクス（車体速度 ← 輪実測）の検算に 3 成分形が便利で、将来メカノム化したときに型を変えずに有効化できる。**横移動自体が今回必要なわけではない**（D5） |
 | D3 | 運動学は **拘束ソルバ + ボギー軸の位置表** | ボギー軸は機械的に有限位置を持つので、連続運動は拘束から解き、ロック位置だけ表で持つ |
 | D4 | **コマンドは 1 つの型に集約**し、種別分岐を機構側に散らさない | 状態の整合性を保つ |
@@ -97,8 +98,8 @@ PC 側のモデルと実挙動が食い違い、Nav2 がなぜ進まないかを
 
 ### 責務の線引き（逆キネマトリクス）
 
-- **オドメトリは Nav2（PC 側）が担当**する。`docs/design/08:11` の
-  「Nav2 の経路追従と整合させる」ため
+- **オドメトリは Nav2（PC 側）が担当**する。
+  [firmware/foc_rover/README.md](../../../firmware/foc_rover/README.md) の「Nav2 の経路追従と整合させる」ため
 - **ESP 側の逆変換はスリップ検知にのみ使う**。各輪の実測が車体の目標と
   ずれたら警報を返す
 - ESP 側に第 2 のオドメトリを作らない。作ると Nav2 と二重になる
@@ -214,6 +215,8 @@ kinematics:
 
 ## 関連
 
-- 設計: [07-esp32-uart.md](../../features/07-esp32-uart.md) / [08-rocker-bogie.md](../../features/08-rocker-bogie.md) / [09-object-grasping.md](../../features/09-object-grasping.md)
+- 伝送の設計メモ: [2026-11-22-esp32-uart-transport-notes.md](2026-11-22-esp32-uart-transport-notes.md)
+- 走行系の構成（FOC 3 台・4 リンク化）: [firmware/foc_rover/README.md](../../../firmware/foc_rover/README.md)
+- アームの計画: [2026-11-22-real-machine-and-arm-plan.md](2026-11-22-real-machine-and-arm-plan.md) §2
 - 設定の唯一の出所: [ros/config/meister_robot.yaml](../../../ros/config/meister_robot.yaml)
 - コードマップ: [code-map.md](../../code-map.md)
