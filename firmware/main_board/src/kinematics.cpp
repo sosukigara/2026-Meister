@@ -1,8 +1,8 @@
 /*
  * kinematics.cpp — TwistCommand を各輪の舵角・速度へ展開する
  *
- * 拘束ソルバ本体。docs/superpowers/specs/2026-09-27-command-and-kinematics-design.md
- * の D1（展開は ESP32 側）/ D3（拘束ソルバ + ボギー軸の位置表）に基づく。
+ * 拘束ソルバ本体。D1: Twist の展開は ESP32 側で行う（PC は判断だけ担う）。
+ * D3: ボギー軸は連続運動を拘束から解き、ロック位置だけ表で持つ。
  *
  * ★呼び出し側の禁止★ config/meister_robot.yaml の
  * kinematics.geometry_filled が false の間、Solve() は必ず kGeometryNotFilled を

@@ -37,7 +37,7 @@
 | パッケージ | 役割 | エントリポイント | 依存 |
 |---|---|---|---|
 | `umeonigiri_description` | URDF / spawn / 全システム起動 | `launch/all_system.launch.py` `launch/spawn.launch.py` | — |
-| `umeonigiri_autonomy` | Nav2 / SLAM / 評価ツール (ament_cmake) | 各 `launch/*.launch.py`、`bench_nav` / `generate_map` / `waypoint_follower`（いずれも C++） | umeonigiri_description, umeonigiri_serial_bridge |
+| `umeonigiri_autonomy` | Nav2 / SLAM / 評価ツール (ament_cmake) | 各 `launch/*.launch.py`、`generate_map` / `waypoint_follower` / `nav_mode_manager`（いずれも C++） | umeonigiri_description, umeonigiri_serial_bridge |
 | `umeonigiri_vision` | YOLOv8n ONNX 検出 → `detections` | `detection_node` / `hand_landmarks_node` / `pc_camera`（いずれも C++） | OpenCV, ONNX Runtime |
 | `umeonigiri_webnav` | Web UI（地図・現在地・経路・認識モニター） | `umeonigiri_webnav_server`（C++） | umeonigiri_description |
 | `umeonigiri_serial_bridge` | **`/cmd_vel` → UART フレーム、`/esp32/state` ← FB_STATE** | `umeonigiri_serial_bridge` / `umeonigiri_comm_check` / `umeonigiri_hz_measure`（いずれも C++） | libserial, firmware の protocol ソース |
@@ -224,8 +224,6 @@ main.cpp → command_dispatch → base_chassis / arm → hal/* → Arduino
 | `firmware/main_board/platformio.ini` | ビルド env と `MSTE_*` の指定（値は `firmware/main_board/include/meister_config.h` が既定値として持つ） |
 | `ros/src/umeonigiri_description/config/*.yaml` | URDF / Nav2 パラメータ / ブリッジ（ros_gz 用。シリアル設定は**含まない**） |
 | `build.sh` / `launch.sh` / `launch_vision.sh` / `kill.sh` | ビルドと起動。`launch.sh:44-48` は VPN 環境のマルチキャスト障害回避で `ROS_LOCALHOST_ONLY=1` を設定（**子プロセスのみ**。別ターミナルの `ros2` CLI には継承されない） |
-| `docs/superpowers/specs/*.md` | 設計判断と未実装範囲（実装仕様・計画） |
-| `docs/bench/*.md` | 実測（ナビ・CPU・画像認識）の記録 |
 
 ---
 

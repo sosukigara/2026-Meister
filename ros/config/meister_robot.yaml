@@ -99,7 +99,7 @@ planned:
   gripper_count: 2      # 開閉① / 開閉②
 
 # 運動学（Twist → 各輪の舵角・速度）
-# docs/superpowers/specs/2026-09-27-command-and-kinematics-design.md の D1/D3。
+# 展開は ESP32 側（firmware/main_board/src/kinematics.cpp）、ボギー軸は拘束ソルバ + 位置表。
 # 車体座標: 原点は車体中心、+x が前方、+y が左、単位 m。
 #
 # ★要確認★ 以下の値は機構設計から求めた**暫定値**。実機の図面か計測で

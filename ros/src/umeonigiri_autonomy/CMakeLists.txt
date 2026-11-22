@@ -17,17 +17,9 @@ find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
-find_package(nlohmann_json 3.11 REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(lifecycle_msgs REQUIRED)
-
-# 指標は ROS 非依存。host で gtest できる。
-add_library(bench_metrics src/bench_metrics.cpp)
-target_include_directories(bench_metrics PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-target_compile_features(bench_metrics PUBLIC cxx_std_17)
 
 # nav_world の地図を SDF ジオメトリから作る（SLAM 不要）。
 add_library(map_generator src/map_generator.cpp)
@@ -64,42 +56,14 @@ add_executable(waypoint_follower src/waypoint_follower_main.cpp)
 target_link_libraries(waypoint_follower waypoint_tour)
 ament_target_dependencies(waypoint_follower rclcpp rclcpp_action nav2_msgs)
 
-add_library(bench_proc src/bench_proc.cpp)
-target_include_directories(bench_proc PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-target_compile_features(bench_proc PUBLIC cxx_std_17)
-
-# ROS メッセージ → 指標の型への変換。ゼロ除算などの境界を gtest で固定したいので、
-# 実行ファイル直リンクではなくライブラリに切り出す。
-add_library(costmap_view src/costmap_view.cpp)
-target_include_directories(costmap_view PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-target_link_libraries(costmap_view bench_metrics)
-target_compile_features(costmap_view PUBLIC cxx_std_17)
-ament_target_dependencies(costmap_view nav2_msgs nav_msgs)
-
-add_executable(bench_nav
-  src/bench_nav_main.cpp
-  src/bench_options.cpp
-  src/bench_report.cpp)
-target_link_libraries(bench_nav costmap_view bench_metrics bench_proc
-  nlohmann_json::nlohmann_json)
-ament_target_dependencies(bench_nav
-  rclcpp rclcpp_action nav2_msgs nav_msgs geometry_msgs tf2 tf2_ros)
-
 install(DIRECTORY include/ DESTINATION include)
-install(TARGETS bench_nav generate_map waypoint_follower nav_mode_manager
+install(TARGETS generate_map waypoint_follower nav_mode_manager
         DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch config urdf worlds maps scripts
         DESTINATION share/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
-  ament_add_gtest(test_bench_metrics test/test_bench_metrics.cpp)
-  target_link_libraries(test_bench_metrics bench_metrics)
-
   ament_add_gtest(test_map_generator test/test_map_generator.cpp)
   target_link_libraries(test_map_generator map_generator)
   # Python 版が生成した地図とのバイト一致を、リポジトリ内で再現できる形で固定する。
@@ -109,14 +73,8 @@ if(BUILD_TESTING)
   ament_add_gtest(test_waypoint_tour test/test_waypoint_tour.cpp)
   target_link_libraries(test_waypoint_tour waypoint_tour)
 
-  ament_add_gtest(test_bench_proc test/test_bench_proc.cpp)
-  target_link_libraries(test_bench_proc bench_proc)
-
   ament_add_gtest(test_nav_mode test/test_nav_mode.cpp)
   target_link_libraries(test_nav_mode nav_mode)
-
-  ament_add_gtest(test_costmap_view test/test_costmap_view.cpp)
-  target_link_libraries(test_costmap_view costmap_view)
 
 endif()
 

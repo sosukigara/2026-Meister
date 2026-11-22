@@ -1,7 +1,7 @@
 # アーキテクチャ — Meister
 
 > 対象リポジトリ: `sosukigara/2026-Meister`
-> コードマップ（ファイル単位の地図）は [docs/code-map.md](code-map.md)。設計判断は [docs/superpowers/specs/](superpowers/specs/)、計測は [docs/bench/](bench/)、罠は [docs/pitfalls.md](pitfalls.md)。
+> コードマップ（ファイル単位の地図）は [docs/code-map.md](code-map.md)。罠は [docs/pitfalls.md](pitfalls.md)、コマンドは [docs/commands.md](commands.md)。
 
 ## 1. 全体像（半分散）
 
