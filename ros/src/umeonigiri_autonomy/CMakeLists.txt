@@ -40,7 +40,7 @@ target_include_directories(waypoint_tour PUBLIC
 target_compile_features(waypoint_tour PUBLIC cxx_std_17)
 
 add_executable(nav_mode_manager src/nav_mode_manager_main.cpp)
-ament_target_dependencies(nav_mode_manager rclcpp nav2_msgs std_msgs std_srvs lifecycle_msgs)
+ament_target_dependencies(nav_mode_manager rclcpp std_msgs std_srvs lifecycle_msgs)
 
 add_executable(generate_map src/generate_map_main.cpp)
 target_link_libraries(generate_map map_generator)

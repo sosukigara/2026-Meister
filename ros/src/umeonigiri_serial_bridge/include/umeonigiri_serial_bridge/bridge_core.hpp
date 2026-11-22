@@ -61,8 +61,8 @@ class BridgeCore {
 
   /// 開いているリンクを返す。開けない場合は nullptr。
   ///
-  /// 再試行は 2 秒間隔で、開こうとしたときだけ error に理由が入る
-  /// （試行を待っている間は空）。呼び出し側がログを出すのに使う。
+  /// 再試行は kReopenIntervalS 間隔で、開こうとしたときだけ error に理由が
+  /// 入る（試行を待っている間は空）。呼び出し側がログを出すのに使う。
   std::shared_ptr<SerialIo> CurrentLink(std::string* error = nullptr);
 
   /// 読み取り失敗でリンクを隔離する。以降の送信は再オープンまで保留。
