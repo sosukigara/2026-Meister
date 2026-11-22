@@ -215,3 +215,56 @@
   origin -4.93/-4.91）を返した（1/1）。empty ワールドでは修正前も落ちなかった
   ので、これは起動順の競合であって常時再現ではない。★要確認★ 修正後に複数回の
   起動を繰り返した統計はまだ無い。
+
+## P19. シミュレーションの画像認識が既定の NPU 版で死ぬ（2026-11-22 実測）
+
+- 症状: `./launch.sh --sim maze` は起動するが `/detections` が一度も流れない。
+  ログに `yolo_grasp_node ... exit code 1` と
+  `RKNN モデルを読めません: .../models/yolov8n-zoo.rknn`。
+- 原因: `mapping_nav.launch.py` が `pc_vision.launch.py` を引数なしで include して
+  いたため、実機用の既定 `backend:=npu` が選ばれていた。
+  NPU 版 (`yolo_grasp`) は `/dev/video0` を V4L2 で直接開く実装で、Gazebo が
+  ROS トピック `/camera/image_raw` に出す映像を読めない。さらに `*.rknn` は
+  gitignore 対象なので、worktree / fresh clone にはモデルが無い。
+- 対策: シミュレーションでは `backend:=onnx`・`use_pc_camera:=false`・
+  `model_path:=.../yolov8n-320.onnx` を明示する。ONNX モデルが無い場合は
+  検出ノードを起動せず、`ros2 run umeonigiri_vision download_model` の案内だけを
+  ログに出す（落ちるプロセスを増やさない）。
+- スレッド数: ONNX を 4 スレッドにすると gz(llvmpipe) と CPU を食い合う。
+  maze/lite/320 の実測で RTF 0.828（vision 無し）→ 0.641（4 スレッド）→
+  0.680（2 スレッド）だった。2 スレッドでも検出は 3.8 Hz（カメラ 4.4 Hz）で
+  追従し、検出ノードの CPU は 1.03 → 0.55 コアに下がる。
+- 確認: `detection_node` がモデルを読み、`/camera/image_raw` を購読、
+  `/detections` 3.7〜3.8 Hz、Web UI の認識モニターが 320×240 を表示（実測）。
+
+## P20. Web UI のパラメータ API で踏みやすい 3 点（2026-11-22 実測）
+
+- **経路の順序**: httplib は登録順に最初の一致を使う。`/.*` の静的配信より後に
+  `/api/params` を登録すると、静的配信が先に受けて 404 になる。
+  `RegisterRoutes` の中で `RegisterVisionRoutes` と並べて登録する。
+- **ノード一覧の API**: `rclcpp::Node::get_node_names_and_namespaces()` は
+  Jazzy の `rclcpp::Node` に無い。`get_node_names()` を使う。グラフには
+  `/_ros2cli_daemon_*`・`/launch_ros_*`・`/transform_listener_impl_*`・
+  `*_rclcpp_node` も載るので、画面の選択肢からは外す。
+- **型を UI から決めない**: 設定前に `/get_parameters` で既存の
+  `ParameterValue.type` を取り、その型へ変換する。UI の JSON 型をそのまま
+  `SetParameters` に入れると、double のつもりが integer に化ける。
+- スレッド: 呼び出しは HTTP から来るので、`ModeWorker` と同じく専用 executor で
+  回し、`spin_some` は呼ばない。探索は `wait_for_service(200ms)`、応答は
+  `future.wait_for(2s)` で上限を切る。
+- 確認: Web UI で `FollowPath.desired_linear_vel` を 0.5 → 0.7 に変更し、
+  `ros2 param get` が 0.7、同じ設定のまま Nav2 を走らせた `/cmd_vel` の最大
+  linear.x が 0.700（実測）。型違いは 409、画面には理由を表示。
+
+## P21. 保存地図はソースツリーではなく install 側に書かれる（2026-11-22 実測）
+
+- `umeonigiri_webnav.launch.py` は `maps_dir` に
+  `install/.../umeonigiri_autonomy/maps` を渡す。`--symlink-install` でも
+  ディレクトリ全体は symlink にならず、既存の `nav_world.*` だけがソースへの
+  symlink。`/api/map/save` で新規に保存したファイルは install 側の実ファイルに
+  なる（実測: `launch_test_tmp.png/yaml` は
+  `ros/install/umeonigiri_autonomy/share/umeonigiri_autonomy/maps/` にでき、
+  `ros/src/.../maps/` にはできなかった）。
+- 影響: **★要確認★** `rm -rf install` や clean build で消える。ソースに残したい
+  場合は `maps_dir` の設計を見直す必要がある。今は「保存 → 一覧 → 削除」は
+  同じ install 側で閉じているので動作はする。

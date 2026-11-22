@@ -78,17 +78,19 @@
 |---|---|---|
 | `include/.../map_cache.hpp` / `src/map_cache.cpp` | 地図の crop・PNG エンコード・ETag 用の版管理 | OpenCV の `imencode` で PNG 化。crop は既知セルの 5% 余白（最低 2） |
 | `include/.../vision_cache.hpp` / `src/vision_cache.cpp` | 認識画像の JPEG 化・検出一覧・fps/古さの管理 | `msg.step` と encoding を自分で検査してから `cv::Mat` を張る（cv_bridge を使わない） |
-| `include/.../ports.hpp` | ROS 非依存の口（`MapSource` / `VisionSource` / `NavSink` / `Waypoint` / `VisionFrame`） | gtest の stub が本物の `MapCache`/`VisionCache` を再利用する |
+| `include/.../ports.hpp` | ROS 非依存の口（`MapSource` / `VisionSource` / `NavSink` / `ModeSink` / `ParamSource`） | gtest の stub が本物の `MapCache`/`VisionCache` を再利用する |
 | `include/.../map_listener.hpp` / `src/map_listener.cpp` | rclcpp ノード。`/map`・`/tf` を購読し、`MapSource` を満たす | `MetadataOf` は `map_cache.cpp` 側に一箇所 |
 | `include/.../vision_listener.hpp` / `src/vision_listener.cpp` | rclcpp ノード。`/detection_image`・`/detections` を購読し、`VisionSource` を満たす | 購読の作成/破棄は 200 ms タイマー（executor スレッド）だけが行う |
 | `include/.../nav_worker.hpp` / `src/nav_worker.cpp` | Nav2 action client を内包するワーカー | `nav2_msgs::action::NavigateToPose` を C++ で直接叩く |
 | `include/.../http_app.hpp` / `src/http_app.cpp` | httplib ルーティング・ conditional GET・ JSON 解析 | ETag は quoted 形式、weak 比較、multi-header 対応。`ConfigureServer` で TCP_NODELAY と keep-alive を設定 |
 | `include/.../vision_routes.hpp` / `src/vision_routes.cpp` | 認識モニターの経路（状態・1 枚・MJPEG・ON/OFF） | MJPEG は chunked。監視 OFF は 204 |
+| `include/.../param_worker.hpp` / `src/param_worker.cpp` | `ros2 param` 相当の列挙・取得・設定 | 専用 executor。`/list_parameters`・`/get_parameters`・`/set_parameters` を呼ぶ。型はノードの既存定義に合わせる |
+| `include/.../param_routes.hpp` / `src/param_routes.cpp` | パラメータ API（`/api/params`・`/api/params/nodes`） | 一覧は `{"parameters":[{"name","type","value"}]}`。設定失敗は 409 でノードの理由を返す |
 | `include/.../http_support.hpp` / `src/http_support.cpp` | JSON/ETag・MIME・静的配信・パストラバーサル対策 | 静的配信は (mtime, size) を版にしてメモリ保持。`..` は lexical に潰す |
-| `src/umeonigiri_webnav_server.cpp` | エントリポイント。MapListener / VisionListener / NavWorker / ModeWorker を束ねる | bind `0.0.0.0:8088`（`MEISTER_WEBUI_BIND` で絞れる。既定は LAN の別 PC から使えるようにするため全インタフェース）、起動メッセージ `[umeonigiri_webnav] Web UI ready at http://localhost:8088 (bind ...)` |
-| `test/test_map_cache.cpp` `test/test_http_app.cpp` `test/test_map_listener.cpp` `test/test_vision_cache.cpp` `test/test_vision_routes.cpp` | gtest | ROS 非依存。MapCache/ETag/metadata/認識の契約を固定 |
+| `src/umeonigiri_webnav_server.cpp` | エントリポイント。MapListener / VisionListener / NavWorker / ModeWorker / ParamWorker を束ねる | bind `0.0.0.0:8088`（`MEISTER_WEBUI_BIND` で絞れる。既定は LAN の別 PC から使えるようにするため全インタフェース）、起動メッセージ `[umeonigiri_webnav] Web UI ready at http://localhost:8088 (bind ...)` |
+| `test/test_map_cache.cpp` `test/test_http_app.cpp` `test/test_map_listener.cpp` `test/test_vision_cache.cpp` `test/test_vision_routes.cpp` `test/test_param_routes.cpp` | gtest | ROS 非依存。MapCache/ETag/metadata/認識/パラメータ API の契約を固定（`test/stub_param_source.hpp` を共有） |
 | `launch/umeonigiri_webnav.launch.py` | 起動 | Python のまま据え置き |
-| `webui/index.html` `webui/style.css` `webui/app.js` `webui/js/*.js` | 計器盤 UI と ES モジュール | ビルド無し・バニラ JS。MJPEG は `load` 後に張る |
+| `webui/index.html` `webui/style.css` `webui/app.js` `webui/js/*.js` | 計器盤 UI と ES モジュール | ビルド無し・バニラ JS。MJPEG は `load` 後に張る。`js/param_panel.js` がパラメータ編集（開いたときだけ一覧を引く） |
 
 ### `umeonigiri_vision` 内部（検出基盤）
 
