@@ -44,7 +44,7 @@
 
 **計算資源**
 - 開発機: Intel i3-12100F（4コア/8スレッド）、31 GB、GTX 1050 Ti。Nav2 は GPU を使わない。
-- 将来の搭載機: Orange Pi 5 Max（`docs/vision-perf-baseline.md`）。
+- 将来の搭載機: Orange Pi 5 Max（[bench/2026-11-20-vision-perf-baseline.md](../../bench/2026-11-20-vision-perf-baseline.md)）。
 - 計測は「GUI あり（`gz` + RViz）」の同一条件で行い、**変更前後の差分**を主指標とする。絶対値は環境依存として参考記録に留める。
 
 **既存の合意事項（変更しない）**
@@ -252,7 +252,7 @@ Nav2 controller (20 Hz) → /cmd_vel (vx, wz)
 
 PR2 以降は PR1 の着地後。PR5・PR6 はファームウェア主体で PR3/PR4 とコードベースが独立しているため並行可能だが、**§10 の★測定が完了するまで着手しない**。
 
-PR4 の「合格条件」には、`docs/features/04-navigation.md` と `docs/design/04-navigation.md` の記述更新（現在は AMCL も DWB も事実と異なる）を含める。
+PR4 の「合格条件」には、ドキュメントの記述更新（AMCL も DWB も事実と異なっていた）を含める。旧 features/04・design/04 は 2026-11-22 に廃止したので、現行の記述はこの spec と [code-map.md](../../code-map.md) が持つ。
 
 ## 10. ★要確認★
 

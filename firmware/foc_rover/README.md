@@ -157,6 +157,106 @@ after switching projects fails with a `TypeError` (`FRAMEWORK_DIR` is `None`
 while the core reinstalls) and the second build succeeds. Use a separate
 `PLATFORMIO_CORE_DIR` if that becomes painful.
 
+## 6-wheel rover plan (3 boards × 2 channels)
+
+Moved here 2026-11-22 from the deleted `docs/design/08-rocker-bogie.md`, which was the only
+copy. This is a **plan plus a bench implementation**, not a verified configuration: bandwidth
+and skew are calculated, not measured.
+
+```
+PC (ROS 2)
+ ├─ USB ─ FOC #1 (M0/M1) ─ front L / R
+ ├─ USB ─ FOC #2 (M0/M1) ─ mid   L / R
+ └─ USB ─ FOC #3 (M0/M1) ─ rear  L / R
+```
+
+- One board per axle is the natural split. Splitting by left/right would need 3 channels per
+  board, which a 2-channel board cannot do.
+- M0 and M1 are independent (driver, current sense, I2C bus: M0 bus 0 / SDA 19 / SCL 18,
+  M1 bus 1 / SDA 23 / SCL 5). Both AS5600s use 0x36 but sit on different buses, so two per
+  board do not collide.
+- **ENABLE is shared between M0/M1 on GPIO 12** (the official example passes the same pin to
+  both channels). You cannot disable one channel; isolate a failed wheel on the power side.
+- The board is discrete AP30H80Q MOSFETs + gate driver. 6 A/ch is a **peak with cooling**
+  (12 A peak for 2 ch). Continuous 6 A × 2 needs a thermal test (**★要確認★**).
+- Current sense is INA240A2 + 10 mΩ shunt, gain 50 (`InlineCurrentSense(0.01, 50.0, ...)`):
+  3.0 V at 6 A, ADC full scale at 6.6 A. Some listings claim 1 mΩ / ±33 A — **check the shunt
+  marking**; at 1 mΩ the firmware's 0.01 is 10× off.
+
+### Link budget
+
+- Three USB links are independent: 3 × ~7 kB/s at 50 Hz ≈ 21 kB/s total.
+- The bottleneck is each link's 115200 bps (11520 B/s at 8N1):
+  - One motor line is ~70 B, so two motors per board is ~140 B. **At 100 Hz that is
+    14000 B/s and does not fit.**
+  - 50 Hz fits (7000 B/s, 61%). Keeping 100 Hz needs 460800 (15%). 921600 depends on the
+    USB-UART bridge and cable: **✗ 未検証**.
+  - Packing both motors into one line is still ~130 B, so it does not fix 100 Hz either.
+- The three links share no clock. Write order gives a few ms of skew: under 1 mm at 0.3 m/s.
+  One stalled write/flush does delay the others, so use one thread per link or non-blocking I/O.
+
+### Decide before driving or closing the loop
+
+| # | Item | Status |
+|---|---|---|
+| 1 | Wheel motor, gear ratio, wheel diameter | ★要確認★ `foc_config.h` is LA8308 KV90 (20 pole pairs = 40 magnets, bench limit 5 rev/s); gear ratio and wheel diameter are undetermined |
+| 2 | AS5600 on all 6 wheels | ★要確認★ without it there is no closed-loop speed control or odometry |
+| 3 | Drive type (skid steer / all-wheel steering) | ★要確認★ changes how commands are built |
+| 4 | Roles of the 3 boards and how USB is pinned | ★要確認★ see "USB and enumeration" |
+| 5 | All three boards MKS ESP32 FOC V2.0 | ★要確認★ |
+
+### Safety (without this you cannot say "it is fine")
+
+- **Board-side command watchdog**: ramp to 0 within 200 ms of the last valid command and
+  disable at 500 ms. The PC-side `cmd_timeout` (0.5 s) alone leaves the **last velocity
+  applied** if USB drops or the PC dies.
+- **If any one link drops, stop all three.** One side spinning alone turns the robot.
+- **Hard E-stop** that cuts the 24 V via a contactor. The firmware stop is supplementary.
+- Start disabled. Opening a USB port can reset the ESP32; never open one while spinning.
+- Measure continuous current and board temperature for 6 wheels (AP30H80Q, 6 A/ch is
+  cooling-dependent): **✗ 未検証**.
+
+### USB and enumeration (you will hit this with 3 boards)
+
+- `/dev/ttyUSB0..2` order changes across reboots and replugs. If the USB-UART bridge has no
+  unique serial, `by-id` collides → pin with **`/dev/serial/by-path`** (hub physical port) and
+  label boards and cables front/mid/rear.
+- Put the role in the board's NVS and report `#ID` at boot so a mis-plug is detectable.
+  Compile-time role means 3 builds and no detection on swap.
+- `pio run -t upload` with 3 boards attached can write the wrong one. Flash one at a time or
+  name `/dev/serial/by-path` explicitly (same reason as the M5Stack misflash note in
+  `main_board`).
+- Linux `ttyUSB` `latency_timer` defaults to 16 ms. Set it to 1 ms on all 3 ports; the current
+  `serial_link.cpp` does not.
+- Reading 3 links in one thread lets one timeout stall the others: use one thread per link.
+
+### Power and ground
+
+- Three boards + 6 motors from the 24 V bus, with a fuse and bulk capacitor per board.
+- Do not create two paths between PC USB GND and PSU GND: star ground. PWM current on the USB
+  GND shows up as disconnects and resets.
+- Whether USB 5 V and board 5 V back-feed each other is board-dependent: **★要確認★**.
+- Motor inrush and regen make the 24 V bus spike: measure VIN rating and the undervoltage gate.
+
+### Verification order (gate each step)
+
+1. One board, one motor: `O 1` (0.30 V) → `S`, watch current and heat. After the AS5600
+   arrives: `C` → `W ±`.
+2. One board, both motors: I2C and current interaction, back-EMF.
+3. Three boards: enumeration reproduces over 10 replugs, Hz per link, all stop when one is
+   unplugged.
+4. Rover lifted, 6 wheels: command direction and speed agree, E-stop.
+5. On the ground for 10 continuous minutes: current, temperature, 24 V sag.
+
+### PC side
+
+- `umeonigiri_serial_bridge` assumes a single `serial_port`. MSTE (steering, arm) + 3 FOC
+  boards is **4 links**, so splitting `/cmd_vel` into a steering path and a wheel-speed path
+  needs its own node.
+- The current `kinematics.cpp` is a bicycle model that sends the same speed to all 6 channels.
+  Turning 6 wheels needs an inner/outer difference; closed-loop FOC can deliver it per wheel.
+  Which model to use waits on the drive-type decision (item 3 above).
+
 ## Verification status
 
 - Native unit tests: `pio test -e native` — 15/15 PASS (limits + protocol).

@@ -1,7 +1,10 @@
 # 設計: Web UI
 
-> 対象機能: [features/05-web-ui.md](../features/05-web-ui.md) | 作成日: 2026-08-12 | 更新: 2026-11-21 | ステータス: 実装済み
-> 関連ゴール: [G1](../やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G2](../やりたいこと.md#g2-自動でアームでものを回収)
+> 対象: `ros/src/umeonigiri_webnav`（HTTP :8088 + MJPEG）
+> 作成日: 2026-08-12 | 更新: 2026-11-22 | ステータス: 実装済み
+> 旧 `docs/design/05-web-ui.md`。2026-11-22 にここへ移した。
+> 起動と API の使い方は [commands.md](../../commands.md)、実行時の罠は
+> [pitfalls.md](../../pitfalls.md) P16〜P18、ファイル単位の地図は [code-map.md](../../code-map.md)。
 
 ## 構成
 
