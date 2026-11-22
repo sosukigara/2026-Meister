@@ -13,6 +13,7 @@
 
 #include "umeonigiri_webnav/http_support.hpp"
 #include "umeonigiri_webnav/map_store.hpp"
+#include "umeonigiri_webnav/param_routes.hpp"
 #include "umeonigiri_webnav/vision_routes.hpp"
 
 namespace umeonigiri_webnav {
@@ -98,7 +99,8 @@ void ConfigureServer(httplib::Server& server) {
 
 void RegisterRoutes(httplib::Server& server, const std::filesystem::path& webui_dir,
                     MapSource& map_source, NavSink& nav_sink,
-                    VisionSource& vision_source, ModeSink& mode_sink) {
+                    VisionSource& vision_source, ModeSink& mode_sink,
+                    ParamSource& param_source) {
   ConfigureServer(server);
   // 静的ファイルの表は 1 つだけ持つ。呼び手は一時オブジェクト (WebuiDir() や
   // std::filesystem::path(UMEONIGIRI_WEBUI_DIR)) を渡すので、参照で捕まえると
@@ -269,6 +271,7 @@ void RegisterRoutes(httplib::Server& server, const std::filesystem::path& webui_
 
 
   RegisterVisionRoutes(server, vision_source);
+  RegisterParamRoutes(server, param_source);
 
   // 明示した 3 ファイル以外を webui_dir から配る。後から足した asset が 404 に
   // ならないようにする。webui_dir の外へ出る経路は canonical 比較で弾く。

@@ -17,6 +17,7 @@
 #include <httplib.h>
 #include <nlohmann/json.hpp>
 
+#include "stub_param_source.hpp"
 #include "umeonigiri_webnav/http_app.hpp"
 #include "umeonigiri_webnav/ports.hpp"
 
@@ -106,7 +107,7 @@ class HttpServer {
  public:
   HttpServer() {
     RegisterRoutes(server_, std::filesystem::path(UMEONIGIRI_WEBUI_DIR), map_, nav_, vision_,
-                   mode_);
+                   mode_, params_);
     port_ = server_.bind_to_any_port("127.0.0.1");
     thread_ = std::thread([this] { server_.listen_after_bind(); });
     client_ = std::make_unique<httplib::Client>("127.0.0.1", port_);
@@ -143,6 +144,7 @@ class HttpServer {
   StubNavSink nav_;
   StubVisionSource vision_;
   StubModeSink mode_;
+  test::StubParamSource params_;
   int port_ = 0;
   std::thread thread_;
   std::unique_ptr<httplib::Client> client_;

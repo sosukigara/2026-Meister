@@ -15,6 +15,7 @@ import { createMapReadout } from './js/map_readout.js';
 import { createMapView } from './js/map_view.js';
 import { createModePanel } from './js/mode_panel.js';
 import { BUSY_STATES, createNavStatus, stateLabel, stateTone } from './js/nav_status.js';
+import { createParamPanel } from './js/param_panel.js';
 import { createShortcuts } from './js/shortcuts.js';
 import { createVisionPanel } from './js/vision_panel.js';
 import { createWaypointPanel } from './js/waypoints.js';
@@ -140,6 +141,19 @@ const mode = createModePanel({
   switchEl: el('btn-switch-mode'),
   saveEl: el('btn-save-map'),
   nameEl: el('map-name'),
+  onNotice: (message, kind) => (kind === 'error' ? log.error(message) : log.info(message)),
+});
+
+const params = createParamPanel({
+  dialogEl: el('param-dialog'),
+  formEl: el('param-form'),
+  openEl: el('btn-params'),
+  closeEl: el('param-close'),
+  nodeEl: el('param-node'),
+  refreshEl: el('param-refresh'),
+  filterEl: el('param-filter'),
+  listEl: el('param-list'),
+  statusEl: el('param-status'),
   onNotice: (message, kind) => (kind === 'error' ? log.error(message) : log.info(message)),
 });
 
@@ -330,6 +344,7 @@ createShortcuts({
     undo: undoLast,
     clear: clearRoute,
     toggleVision: () => el('btn-vision-toggle').click(),
+    openParams: () => params.open(),
     zoomIn: () => mapView.zoomBy(1.25),
     zoomOut: () => mapView.zoomBy(1 / 1.25),
     send: sendTour,

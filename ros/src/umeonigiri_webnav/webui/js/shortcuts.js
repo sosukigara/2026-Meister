@@ -8,6 +8,7 @@ const LETTER_SHORTCUTS = [
   ['z', 'undo'],
   ['c', 'clear'],
   ['v', 'toggleVision'],
+  ['p', 'openParams'],
   ['+', 'zoomIn'],
   ['-', 'zoomOut'],
 ];

@@ -223,3 +223,40 @@ ros2 launch umeonigiri_vision pc_vision.launch.py backend:=onnx  # CPU
 - RKNN モデルは `ros/src/umeonigiri_vision/models/yolov8n-zoo.rknn`。
   生成手順は [tools/rknn/README.md](../tools/rknn/README.md)。
 - 実機モードの `launch.sh` は、モデルがあれば自動で NPU を選ぶ。
+- **シミュレーションは常に ONNX。** NPU 版は `/dev/video0` を直接開く実装で、
+  Gazebo が配る `/camera/image_raw` を読めない。`mapping_nav.launch.py` は
+  `backend:=onnx`・`inference_threads:=2` を明示する。ONNX モデルが無い場合は
+  検出ノードを起動せず、取得コマンドだけをログに出す（落ちるプロセスを増やさない）。
+  ```bash
+  # *.onnx は gitignore 対象。初回だけ取得する。
+  ros2 run umeonigiri_vision download_model
+  # 320 版（シミュレーション向け・軽い）はパスを明示して置く
+  # ros/src/umeonigiri_vision/models/yolov8n-320.onnx
+  ```
+
+## 13. Web UI から ROS パラメータを変更する
+
+Web UI 右上の「パラメータ」から、ノードを選んで `ros2 param set` 相当の操作ができる。
+値は即時反映され、再起動は要らない。`P` キーでも開く。
+
+- 一覧は開いたときと「再読込」のときだけ取得する。地図・姿勢の 10 Hz ポーリングに
+  重い処理を足さないため。
+- 型はノードが既に持っている定義に合わせる（UI 側で integer/double/bool/string/配列を
+  選ばせない）。型違いは 409 で理由を返し、画面のステータスに出す。
+- ノードの拒否理由（読み取り専用など）は握り潰さずそのまま表示する。
+- 認証は無い（地図・ナビと同じ）。公開範囲は `MEISTER_WEBUI_BIND=127.0.0.1` で絞る。
+
+同じ操作を API で行う場合:
+
+```bash
+# ノード一覧
+curl -s http://localhost:8088/api/params/nodes
+# ノードのパラメータ一覧（name/type/value）
+curl -s 'http://localhost:8088/api/params?node=%2Fcontroller_server'
+# 値を変更する（成功なら設定後の実値が返る）
+curl -s -X POST http://localhost:8088/api/params \
+  -H 'Content-Type: application/json' \
+  -d '{"node":"/controller_server","name":"FollowPath.desired_linear_vel","value":0.7}'
+# 変更を確認
+ros2 param get /controller_server FollowPath.desired_linear_vel
+```

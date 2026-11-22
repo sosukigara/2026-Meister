@@ -46,7 +46,8 @@ void ConfigureServer(httplib::Server& server);
 /// 経由でしか触らないので、この関数は ROS 無しで test できる。
 void RegisterRoutes(httplib::Server& server, const std::filesystem::path& webui_dir,
                     MapSource& map_source, NavSink& nav_sink,
-                    VisionSource& vision_source, ModeSink& mode_sink);
+                    VisionSource& vision_source, ModeSink& mode_sink,
+                    ParamSource& param_source);
 
 }  // namespace umeonigiri_webnav
 

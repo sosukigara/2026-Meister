@@ -39,6 +39,8 @@ add_library(umeonigiri_webnav_core SHARED
   src/mode_worker.cpp
   src/map_listener.cpp
   src/nav_worker.cpp
+  src/param_routes.cpp
+  src/param_worker.cpp
   src/vision_cache.cpp
   src/vision_listener.cpp
   src/vision_routes.cpp
@@ -100,12 +102,18 @@ if(BUILD_TESTING)
   target_compile_definitions(test_vision_routes PRIVATE
     UMEONIGIRI_WEBUI_DIR="${CMAKE_CURRENT_SOURCE_DIR}/webui"
   )
+
+  ament_add_gtest(test_param_routes test/test_param_routes.cpp)
+  target_link_libraries(test_param_routes umeonigiri_webnav_core)
+  target_compile_definitions(test_param_routes PRIVATE
+    UMEONIGIRI_WEBUI_DIR="${CMAKE_CURRENT_SOURCE_DIR}/webui"
+  )
 endif()
 
 ament_export_include_directories(include)
 ament_export_libraries(umeonigiri_webnav_core)
 ament_export_dependencies(rclcpp rclcpp_action nav_msgs sensor_msgs vision_msgs
-  geometry_msgs tf2_msgs lifecycle_msgs nav2_msgs ament_index_cpp OpenCV
-  nlohmann_json)
+  geometry_msgs tf2_msgs lifecycle_msgs nav2_msgs ament_index_cpp rcl_interfaces
+  OpenCV nlohmann_json)
 
 ament_package()

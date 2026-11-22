@@ -101,6 +101,35 @@ struct ModeSink {
   virtual void SetInitialPose(double x, double y, double yaw) = 0;
 };
 
+/// ROS パラメータ 1 個。type は rcl_interfaces の ParameterType 名
+/// ("bool" / "integer" / "double" / "string" / "byte_array" / ...)。
+struct Parameter {
+  std::string name;
+  std::string type;
+  nlohmann::json value;
+};
+
+/// ros2 param 相当の操作。HTTP 面は ROS を知らないまま扱う。
+///
+/// List / Set は HTTP ハンドラから直接呼ばれる。ノードが重い処理中でも
+/// 秒単位で待たないよう、実装側が上限付きの待ちにすること（P16 と同じ理由）。
+struct ParamSource {
+  virtual ~ParamSource() = default;
+
+  /// パラメータサービスを持つ可能性のあるノード名（完全名、昇順）。
+  virtual std::vector<std::string> Nodes() = 0;
+
+  /// node のパラメータを列挙する。空文字列なら成功。失敗なら理由。
+  virtual std::string List(const std::string& node,
+                           std::vector<Parameter>* parameters) = 0;
+
+  /// node の name を value にする。空文字列なら成功。失敗なら理由。
+  /// ノードが値を受け付けずに捨てた場合も、応答は空にしない。
+  virtual std::string Set(const std::string& node, const std::string& name,
+                          const nlohmann::json& value,
+                          nlohmann::json* actual) = 0;
+};
+
 }  // namespace umeonigiri_webnav
 
 #endif  // UMEONIGIRI_WEBNAV_PORTS_HPP_
