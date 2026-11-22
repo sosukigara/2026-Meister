@@ -94,33 +94,19 @@ ros2 run umeonigiri_serial_bridge umeonigiri_hz_measure --port /dev/ttyUSB0 --ex
   実時間に届かない（maze で実測 RTF 0.89）。`warehouse` は外部メッシュが重く
   0.2 程度なので、**アルゴリズム検証は `maze` を使う**。
 
-## 5.5 ナビゲーションの計測
-
-```bash
-# 30 run のベースライン計測（起動〜計測〜片付けをまとめて行う）
-ros/src/ros2_autonomous_nav/scripts/measure.sh docs/bench/<date>-<name>.json 10 3 <map-id>
-
-# 制御器を差し替えて比較（既定は RPP）
-MEISTER_LAUNCH_ARGS="controller:=mppi" \
-  ros/src/ros2_autonomous_nav/scripts/measure.sh docs/bench/<date>-mppi.json 10 1 mppi
-```
-
-- ラッパーが `DISPLAY`・`ROS_DOMAIN_ID` を設定し、Nav2 と `map→base_footprint` の
-  両方が立ち上がるまで待ってから計測する（spawn 失敗時は起動し直す）。
-- **launch と計測は同じプロセス内で行うこと。** 別プロセスからは DDS が
-  見えないことがある（VPN 環境のマルチキャスト障害）。
-- 結果の読み方と過去の計測は [docs/bench/](bench/) を参照。
-
-## 5.6 CPU 内訳の計測
+## 5.5 CPU 内訳の計測
 
 ```bash
 # 起動したまま、区間 20 秒でプロセス別の CPU を積分する
-python3 ros/src/ros2_autonomous_nav/scripts/cpu_split.py --seconds 20 --label "headless"
+# /proc/<pid>/stat の utime+stime の差分を使う。top の瞬間値は数秒で振れる。
+for p in $(pgrep -f 'ros2|gz sim'); do
+  awk '{print $2, $14+$15}' /proc/$p/stat
+done   # 20 秒後に同じコマンドを引き、差分を 1 コア = 100% に換算する
 ```
 
-`/proc/<pid>/stat` の utime+stime の差分を使う。`top` の瞬間値は数秒で振れるため、
-比較には区間積分を使う。**シミュレーションの値は `/clock` の配信量に比例して
-膨らむ**ので、実機の見積りに流用しないこと（[bench/2026-11-20-cpu-analysis.md](bench/2026-11-20-cpu-analysis.md) §1）。
+**シミュレーションの CPU 値を実機の見積りに流用しない。** gz は 1 step ごとに
+`/clock` を配るので、Nav2 の各ノードのコストがメッセージ量に比例して膨らむ
+（実機には `/clock` が無い）。
 
 ## 6. 4 通りのビルド（条件コンパイル確認）
 
@@ -184,8 +170,7 @@ ros2 bag play /tmp/bag_cam --rate 1.0
 # 3) 320 でも同じことをして、フレームごとの検出数・クラス一致を比べる
 ```
 
-前回の結果と「比較にならなかった理由」は
-[bench/2026-11-20-cpu-analysis.md](bench/2026-11-20-cpu-analysis.md) §5。
+暗いと検出が出ず比較にならないので、比較用の記録は**明るく物体が写る状態**で採ること。
 
 ## 10. 画像認識の内訳を測る
 

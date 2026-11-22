@@ -3,7 +3,7 @@
 > Target repository: `sosukigara/2026-Meister`
 > Every rule below is grounded in a real mistake made during development on 2026-09-27.
 > **This file is the primary index (keep within 200–300 lines). Details live in `docs/`.**
-> Code map: [docs/code-map.md](docs/code-map.md). Docs entry point: [docs/README.md](docs/README.md).
+> Code map: [docs/code-map.md](docs/code-map.md).
 
 ---
 
@@ -14,15 +14,18 @@ Simulation (dev) and the real machine (planned) are different stages of the same
 simulation serves as the preliminary stage for real-machine development.
 
 - Simulation stage (implemented): mapping with SLAM, autonomous navigation with Nav2,
-  teleoperation via Web UI (features/01-06)
-- Real machine (planned): 6-wheel rocker-bogie + ESP32 + 4-axis arm + LD-D500 LiDAR.
-  Aiming at automatic grasping and automatic control via image recognition (features/07-10)
+  teleoperation via Web UI
+- Real machine (in progress): 6-wheel rocker-bogie + ESP32 + 4-axis arm + LD-D500 LiDAR.
+  Arm, inverse kinematics and grasping are **not implemented**; treat any claim otherwise
+  as ✗ unverified. Where each behaviour lives: [docs/code-map.md](docs/code-map.md).
 
 The MCU layer (ESP32 firmware) is `firmware/main_board/` (PlatformIO + Arduino).
 `firmware/foc_rover/` (rover axle roles, production) and `firmware/foc_test/`
 (spin-test only, fixed envelope) are separate projects (MKS ESP32 FOC V2.0).
 
-Goals: G1 auto-drive / G2 arm retrieval / G3 manual operation ([docs/やりたいこと.md](docs/やりたいこと.md)).
+Goals: **G1** auto-drive / **G2** retrieve objects with the arm / **G3** manual operation.
+G1 is served by the nav, LiDAR, serial bridge and FOC layers. G2 is unbuilt (G1 first, then
+arm -> approach -> grasp). G3 is the Web UI command path (`umeonigiri_webnav`).
 
 ## 2. Tech Stack
 
@@ -114,9 +117,7 @@ Additional NGs:
 | [docs/coding-standards.md](docs/coding-standards.md) | Naming, prohibitions, libraries, comments, test placement |
 | [docs/commands.md](docs/commands.md) | Run / test / verification commands |
 | [docs/pitfalls.md](docs/pitfalls.md) | Traps AI has fallen into before, project-specific constraints |
-| [docs/task-template.md](docs/task-template.md) | Spec / task definition template |
-| [docs/code-map.md](docs/code-map.md) | File-level code map |
-| [docs/README.md](docs/README.md) | Docs entry point (4 layers) |
+| [docs/code-map.md](docs/code-map.md) | File-level code map — where each behaviour lives |
 
 ## 6. Tacit Knowledge (Excerpt — Not Obvious from Code Alone)
 

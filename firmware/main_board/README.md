@@ -4,7 +4,7 @@ ROS 2 (Jazzy) ロボット「Meister」の**実機側マイコン層**。
 半分散型アーキテクチャ（PC = ナビ・画像認識 / ESP32 = リアルタイム PWM 制御）の
 ESP32 側を PlatformIO + Arduino framework で実装する。
 
-- プロトコル仕様: [docs/design/07-esp32-uart.md](../../docs/design/07-esp32-uart.md)
+- プロトコル仕様: `include/meister_protocol.h` / `src/meister_protocol.cpp`（PC 側と同一ソースをコンパイルする。唯一の実装）
 - PC 側の ROS 2 シリアルブリッジ: `ros/src/umeonigiri_serial_bridge/` として実装済み。モック ESP32 は別 Wave（対象外）
 
 ## ディレクトリ構成
