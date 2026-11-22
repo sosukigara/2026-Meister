@@ -1,7 +1,11 @@
 # 設計: ESP32 ↔ PC UART 通信
 
-> 対象機能: [features/07-esp32-uart.md](../features/07-esp32-uart.md) | 作成日: 2026-08-12 | ステータス: 双方向通信を実機で確認済み（モック ESP32 は未実装）
-> 関連ゴール: [G1](../やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G2](../やりたいこと.md#g2-自動でアームでものを回収) [G3](../やりたいこと.md#g3-手動操縦も可能)
+> 対象: `firmware/main_board/` ↔ `ros/src/umeonigiri_serial_bridge/`
+> 作成日: 2026-08-12 | 更新: 2026-11-22 | ステータス: 双方向通信を実機で確認済み（モック ESP32 は未実装）
+> 旧 `docs/design/07-esp32-uart.md`。2026-11-22 にここへ移した。
+> プロトコルの実装は `firmware/main_board/include/meister_protocol.h`、設計判断の詳細は
+> [2026-09-27-command-and-kinematics-design.md](2026-09-27-command-and-kinematics-design.md)、
+> 失効する値は [pitfalls.md](../../pitfalls.md) P10。
 
 ## 設計メモ
 
@@ -11,13 +15,13 @@
 - **ボーレート目安**: 115200 bps（最低ライン）。必要に応じて 921600 bps まで拡張。
 - **配線**: PC ↔ ESP32 は USB-UART 変換 or ESP32 内蔵 USB。GND 共通必須。
 - **複数リンク**: 走行系を FOC 3 台に分ける場合、PC 側は MSTE 1 本 + FOC 3 本の計 4 リンクに
-  なる。USB 列挙・帯域・ウォッチドッグの注意は [08-rocker-bogie.md](08-rocker-bogie.md) の
+  なる。USB 列挙・帯域・ウォッチドッグの注意は [firmware/foc_rover/README.md](../../../firmware/foc_rover/README.md) の
   「FOC ドライバ 3 台で 6 輪を回す構成」を参照。
 - **電源分離**: サーボ・モータ駆動系とロジック系の電源分離を検討（ノイズ対策）。
 
 ## 実装済みプロトコル仕様
 
-ESP32 ファームウェアのベース実装（[firmware/main_board/](../../firmware/main_board/)）に合わせ、以下が確定・実装済み。
+ESP32 ファームウェアのベース実装（[firmware/main_board/](../../../firmware/main_board/)）に合わせ、以下が確定・実装済み。
 詳細な定数定義は `firmware/main_board/include/meister_protocol.h` を参照。
 
 - **フレームフォーマット**: 固定長バイナリ、リトルエンディアン。
@@ -33,7 +37,7 @@ ESP32 ファームウェアのベース実装（[firmware/main_board/](../../fir
   - `esp32dev_usbuart`: `Serial` = UART0（USB）。配線なしでベンチ確認できる。
     UART0 をコンソールと共有するため、このビルドではログ出力を無効化する
 - **フィードバック周期**: 100 Hz（`MSTE_FEEDBACK_HZ`）。実測に基づく。測定結果は
-  [firmware/main_board/README.md](../../firmware/main_board/README.md#通信周期の測定) を参照
+  [firmware/main_board/README.md](../../../firmware/main_board/README.md) を参照
 
 ### コマンド（PC → ESP32、下り）
 
@@ -89,10 +93,13 @@ ESP32 ファームウェアのベース実装（[firmware/main_board/](../../fir
   検証は `esp32dev_usbuart`（UART0 / USB）のみ。
 - **ベンチ測定値は実運用より保守的**。`esp32dev_usbuart` は TX/RX が UART0 を共有する
   ため、送信が飽和すると `loop()` が `write` に占有されて RX 処理が後回しになる。
-  実運用の `esp32dev` は Serial2 経由の独立线路（full duplex）でこの取り合いが起きない。
+  実運用の `esp32dev` は Serial2 経由の独立系統（full duplex）でこの取り合いが起きない。
 
 ## 関連ドキュメント
 
-- 機能要件: [features/07-esp32-uart.md](../features/07-esp32-uart.md)
-- 機能分解: [functions/07-esp32-uart.md](../functions/07-esp32-uart.md)
-- 関連設計: [08-rocker-bogie.md](08-rocker-bogie.md)（モータ/サーボの制御先） / [09-object-grasping.md](09-object-grasping.md)（アームサーボの制御先） / [10-auto-control.md](10-auto-control.md)（cmd_vel の受信経路）
+- プロトコル定義（唯一の実装）: `firmware/main_board/include/meister_protocol.h` / `src/meister_protocol.cpp`
+- 設計判断（軸数・運動学・下り/上りの意味）: [2026-09-27-command-and-kinematics-design.md](2026-09-27-command-and-kinematics-design.md)
+- PC 側ブリッジの構造: [2026-11-20-umeonigiri-serial-bridge-design.md](2026-11-20-umeonigiri-serial-bridge-design.md)
+- 走行系を FOC 3 台に分ける構成（4 リンク化）: [firmware/foc_rover/README.md](../../../firmware/foc_rover/README.md)
+- アームサーボの制御先: [2026-11-22-real-machine-and-arm-plan.md](2026-11-22-real-machine-and-arm-plan.md) §2
+- cmd_vel の受信経路の全体: [architecture.md](../../architecture.md)

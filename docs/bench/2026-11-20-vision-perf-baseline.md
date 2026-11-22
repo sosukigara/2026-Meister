@@ -1,8 +1,9 @@
 # 実行ターゲットと画像認識性能の実測基準
 
-> 対象機能: [features/09-object-grasping.md](features/09-object-grasping.md) /
-> [features/10-auto-control.md](features/10-auto-control.md)
-> 作成日: 2026-10-01 | ステータス: 開発機は実測済み。Orange Pi 5 Max は未実測
+> 対象: `ros/src/umeonigiri_vision`（オンボード NPU / CPU）+ 手首カメラ搭載に向けた画像認識
+> 作成日: 2026-10-01 | 更新: 2026-11-22 | ステータス: 開発機は実測済み。Orange Pi 5 Max は未実測
+> 旧 `docs/vision-perf-baseline.md`。2026-11-22 にここへ移した（同内容の計測は
+> [2026-11-20-cpu-analysis.md](2026-11-20-cpu-analysis.md)）。
 
 このファイルが持つのは 2 つだけ。
 
@@ -87,8 +88,8 @@ Orange Pi 5 Max 8GB 実機で以下を測っていない。開発機の値から
 
 ### 2.3 この数字が示すこと（開発機上の事実）
 
-- `detection_node` の既定のレート制限は 10 Hz
-  （`docs/design/09-object-grasping.md:26`）。**1 スレッドでは 10 Hz に
+- `detection_node` の既定のレート制限は 10 Hz（`rate` パラメータ）。
+  **1 スレッドでは 10 Hz に
   届かない**（天井 5.1 Hz）。2 スレッドでも 8.7 Hz で届かない。
   つまり開発機でも「10 Hz 設定」は実際の達成値になっていない。
 - 4 スレッドでようやく 14.4 Hz の天井に達する。推論 1 本が CPU 4 コア分の
@@ -142,9 +143,9 @@ JPEG 化は購読コールバックで 1 回だけ行い、`/api/vision.jpg` と
 
 ## 4. 関連ドキュメント
 
-- 機能要件: [features/09-object-grasping.md](features/09-object-grasping.md)
-- 設計: [design/09-object-grasping.md](design/09-object-grasping.md)
-- コードマップ: [code-map.md](code-map.md)
+- アーム・把持の計画と未実装範囲: [2026-11-22-real-machine-and-arm-plan.md](../superpowers/specs/2026-11-22-real-machine-and-arm-plan.md) §2
+- CPU 内訳と削減の実測: [2026-11-20-cpu-analysis.md](2026-11-20-cpu-analysis.md)
+- コードマップ: [code-map.md](../code-map.md)
 - 起動スクリプト: `launch.sh`（Gazebo と SLAM と Nav2 を起動。
   vision は `mapping_nav.launch.py` 経由で上がる）
 ## 5. Orange Pi 5 Max 実測 (2026-11-11、実測した)

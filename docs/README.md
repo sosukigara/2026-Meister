@@ -1,88 +1,82 @@
 # Meister ロボット制御ソフトウェア ドキュメント
 
 > 対象リポジトリ: `sosukigara/2026-Meister`
-> 作成日: 2026-08-12
-> 言語: 日本語のみ
+> 更新日: 2026-11-22（4 層構成を廃止し、**現状の開発に必要な情報だけ**に絞った）
 
-## ドキュメント構成
+もとは「やりたいこと → features → functions → design」の 4 層で管理していたが、
+features / functions が同じ内容の写しになり、design の大半が未記入の TODO になったため
+2026-11-22 に廃止した。いまの docs は**生きた仕様・実測・罠**だけで構成する。
+削除した内容は git 履歴に残っている。
 
-docs は「**やりたいこと（ゴール）**」「**何を作るか**」「**何ができるか**」「**どう作るか**」の4層で管理する。各機能は features / functions / design の3ファイルが相互リンクで対応し、上位のゴール（[やりたいこと.md](やりたいこと.md)）に紐づく。
+## 1. どこに何があるか
 
-| フォルダ | 内容 | 対象 |
+| 場所 | 内容 | 読むとき |
 |---|---|---|
-| [やりたいこと.md](やりたいこと.md) | **ゴール** — 最終的に実現したいこと（G1: 自動走行 / G2: アーム回収 / G3: 手動操縦） | 方向性確認 |
-| [features/](features/) | **何を作るか** — 機能の要件（概要・実装済み/計画中機能） | 要件確認・受け入れテスト |
-| [functions/](functions/) | **何ができるか** — 機能分解（コンポーネントが実際にすること） | 機能理解・実装確認 |
-| [design/](design/) | **どう作るか** — 設計メモと設計図化対象（設計図へ深化予定） | 実装・設計レビュー |
+| [../AGENTS.md](../AGENTS.md) | 開発ルールの索引（R1〜R13）、検証コマンド、暗黙知 | 作業を始める前に必ず |
+| [architecture.md](architecture.md) | 全体設計、レイヤと依存方向、モジュール責務 | 構成を変えるとき |
+| [code-map.md](code-map.md) | ファイル単位の地図（どのファイルが何をするか） | 触るファイルを探すとき |
+| [coding-standards.md](coding-standards.md) | 命名・禁止事項・ライブラリ・コメント・テスト配置 | コードを書くとき |
+| [commands.md](commands.md) | ビルド・テスト・起動・実機検証・計測のコマンド | 実行するとき |
+| [pitfalls.md](pitfalls.md) | 実際に踏んだ罠（P1〜P18）と未確認値 | 詰まったとき |
+| [superpowers/specs/](superpowers/specs/) | 設計判断と実装仕様（プロトコル・ブリッジ・ナビ・Web UI）、未実装範囲 | 仕様を確認するとき |
+| [superpowers/plans/](superpowers/plans/) | 実装計画と、その結果の実測 | 経緯を追うとき |
+| [bench/](bench/) | ナビ・CPU・画像認識の実測値（条件つき） | 数字を根拠にするとき |
+| [debug/](debug/) | 解決済み障害の記録（現象 → 切り分け → 原因） | 同種の症状が出たとき |
 
-## 概要
+## 2. ゴール
 
-ROS 2 (Jazzy) + Gazebo をベースとした自律移動ロボット制御ソフトウェア。
-**シミュレーション（開発用）と実機（計画中）は同じロボットの異なる段階**であり、シミュレーションは実機開発の前段として機能する。
+| ID | ゴール | 担うもの |
+|---|---|---|
+| G1 | 6 輪ロッカーボギーが LiDAR と SLAM / Nav2 で自動走行する | `umeonigiri_autonomy` / `umeonigiri_lidar` / `umeonigiri_serial_bridge` / `firmware/foc_rover` |
+| G2 | 4 軸アームと手首カメラで物体を自動で掴んで回収する | `umeonigiri_vision`（検出のみ）。アーム・把持は未実装（[計画](superpowers/specs/2026-11-22-real-machine-and-arm-plan.md)） |
+| G3 | 手動操縦もできる | `umeonigiri_webnav` とブリッジ経由の指令経路 |
 
-- **シミュレーション段階（実装済み）**: SLAM による地図作成、Nav2 による自律ナビゲーション、Web UI による遠隔操作（features/01-06 参照）
-- **実機（計画中）**: 6輪ロッカーボギー + ESP32 + 4軸アーム + LD-D500 LiDAR。画像認識による自動把持と自動制御を目指す（features/07-10 参照）
+## 3. 現状（実装済み / 未実装）
 
-マイコン層（ESP32 ファームウェア）は今後追加予定。「モータ制御」はシミュレーションでは Gazebo プラグイン、実機では ESP32 が担う。
+**シミュレーション段階（実装済み・動作確認済み）** — SLAM による地図作成、Nav2 による
+自律ナビゲーション、Web UI からの遠隔操作。地図モード（mapping / localization）は Web UI から切り替える。
 
-## 機能一覧
+**実機（一部のみ）**
 
-| # | 機能 | ゴール | 要件 | 機能分解 | 設計 | ステータス |
-|---|---|---|---|---|---|---|
-| 01 | 起動・実行環境 | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G3](やりたいこと.md#g3-手動操縦も可能) | [features/01-startup.md](features/01-startup.md) | [functions/01-startup.md](functions/01-startup.md) | [design/01-startup.md](design/01-startup.md) | 実装済み |
-| 02 | ロボットモデル・シミュレーション | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) | [features/02-robot-model.md](features/02-robot-model.md) | [functions/02-robot-model.md](functions/02-robot-model.md) | [design/02-robot-model.md](design/02-robot-model.md) | 実装済み |
-| 03 | SLAM・地図作成 | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) | [features/03-slam.md](features/03-slam.md) | [functions/03-slam.md](functions/03-slam.md) | [design/03-slam.md](design/03-slam.md) | 実装済み |
-| 04 | ナビゲーション | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G3](やりたいこと.md#g3-手動操縦も可能) | [features/04-navigation.md](features/04-navigation.md) | [functions/04-navigation.md](functions/04-navigation.md) | [design/04-navigation.md](design/04-navigation.md) | 実装済み |
-| 05 | Web UI | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G2](やりたいこと.md#g2-自動でアームでものを回収) | [features/05-web-ui.md](features/05-web-ui.md) | [functions/05-web-ui.md](functions/05-web-ui.md) | [design/05-web-ui.md](design/05-web-ui.md) | 実装済み |
-| 06 | 実機対応 | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) | [features/06-real-robot.md](features/06-real-robot.md) | [functions/06-real-robot.md](functions/06-real-robot.md) | [design/06-real-robot.md](design/06-real-robot.md) | 計画中 |
-| 07 | ESP32 ↔ PC UART 通信 | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G2](やりたいこと.md#g2-自動でアームでものを回収) [G3](やりたいこと.md#g3-手動操縦も可能) | [features/07-esp32-uart.md](features/07-esp32-uart.md) | [functions/07-esp32-uart.md](functions/07-esp32-uart.md) | [design/07-esp32-uart.md](design/07-esp32-uart.md) | ベース実装済み（実機検証は未） |
-| 08 | 6輪ロッカーボギー・ステアリング・モータ制御 | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G3](やりたいこと.md#g3-手動操縦も可能) | [features/08-rocker-bogie.md](features/08-rocker-bogie.md) | [functions/08-rocker-bogie.md](functions/08-rocker-bogie.md) | [design/08-rocker-bogie.md](design/08-rocker-bogie.md) | 計画中 |
-| 09 | 4軸アーム + カメラ + 画像認識 + 自動把持 | [G2](やりたいこと.md#g2-自動でアームでものを回収) | [features/09-object-grasping.md](features/09-object-grasping.md) | [functions/09-object-grasping.md](functions/09-object-grasping.md) | [design/09-object-grasping.md](design/09-object-grasping.md) | 物体検出ベース実装済み（アーム・把持は未） |
-| 10 | 自動制御（自動移動 → 完全自律） | [G1](やりたいこと.md#g1-ロッカーボギーロボット自動走行) [G2](やりたいこと.md#g2-自動でアームでものを回収) | [features/10-auto-control.md](features/10-auto-control.md) | [functions/10-auto-control.md](functions/10-auto-control.md) | [design/10-auto-control.md](design/10-auto-control.md) | 計画中 |
+- LD-D500 LiDAR、SLAM、Nav2、Web UI、CPU 側の画像認識は実機で動作確認済み
+  （[実測と未検証](superpowers/specs/2026-11-22-real-machine-and-arm-plan.md) §1）
+- ESP32 `main_board` と PC ブリッジのバイナリプロトコルは双方向通信を確認済み。**実配線・
+  `esp32dev`（Serial2）での運用は未検証**
+- FOC 基板（`foc_rover`）はベンチのオープンループ動作のみ。走行前提の閉ループは未達
 
-> features/01-06 はシミュレーション段階の記録。実機のハードウェア構成は features/07-10 を参照。
+**未実装** — アーム・逆運動学・把持、完全自律、6 輪での走行
+（[計画](superpowers/specs/2026-11-22-real-machine-and-arm-plan.md) §2〜3）
 
-## システム構成
+## 4. システム構成
 
 ```
 Meister/
-├── build.sh                         # ビルドスクリプト（4パッケージ並列）
-├── launch.sh                        # 全体起動（Gazebo + SLAM + Nav2 + Web UI）
+├── build.sh                         # ビルドスクリプト（6 パッケージ並列）
+├── launch.sh                        # 実機モード（既定） / --sim で Gazebo + SLAM + Nav2 + Web UI
 ├── launch_vision.sh                 # 画像認識だけ起動（PC カメラ）
 ├── kill.sh                          # domain 5 の ROS / Gazebo プロセスを終了
-└── ros/                            # ROS 2 ワークスペース（colcon はここで実行）
-    ├── src/
-    │   ├── umeonigiri_description/  # ロボットモデル・シミュレーション定義
-    │   ├── umeonigiri_vision/          # 画像認識（ONNX Runtime + YOLOv8n）
-    │   ├── umeonigiri_autonomy/     # SLAM・ナビゲーションの中核パッケージ
-    │   └── umeonigiri_webnav/       # Web UI（:8088）
-    └── config/
-        └── meister_robot.yaml       # ロボット設定の唯一の出所（tools/gen_config.py が読む）
+├── firmware/
+│   ├── main_board/                  # ESP32（プロトコル・ステアリング・アーム）
+│   ├── foc_rover/                   # FOC 走行用（3 軸 × 2ch）
+│   └── foc_test/                    # FOC 回転テスト専用
+└── ros/                             # ROS 2 ワークスペース（colcon はここで実行）
+    ├── config/meister_robot.yaml    # ロボット設定の唯一の出所（tools/gen_config.py が読む）
+    └── src/
+        ├── umeonigiri_description/  # ロボットモデル・シミュレーション定義
+        ├── umeonigiri_autonomy/     # SLAM・ナビゲーションの中核
+        ├── umeonigiri_lidar/        # LD-D500 ドライバ（vendored, MIT）
+        ├── umeonigiri_serial_bridge/ # PC ↔ ESP32 ブリッジ（プロトコルの PC 側）
+        ├── umeonigiri_vision/       # 画像認識（YOLOv8n / RKNN）
+        └── umeonigiri_webnav/       # Web UI（:8088）
 ```
 
-### 実機構成（計画中）
+実機の接続関係は [architecture.md](architecture.md) §1 の図を見る。
 
-```
-PC (ROS 2: Nav2 / 画像認識 / Web UI)
-  │  UART 双方向通信
-ESP32 (6輪モータ PWM / ステアリングサーボ / アームサーボ)
-  │
-6輪ロッカーボギー + 4軸アーム + カメラ + LD-D500 LiDAR
-```
+※ `umeonigiri_autonomy` 内の動画編集・ナレーション生成スクリプト群（YouTube 用）はロボット制御と無関係のため対象外。
 
-※ `umeonigiri_autonomy` 内の動画編集・ナレーション生成スクリプト群（YouTube 用）はロボット制御と無関係のため仕様対象外。
+## 5. ドキュメントを増やすとき
 
-## ロードマップ
-
-1. **機能リスト**（features/ ・現在地）— 各機能の「できること」を列挙
-2. **詳細仕様** — 要件 ID 付与（例: `REQ-NAV-001`）、確認方法・数値条件の明記
-3. **設計図**（design/）— モジュール構造・データフロー・状態遷移
-4. **実装** — 機能ごとに AI と相談しながら実装を進める
-
-### 実装優先順位（実機）
-
-1. **自動アーム**（最優先）— 4軸アーム + 画像認識 + 自動把持（09）
-2. **自動移動** — LD-D500 LiDAR + 既存 SLAM/Nav2 の実機移植（10）
-3. **完全自律**（理想）— 自動巡回 + 障害物回避 + 物体回収の統合
-
-機能ごとのファイルが独立しているため、1機能ずつ AI と相談しながら深化させることができる。
+- **コードを読めば分かることは書かない**（関数の実装や全ファイル一覧は [code-map.md](code-map.md) が持つ）。
+- **同じことを 2 箇所に書かない**。判断が要る内容は specs、数値は bench、罠は pitfalls、コマンドは commands のどれか 1 つに置く。
+- **未確定は 4 段階で書く**（一次情報で確定 / 実測 / ★要確認★ / ✗ 未検証）。
+- **レビューで 2 回同じ指摘をしたら追記する**だけにする。先回りして網羅しない。
