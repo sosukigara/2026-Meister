@@ -119,7 +119,8 @@
 - ソフトウェア描画は重いので、センサを軽くする `sensor_profile:=lite`
   （lidar 360 点/5 Hz、カメラ 320x240/5 Hz）を併用する。既定は `full`。
   `maze` で実時間比 0.89、`warehouse` はメッシュが重く 0.2 程度。
-- 計測の詳細: [bench/2026-11-20-cpu-analysis.md](bench/2026-11-20-cpu-analysis.md) §7・§10。
+- CPU の比較は `/proc/<pid>/stat` の utime+stime を区間で積分する（`top` の瞬間値は振れる）。
+  シミュレーションの CPU 値は `/clock` の配信量に比例して膨らむので、実機の見積りに流用しない。
 
 ## P14. 画像認識のレートはカメラで決まる（2026-11-20 実測）
 
