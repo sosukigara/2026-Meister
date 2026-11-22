@@ -64,7 +64,7 @@ ros2 run umeonigiri_serial_bridge umeonigiri_hz_measure --port /dev/ttyUSB0 --ex
 ./kill.sh
 ```
 
-- 実機モードは `ros2_autonomous_nav/real_robot.launch.py` を起動する
+- 実機モードは `umeonigiri_autonomy/real_robot.launch.py` を起動する
   (robot_state_publisher + LD-D500 + SLAM + Nav2 + serial_bridge + Web UI + 画像認識)。
 - ポートは環境変数で上書き可 (既定: ESP32 `/dev/ttyUSB0`、LD-D500 `/dev/ttyUSB1`。
   両方 `ttyUSB0` のままだと衝突する)。by-id / by-path 推奨。

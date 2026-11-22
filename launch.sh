@@ -116,7 +116,7 @@ if [ "$SIM" -eq 1 ]; then
     # 進まない。lite (360点/5Hz, 320x240) で実時間相当になる (maze で実測 0.92)。
     SIM_PROFILE="${MEISTER_SIM_PROFILE:-lite}"
     echo "=== センサ: $SIM_PROFILE (MEISTER_SIM_PROFILE=full で高精細) ==="
-    ros2 launch ros2_autonomous_nav mapping_nav.launch.py "world:=$WORLD" \
+    ros2 launch umeonigiri_autonomy mapping_nav.launch.py "world:=$WORLD" \
         "gui:=$([ "${MEISTER_GUI:-1}" = "0" ] && echo false || echo true)" \
         "sensor_profile:=$SIM_PROFILE" \
         ${MEISTER_LAUNCH_ARGS:-} &
@@ -142,7 +142,7 @@ else
     elif [ "$VISION_BACKEND" = "onnx" ]; then
         echo "=== Vision: yolov8n-640 既定 (320 が無いため。5Hz 級) ==="
     fi
-    ros2 launch ros2_autonomous_nav real_robot.launch.py \
+    ros2 launch umeonigiri_autonomy real_robot.launch.py \
         "serial_port:=$MEISTAR_SERIAL_PORT" "lidar_port:=$MEISTAR_LIDAR_PORT" \
         "vision_model:=$VISION_MODEL" "vision_threads:=$VISION_THREADS" \
         "vision_backend:=$VISION_BACKEND" &
@@ -180,7 +180,7 @@ if [ "${MEISTER_RVIZ:-1}" = "0" ]; then
     echo "=== RViz は MEISTER_RVIZ=0 のため起動しません (Web UI で地図と姿勢は見えます) ==="
 else
     echo "=== RViz を起動します ==="
-    "$WORKSPACE_ROOT/ros/src/ros2_autonomous_nav/scripts/rviz.sh" &
+    "$WORKSPACE_ROOT/ros/src/umeonigiri_autonomy/scripts/rviz.sh" &
 fi
 
 echo "------------------------------------------"

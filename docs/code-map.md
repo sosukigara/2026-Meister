@@ -12,7 +12,7 @@
 ```
 ┌──────────────────────── PC (Ubuntu / ROS 2 Jazzy) ────────────────────────┐
 │  umeonigiri_webnav    Web UI (HTTP + MJPEG, :8088)                            │
-│  ros2_autonomous_nav  Nav2 / SLAM / 起動スクリプト                          │
+│  umeonigiri_autonomy  Nav2 / SLAM / 起動スクリプト                          │
 │  umeonigiri_vision    YOLOv8n ONNX 物体検出                                    │
 │  umeonigiri_serial_bridge  ⇅ UART ⇅ ESP32 ブリッジ  ← ★ PC と ESP32 の唯一の接点 │
 └────────────────────────────────┬──────────────────────────────────────────┘
@@ -37,11 +37,11 @@
 | パッケージ | 役割 | エントリポイント | 依存 |
 |---|---|---|---|
 | `umeonigiri_description` | URDF / spawn / 全システム起動 | `launch/all_system.launch.py` `launch/spawn.launch.py` | — |
-| `ros2_autonomous_nav` | Nav2 / SLAM / 評価ツール (ament_cmake) | 各 `launch/*.launch.py`、`generate_map` / `waypoint_follower` / `nav_mode_manager`（いずれも C++） | umeonigiri_description, umeonigiri_serial_bridge |
+| `umeonigiri_autonomy` | Nav2 / SLAM / 評価ツール (ament_cmake) | 各 `launch/*.launch.py`、`generate_map` / `waypoint_follower` / `nav_mode_manager`（いずれも C++） | umeonigiri_description, umeonigiri_serial_bridge |
 | `umeonigiri_vision` | YOLOv8n ONNX 検出 → `detections` | `detection_node` / `hand_landmarks_node` / `pc_camera`（いずれも C++） | OpenCV, ONNX Runtime |
 | `umeonigiri_webnav` | Web UI（地図・現在地・経路・認識モニター） | `umeonigiri_webnav_server`（C++） | umeonigiri_description |
 | `umeonigiri_serial_bridge` | **`/cmd_vel` → UART フレーム、`/esp32/state` ← FB_STATE** | `umeonigiri_serial_bridge` / `umeonigiri_comm_check` / `umeonigiri_hz_measure`（いずれも C++） | libserial, firmware の protocol ソース |
-| `ros2_ldlidar_d500` | LD-D500 LiDAR → `/scan` (vendored, MIT) | `d500_node`（C++） | なし (termios のみ) |
+| `umeonigiri_lidar` | LD-D500 LiDAR → `/scan` (vendored, MIT) | `d500_node`（C++） | なし (termios のみ) |
 
 ### `umeonigiri_serial_bridge` 内部（PC 側と ESP32 側の接点。ここ最重要）
 
