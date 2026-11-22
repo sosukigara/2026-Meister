@@ -1314,6 +1314,134 @@ kbd {
 
 .dialog-actions .btn { height: 40px; }
 
+/* ---------- ROS パラメータ ---------- */
+
+/* グローバルな操作なので、対象のパネルを持たないヘッダの右端に置く。 */
+.topbar-tools {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-left: auto;
+  flex: none;
+}
+
+.dialog.param-dialog {
+  width: min(860px, calc(100vw - 32px));
+}
+
+.param-dialog form { gap: var(--s3); }
+
+.param-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--s2);
+}
+
+.param-node-picker {
+  display: grid;
+  gap: 5px;
+  flex: 1 1 260px;
+  min-width: 0;
+  color: var(--ink-3);
+  font-size: var(--fs-meta);
+}
+
+.param-node-picker select,
+.param-filter,
+.param-input {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--fs-body);
+}
+
+.param-node-picker select { width: 100%; }
+
+.param-filter { flex: 1 1 180px; min-width: 0; }
+
+.param-node-picker select:focus,
+.param-filter:focus,
+.param-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.param-status {
+  margin: 0;
+  min-height: 1.5em;
+  color: var(--ink-3);
+  font-size: var(--fs-label);
+  line-height: 1.5;
+}
+
+.param-status[data-tone='ok'] { color: var(--green); }
+.param-status[data-tone='error'] { color: var(--red); }
+
+.param-list {
+  display: grid;
+  max-height: min(52vh, 520px);
+  overflow: auto;
+  border-top: 1px solid var(--line);
+}
+
+.param-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 250px) auto;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s2) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.param-row[hidden] { display: none; }
+
+.param-ident {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.param-name {
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--fs-label);
+  overflow-wrap: anywhere;
+}
+
+.param-type {
+  color: var(--ink-3);
+  font-size: var(--fs-meta);
+}
+
+.param-edit {
+  display: flex;
+  gap: 6px;
+  min-width: 0;
+}
+
+.param-edit .param-input { width: 100%; min-width: 0; }
+
+.param-row[data-state='ok'] .param-set {
+  border-color: rgba(87, 192, 138, 0.6);
+  color: var(--green);
+}
+
+.param-row[data-state='error'] .param-input {
+  border-color: rgba(226, 104, 92, 0.7);
+}
+
+.param-empty {
+  margin: 0;
+  padding: var(--s5) 0;
+  color: var(--ink-3);
+  font-size: var(--fs-label);
+}
+
 /* ---------- 狭い画面 ---------- */
 
 @media (max-width: 1359px) {
@@ -1479,9 +1607,18 @@ kbd {
   .dialog-grid input { height: 44px; font-size: 16px; }
   .dialog-actions .btn { height: 40px; }
   .map-name { font-size: 16px; }
+  .param-input, .param-filter, .param-node-picker select { height: 44px; font-size: 16px; }
   .hint-pointer { display: none; }
   .hint-touch { display: inline; }
   .shortcut-note { display: none; }
+}
+
+/* 狭い画面ではパラメータ名と値を縦に積む。名前は折り返すので切らない。 */
+@media (max-width: 720px) {
+  .topbar-tools .btn { width: 40px; padding: 0; font-size: 0; gap: 0; }
+  .topbar-tools .btn svg { width: 16px; height: 16px; }
+  .param-row { grid-template-columns: minmax(0, 1fr); gap: var(--s1); padding: var(--s3) 0; }
+  .param-edit { width: 100%; }
 }
 
 /* 動きを減らしたい人には、状態の変化だけ残して移動を止める。 */

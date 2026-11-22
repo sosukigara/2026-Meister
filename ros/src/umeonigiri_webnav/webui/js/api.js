@@ -63,8 +63,8 @@ async function request(path, options, timeoutMs = TIMEOUT_MS) {
   }
 }
 
-export function getJson(path) {
-  return request(path, { headers: { Accept: 'application/json' } });
+export function getJson(path, timeoutMs) {
+  return request(path, { headers: { Accept: 'application/json' } }, timeoutMs);
 }
 
 export function postJson(path, body, timeoutMs) {
