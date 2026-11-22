@@ -89,7 +89,7 @@ class NavModeManager : public rclcpp::Node {
  private:
   rclcpp::Client<ChangeState>::SharedPtr MakeClient(const std::string& node) {
     return create_client<ChangeState>(node + "/change_state",
-                                      rmw_qos_profile_services_default, client_group_);
+                                      rclcpp::ServicesQoS(), client_group_);
   }
 
   bool ApplyTransition(const rclcpp::Client<ChangeState>::SharedPtr& client, uint8_t transition) {
