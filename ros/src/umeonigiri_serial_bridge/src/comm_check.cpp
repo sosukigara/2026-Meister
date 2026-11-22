@@ -1,6 +1,5 @@
 #include "umeonigiri_serial_bridge/comm_check.hpp"
 
-#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <thread>
@@ -13,7 +12,6 @@ namespace {
 
 namespace proto = meister::proto;
 
-constexpr auto kPollInterval = std::chrono::microseconds(2000);
 constexpr int kPollMs = 2;
 
 double NowSeconds() {
@@ -49,7 +47,7 @@ std::vector<Feedback> CollectFeedback(SerialIo& link, StreamFrameParser& parser,
   while (NowSeconds() < deadline && found.size() < want) {
     const std::size_t n = link.Read(buf, sizeof(buf), kPollMs);
     if (n == 0) {
-      std::this_thread::sleep_for(kPollInterval);
+      std::this_thread::sleep_for(std::chrono::milliseconds(kPollMs));
       continue;
     }
     frames.clear();
@@ -85,10 +83,6 @@ bool WaitProtocolError(SerialIo& link, StreamFrameParser& parser, double deadlin
   return false;
 }
 
-std::string CommandNames() {
-  return "CMD_MOTOR_VELOCITY, CMD_STEERING_ANGLE, CMD_ARM_ANGLE, CMD_GRIPPER";
-}
-
 }  // namespace
 
 std::vector<std::vector<uint8_t>> NeutralCommandFrames() {
@@ -103,19 +97,9 @@ std::vector<std::vector<uint8_t>> NeutralCommandFrames() {
   return out;
 }
 
-bool CheckResult::AllStepsOk() const {
-  for (const auto& step : steps) {
-    if (!step.ok) {
-      return false;
-    }
-  }
-  return true;
-}
-
 CheckResult RunCommCheck(const std::string& port, int baud, double timeout_s, bool reset,
                          const SerialOpener& opener) {
   CheckResult result;
-  result.port = port;
 
   const std::shared_ptr<SerialIo> link = opener(port, baud);
   if (!link) {
@@ -139,7 +123,7 @@ CheckResult RunCommCheck(const std::string& port, int baud, double timeout_s, bo
                     "esp32dev_usbuart ビルドが書き込まれているか、"
                     "ポートとボーレートが正しいかを確認してください。");
   }
-  result.steps.push_back({"uplink", true, uplink[0].Describe()});
+  result.steps.push_back({"uplink", uplink[0].Describe()});
 
   if (uplink[0].HasProtocolError()) {
     throw CommError(
@@ -151,7 +135,8 @@ CheckResult RunCommCheck(const std::string& port, int baud, double timeout_s, bo
   // FB_STATE はコマンドへの応答ではなく 10 Hz 周期送信なので、4 種を送った直後の
   // 最初の FB_STATE がそれに対する応答になる。フラグが立たなければ ESP32 側は
   // 全フレームを正常に受理している。
-  const auto names = CommandNames();
+  const std::string names =
+      "CMD_MOTOR_VELOCITY, CMD_STEERING_ANGLE, CMD_ARM_ANGLE, CMD_GRIPPER";
   // 手順 1 の時点で飛んでいる FB_STATE を、指令への応答と誤認しない。
   link->ResetInputBuffer();
   parser.Clear();
@@ -165,7 +150,7 @@ CheckResult RunCommCheck(const std::string& port, int baud, double timeout_s, bo
                     reply[0].Describe() + ")。"
                     "フレーム長が ESP32 側と一致していない可能性があります。");
   }
-  result.steps.push_back({"downlink", true, names + " -> " + reply[0].Describe()});
+  result.steps.push_back({"downlink", names + " -> " + reply[0].Describe()});
 
   // --- 3. 手順 2 の判定基準が機能していることの裏取り ---
   // チェックサムを壊したフレームを送り、フラグが立つことを確認する。
@@ -186,7 +171,7 @@ CheckResult RunCommCheck(const std::string& port, int baud, double timeout_s, bo
   char flags[8];
   std::snprintf(flags, sizeof(flags), "0x%02X", proto::kFbErrorProtocol);
   result.steps.push_back(
-      {"err_flag", true, std::string("corrupt frame -> error_flags |= ") + flags});
+      {"err_flag", std::string("corrupt frame -> error_flags |= ") + flags});
 
   // firmware の rxErrorCount_ は再起動まで減らない。ここで終わると、直後の
   // hz_measure が protocol error を検出して NG になる。

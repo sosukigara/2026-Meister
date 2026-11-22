@@ -17,10 +17,6 @@ int RoundHalfToEven(double v) {
   return static_cast<int>(std::nearbyint(v));
 }
 
-int ClampInt(int v, int lo, int hi) {
-  return std::max(lo, std::min(hi, v));
-}
-
 }  // namespace
 
 ActuatorCommand TwistToActuators(double vx, double wz, const TwistKinematics& kin) {
@@ -34,8 +30,8 @@ ActuatorCommand TwistToActuators(double vx, double wz, const TwistKinematics& ki
   const int max_steer_tenths = RoundHalfToEven(kin.max_steering_deg * 10.0);
 
   int vel_permille = RoundHalfToEven(vx / kin.max_linear_vel_mps * 1000.0);
-  vel_permille = ClampInt(vel_permille, meister::proto::kMinVelocity,
-                          meister::proto::kMaxVelocity);
+  vel_permille = std::clamp<int>(vel_permille, meister::proto::kMinVelocity,
+                                 meister::proto::kMaxVelocity);
   if (kin.drive_invert) {
     vel_permille = -vel_permille;
   }
@@ -54,7 +50,7 @@ ActuatorCommand TwistToActuators(double vx, double wz, const TwistKinematics& ki
   } else if (wz < 0.0) {
     steer_tenths = -max_steer_tenths;
   }
-  steer_tenths = ClampInt(steer_tenths, -max_steer_tenths, max_steer_tenths);
+  steer_tenths = std::clamp(steer_tenths, -max_steer_tenths, max_steer_tenths);
   if (kin.steer_invert) {
     steer_tenths = -steer_tenths;
   }

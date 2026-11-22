@@ -16,7 +16,6 @@
 
 #include "umeonigiri_serial_bridge/ackermann_imu_odometry.hpp"
 #include "umeonigiri_serial_bridge/bridge_core.hpp"
-#include "umeonigiri_serial_bridge/comm_check.hpp"
 #include "umeonigiri_serial_bridge/feedback_publisher.hpp"
 #include "umeonigiri_serial_bridge/frames.hpp"
 #include "umeonigiri_serial_bridge/odometry_publisher.hpp"
