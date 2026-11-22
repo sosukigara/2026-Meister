@@ -10,6 +10,42 @@
 
 version: 1
 
+# ---- ロボット仕様（実機の構成） ----
+# 出所: 依頼者による仕様の提示 2026-11-22（「ロボットの仕様ですこれは」）。
+# 図面・BOM で照合済みではなく、依頼者の宣言。実測で覆ったらここを直す。
+# この節が実機構成の唯一の出所。firmware の gof など他の箇所に写さない（R2）。
+robot:
+  name: 6 輪ロッカーボギー
+  chassis:
+    wheels: 6
+    # 前 2 輪・後ろ 2 輪がステアリング、中間 2 輪は固定。
+    # 出所: 2026-11-19 と 2026-11-22 の 2 回とも同じ回答。
+    steering:
+      wheels: 4
+      positions: [front_left, front_right, rear_left, rear_right]
+      actuator:
+        model: STS3225
+        variant: 12V
+        bus: true          # シリアルバス（PWM ではない）
+    # ロッカー軸ボギー軸（4 軸、DS サーボ 150kg）は BOM 由来の既存記述。
+    # ★要確認★ ロッカーとボギーの区別、4 軸の並びは図面待ち。
+    rocker_bogie_axes: 4
+  drive:
+    motor: LA8308
+    motor_variant: KV90      # KV 値は未確定（★要確認★。KV90 は reseller 表記）
+    gear_ratio: 20           # 1:20。モータ側 20 回転で車軸 1 回転（トルク 20 倍・回転 1/20）
+    # タイヤ直径 100 mm。
+    # R3: KV と定格から出る想定速度をここに残す（車軸側が遅いことの根拠）。
+    #   KV90 x 12 V / 60 = 18 rev/s（モータ、無負荷）
+    #   -> 1:20 で車軸 0.90 rev/s -> 直径 0.1 m で 0.283 m/s（無負荷）
+    #   負荷と電圧降下でこれより落ちる。★要確認★ 実測はまだ無い。
+    wheel_diameter_mm: 100
+  power:
+    # 依頼者による宣言 2026-11-22（STS3225 の 12V 版に合わせる）。
+    # ★要確認★ どの系が 12 V か（サーボバス / モータ母線 / 両方）は図面待ち。
+    nominal_v: 12
+    scope: ★要確認★
+
 protocol:
   # FB_STATE の送信周期 [Hz]。1000 の約数のみ（firmware の static_assert で強制）
   feedback_hz: 100
@@ -19,7 +55,10 @@ protocol:
   # 軸数。プロトコルのフレーム長はここから決まる
   axes:
     drive_motors: 6
-    steering: 6      # ★Phase 2 で 4 に変更★（BOM のステアリングは 4 個）
+    # フレーム長は 6ch で凍結（実装は 6 本の PWM サーボを組み立てる）。
+    # 実機構成（ステアリングは前後 4 輪）は robot.chassis.steering.wheels を参照。
+    # ★Phase 2★ フレームを 4ch に縮めるかは未決（破壊的変更。R7）。
+    steering: 6
     # Phase 1 の実態（arm.cpp が 4 本の PWM サーボを組み立てる）。
     # ★Phase 2★ BOM .arm_axes の 4 軸構成（肩 PWM / 肘 / 手首 / グリッパー）へ
     # 移行する。移行時は pins.arm_pwm_provisional も同時に見直す。
@@ -110,7 +149,8 @@ kinematics:
   # 幾何係数が実測値（図面または計測）で確定したか。
   # false の間 kinematics.cpp は拘束を解かず kGeometryNotFilled を返す。
   geometry_filled: false
-  wheel_radius: 0.05
+  # 出所は robot.drive.wheel_diameter_mm（唯一の出所）。ここは同値の派生値。
+  wheel_radius: 0.05   # == robot.drive.wheel_diameter_mm / 2000
   # 直线速度の上限 [mm/s]。-twist はこれに相対して千分率へ正規化する
   max_linear_mm_per_sec: 800
   wheels:
@@ -127,6 +167,7 @@ kinematics:
 
   # ボギー軸の位置表。拘束を解く対象はこの各行。
   # ★要確認★ 「ロッカー軸ボギー軸 DS サーボ 150kg × 4」の解釈が未確定。
+  #   robot.chassis.rocker_bogie_axes が 4 本であることまでは確定（2026-11-22）。
   # ここでは「前ロッカー左/右・後ロッカー左/右の 4 軸で、左右が独立」と
   # 仮定している。1 軸 × 4 輪の意味なら表の形が変わる。
   # servo は [前左, 前右, 後左, 後右] の 4 軸。

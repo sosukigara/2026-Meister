@@ -128,7 +128,7 @@ Python 版から変えていないので `launch/` `launch_vision.sh` `kill.sh` 
 |---|---|---|---|
 | `src/main.cpp` | 47 | setup/loop と配線のみ | Arduino 依存は `#ifdef ARDUINO` でガード |
 | `src/command_dispatch.cpp` | 112 | 受信 FSM（ヘッダ→種別→ペイロード→チェックサム）と機構への振り分け | 足回り・アームをメンバで保持 |
-| `src/base_chassis.cpp` / `src/arm.cpp` | 50 / 50 | 足回り（モータ 6 + ステアリング 6）、アーム 4 軸 + グリッパー | 静的インスタンスは作らず、初期化リストで構築順を示す |
+| `src/base_chassis.cpp` / `src/arm.cpp` | 50 / 50 | 足回り（プロトコル上はステアリング 6ch。実機は前後 4 輪。`robot:` 節参照）、アーム 4 軸 + グリッパー | 静的インスタンスは作らず、初期化リストで構築順を示す |
 | `src/feedback.cpp` | 34 | FB_STATE の定周期送出 | 送信間隔は `config::kFeedbackIntervalMs` |
 | `src/hal/*.cpp` | 25〜61 | LEDC ラッパ / PWM サーボ / コンソールサーボ / モータ / プロトコル UART | 2.x と 3.x の API 差はここに閉じている |
 | `include/hal/generated_config.h` | 生成物 | `ros/config/meister_robot.yaml` から `tools/gen_config.py` で生成（Python 出力は 2026-10-05 に削除） | firmware と PC 側 bridge がこの 1 本を共有する |

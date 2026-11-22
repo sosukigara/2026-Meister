@@ -6,6 +6,8 @@ ESP32 側を PlatformIO + Arduino framework で実装する。
 
 - プロトコル仕様: `include/meister_protocol.h` / `src/meister_protocol.cpp`（PC 側と同一ソースをコンパイルする。唯一の実装）
 - PC 側の ROS 2 シリアルブリッジ: `ros/src/umeonigiri_serial_bridge/` として実装済み。モック ESP32 は別 Wave（対象外）
+- **実機のステアリングは STS3225 12V（シリアルバス）だが、実装はまだ PWM サーボ（`PwmServoChannel`）で 6 本を駆動している。**
+  バス化は Phase 2。構成の出所は `ros/config/meister_robot.yaml` の `robot:` 節
 
 ## ディレクトリ構成
 

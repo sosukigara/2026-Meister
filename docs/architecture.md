@@ -26,6 +26,7 @@
 ```
 
 - シミュレーション（Gazebo）と実機は**同じロボットの異なる段階**。シミュレーションは実機開発の前段。
+- 実機の機構構成（6 輪・ステアリング前後 4 輪 = STS3225 12V のバスサーボ・駆動 LA8308 1:20・タイヤ径 100 mm・12 V 系）は `ros/config/meister_robot.yaml` の `robot:` 節が唯一の出所。
 - `firmware/foc_rover/` は走行用・`firmware/foc_test/` は回転テスト用の別 PlatformIO プロジェクト（MKS ESP32 FOC V2.0）。`firmware/main_board/` とは独立。単軸ウィンチ用 `foc_winch/` は 2026-11-09 に削除（テスト用途は `foc_test/` に集約）。
 
 ## 2. レイヤーと依存方向（片方向のみ）
