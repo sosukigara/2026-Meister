@@ -1,7 +1,7 @@
 # foc_test — spin-test-only firmware (MKS ESP32 FOC V2.0, M1)
 
 One motor, fixed safe envelope, nothing to misconfigure. Bench use only —
-production is [`../foc_winch/`](../foc_winch/README.md). This project shares no
+production is [`../foc_rover/`](../foc_rover/README.md). This project shares no
 code with it on purpose: a test rig must keep working even while production
 evolves.
 
@@ -69,4 +69,4 @@ not the voltages (they are fixed).
 
 `L`/`Z` configuration, CSV telemetry, deadman commands, multi-channel support,
 native unit tests (the whole sketch needs Arduino + SimpleFOC; the bench spin
-is the test). Anything beyond a spin check belongs in `foc_winch`/`foc_rover`.
+is the test). Anything beyond a spin check belongs in `foc_rover`.
