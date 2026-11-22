@@ -17,13 +17,14 @@
 #include <std_msgs/msg/string.hpp>
 #include <std_srvs/srv/trigger.hpp>
 
-#include "umeonigiri_autonomy/nav_mode.hpp"
-
 namespace {
 
 using ChangeState = lifecycle_msgs::srv::ChangeState;
 using Trigger = std_srvs::srv::Trigger;
 using Transition = lifecycle_msgs::msg::Transition;
+
+/// map→odom の持ち主を決めるモード。
+enum class NavMode { kMapping, kLocalization };
 
 constexpr auto kServiceWait = std::chrono::seconds(3);
 // lifecycle 遷移は重い（SLAM の初期化など）。余裕を持たせる。
@@ -38,8 +39,8 @@ class NavModeManager : public rclcpp::Node {
     map_server_node_ = declare_parameter<std::string>("map_server_node", "/map_server");
     amcl_node_ = declare_parameter<std::string>("amcl_node", "/amcl");
     initial_mode_ = declare_parameter<std::string>("initial_mode", "mapping");
-    mode_ = initial_mode_ == "localization" ? umeonigiri_autonomy::NavMode::kLocalization
-                                            : umeonigiri_autonomy::NavMode::kMapping;
+    mode_ = initial_mode_ == "localization" ? NavMode::kLocalization
+                                            : NavMode::kMapping;
 
     // サービスコールバックの中で応答を待つので、クライアントは別グループに置く。
     client_group_ = create_callback_group(rclcpp::CallbackGroupType::Reentrant);
@@ -52,22 +53,22 @@ class NavModeManager : public rclcpp::Node {
         "switch_to_localization",
         [this](const std::shared_ptr<Trigger::Request>,
                std::shared_ptr<Trigger::Response> response) {
-          SwitchMode(umeonigiri_autonomy::NavMode::kLocalization, response);
+          SwitchMode(NavMode::kLocalization, response);
         });
     // 逆方向。slam_toolbox を再 activate してもポーズグラフは保持されることを
     // 実測済み (332x302 / 55233 cells が前後で一致) なので、地図を捨てずに戻せる。
     mapping_service_ = create_service<Trigger>(
         "switch_to_mapping", [this](const std::shared_ptr<Trigger::Request>,
                                     std::shared_ptr<Trigger::Response> response) {
-          SwitchMode(umeonigiri_autonomy::NavMode::kMapping, response);
+          SwitchMode(NavMode::kMapping, response);
         });
     get_service_ = create_service<Trigger>(
         "get_mode",
         [this](const std::shared_ptr<Trigger::Request>,
                std::shared_ptr<Trigger::Response> response) {
           response->success = true;
-          response->message = mode_ == umeonigiri_autonomy::NavMode::kMapping ? "mapping"
-                                                                             : "localization";
+          response->message =
+              mode_ == NavMode::kMapping ? "mapping" : "localization";
         });
 
     PublishMode();
@@ -75,7 +76,7 @@ class NavModeManager : public rclcpp::Node {
     // 動かしたいので once-shot のタイマーで行う。
     startup_timer_ = create_wall_timer(std::chrono::seconds(2), [this] {
       startup_timer_->cancel();
-      const bool ok = mode_ == umeonigiri_autonomy::NavMode::kMapping
+      const bool ok = mode_ == NavMode::kMapping
                           ? BringUp(slam_client_)
                           : (BringUp(map_server_client_) && BringUp(amcl_client_));
       if (!ok) {
@@ -124,17 +125,21 @@ class NavModeManager : public rclcpp::Node {
 
   /// target へ切り替える。旧 owner の deactivate が終わってから新 owner を
   /// activate する（map→odom の publisher を 2 つにしない）。
-  void SwitchMode(umeonigiri_autonomy::NavMode target,
+  void SwitchMode(NavMode target,
                   const std::shared_ptr<Trigger::Response>& response) {
-    const auto plan = umeonigiri_autonomy::PlanTransition(mode_, target);
-    if (!plan.allowed) {
+    if (mode_ == target) {
       response->success = false;
-      response->message = plan.reason;
+      response->message = "既にそのモードです";
       return;
     }
 
-    RCLCPP_INFO(get_logger(), "%s", plan.reason.c_str());
-    const bool to_localization = target == umeonigiri_autonomy::NavMode::kLocalization;
+    const bool to_localization = target == NavMode::kLocalization;
+    // 保存地図 → 地図生成 は slam_toolbox の再 activate で戻す。ポーズグラフが
+    // 保持されることは実測で確認済み (前後で 332x302 / 55233 cells が一致)。
+    const char* const reason = to_localization
+                                   ? "地図生成から保存地図ナビへ切り替えます"
+                                   : "保存地図ナビから地図生成へ切り替えます（地図は引き継ぎます）";
+    RCLCPP_INFO(get_logger(), "%s", reason);
     const char* const old_side = to_localization ? "地図生成側" : "自己位置推定側";
     const char* const new_side = to_localization ? "自己位置推定" : "地図生成";
 
@@ -156,7 +161,7 @@ class NavModeManager : public rclcpp::Node {
     mode_ = target;
     PublishMode();
     response->success = true;
-    response->message = plan.reason;
+    response->message = reason;
   }
 
   /// これから離れる側を止める。
@@ -196,7 +201,7 @@ class NavModeManager : public rclcpp::Node {
 
   void PublishMode() {
     std_msgs::msg::String message;
-    message.data = mode_ == umeonigiri_autonomy::NavMode::kMapping ? "mapping" : "localization";
+    message.data = mode_ == NavMode::kMapping ? "mapping" : "localization";
     mode_publisher_->publish(message);
   }
 
@@ -204,7 +209,7 @@ class NavModeManager : public rclcpp::Node {
   std::string map_server_node_;
   std::string amcl_node_;
   std::string initial_mode_;
-  umeonigiri_autonomy::NavMode mode_{umeonigiri_autonomy::NavMode::kMapping};
+  NavMode mode_{NavMode::kMapping};
   rclcpp::CallbackGroup::SharedPtr client_group_;
   rclcpp::Client<ChangeState>::SharedPtr slam_client_;
   rclcpp::Client<ChangeState>::SharedPtr map_server_client_;
