@@ -246,7 +246,6 @@ private:
           valid[i] = ComputeGrasp(frame, boxes[i], grasps[i]) ? 1 : 0;
         }
         std::lock_guard<std::mutex> lock(mutex_);
-        frame_ = frame.clone();
         boxes_ = std::move(boxes);
         grasps_ = std::move(grasps);
         valid_ = std::move(valid);
@@ -305,7 +304,7 @@ private:
 
     const auto stamp = now();
     Publish(canvas, stamp);
-    PublishDetections(stamp, boxes, grasps, valid);
+    PublishDetections(stamp, boxes);
   }
 
   std::string LabelOf(int class_id) const
@@ -333,8 +332,7 @@ private:
   }
 
   void PublishDetections(
-    const rclcpp::Time & stamp, const std::vector<YoloBox> & boxes,
-    const std::vector<GraspTarget> & grasps, const std::vector<char> & valid)
+    const rclcpp::Time & stamp, const std::vector<YoloBox> & boxes)
   {
     vision_msgs::msg::Detection2DArray message;
     message.header.stamp = stamp;
@@ -350,8 +348,6 @@ private:
       hypothesis.hypothesis.score = boxes[i].score;
       detection.results.push_back(hypothesis);
       message.detections.push_back(detection);
-      (void)grasps;
-      (void)valid;
     }
     pub_detections_->publish(message);
     // アームは先頭（最も手前）だけ見る。
@@ -373,7 +369,6 @@ private:
   std::mutex mutex_;
   std::condition_variable cond_;
   cv::Mat latest_;
-  cv::Mat frame_;
   bool has_frame_ = false;
   bool stop_ = false;
   int frames_ = 0;
