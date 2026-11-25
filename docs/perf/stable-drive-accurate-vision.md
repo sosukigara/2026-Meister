@@ -176,3 +176,23 @@ cd ros && bash -c 'source /opt/ros/jazzy/setup.bash && source install/setup.bash
 - `ROS_DOMAIN_ID=5 ./kill.sh` で全 ROS / gz プロセスを停止（r3h 計測後に実施済み）。
 - push はしない。全条件達成を実測で確認したため、最終ラウンドで
   main checkout へ `git merge --no-ff feat/stable-drive-accurate-vision` する（R13）。
+
+## 独立再現（マージ後、別セッション）
+
+マージ済みの worktree 成果物を使い、同じ起動コマンドを別セッションで再実行した。
+
+| 項目 | 独立計測値 | 判定 |
+|---|---|---|
+| ビルド / gtest | 6 packages 成功、`umeonigiri_vision` + `umeonigiri_autonomy` 118 tests 0 failures | Measured |
+| 6 ゴール連続走行 | **6/6 成功**、max 最終誤差 **0.194 m**、mean 0.139 m、8〜22 s/ゴール | Measured |
+| 走行中の `/detections` | **33.376 Hz**（90 秒の `ros2 topic hz`、走行と並行） | Measured |
+| RTF（走行後 20 秒） | **0.853** | Measured |
+| lifecycle / プロセス | slam / controller / planner すべて active、`process has died` 0 件、rviz2 なし・gz `-s` のみ、後始末後プロセス 0 | Measured |
+| 視野内走行（70 秒） | 非空 **19314 / 19314 = 100 %**、person **38617 / 39172 = 98.6 %**（car 551 / bus 4 混入）、bbox 中心 std_x **0.754 px** / std_y 0.093 px、RTF 中央値 **0.897**、>200 ms 空白 **0 回** | Measured |
+
+再現時の `ros2 bag record` は停止シグナル後も書き続け、最終的に 606.8 秒の
+bag になった。走行コマンド自体は 70.259 秒で完了しており、
+集計にはその後の静止期間も含まれる（その間も検出は継続した）。
+この再現での car 混入 (1.4 %) は本文の r3f (person 100 %) と異なるが、
+設定した「期待クラス ≥95 %」は満たす。距離条件次第で car が出ることは
+本文の失敗記録 #3/#4 にもあるため、しきい値を緩めたのではなく再現値をそのまま記録する。
