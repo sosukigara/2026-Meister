@@ -39,7 +39,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--base", default=BASE, help="Web UI の URL")
     parser.add_argument("--out", default="/tmp/stability.json")
-    parser.add_argument("--goals", help="[[x, y], ...] の JSON ファイル")
+    parser.add_argument("--goals", help="[[x, y] または [x, y, yaw], ...] の JSON ファイル")
     parser.add_argument("--timeout", type=float, default=TIMEOUT_S)
     parser.add_argument("--post-delay", type=float, default=2.0,
                         help="ゴール間の待ち時間 [s]")
@@ -48,7 +48,13 @@ def main(argv=None):
     goals = GOALS
     if args.goals:
         with open(args.goals, encoding="utf-8") as handle:
-            goals = [tuple(goal) for goal in json.load(handle)]
+            loaded = json.load(handle)
+        goals = []
+        for goal in loaded:
+            if len(goal) == 2:
+                goals.append((goal[0], goal[1], 0.0))
+            else:
+                goals.append((goal[0], goal[1], goal[2]))
 
     def get(path):
         with urllib.request.urlopen(base + path, timeout=5) as response:
@@ -62,10 +68,11 @@ def main(argv=None):
             return json.load(response)
 
     results = []
-    for idx, (gx, gy) in enumerate(goals):
+    for idx, goal in enumerate(goals):
+        gx, gy, gyaw = goal
         start = time.monotonic()
         started_at = time.time()
-        post("/api/nav", {"waypoints": [{"x": gx, "y": gy, "yaw": 0.0}]})
+        post("/api/nav", {"waypoints": [{"x": gx, "y": gy, "yaw": gyaw}]})
         state = "unknown"
         while time.monotonic() - start < args.timeout:
             time.sleep(1.0)
@@ -78,7 +85,8 @@ def main(argv=None):
         err = None
         if pose.get("has_pose"):
             err = math.hypot(pose["x"] - gx, pose["y"] - gy)
-        results.append({"goal": [gx, gy], "state": state, "seconds": round(elapsed, 1),
+        results.append({"goal": [gx, gy], "yaw": gyaw, "state": state,
+                        "seconds": round(elapsed, 1),
                         "started_at": round(started_at, 3),
                         "ended_at": round(time.time(), 3),
                         "final": [round(pose.get("x", 0), 2), round(pose.get("y", 0), 2)],

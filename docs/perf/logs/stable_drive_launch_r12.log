@@ -1,0 +1,742 @@
+[INFO] [launch]: All log files can be found below /home/so/.ros/log/2026-11-25-23-31-50-682883-so-desktop-70708
+[INFO] [launch]: Default logging verbosity is set to INFO
+[WARN] [1795617111.536580486] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795617111.536664493] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[INFO] [robot_state_publisher-1]: process started with pid [70731]
+[INFO] [gazebo-2]: process started with pid [70732]
+[INFO] [create-3]: process started with pid [70733]
+[INFO] [parameter_bridge-4]: process started with pid [70734]
+[INFO] [async_slam_toolbox_node-5]: process started with pid [70742]
+[INFO] [controller_server-6]: process started with pid [70743]
+[INFO] [planner_server-7]: process started with pid [70746]
+[INFO] [behavior_server-8]: process started with pid [70747]
+[INFO] [bt_navigator-9]: process started with pid [70748]
+[INFO] [velocity_smoother-10]: process started with pid [70755]
+[INFO] [lifecycle_manager-11]: process started with pid [70761]
+[INFO] [map_server-12]: process started with pid [70764]
+[INFO] [amcl-13]: process started with pid [70779]
+[INFO] [map_saver_server-14]: process started with pid [70788]
+[INFO] [nav_mode_manager-15]: process started with pid [70790]
+[INFO] [umeonigiri_webnav_server-16]: process started with pid [70795]
+[INFO] [yolo_grasp_node-17]: process started with pid [70800]
+[robot_state_publisher-1] [WARN] [1795617111.898764020] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[robot_state_publisher-1] [WARN] [1795617111.898799606] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[robot_state_publisher-1] Warning: link 'vision_target_link' material 'vision_target' undefined.
+[robot_state_publisher-1]          at line 85 in ./urdf_parser/src/model.cpp
+[robot_state_publisher-1] Warning: link 'vision_target_link' material 'vision_target' undefined.
+[robot_state_publisher-1]          at line 85 in ./urdf_parser/src/model.cpp
+[robot_state_publisher-1] [INFO] [1795617112.000780612] [robot_state_publisher]: Robot initialized
+[create-3] [WARN] [1795617111.931742990] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[create-3] [WARN] [1795617111.931793161] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[parameter_bridge-4] [WARN] [1795617111.946972220] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[parameter_bridge-4] [WARN] [1795617111.946996431] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[parameter_bridge-4] [INFO] [1795617112.017308750] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/world/my_custom_world/clock (gz.msgs.Clock) -> /world/my_custom_world/clock (rosgraph_msgs/msg/Clock)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795617112.021221506] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/umeonigiri_bot/cmd_vel (gz.msgs.Twist) -> /model/umeonigiri_bot/cmd_vel (geometry_msgs/msg/Twist)] (Lazy 0)
+[behavior_server-8] [WARN] [1795617112.020377933] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[behavior_server-8] [WARN] [1795617112.020396601] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[velocity_smoother-10] [WARN] [1795617112.016557060] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[velocity_smoother-10] [WARN] [1795617112.016604606] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[lifecycle_manager-11] [WARN] [1795617112.019933978] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[lifecycle_manager-11] [WARN] [1795617112.019959355] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[parameter_bridge-4] [INFO] [1795617112.026023922] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/model/umeonigiri_bot/cmd_vel (geometry_msgs/msg/Twist) -> /model/umeonigiri_bot/cmd_vel (gz.msgs.Twist)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795617112.029017848] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/umeonigiri_bot/odometry (gz.msgs.Odometry) -> /model/umeonigiri_bot/odometry (nav_msgs/msg/Odometry)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795617112.033047572] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/model/umeonigiri_bot/odometry (nav_msgs/msg/Odometry) -> /model/umeonigiri_bot/odometry (gz.msgs.Odometry)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795617112.035372065] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/joint_states (gz.msgs.Model) -> /joint_states (sensor_msgs/msg/JointState)] (Lazy 0)
+[bt_navigator-9] [WARN] [1795617112.036562460] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[bt_navigator-9] [WARN] [1795617112.036608255] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[create-3] [INFO] [1795617112.039395372] [ros_gz_sim]: Requesting list of world names.
+[parameter_bridge-4] [INFO] [1795617112.044074694] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/joint_states (sensor_msgs/msg/JointState) -> /joint_states (gz.msgs.Model)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795617112.047621084] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/scan (gz.msgs.LaserScan) -> /scan (sensor_msgs/msg/LaserScan)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795617112.050812485] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/scan (sensor_msgs/msg/LaserScan) -> /scan (gz.msgs.LaserScan)] (Lazy 0)
+[async_slam_toolbox_node-5] [WARN] [1795617112.051401703] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[async_slam_toolbox_node-5] [WARN] [1795617112.051425330] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[parameter_bridge-4] [INFO] [1795617112.055301041] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera_image (gz.msgs.Image) -> /camera_image (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795617112.058724629] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/camera_image (sensor_msgs/msg/Image) -> /camera_image (gz.msgs.Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795617112.063307693] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/arm_camera_image (gz.msgs.Image) -> /arm_camera_image (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795617112.067368044] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/arm_camera_image (sensor_msgs/msg/Image) -> /arm_camera_image (gz.msgs.Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795617112.071463982] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/umeonigiri_bot/tf (gz.msgs.Pose_V) -> /model/umeonigiri_bot/tf (tf2_msgs/msg/TFMessage)] (Lazy 0)
+[controller_server-6] [WARN] [1795617112.074419697] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[controller_server-6] [WARN] [1795617112.074455283] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[parameter_bridge-4] [INFO] [1795617112.081217577] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/model/umeonigiri_bot/tf (tf2_msgs/msg/TFMessage) -> /model/umeonigiri_bot/tf (gz.msgs.Pose_V)] (Lazy 0)
+[amcl-13] [WARN] [1795617112.102661893] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[amcl-13] [WARN] [1795617112.105139815] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[map_saver_server-14] [WARN] [1795617112.162920486] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[map_saver_server-14] [WARN] [1795617112.165565257] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[lifecycle_manager-11] [INFO] [1795617112.178014668] [lifecycle_manager_navigation]: Creating
+[planner_server-7] [WARN] [1795617112.187454111] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[planner_server-7] [WARN] [1795617112.187538118] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[lifecycle_manager-11] [INFO] [1795617112.190606426] [lifecycle_manager_navigation]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[map_server-12] [WARN] [1795617112.203624636] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[map_server-12] [WARN] [1795617112.203659348] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[async_slam_toolbox_node-5] [INFO] [1795617112.221051479] [slam_toolbox]: Node using stack size 40000000
+[map_saver_server-14] [INFO] [1795617112.227125672] [map_saver]: 
+[map_saver_server-14] 	map_saver lifecycle node launched. 
+[map_saver_server-14] 	Waiting on external lifecycle transitions to activate
+[map_saver_server-14] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[map_saver_server-14] [INFO] [1795617112.228663763] [map_saver]: Creating
+[nav_mode_manager-15] [WARN] [1795617112.230140600] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[nav_mode_manager-15] [WARN] [1795617112.233254119] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[umeonigiri_webnav_server-16] [WARN] [1795617112.242026171] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[umeonigiri_webnav_server-16] [WARN] [1795617112.242068174] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[controller_server-6] [INFO] [1795617112.311022396] [controller_server]: 
+[controller_server-6] 	controller_server lifecycle node launched. 
+[controller_server-6] 	Waiting on external lifecycle transitions to activate
+[controller_server-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-6] [INFO] [1795617112.320628103] [controller_server]: Creating controller server
+[amcl-13] [INFO] [1795617112.449995807] [amcl]: 
+[amcl-13] 	amcl lifecycle node launched. 
+[amcl-13] 	Waiting on external lifecycle transitions to activate
+[amcl-13] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[amcl-13] [INFO] [1795617112.450697618] [amcl]: Creating
+[map_server-12] [INFO] [1795617112.481414820] [map_server]: 
+[map_server-12] 	map_server lifecycle node launched. 
+[map_server-12] 	Waiting on external lifecycle transitions to activate
+[map_server-12] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[map_server-12] [INFO] [1795617112.484562759] [map_server]: Creating
+[velocity_smoother-10] [INFO] [1795617112.514666533] [velocity_smoother]: 
+[velocity_smoother-10] 	velocity_smoother lifecycle node launched. 
+[velocity_smoother-10] 	Waiting on external lifecycle transitions to activate
+[velocity_smoother-10] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[behavior_server-8] [INFO] [1795617112.557067163] [behavior_server]: 
+[behavior_server-8] 	behavior_server lifecycle node launched. 
+[behavior_server-8] 	Waiting on external lifecycle transitions to activate
+[behavior_server-8] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[nav_mode_manager-15] [INFO] [1795617112.623218809] [nav_mode_manager]: nav_mode_manager ready (mode=mapping)
+[controller_server-6] [INFO] [1795617112.631132119] [local_costmap.local_costmap]: 
+[controller_server-6] 	local_costmap lifecycle node launched. 
+[controller_server-6] 	Waiting on external lifecycle transitions to activate
+[controller_server-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-6] [INFO] [1795617112.632996614] [local_costmap.local_costmap]: Creating Costmap
+[umeonigiri_webnav_server-16] [INFO] [1795617112.662314570] [umeonigiri_webnav_vision_listener]: 認識モニター購読状態: ACTIVE (enabled=1)
+[bt_navigator-9] [INFO] [1795617112.699724351] [bt_navigator]: 
+[bt_navigator-9] 	bt_navigator lifecycle node launched. 
+[bt_navigator-9] 	Waiting on external lifecycle transitions to activate
+[bt_navigator-9] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-9] [INFO] [1795617112.702237277] [bt_navigator]: Creating
+[planner_server-7] [INFO] [1795617112.703753492] [planner_server]: 
+[planner_server-7] 	planner_server lifecycle node launched. 
+[planner_server-7] 	Waiting on external lifecycle transitions to activate
+[planner_server-7] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-7] [INFO] [1795617112.708191876] [planner_server]: Creating
+[planner_server-7] [INFO] [1795617112.876631423] [global_costmap.global_costmap]: 
+[planner_server-7] 	global_costmap lifecycle node launched. 
+[planner_server-7] 	Waiting on external lifecycle transitions to activate
+[planner_server-7] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[yolo_grasp_node-17] [WARN] [1795617112.879184310] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[yolo_grasp_node-17] [WARN] [1795617112.879226606] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[planner_server-7] [INFO] [1795617112.880312283] [global_costmap.global_costmap]: Creating Costmap
+[yolo_grasp_node-17] [INFO] [1795617112.978877903] [yolo_grasp]: NPU 検出を開始: 入力トピック /arm_camera/image_raw, ラベル 80 件
+[umeonigiri_webnav_server-16] [umeonigiri_webnav] Web UI ready at http://localhost:8088 (bind 0.0.0.0:8088)
+[create-3] [INFO] [1795617113.218060398] [ros_gz_sim]: Waiting messages on topic [/robot_description].
+[create-3] [INFO] [1795617113.235576796] [ros_gz_sim]: Entity creation successful.
+[lifecycle_manager-11] [INFO] [1795617113.312929438] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-11] [INFO] [1795617113.313084327] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[controller_server-6] [INFO] [1795617113.314137335] [controller_server]: Configuring controller interface
+[controller_server-6] [INFO] [1795617113.314211425] [controller_server]: getting progress checker plugins..
+[controller_server-6] [INFO] [1795617113.314917319] [controller_server]: getting goal checker plugins..
+[controller_server-6] [INFO] [1795617113.315405904] [controller_server]: Controller frequency set to 20.0000Hz
+[controller_server-6] [INFO] [1795617113.315580044] [local_costmap.local_costmap]: Configuring
+[controller_server-6] [INFO] [1795617113.347460816] [local_costmap.local_costmap]: Using plugin "obstacle_layer"
+[controller_server-6] [INFO] [1795617113.369496982] [local_costmap.local_costmap]: Subscribed to Topics: scan
+[INFO] [create-3]: process has finished cleanly [pid 70733]
+[controller_server-6] [INFO] [1795617113.379614320] [local_costmap.local_costmap]: Initialized plugin "obstacle_layer"
+[controller_server-6] [INFO] [1795617113.379679659] [local_costmap.local_costmap]: Using plugin "inflation_layer"
+[controller_server-6] [INFO] [1795617113.380530524] [local_costmap.local_costmap]: Initialized plugin "inflation_layer"
+[controller_server-6] [INFO] [1795617113.430185550] [controller_server]: Created progress_checker : progress_checker of type nav2_controller::SimpleProgressChecker
+[controller_server-6] [INFO] [1795617113.431669970] [controller_server]: Controller Server has progress_checker  progress checkers available.
+[controller_server-6] [INFO] [1795617113.433096636] [controller_server]: Created goal checker : general_goal_checker of type nav2_controller::SimpleGoalChecker
+[controller_server-6] [INFO] [1795617113.433613514] [controller_server]: Controller Server has general_goal_checker  goal checkers available.
+[controller_server-6] [INFO] [1795617113.435437173] [controller_server]: Created controller : FollowPath of type nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController
+[controller_server-6] [INFO] [1795617113.451089659] [controller_server]: Controller Server has FollowPath  controllers available.
+[lifecycle_manager-11] [INFO] [1795617113.479462251] [lifecycle_manager_navigation]: [34m[1mConfiguring planner_server[0m[0m
+[planner_server-7] [INFO] [1795617113.480108640] [planner_server]: Configuring
+[planner_server-7] [INFO] [1795617113.480175146] [global_costmap.global_costmap]: Configuring
+[planner_server-7] [INFO] [1795617113.522683425] [global_costmap.global_costmap]: Using plugin "static_layer"
+[planner_server-7] [INFO] [1795617113.541382634] [global_costmap.global_costmap]: Subscribing to the map topic (/map) with transient local durability
+[planner_server-7] [INFO] [1795617113.546837859] [global_costmap.global_costmap]: Initialized plugin "static_layer"
+[planner_server-7] [INFO] [1795617113.546905823] [global_costmap.global_costmap]: Using plugin "obstacle_layer"
+[planner_server-7] [INFO] [1795617113.548453541] [global_costmap.global_costmap]: Subscribed to Topics: scan
+[planner_server-7] [INFO] [1795617113.555336889] [global_costmap.global_costmap]: Initialized plugin "obstacle_layer"
+[planner_server-7] [INFO] [1795617113.555402228] [global_costmap.global_costmap]: Using plugin "inflation_layer"
+[planner_server-7] [INFO] [1795617113.556209340] [global_costmap.global_costmap]: Initialized plugin "inflation_layer"
+[planner_server-7] [INFO] [1795617113.616972582] [planner_server]: Created global planner plugin GridBased of type nav2_smac_planner::SmacPlanner2D
+[planner_server-7] [INFO] [1795617113.617060964] [planner_server]: Configuring GridBased of type SmacPlanner2D
+[planner_server-7] [INFO] [1795617113.623453395] [planner_server]: Configured plugin GridBased of type SmacPlanner2D with tolerance 0.12, maximum iterations 1000000, max on approach iterations 1000, and allowing unknown traversal.
+[planner_server-7] [INFO] [1795617113.623540319] [planner_server]: Planner Server has GridBased  planners available.
+[lifecycle_manager-11] [INFO] [1795617113.651017125] [lifecycle_manager_navigation]: [34m[1mConfiguring behavior_server[0m[0m
+[behavior_server-8] [INFO] [1795617113.651852823] [behavior_server]: Configuring
+[behavior_server-8] [INFO] [1795617113.676213482] [behavior_server]: Creating behavior plugin spin of type nav2_behaviors::Spin
+[behavior_server-8] [INFO] [1795617113.680263043] [behavior_server]: Creating behavior plugin backup of type nav2_behaviors::BackUp
+[behavior_server-8] [INFO] [1795617113.684118628] [behavior_server]: Creating behavior plugin drive_on_heading of type nav2_behaviors::DriveOnHeading
+[behavior_server-8] [INFO] [1795617113.687814949] [behavior_server]: Creating behavior plugin wait of type nav2_behaviors::Wait
+[behavior_server-8] [INFO] [1795617113.719401987] [behavior_server]: Configuring spin
+[behavior_server-8] [INFO] [1795617113.744774818] [behavior_server]: Configuring backup
+[behavior_server-8] [INFO] [1795617113.767458832] [behavior_server]: Configuring drive_on_heading
+[behavior_server-8] [INFO] [1795617113.786769720] [behavior_server]: Configuring wait
+[lifecycle_manager-11] [INFO] [1795617113.804634398] [lifecycle_manager_navigation]: [34m[1mConfiguring bt_navigator[0m[0m
+[bt_navigator-9] [INFO] [1795617113.805638110] [bt_navigator]: Configuring
+[bt_navigator-9] [INFO] [1795617113.844765679] [bt_navigator]: Creating navigator id navigate_to_pose of type nav2_bt_navigator::NavigateToPoseNavigator
+[bt_navigator-9] [WARN] [1795617113.868030451] [bt_navigator]: Error_code parameters were not set. Using default values of: follow_path_error_code compute_path_error_code
+[bt_navigator-9] Make sure these match your BT and there are not other sources of error codes youreported to your application
+[bt_navigator-9] [INFO] [1795617114.025682124] [bt_navigator]: Creating navigator id navigate_through_poses of type nav2_bt_navigator::NavigateThroughPosesNavigator
+[lifecycle_manager-11] [INFO] [1795617114.083031421] [lifecycle_manager_navigation]: [34m[1mConfiguring velocity_smoother[0m[0m
+[velocity_smoother-10] [INFO] [1795617114.083914373] [velocity_smoother]: Configuring velocity smoother
+[lifecycle_manager-11] [INFO] [1795617114.104858743] [lifecycle_manager_navigation]: [34m[1mConfiguring map_saver[0m[0m
+[map_saver_server-14] [INFO] [1795617114.105870623] [map_saver]: Configuring
+[lifecycle_manager-11] [INFO] [1795617114.125522796] [lifecycle_manager_navigation]: [34m[1mActivating controller_server[0m[0m
+[controller_server-6] [INFO] [1795617114.126156060] [controller_server]: Activating
+[controller_server-6] [INFO] [1795617114.126224608] [local_costmap.local_costmap]: Activating
+[controller_server-6] [INFO] [1795617114.126240359] [local_costmap.local_costmap]: Checking transform
+[controller_server-6] [INFO] [1795617114.126300739] [local_costmap.local_costmap]: Timed out waiting for transform from base_footprint to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[gazebo-2] Warning: link 'vision_target_link' material 'vision_target' undefined.
+[gazebo-2]          at line 85 in ./urdf_parser/src/model.cpp
+[gazebo-2] Warning: link 'vision_target_link' material 'vision_target' undefined.
+[gazebo-2]          at line 85 in ./urdf_parser/src/model.cpp
+[gazebo-2] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="umeonigiri_bot"]/link[@name="base_footprint"]/sensor[@name="lidar"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[async_slam_toolbox_node-5] [INFO] [1795617114.625927055] [slam_toolbox]: Configuring
+[controller_server-6] [INFO] [1795617114.626379177] [local_costmap.local_costmap]: Timed out waiting for transform from base_footprint to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[async_slam_toolbox_node-5] [INFO] [1795617114.678222202] [slam_toolbox]: Using solver plugin solver_plugins::CeresSolver
+[async_slam_toolbox_node-5] [INFO] [1795617114.685659768] [slam_toolbox]: CeresSolver: Using SCHUR_JACOBI preconditioner.
+[gazebo-2] libEGL warning: Not allowed to force software rendering when API explicitly selects a hardware device.
+[gazebo-2] libEGL warning: MESA-LOADER: failed to open rknpu: /usr/lib/dri/rknpu_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib/aarch64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri)
+[gazebo-2] 
+[gazebo-2] libEGL warning: Not allowed to force software rendering when API explicitly selects a hardware device.
+[async_slam_toolbox_node-5] [INFO] [1795617114.789906158] [slam_toolbox]: Activating
+[controller_server-6] [INFO] [1795617115.126471949] [local_costmap.local_costmap]: Timed out waiting for transform from base_footprint to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[controller_server-6] [INFO] [1795617115.626517881] [local_costmap.local_costmap]: start
+[controller_server-6] [INFO] [1795617115.828476825] [controller_server]: Activating controller: FollowPath of type regulated_pure_pursuit_controller::RegulatedPurePursuitController
+[controller_server-6] [INFO] [1795617115.828664674] [controller_server]: Creating bond (controller_server) to lifecycle manager.
+[lifecycle_manager-11] [INFO] [1795617115.963687837] [lifecycle_manager_navigation]: Server controller_server connected with bond.
+[lifecycle_manager-11] [INFO] [1795617115.963756385] [lifecycle_manager_navigation]: [34m[1mActivating planner_server[0m[0m
+[planner_server-7] [INFO] [1795617115.964336852] [planner_server]: Activating
+[planner_server-7] [INFO] [1795617115.964396941] [global_costmap.global_costmap]: Activating
+[planner_server-7] [INFO] [1795617115.964413859] [global_costmap.global_costmap]: Checking transform
+[planner_server-7] [INFO] [1795617115.964470739] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-7] [INFO] [1795617116.464546866] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[async_slam_toolbox_node-5] Info: clipped range threshold to be within minimum and maximum range!
+[async_slam_toolbox_node-5] Registering sensor: [Custom Described Lidar]
+[parameter_bridge-4] [INFO] [1795617116.517865305] [ros_gz_bridge]: Passing message from ROS tf2_msgs/msg/TFMessage to Gazebo gz.msgs.Pose_V (showing msg only once per type)
+[planner_server-7] [ERROR] [1795617116.816195662] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [INFO] [1795617116.964597628] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Lookup would require extrapolation into the past.  Requested time 0.630000 but the earliest data is at time 0.700000, when looking up transform from frame [base_footprint] to frame [map]
+[planner_server-7] [INFO] [1795617117.464746255] [global_costmap.global_costmap]: start
+[planner_server-7] [ERROR] [1795617117.816428999] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617117.825704234] [yolo_grasp]: トピック入力 60 フレーム  推論 20.3 ms  検出 2
+[planner_server-7] [WARN] [1795617118.468307716] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617118.468431394] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [INFO] [1795617118.518025828] [planner_server]: Activating plugin GridBased of type SmacPlanner2D
+[planner_server-7] [INFO] [1795617118.529866501] [planner_server]: Creating bond (planner_server) to lifecycle manager.
+[lifecycle_manager-11] [INFO] [1795617118.642083815] [lifecycle_manager_navigation]: Server planner_server connected with bond.
+[lifecycle_manager-11] [INFO] [1795617118.642217410] [lifecycle_manager_navigation]: [34m[1mActivating behavior_server[0m[0m
+[behavior_server-8] [INFO] [1795617118.643185829] [behavior_server]: Activating
+[behavior_server-8] [INFO] [1795617118.643237167] [behavior_server]: Activating spin
+[behavior_server-8] [INFO] [1795617118.643254085] [behavior_server]: Activating backup
+[behavior_server-8] [INFO] [1795617118.643267794] [behavior_server]: Activating drive_on_heading
+[behavior_server-8] [INFO] [1795617118.643282379] [behavior_server]: Activating wait
+[behavior_server-8] [INFO] [1795617118.643303673] [behavior_server]: Creating bond (behavior_server) to lifecycle manager.
+[lifecycle_manager-11] [INFO] [1795617118.762967604] [lifecycle_manager_navigation]: Server behavior_server connected with bond.
+[lifecycle_manager-11] [INFO] [1795617118.763101491] [lifecycle_manager_navigation]: [34m[1mActivating bt_navigator[0m[0m
+[bt_navigator-9] [INFO] [1795617118.764888691] [bt_navigator]: Activating
+[planner_server-7] [ERROR] [1795617118.815820243] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[bt_navigator-9] [INFO] [1795617118.935581600] [bt_navigator]: Creating bond (bt_navigator) to lifecycle manager.
+[lifecycle_manager-11] [INFO] [1795617119.047891977] [lifecycle_manager_navigation]: Server bt_navigator connected with bond.
+[lifecycle_manager-11] [INFO] [1795617119.047983569] [lifecycle_manager_navigation]: [34m[1mActivating velocity_smoother[0m[0m
+[velocity_smoother-10] [INFO] [1795617119.049171341] [velocity_smoother]: Activating
+[velocity_smoother-10] [INFO] [1795617119.049390111] [velocity_smoother]: Creating bond (velocity_smoother) to lifecycle manager.
+[umeonigiri_webnav_server-16] [INFO] [1795617119.072403781] [umeonigiri_webnav_commander]: Nav2 が起動しました
+[lifecycle_manager-11] [INFO] [1795617119.176525201] [lifecycle_manager_navigation]: Server velocity_smoother connected with bond.
+[lifecycle_manager-11] [INFO] [1795617119.176620001] [lifecycle_manager_navigation]: [34m[1mActivating map_saver[0m[0m
+[map_saver_server-14] [INFO] [1795617119.177225555] [map_saver]: Activating
+[map_saver_server-14] [INFO] [1795617119.177282435] [map_saver]: Creating bond (map_saver) to lifecycle manager.
+[lifecycle_manager-11] [INFO] [1795617119.289136334] [lifecycle_manager_navigation]: Server map_saver connected with bond.
+[lifecycle_manager-11] [INFO] [1795617119.289286848] [lifecycle_manager_navigation]: [34m[1mManaged nodes are active[0m[0m
+[lifecycle_manager-11] [INFO] [1795617119.289312225] [lifecycle_manager_navigation]: [34m[1mCreating bond timer...[0m[0m
+[planner_server-7] [WARN] [1795617119.468648038] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617119.518917755] [yolo_grasp]: トピック入力 120 フレーム  推論 26.8 ms  検出 2
+[planner_server-7] [ERROR] [1795617119.815884148] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617120.467650672] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617120.815784426] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617121.136292589] [yolo_grasp]: トピック入力 180 フレーム  推論 25.0 ms  検出 2
+[planner_server-7] [WARN] [1795617121.467634277] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617121.816577291] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617122.467608846] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[umeonigiri_webnav_server-16] [INFO] [1795617122.669088391] [umeonigiri_webnav_vision_listener]: 認識モニター購読状態: SUSPENDED (enabled=1)
+[planner_server-7] [ERROR] [1795617122.817130681] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617122.948171361] [yolo_grasp]: トピック入力 240 フレーム  推論 24.8 ms  検出 2
+[planner_server-7] [WARN] [1795617123.467626585] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617123.816739860] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617124.467650155] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617124.467747872] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617124.816218355] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617124.851991879] [yolo_grasp]: トピック入力 300 フレーム  推論 21.0 ms  検出 2
+[planner_server-7] [WARN] [1795617125.467583583] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617125.816313771] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617126.469295452] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617126.489245807] [yolo_grasp]: トピック入力 360 フレーム  推論 20.3 ms  検出 2
+[planner_server-7] [ERROR] [1795617126.815826952] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617127.467612578] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [WARN] [1795617127.467694252] [global_costmap.global_costmap]: Can't update static costmap layer, no map received
+[planner_server-7] [ERROR] [1795617127.815939545] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617128.024107030] [yolo_grasp]: トピック入力 420 フレーム  推論 22.4 ms  検出 2
+[planner_server-7] [WARN] [1795617128.467640171] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617128.817475870] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617129.467630986] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617129.568644416] [yolo_grasp]: トピック入力 480 フレーム  推論 26.9 ms  検出 2
+[planner_server-7] [ERROR] [1795617129.816509147] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617130.470370107] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617130.470432238] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617130.815937929] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617131.249809310] [yolo_grasp]: トピック入力 540 フレーム  推論 21.1 ms  検出 2
+[planner_server-7] [WARN] [1795617131.467605521] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617131.815985649] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617132.467633863] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617132.816613801] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617133.122989287] [yolo_grasp]: トピック入力 600 フレーム  推論 33.2 ms  検出 2
+[planner_server-7] [WARN] [1795617133.467849429] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617133.816293613] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617134.467716085] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617134.816047176] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617134.877610024] [yolo_grasp]: トピック入力 660 フレーム  推論 26.0 ms  検出 2
+[planner_server-7] [WARN] [1795617135.467763541] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617135.815895197] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617136.430474705] [yolo_grasp]: トピック入力 720 フレーム  推論 19.4 ms  検出 2
+[planner_server-7] [WARN] [1795617136.467690765] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617136.467827862] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617136.815949974] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617137.467702524] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [WARN] [1795617137.467853038] [global_costmap.global_costmap]: Can't update static costmap layer, no map received
+[planner_server-7] [ERROR] [1795617137.815788839] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617138.002353107] [yolo_grasp]: トピック入力 780 フレーム  推論 20.0 ms  検出 2
+[planner_server-7] [WARN] [1795617138.467704888] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617138.815913890] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617139.468208487] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617139.555553787] [yolo_grasp]: トピック入力 840 フレーム  推論 26.1 ms  検出 2
+[planner_server-7] [ERROR] [1795617139.822414321] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617140.467722782] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617140.821736182] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617141.467705136] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617141.467811871] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617141.487868701] [yolo_grasp]: トピック入力 900 フレーム  推論 25.8 ms  検出 2
+[planner_server-7] [ERROR] [1795617141.815901519] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617142.467743180] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617142.816291866] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617143.352733989] [yolo_grasp]: トピック入力 960 フレーム  推論 25.9 ms  検出 2
+[planner_server-7] [WARN] [1795617143.467701002] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617143.817890394] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617144.468433347] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617144.815889334] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617144.867732144] [yolo_grasp]: トピック入力 1020 フレーム  推論 21.8 ms  検出 2
+[planner_server-7] [WARN] [1795617145.467806076] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617145.816411662] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617146.385300994] [yolo_grasp]: トピック入力 1080 フレーム  推論 23.7 ms  検出 2
+[planner_server-7] [WARN] [1795617146.468327169] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617146.468398618] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617146.815975051] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617147.467604974] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [WARN] [1795617147.467685755] [global_costmap.global_costmap]: Can't update static costmap layer, no map received
+[planner_server-7] [ERROR] [1795617147.815880727] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617148.006292202] [yolo_grasp]: トピック入力 1140 フレーム  推論 28.9 ms  検出 2
+[planner_server-7] [WARN] [1795617148.467632172] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617148.817437219] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617149.467726049] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617149.816058358] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617149.828794979] [yolo_grasp]: トピック入力 1200 フレーム  推論 44.8 ms  検出 2
+[planner_server-7] [WARN] [1795617150.467730279] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617150.819020573] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617151.467771417] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617151.816297039] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617151.828290044] [yolo_grasp]: トピック入力 1260 フレーム  推論 29.7 ms  検出 2
+[planner_server-7] [WARN] [1795617152.467681185] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617152.467780922] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617152.816050176] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617153.467745362] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617153.497885741] [yolo_grasp]: トピック入力 1320 フレーム  推論 20.8 ms  検出 2
+[planner_server-7] [ERROR] [1795617153.816269179] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617154.467731506] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617154.816152051] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617155.028519750] [yolo_grasp]: トピック入力 1380 フレーム  推論 26.2 ms  検出 2
+[planner_server-7] [WARN] [1795617155.467686849] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617155.815936751] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617156.467713445] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617156.710881955] [yolo_grasp]: トピック入力 1440 フレーム  推論 26.1 ms  検出 2
+[planner_server-7] [ERROR] [1795617156.815883397] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617157.467692884] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617157.467785332] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [WARN] [1795617157.467896444] [global_costmap.global_costmap]: Can't update static costmap layer, no map received
+[planner_server-7] [ERROR] [1795617157.818080366] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617158.467734808] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617158.816153425] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617158.816305074] [yolo_grasp]: トピック入力 1500 フレーム  推論 31.0 ms  検出 2
+[planner_server-7] [WARN] [1795617159.480702012] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617159.816252517] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617160.467889702] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617160.821022182] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617161.141549270] [yolo_grasp]: トピック入力 1560 フレーム  推論 20.1 ms  検出 2
+[planner_server-7] [WARN] [1795617161.467713056] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617161.815942515] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617162.467674964] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617162.816317602] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617162.839269004] [yolo_grasp]: トピック入力 1620 フレーム  推論 26.6 ms  検出 2
+[planner_server-7] [WARN] [1795617163.468070550] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617163.468169415] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617163.816160759] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617164.425474025] [yolo_grasp]: トピック入力 1680 フレーム  推論 25.1 ms  検出 2
+[planner_server-7] [WARN] [1795617164.467763592] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617164.815857224] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617165.467740388] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617165.815960511] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617165.946572257] [yolo_grasp]: トピック入力 1740 フレーム  推論 21.2 ms  検出 2
+[planner_server-7] [WARN] [1795617166.467757120] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617166.815873920] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617167.467628297] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [WARN] [1795617167.467734453] [global_costmap.global_costmap]: Can't update static costmap layer, no map received
+[yolo_grasp_node-17] [INFO] [1795617167.638472664] [yolo_grasp]: トピック入力 1800 フレーム  推論 27.0 ms  検出 2
+[planner_server-7] [ERROR] [1795617167.820814541] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617168.467766282] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617168.815847322] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617169.467717859] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617169.467823723] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617169.815985160] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617170.038144082] [yolo_grasp]: トピック入力 1860 フレーム  推論 26.9 ms  検出 2
+[planner_server-7] [WARN] [1795617170.467630585] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617170.815721054] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617171.467641812] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617171.669920273] [yolo_grasp]: トピック入力 1920 フレーム  推論 25.7 ms  検出 2
+[planner_server-7] [ERROR] [1795617171.815693682] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617172.467605710] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617172.816010648] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617173.341212499] [yolo_grasp]: トピック入力 1980 フレーム  推論 27.9 ms  検出 2
+[planner_server-7] [WARN] [1795617173.467633382] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617173.815887432] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617174.467611953] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617174.816025124] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617174.944484450] [yolo_grasp]: トピック入力 2040 フレーム  推論 31.1 ms  検出 2
+[planner_server-7] [WARN] [1795617175.467600323] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617175.467649611] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617175.816746561] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617176.468141810] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617176.595673477] [yolo_grasp]: トピック入力 2100 フレーム  推論 26.0 ms  検出 2
+[planner_server-7] [ERROR] [1795617176.816359927] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617177.467848484] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [WARN] [1795617177.467933935] [global_costmap.global_costmap]: Can't update static costmap layer, no map received
+[planner_server-7] [ERROR] [1795617177.816559641] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617178.467648628] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617178.541398399] [yolo_grasp]: トピック入力 2160 フレーム  推論 19.8 ms  検出 2
+[planner_server-7] [ERROR] [1795617178.816043516] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617179.467632639] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617179.817903821] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617180.260032089] [yolo_grasp]: トピック入力 2220 フレーム  推論 20.9 ms  検出 2
+[planner_server-7] [WARN] [1795617180.467607733] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617180.467659937] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617180.816105013] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617181.467657310] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617181.816626329] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617181.891850930] [yolo_grasp]: トピック入力 2280 フレーム  推論 19.4 ms  検出 2
+[planner_server-7] [WARN] [1795617182.467641372] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617182.815995465] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617183.467651483] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617183.691716567] [yolo_grasp]: トピック入力 2340 フレーム  推論 25.7 ms  検出 2
+[planner_server-7] [ERROR] [1795617183.815861067] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617184.467766671] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617184.816039391] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617185.467632290] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617185.467694702] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617185.655150526] [yolo_grasp]: トピック入力 2400 フレーム  推論 25.8 ms  検出 2
+[planner_server-7] [ERROR] [1795617185.817411200] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617186.467614048] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617186.816337633] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617187.467639024] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [WARN] [1795617187.467755973] [global_costmap.global_costmap]: Can't update static costmap layer, no map received
+[yolo_grasp_node-17] [INFO] [1795617187.805012794] [yolo_grasp]: トピック入力 2460 フレーム  推論 26.8 ms  検出 2
+[planner_server-7] [ERROR] [1795617187.816445278] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617188.467701376] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617188.816986641] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617189.467625816] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617189.546930990] [yolo_grasp]: トピック入力 2520 フレーム  推論 25.6 ms  検出 2
+[planner_server-7] [ERROR] [1795617189.815968317] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617190.467703689] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617190.467808098] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617190.816283712] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617191.270846182] [yolo_grasp]: トピック入力 2580 フレーム  推論 26.6 ms  検出 2
+[planner_server-7] [WARN] [1795617191.467722370] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617191.815827712] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617192.467759142] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617192.816000215] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617192.846860231] [yolo_grasp]: トピック入力 2640 フレーム  推論 24.6 ms  検出 2
+[planner_server-7] [WARN] [1795617193.467726501] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617193.895872276] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617194.467727680] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617194.816113341] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617195.260789312] [yolo_grasp]: トピック入力 2700 フレーム  推論 28.6 ms  検出 2
+[planner_server-7] [WARN] [1795617195.467729424] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617195.467855124] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617195.816626741] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617196.467729098] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617196.816672599] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617197.467731943] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [WARN] [1795617197.467917431] [global_costmap.global_costmap]: Can't update static costmap layer, no map received
+[yolo_grasp_node-17] [INFO] [1795617197.627305031] [yolo_grasp]: トピック入力 2760 フレーム  推論 20.5 ms  検出 2
+[planner_server-7] [ERROR] [1795617197.816019628] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617198.467738241] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617198.815886032] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617199.211205608] [yolo_grasp]: トピック入力 2820 フレーム  推論 25.1 ms  検出 2
+[planner_server-7] [WARN] [1795617199.467740402] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617199.815806625] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617200.467739583] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617200.467884241] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617200.731758090] [yolo_grasp]: トピック入力 2880 フレーム  推論 25.2 ms  検出 2
+[planner_server-7] [ERROR] [1795617200.815789856] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617201.467751233] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617201.815880339] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617202.340240006] [yolo_grasp]: トピック入力 2940 フレーム  推論 25.7 ms  検出 2
+[planner_server-7] [WARN] [1795617202.471709702] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617202.816131729] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617203.467724411] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617203.816842961] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617204.133254233] [yolo_grasp]: トピック入力 3000 フレーム  推論 26.7 ms  検出 2
+[planner_server-7] [WARN] [1795617204.467824455] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617204.816070759] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617205.468342038] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617205.474434043] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617205.816255644] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617206.066511459] [yolo_grasp]: トピック入力 3060 フレーム  推論 20.6 ms  検出 2
+[planner_server-7] [WARN] [1795617206.467696987] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617206.816633486] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617207.467710944] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [WARN] [1795617207.467897601] [global_costmap.global_costmap]: Can't update static costmap layer, no map received
+[yolo_grasp_node-17] [INFO] [1795617207.758859970] [yolo_grasp]: トピック入力 3120 フレーム  推論 21.1 ms  検出 2
+[planner_server-7] [ERROR] [1795617207.816061295] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617208.467695897] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617208.815929947] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617209.439830848] [yolo_grasp]: トピック入力 3180 フレーム  推論 26.7 ms  検出 2
+[planner_server-7] [WARN] [1795617209.468107106] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617209.816648331] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617210.467738000] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617210.816113920] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617210.971497881] [yolo_grasp]: トピック入力 3240 フレーム  推論 20.2 ms  検出 2
+[planner_server-7] [WARN] [1795617211.467758095] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617211.468550224] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617211.816302358] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617212.467618493] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617212.677030030] [yolo_grasp]: トピック入力 3300 フレーム  推論 26.6 ms  検出 2
+[planner_server-7] [ERROR] [1795617212.815943781] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617213.467618422] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617213.819976746] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617214.467641797] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617214.536461839] [yolo_grasp]: トピック入力 3360 フレーム  推論 26.7 ms  検出 2
+[planner_server-7] [ERROR] [1795617214.815807948] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617215.467608697] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617215.815770521] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617216.267677971] [yolo_grasp]: トピック入力 3420 フレーム  推論 24.4 ms  検出 2
+[planner_server-7] [WARN] [1795617216.467751271] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617216.816142381] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617217.467627947] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617217.467700277] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [WARN] [1795617217.467777566] [global_costmap.global_costmap]: Can't update static costmap layer, no map received
+[planner_server-7] [ERROR] [1795617217.815795985] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617217.820439415] [yolo_grasp]: トピック入力 3480 フレーム  推論 26.8 ms  検出 2
+[planner_server-7] [WARN] [1795617218.467638283] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617218.816182305] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617219.366158005] [yolo_grasp]: トピック入力 3540 フレーム  推論 19.9 ms  検出 2
+[planner_server-7] [WARN] [1795617219.467609614] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617219.815950973] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617220.467864209] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617220.816074359] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617220.997898382] [yolo_grasp]: トピック入力 3600 フレーム  推論 27.9 ms  検出 2
+[planner_server-7] [WARN] [1795617221.467649300] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617221.816227844] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617222.469206837] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617222.469269834] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617222.816016810] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617222.942863174] [yolo_grasp]: トピック入力 3660 フレーム  推論 20.0 ms  検出 2
+[planner_server-7] [WARN] [1795617223.470298647] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617223.816118766] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617224.467625215] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617224.750201720] [yolo_grasp]: トピック入力 3720 フレーム  推論 41.5 ms  検出 2
+[planner_server-7] [ERROR] [1795617224.815831981] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617225.467612594] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617225.815844465] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617226.255853315] [yolo_grasp]: トピック入力 3780 フレーム  推論 26.0 ms  検出 2
+[planner_server-7] [WARN] [1795617226.467610205] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617226.816306122] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617227.467644874] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [WARN] [1795617227.467762703] [global_costmap.global_costmap]: Can't update static costmap layer, no map received
+[planner_server-7] [ERROR] [1795617227.815808244] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617227.903635831] [yolo_grasp]: トピック入力 3840 フレーム  推論 41.3 ms  検出 2
+[planner_server-7] [WARN] [1795617228.467631430] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617228.467684220] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617228.816670663] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617229.448951318] [yolo_grasp]: トピック入力 3900 フレーム  推論 26.4 ms  検出 2
+[planner_server-7] [WARN] [1795617229.467737570] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617229.816075963] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617230.467754168] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617230.817267661] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617231.275023509] [yolo_grasp]: トピック入力 3960 フレーム  推論 26.0 ms  検出 2
+[planner_server-7] [WARN] [1795617231.467834921] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617231.816187332] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617232.467747370] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617232.818547968] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617233.193398295] [yolo_grasp]: トピック入力 4020 フレーム  推論 26.2 ms  検出 2
+[planner_server-7] [WARN] [1795617233.467729211] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617233.467860749] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617233.815822931] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617234.467627898] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617234.815793368] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617234.817059751] [yolo_grasp]: トピック入力 4080 フレーム  推論 26.0 ms  検出 2
+[planner_server-7] [WARN] [1795617235.467619588] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617235.816132423] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617236.326860503] [yolo_grasp]: トピック入力 4140 フレーム  推論 21.5 ms  検出 2
+[planner_server-7] [WARN] [1795617236.467613569] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617236.816199898] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617237.467616541] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [WARN] [1795617237.467711330] [global_costmap.global_costmap]: Can't update static costmap layer, no map received
+[planner_server-7] [ERROR] [1795617237.815837999] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617237.909537151] [yolo_grasp]: トピック入力 4200 フレーム  推論 19.5 ms  検出 2
+[planner_server-7] [WARN] [1795617238.467615956] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617238.815764200] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617239.467616476] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617239.467677725] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617239.696102700] [yolo_grasp]: トピック入力 4260 フレーム  推論 26.4 ms  検出 2
+[planner_server-7] [ERROR] [1795617239.815884291] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617240.467713467] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617240.815899896] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617241.467699552] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617241.730131055] [yolo_grasp]: トピック入力 4320 フレーム  推論 26.5 ms  検出 2
+[planner_server-7] [ERROR] [1795617241.815835801] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617242.470418417] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617242.815980743] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617243.467598555] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617243.471458689] [yolo_grasp]: トピック入力 4380 フレーム  推論 25.6 ms  検出 2
+[planner_server-7] [ERROR] [1795617243.816122678] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617244.467622293] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617244.816185186] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617245.069130200] [yolo_grasp]: トピック入力 4440 フレーム  推論 31.7 ms  検出 2
+[planner_server-7] [WARN] [1795617245.467594015] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617245.467645347] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617245.815754101] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617246.467684046] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617246.548038300] [yolo_grasp]: トピック入力 4500 フレーム  推論 20.2 ms  検出 2
+[planner_server-7] [ERROR] [1795617246.816193226] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617247.467605676] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [WARN] [1795617247.467684424] [global_costmap.global_costmap]: Can't update static costmap layer, no map received
+[planner_server-7] [ERROR] [1795617247.816053580] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617248.265453745] [yolo_grasp]: トピック入力 4560 フレーム  推論 26.6 ms  検出 2
+[planner_server-7] [WARN] [1795617248.467706560] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617248.821023151] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617249.467689488] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617249.816338872] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617250.222726188] [yolo_grasp]: トピック入力 4620 フレーム  推論 30.7 ms  検出 2
+[planner_server-7] [WARN] [1795617250.467629705] [nav2_costmap_2d]: Robot is out of bounds of the costmap
+[planner_server-7] [WARN] [1795617250.467692704] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617250.816255722] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617251.467761116] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617251.816188476] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617251.984817106] [yolo_grasp]: トピック入力 4680 フレーム  推論 21.8 ms  検出 2
+[planner_server-7] [WARN] [1795617252.467723806] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617252.815987214] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617253.467637348] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[yolo_grasp_node-17] [INFO] [1795617253.521318836] [yolo_grasp]: トピック入力 4740 フレーム  推論 27.5 ms  検出 2
+[planner_server-7] [ERROR] [1795617253.815988508] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[planner_server-7] [WARN] [1795617254.467626571] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617254.816324769] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[yolo_grasp_node-17] [INFO] [1795617255.105632493] [yolo_grasp]: トピック入力 4800 フレーム  推論 26.5 ms  検出 2
+[planner_server-7] [WARN] [1795617255.467617968] [global_costmap.global_costmap]: Sensor origin at (-4.00, -4.00) is out of map bounds (0.00, 0.00) to (4.98, 4.98). The costmap cannot raytrace for it.
+[planner_server-7] [ERROR] [1795617255.818655265] [global_costmap.global_costmap]: Received map message is malformed. Rejecting.
+[robot_state_publisher-1] [INFO] [1795617255.845671775] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[parameter_bridge-4] [INFO] [1795617255.854184561] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[async_slam_toolbox_node-5] [INFO] [1795617255.857783399] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[controller_server-6] [INFO] [1795617255.862099729] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[controller_server-6] [INFO] [1795617255.862250227] [controller_server]: Running Nav2 LifecycleNode rcl preshutdown (controller_server)
+[controller_server-6] [INFO] [1795617255.862346476] [controller_server]: Deactivating
+[controller_server-6] [INFO] [1795617255.862368351] [controller_server]: Deactivating controller: FollowPath of type regulated_pure_pursuit_controller::RegulatedPurePursuitController
+[controller_server-6] [INFO] [1795617255.862405392] [local_costmap.local_costmap]: Deactivating
+[async_slam_toolbox_node-5] Unregistering sensor: Custom Described Lidar
+[planner_server-7] [INFO] [1795617255.868460621] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[planner_server-7] [INFO] [1795617255.868607328] [planner_server]: Running Nav2 LifecycleNode rcl preshutdown (planner_server)
+[planner_server-7] [INFO] [1795617255.868697160] [planner_server]: Deactivating
+[planner_server-7] [INFO] [1795617255.868736826] [global_costmap.global_costmap]: Deactivating
+[behavior_server-8] [INFO] [1795617255.876971074] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[behavior_server-8] [INFO] [1795617255.877399236] [behavior_server]: Running Nav2 LifecycleNode rcl preshutdown (behavior_server)
+[behavior_server-8] [INFO] [1795617255.877612442] [behavior_server]: Deactivating
+[behavior_server-8] [INFO] [1795617255.877693525] [behavior_server]: Destroying bond (behavior_server) to lifecycle manager.
+[behavior_server-8] [INFO] [1795617255.888751951] [behavior_server]: Cleaning up
+[lifecycle_manager-11] [INFO] [1795617255.889482568] [lifecycle_manager_navigation]: [34m[1mHave not received a heartbeat from behavior_server.[0m[0m
+[lifecycle_manager-11] [ERROR] [1795617255.889561901] [lifecycle_manager_navigation]: CRITICAL FAILURE: SERVER behavior_server IS DOWN after not receiving a heartbeat for 10000 ms. Shutting down related nodes.
+[lifecycle_manager-11] [INFO] [1795617255.889626067] [lifecycle_manager_navigation]: [34m[1mTerminating bond timer...[0m[0m
+[lifecycle_manager-11] [INFO] [1795617255.889639483] [lifecycle_manager_navigation]: [34m[1mResetting managed nodes...[0m[0m
+[lifecycle_manager-11] [INFO] [1795617255.889651733] [lifecycle_manager_navigation]: [34m[1mDeactivating map_saver[0m[0m
+[map_saver_server-14] [INFO] [1795617255.891010302] [map_saver]: Deactivating
+[map_saver_server-14] [INFO] [1795617255.891074760] [map_saver]: Destroying bond (map_saver) to lifecycle manager.
+[bt_navigator-9] [INFO] [1795617255.897679483] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[bt_navigator-9] [INFO] [1795617255.897965313] [bt_navigator]: Running Nav2 LifecycleNode rcl preshutdown (bt_navigator)
+[bt_navigator-9] [INFO] [1795617255.898215852] [bt_navigator]: Deactivating
+[bt_navigator-9] [INFO] [1795617255.898331059] [bt_navigator]: Destroying bond (bt_navigator) to lifecycle manager.
+[velocity_smoother-10] [INFO] [1795617255.906579307] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[velocity_smoother-10] [INFO] [1795617255.906770346] [velocity_smoother]: Running Nav2 LifecycleNode rcl preshutdown (velocity_smoother)
+[velocity_smoother-10] [INFO] [1795617255.906862512] [velocity_smoother]: Deactivating
+[velocity_smoother-10] [INFO] [1795617255.906899262] [velocity_smoother]: Destroying bond (velocity_smoother) to lifecycle manager.
+[bt_navigator-9] [INFO] [1795617255.909878314] [bt_navigator]: Cleaning up
+[lifecycle_manager-11] [INFO] [1795617255.912442037] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[lifecycle_manager-11] [INFO] [1795617255.912587286] [lifecycle_manager_navigation]: Running Nav2 LifecycleManager rcl preshutdown (lifecycle_manager_navigation)
+[behavior_server-8] [INFO] [1795617255.917106614] [behavior_server]: Destroying bond (behavior_server) to lifecycle manager.
+[velocity_smoother-10] [INFO] [1795617255.917915105] [velocity_smoother]: Cleaning up
+[velocity_smoother-10] [INFO] [1795617255.917983354] [velocity_smoother]: Destroying bond (velocity_smoother) to lifecycle manager.
+[map_server-12] [INFO] [1795617255.921978563] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[map_server-12] [INFO] [1795617255.922115936] [map_server]: Running Nav2 LifecycleNode rcl preshutdown (map_server)
+[map_server-12] [INFO] [1795617255.922180394] [map_server]: Destroying bond (map_server) to lifecycle manager.
+[map_server-12] [INFO] [1795617255.924940115] [map_server]: Destroying
+[velocity_smoother-10] [INFO] [1795617255.932855283] [velocity_smoother]: Destroying
+[amcl-13] [INFO] [1795617255.939749919] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[amcl-13] [INFO] [1795617255.939879709] [amcl]: Running Nav2 LifecycleNode rcl preshutdown (amcl)
+[amcl-13] [INFO] [1795617255.939941834] [amcl]: Destroying bond (amcl) to lifecycle manager.
+[amcl-13] [INFO] [1795617255.941788356] [amcl]: Destroying
+[map_saver_server-14] [INFO] [1795617255.956920157] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[map_saver_server-14] [INFO] [1795617255.957062197] [map_saver]: Running Nav2 LifecycleNode rcl preshutdown (map_saver)
+[map_saver_server-14] [INFO] [1795617255.957124030] [map_saver]: Destroying bond (map_saver) to lifecycle manager.
+[map_saver_server-14] [ERROR] [1795617255.963216008] [map_saver]: Failed to finish transition 4. Current state is now: inactive (Could not publish transition: publisher's context is invalid, at ./src/rcl/publisher.c:423, at ./src/rcl_lifecycle.c:368)
+[map_saver_server-14] [INFO] [1795617255.965533859] [map_saver]: Destroying
+[nav_mode_manager-15] [INFO] [1795617255.998682888] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[umeonigiri_webnav_server-16] [INFO] [1795617256.011233471] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[controller_server-6] [INFO] [1795617256.027046317] [controller_server]: Destroying bond (controller_server) to lifecycle manager.
+[yolo_grasp_node-17] [INFO] [1795617256.037105511] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[controller_server-6] [INFO] [1795617256.040898307] [controller_server]: Cleaning up
+[controller_server-6] [INFO] [1795617256.040966557] [controller_server]: Cleaning up controller: FollowPath of type regulated_pure_pursuit_controller::RegulatedPurePursuitController
+[controller_server-6] [INFO] [1795617256.041062514] [local_costmap.local_costmap]: Cleaning up
+[INFO] [parameter_bridge-4]: process has finished cleanly [pid 70734]
+[INFO] [robot_state_publisher-1]: process has finished cleanly [pid 70731]
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [yolo_grasp_node-17]: sending signal 'SIGINT' to process[yolo_grasp_node-17]
+[INFO] [amcl-13]: process has finished cleanly [pid 70779]
+[INFO] [map_saver_server-14]: process has finished cleanly [pid 70788]
+[INFO] [map_server-12]: process has finished cleanly [pid 70764]
+[INFO] [velocity_smoother-10]: process has finished cleanly [pid 70755]
+[INFO] [nav_mode_manager-15]: process has finished cleanly [pid 70790]
+[INFO] [yolo_grasp_node-17]: process has finished cleanly [pid 70800]
+[INFO] [async_slam_toolbox_node-5]: process has finished cleanly [pid 70742]
+[INFO] [behavior_server-8]: process has finished cleanly [pid 70747]
+[INFO] [umeonigiri_webnav_server-16]: process has finished cleanly [pid 70795]
+[INFO] [controller_server-6]: process has finished cleanly [pid 70743]
+[INFO] [bt_navigator-9]: process has finished cleanly [pid 70748]
+[ERROR] [gazebo-2]: process has died [pid 70732, exit code -2, cmd 'ruby /opt/ros/jazzy/opt/gz_tools_vendor/bin/gz sim -s -r /tmp/meister_maze_step_0.01.sdf --force-version 8'].
+[INFO] [planner_server-7]: process has finished cleanly [pid 70746]
+[INFO] [lifecycle_manager-11]: sending signal 'SIGINT' to process[lifecycle_manager-11]
+[behavior_server-8] [INFO] [1795617256.189501029] [behavior_server]: Destroying
+[controller_server-6] [INFO] [1795617256.264035430] [controller_server]: Destroying bond (controller_server) to lifecycle manager.
+[controller_server-6] [INFO] [1795617256.278517122] [local_costmap.local_costmap]: Destroying
+[controller_server-6] [INFO] [1795617256.310354271] [controller_server]: Destroying
+[bt_navigator-9] [INFO] [1795617256.404970018] [bt_navigator]: Completed Cleaning up
+[bt_navigator-9] [INFO] [1795617256.405057226] [bt_navigator]: Destroying bond (bt_navigator) to lifecycle manager.
+[bt_navigator-9] [INFO] [1795617256.424105207] [bt_navigator]: Destroying
+[planner_server-7] [INFO] [1795617256.467732575] [planner_server]: Deactivating plugin GridBased of type SmacPlanner2D
+[planner_server-7] [INFO] [1795617256.467800824] [planner_server]: Destroying bond (planner_server) to lifecycle manager.
+[planner_server-7] [INFO] [1795617256.478259889] [planner_server]: Cleaning up
+[planner_server-7] [INFO] [1795617256.487397717] [global_costmap.global_costmap]: Cleaning up
+[planner_server-7] [INFO] [1795617256.491626843] [planner_server]: Cleaning up plugin GridBased of type SmacPlanner2D
+[planner_server-7] [INFO] [1795617256.491972173] [planner_server]: Destroying plugin GridBased of type SmacPlanner2D
+[planner_server-7] [INFO] [1795617256.505692622] [planner_server]: Destroying bond (planner_server) to lifecycle manager.
+[planner_server-7] [INFO] [1795617256.515259196] [global_costmap.global_costmap]: Destroying
+[planner_server-7] [INFO] [1795617256.533476519] [planner_server]: Destroying
+[lifecycle_manager-11] [ERROR] [1795617257.964095871] [lifecycle_manager_navigation]: Failed to change state for node: map_saver. Exception: map_saver/get_state service client: async_send_request failed.
+[lifecycle_manager-11] [INFO] [1795617257.964351952] [lifecycle_manager_navigation]: [34m[1mManaged nodes have been reset[0m[0m
+[lifecycle_manager-11] [INFO] [1795617258.038548973] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[lifecycle_manager-11] [INFO] [1795617258.038783471] [lifecycle_manager_navigation]: Destroying lifecycle_manager_navigation
+[INFO] [lifecycle_manager-11]: process has finished cleanly [pid 70761]

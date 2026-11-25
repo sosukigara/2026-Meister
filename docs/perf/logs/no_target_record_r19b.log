@@ -1,0 +1,16 @@
+stdin is not a terminal device. Keyboard handling disabled.[INFO] [1795619288.106869404] [rosbag2_recorder]: Press SPACE for pausing/resuming
+[INFO] [1795619288.111332704] [rosbag2_recorder]: Event publisher thread: Started
+[INFO] [1795619288.121205004] [rosbag2_recorder]: Starting recording to '/tmp/no_target_bag_r19b'
+[INFO] [1795619288.124331209] [rosbag2_storage]: Opened database '/tmp/no_target_bag_r19b/no_target_bag_r19b_0.db3' for READ_WRITE.
+[INFO] [1795619288.125432535] [rosbag2_recorder]: Listening for topics...
+[INFO] [1795619288.125514427] [rosbag2_recorder]: Recording...
+[INFO] [1795619288.125580000] [rosbag2_recorder]: Topics discovery started.
+[INFO] [1795619290.245233013] [rosbag2_recorder]: Subscribed to topic '/clock'
+[INFO] [1795619290.261993816] [rosbag2_recorder]: Subscribed to topic '/arm_camera/image_raw'
+[INFO] [1795619291.818480416] [rosbag2_recorder]: Subscribed to topic '/detections'
+[INFO] [1795619291.818713281] [rosbag2_recorder]: All requested topics are subscribed. Stopping discovery...
+[INFO] [1795619291.818762535] [rosbag2_recorder]: Topics discovery stopped.
+[INFO] [1795619312.294059295] [rosbag2_recorder]: Pausing recording.
+[INFO] [1795619312.294238287] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[INFO] [1795619312.298836976] [rosbag2_recorder]: Recording stopped
+[INFO] [1795619312.311738085] [rosbag2_recorder]: Event publisher thread: Exited

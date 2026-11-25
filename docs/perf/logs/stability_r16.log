@@ -1,0 +1,7 @@
+{"goal": [-0.65, 2.6], "yaw": 0.0, "state": "succeeded", "seconds": 22.1, "started_at": 1795617723.282, "ended_at": 1795617745.392, "final": [-0.73, 2.45], "err_m": 0.173}
+{"goal": [-0.6, 0.9], "yaw": 0.0, "state": "succeeded", "seconds": 9.0, "started_at": 1795617747.395, "ended_at": 1795617756.42, "final": [-0.64, 1.02], "err_m": 0.125}
+{"goal": [0.5, -2.9], "yaw": 0.0, "state": "succeeded", "seconds": 14.0, "started_at": 1795617758.421, "ended_at": 1795617772.456, "final": [0.42, -2.79], "err_m": 0.13}
+{"goal": [0.3, -0.9], "yaw": 0.0, "state": "succeeded", "seconds": 10.0, "started_at": 1795617774.458, "ended_at": 1795617784.495, "final": [0.35, -1.06], "err_m": 0.165}
+{"goal": [-3.2, -0.55], "yaw": 0.0, "state": "succeeded", "seconds": 16.0, "started_at": 1795617786.497, "ended_at": 1795617802.543, "final": [-3.1, -0.5], "err_m": 0.114}
+{"goal": [3.2, 1.05], "yaw": 0.0, "state": "succeeded", "seconds": 21.1, "started_at": 1795617804.544, "ended_at": 1795617825.599, "final": [3.14, 0.89], "err_m": 0.176}
+--- success 6/6  err max 0.176 m  mean 0.147 m

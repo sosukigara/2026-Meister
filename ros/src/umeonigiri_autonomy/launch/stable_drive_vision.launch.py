@@ -61,6 +61,10 @@ def generate_launch_description():
         _include("umeonigiri_autonomy", "slam.launch.py"),
         _include("umeonigiri_autonomy", "navigation.launch.py", {
             "use_sim_time": "true",
+            "nav_overlay": os.path.join(
+                get_package_share_directory("umeonigiri_autonomy"),
+                "config", "stable_drive_nav_overlay.yaml"),
+            "use_smoother_path": "true",
         }),
         _include("umeonigiri_webnav", "umeonigiri_webnav.launch.py", {
             "use_sim_time": "true",

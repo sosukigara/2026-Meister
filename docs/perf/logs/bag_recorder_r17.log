@@ -1,0 +1,18 @@
+stdin is not a terminal device. Keyboard handling disabled.[INFO] [1795618294.291973530] [rosbag2_recorder]: Press SPACE for pausing/resuming
+[INFO] [1795618294.293798638] [rosbag2_recorder]: Event publisher thread: Started
+[INFO] [1795618294.303710871] [rosbag2_recorder]: Starting recording to '/tmp/drive_bag_r17'
+[INFO] [1795618294.306407259] [rosbag2_storage]: Opened database '/tmp/drive_bag_r17/drive_bag_r17_0.db3' for READ_WRITE.
+[INFO] [1795618294.307469013] [rosbag2_recorder]: Listening for topics...
+[INFO] [1795618294.307560604] [rosbag2_recorder]: Recording...
+[INFO] [1795618294.307508392] [rosbag2_recorder]: Topics discovery started.
+[INFO] [1795618294.872390713] [rosbag2_recorder]: Subscribed to topic '/detections'
+[INFO] [1795618297.092741258] [rosbag2_recorder]: Subscribed to topic '/cmd_vel'
+[INFO] [1795618297.347635486] [rosbag2_recorder]: Subscribed to topic '/arm_camera/image_raw'
+[INFO] [1795618297.354087109] [rosbag2_recorder]: Subscribed to topic '/clock'
+[INFO] [1795618297.385014237] [rosbag2_recorder]: Subscribed to topic '/odom'
+[INFO] [1795618297.385205294] [rosbag2_recorder]: All requested topics are subscribed. Stopping discovery...
+[INFO] [1795618297.385246131] [rosbag2_recorder]: Topics discovery stopped.
+[INFO] [1795618443.448430339] [rosbag2_recorder]: Pausing recording.
+[INFO] [1795618443.448729879] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[INFO] [1795618443.469394672] [rosbag2_recorder]: Recording stopped
+[INFO] [1795618443.495458776] [rosbag2_recorder]: Event publisher thread: Exited

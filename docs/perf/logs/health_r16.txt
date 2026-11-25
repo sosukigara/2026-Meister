@@ -1,0 +1,15 @@
+=== health snapshot 2026-11-25T23:43:59+09:00 ===
+slam_toolbox active [3]
+controller_server active [3]
+planner_server active [3]
+bt_navigator active [3]
+velocity_smoother active [3]
+--- tf ---
+[INFO] [1795617857.020911701] [tf2_echo]: Waiting for transform map ->  odom: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+At time 172.500000000
+- Translation: [-0.012, 0.014, 0.000]
+- Rotation: in Quaternion (xyzw) [-0.000, 0.000, 0.000, 1.000]
+- Rotation: in RPY (radian) [-0.000, 0.000, 0.000]
+- Rotation: in RPY (degree) [-0.000, 0.000, 0.017]
+--- process deaths ---
+0
