@@ -68,6 +68,12 @@ ros2 launch umeonigiri_autonomy arm_vision_slam.launch.py world:=maze sensor_pro
 | 二重配信 | `Publisher count: 1`（kill.sh → 再起動後も 1） | Measured | [final_slam_tf.txt](logs/final_slam_tf.txt) の直前の `topic info` |
 | 識別 | 静止画像で `id='person' class_id='0'`、`id='bus' class_id='5'` | Measured | [static_detection_detail.txt](logs/static_detection_detail.txt) |
 | ビルド / gtest | `./build.sh` 成功、`umeonigiri_vision` 82 tests 0 failures | Measured | 本ドキュメントの検証手順を再実行 |
+| 既存 launch の回帰 | `mapping_nav.launch.py`（gui:=false/lite）で `/camera/image_raw` と `/arm_camera/image_raw` が各 1 publisher、`slam_toolbox` active、Web UI `/api/map` が HTTP 200 | Measured | [regression_check.txt](logs/regression_check.txt) |
+
+`/detections` がこの回帰起動で無いのは、worktree に ONNX モデルが無いため既存の
+`vision_launch()` が検出ノードを起動しない挙動（P19）そのものであり、回帰ではない。
+NPU 実機ノードの V4L2 入力経路は実カメラが無いため ✗ Unverified（静止画像経路と
+トピック経路は実測済み）。
 
 `/detections` の `id` にクラス名、`results[0].hypothesis.class_id` に数値 ID を入れる。
 Web UI は `id` を表示ラベルとして使うので、どちらかだけでは認識モニターが

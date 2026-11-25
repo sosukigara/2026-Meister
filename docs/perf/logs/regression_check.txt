@@ -1,0 +1,10 @@
+=== topics ===
+/local_costmap/costmap
+/map
+/scan
+/slam_toolbox/scan_visualization
+=== lifecycle ===
+active [3]
+=== webui ===
+http=200 size=157
+{"has_map":true,"height":69,"image_url":"/api/map.png","origin":{"x":-4.9288145509599905,"y":-4.911319502910333},"resolu
