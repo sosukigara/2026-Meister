@@ -1,0 +1,4 @@
+=== RTF final x3 (20s each) ===
+clock_msgs=1727 wall=20.003s sim=17.260s RTF=0.863
+clock_msgs=1700 wall=20.011s sim=16.990s RTF=0.849
+clock_msgs=1739 wall=20.006s sim=17.380s RTF=0.869

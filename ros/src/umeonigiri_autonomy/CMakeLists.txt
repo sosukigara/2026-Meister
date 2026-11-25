@@ -57,6 +57,8 @@ install(DIRECTORY launch config urdf worlds maps scripts
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
+  find_package(ament_cmake_pytest REQUIRED)
+  ament_add_pytest_test(test_vision_target test/test_vision_target.py)
   ament_add_gtest(test_map_generator test/test_map_generator.cpp)
   target_link_libraries(test_map_generator map_generator)
   # Python 版が生成した地図とのバイト一致を、リポジトリ内で再現できる形で固定する。

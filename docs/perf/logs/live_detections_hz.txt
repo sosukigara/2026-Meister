@@ -1,0 +1,40 @@
+=== /detections 20s (final config, non-empty person) ===
+[WARN] [1795612289.410266178] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795612289.410314596] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+WARNING: topic [/detections] does not appear to be published yet
+average rate: 34.740
+	min: 0.019s max: 0.069s std dev: 0.00974s window: 36
+average rate: 34.767
+	min: 0.019s max: 0.079s std dev: 0.00978s window: 71
+average rate: 34.543
+	min: 0.019s max: 0.079s std dev: 0.00980s window: 106
+average rate: 35.097
+	min: 0.019s max: 0.079s std dev: 0.00893s window: 143
+average rate: 36.433
+	min: 0.019s max: 0.079s std dev: 0.00822s window: 185
+average rate: 36.944
+	min: 0.019s max: 0.079s std dev: 0.00779s window: 225
+average rate: 37.248
+	min: 0.019s max: 0.079s std dev: 0.00750s window: 265
+average rate: 37.206
+	min: 0.019s max: 0.079s std dev: 0.00751s window: 302
+average rate: 37.290
+	min: 0.019s max: 0.079s std dev: 0.00722s window: 340
+average rate: 36.976
+	min: 0.019s max: 0.079s std dev: 0.00747s window: 375
+average rate: 36.655
+	min: 0.019s max: 0.079s std dev: 0.00763s window: 409
+average rate: 36.587
+	min: 0.019s max: 0.079s std dev: 0.00749s window: 445
+average rate: 36.647
+	min: 0.019s max: 0.079s std dev: 0.00764s window: 483
+average rate: 36.791
+	min: 0.019s max: 0.079s std dev: 0.00773s window: 522
+average rate: 36.891
+	min: 0.019s max: 0.079s std dev: 0.00758s window: 561
+average rate: 36.888
+	min: 0.019s max: 0.079s std dev: 0.00764s window: 598
+average rate: 36.942
+	min: 0.019s max: 0.079s std dev: 0.00752s window: 636
+average rate: 36.944
+	min: 0.017s max: 0.079s std dev: 0.00768s window: 674

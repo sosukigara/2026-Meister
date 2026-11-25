@@ -26,6 +26,14 @@ def load_worlds():
         return yaml.safe_load(handle)
 
 
+def inject_vision_target(world_text, fragment_text, texture_path):
+    """計測用フラグメントを world 末尾へ差し込む（既定ワールドは無変更）。"""
+    target = fragment_text.replace('__TEXTURE_PATH__', texture_path)
+    if '__TEXTURE_PATH__' in target:
+        raise RuntimeError('ビジョン対象のテクスチャ名が未解決です')
+    return re.subn(r'</world>', target.strip() + '\n  </world>', world_text, count=1)
+
+
 def _resolve_world(context):
     world_key = context.launch_configurations['world']
     gui = context.launch_configurations.get('gui', 'true') == 'true'
@@ -36,15 +44,30 @@ def _resolve_world(context):
     # 物理ステップを間引くと、同じ sim 時間を少ない iteration で進められる。
     # ワールド SDF を書き換えず /tmp のコピーだけを gz に渡す (既定は無変更)。
     physics_step = context.launch_configurations.get('physics_step', '')
-    if physics_step:
+    # 計測用のテクスチャ対象を手先カメラ視野へ入れる。既定の maze には触れない。
+    vision_target = context.launch_configurations.get('vision_target', 'false') == 'true'
+    if vision_target and world_key != 'maze':
+        raise RuntimeError('vision_target は maze 専用です ( spawn 位置が固定 )')
+    if physics_step or vision_target:
         with open(world_path, encoding='utf-8') as handle:
             text = handle.read()
-        text, count = re.subn(
-            r'<max_step_size>[^<]+</max_step_size>',
-            f'<max_step_size>{physics_step}</max_step_size>', text, count=1)
-        if count != 1:
-            raise RuntimeError(f'max_step_size が 1 つではありません: {world_path}')
-        world_path = os.path.join('/tmp', f'meister_{world_key}_step_{physics_step}.sdf')
+        if physics_step:
+            text, count = re.subn(
+                r'<max_step_size>[^<]+</max_step_size>',
+                f'<max_step_size>{physics_step}</max_step_size>', text, count=1)
+            if count != 1:
+                raise RuntimeError(f'max_step_size が 1 つではありません: {world_path}')
+        if vision_target:
+            fragment = os.path.join(pkg_nav, 'worlds', 'vision_target.sdf')
+            texture = os.path.join(pkg_nav, 'worlds', 'detection_target.jpg')
+            with open(fragment, encoding='utf-8') as handle:
+                text, count = inject_vision_target(text, handle.read(), texture)
+            if count != 1:
+                raise RuntimeError(f'</world> が 1 つではありません: {world_path}')
+        suffix = f'step_{physics_step}' if physics_step else 'nominal'
+        if vision_target:
+            suffix += '_vision'
+        world_path = os.path.join('/tmp', f'meister_{world_key}_{suffix}.sdf')
         with open(world_path, 'w', encoding='utf-8') as handle:
             handle.write(text)
     # GUI は表示だけ。計測やヘッドレス運用では切ってよい（物理とセンサはサーバ側）。
@@ -116,6 +139,8 @@ def generate_launch_description():
                               description='gz sim -z。空ならワールド既定 (1ms step)'),
         DeclareLaunchArgument('physics_step', default_value='',
                               description='/tmp にコピーした SDF の max_step_size。空なら無変更'),
+        DeclareLaunchArgument('vision_target', default_value='false',
+                              description='maze に計測用テクスチャ対象を追加 (真実のカメラ認識ではない)'),
         OpaqueFunction(function=_resolve_world),
         gazebo,
         spawn_robot,

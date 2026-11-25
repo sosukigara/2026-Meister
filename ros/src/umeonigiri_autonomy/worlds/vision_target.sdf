@@ -1,0 +1,39 @@
+<!--
+  Test target injected into the /tmp world copy only when vision_target:=true.
+  It is a textured plane placed in the arm camera's field of view so the live
+  detection pipeline can be measured with known COCO content.  It is NOT part
+  of the default maze world and NOT a claim about real-camera recognition.
+-->
+<model name="vision_target_light">
+  <static>true</static>
+  <pose>-3.8 -4.0 0.7 0 0 0</pose>
+  <link name="link">
+    <light type="point" name="target_light">
+      <diffuse>1 1 1 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <attenuation>
+        <range>3</range>
+        <constant>1</constant>
+        <linear>0.05</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+    </light>
+  </link>
+</model>
+<model name="vision_target_bus">
+  <static>true</static>
+  <pose>-3.21 -4.0 0.38 0 0 0</pose>
+  <link name="link">
+    <visual name="screen">
+      <geometry><box><size>0.01 0.2625 0.32</size></box></geometry>
+      <material>
+        <diffuse>1 1 1 1</diffuse>
+        <pbr>
+          <metal>
+            <albedo_map>__TEXTURE_PATH__</albedo_map>
+          </metal>
+        </pbr>
+      </material>
+    </visual>
+  </link>
+</model>

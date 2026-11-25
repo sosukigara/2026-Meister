@@ -1,0 +1,23 @@
+=== mapping_nav regression (maze/gui=false/lite) ===
+--- gz args ---
+38611 /bin/sh -c ruby /opt/ros/jazzy/opt/gz_tools_vendor/bin/gz sim -s -r /home/so/Meistar/.worktrees/arm-cam-live-detections/ros/install/umeonigiri_autonomy/share/umeonigiri_autonomy/worlds/maze.sdf --force-version 8
+38614 gz sim -s -r /home/so/Meistar/.worktrees/arm-cam-live-detections/ros/install/umeonigiri_autonomy/share/umeonigiri_autonomy/worlds/maze.sdf
+--- topics ---
+[WARN] [1795612599.187755637] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795612599.187806389] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+/map
+--- camera publishers ---
+Publisher count: 1
+Publisher count: 1
+--- lifecycle ---
+active [3]
+--- webui ---
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/urllib/request.py", line 1344, in do_open
+--- gz errors ---
+--- webui retry on 8088 ---
+http= 200 body= b'{"has_map":true,"height":69,"image_url":"/api/map.png","origin":{"x":-4.9288145509599905,"y":-4.9113'
+--- scan topic ---
+Type: sensor_msgs/msg/LaserScan
+Publisher count: 1
+Subscription count: 4
