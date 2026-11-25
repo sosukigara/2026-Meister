@@ -1,0 +1,3 @@
+[WARN] [1795614254.404668736] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795614254.404764993] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+{"elapsed": 240.111, "counts": {"detections": 8456, "image": 9060, "cmd_vel": 1907, "clock": 19923, "odom": 9966}, "images_saved": 1812, "out": "docs/perf/logs/drive_r2.jsonl"}

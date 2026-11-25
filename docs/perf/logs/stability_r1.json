@@ -1,0 +1,92 @@
+[
+ {
+  "goal": [
+   -0.65,
+   2.6
+  ],
+  "state": "succeeded",
+  "seconds": 22.1,
+  "started_at": 1795614081.148,
+  "ended_at": 1795614103.27,
+  "final": [
+   -0.73,
+   2.43
+  ],
+  "err_m": 0.183
+ },
+ {
+  "goal": [
+   -0.6,
+   0.9
+  ],
+  "state": "succeeded",
+  "seconds": 9.0,
+  "started_at": 1795614105.274,
+  "ended_at": 1795614114.295,
+  "final": [
+   -0.62,
+   1.0
+  ],
+  "err_m": 0.102
+ },
+ {
+  "goal": [
+   0.5,
+   -2.9
+  ],
+  "state": "succeeded",
+  "seconds": 13.0,
+  "started_at": 1795614116.296,
+  "ended_at": 1795614129.33,
+  "final": [
+   0.42,
+   -2.78
+  ],
+  "err_m": 0.146
+ },
+ {
+  "goal": [
+   0.3,
+   -0.9
+  ],
+  "state": "succeeded",
+  "seconds": 10.0,
+  "started_at": 1795614131.331,
+  "ended_at": 1795614141.355,
+  "final": [
+   0.36,
+   -1.03
+  ],
+  "err_m": 0.147
+ },
+ {
+  "goal": [
+   -3.2,
+   -0.55
+  ],
+  "state": "succeeded",
+  "seconds": 16.0,
+  "started_at": 1795614143.357,
+  "ended_at": 1795614159.405,
+  "final": [
+   -3.08,
+   -0.48
+  ],
+  "err_m": 0.143
+ },
+ {
+  "goal": [
+   3.2,
+   1.05
+  ],
+  "state": "succeeded",
+  "seconds": 21.0,
+  "started_at": 1795614161.409,
+  "ended_at": 1795614182.452,
+  "final": [
+   3.15,
+   0.91
+  ],
+  "err_m": 0.148
+ }
+]
