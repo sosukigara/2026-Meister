@@ -1,0 +1,3 @@
+[WARN] [1795621291.620078440] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795621291.620154303] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+{"seconds": 75.257, "commands": 1500, "topic": "/cmd_vel_nav", "amplitude_mps": 0.005, "period_s": 20.0, "odom_samples": 3327, "odom_x_span_m": 0.029}

@@ -1,0 +1,60 @@
+{
+  "bag": "/tmp/drive_bag_r17",
+  "span_s": 148.545,
+  "messages": {
+    "/detections": 5481,
+    "/clock": 12553,
+    "/odom": 6277,
+    "/arm_camera/image_raw": 5706,
+    "/cmd_vel": 1775
+  },
+  "image_hz": 38.413,
+  "detections_hz": 36.898,
+  "nonempty_detections": 429,
+  "nonempty_ratio": 0.0783,
+  "detection_gaps_gt_200ms": [
+    0.265
+  ],
+  "labels": {
+    "person": 856,
+    "car": 6,
+    "cup": 1
+  },
+  "bbox_center_stats": {
+    "person": {
+      "n": 856,
+      "std_x": 5.109,
+      "std_y": 0.055
+    }
+  },
+  "cmd_vel": {
+    "hz": 11.949,
+    "linear_jumps_gt_0.3": 1,
+    "angular_jumps_gt_0.5": 15,
+    "max_abs_dlinear": 0.3387,
+    "max_abs_dangular": 1.0309
+  },
+  "rtf_20s_windows": [
+    0.794,
+    0.865,
+    0.881,
+    0.881,
+    0.853,
+    0.865,
+    0.87
+  ],
+  "rtf_median": 0.865,
+  "visibility": {
+    "reference": "/home/so/Meistar/.worktrees/stable-drive-accurate-vision/docs/perf/bus.jpg",
+    "hist_threshold": 0.65,
+    "sampled_frames": 1142,
+    "visible_frames": 69,
+    "detections_in_view": 351,
+    "nonempty_in_view": 351,
+    "continuity_in_view": 1.0,
+    "detections_out_of_view": 5055,
+    "nonempty_out_of_view": 3,
+    "false_positive_out_of_view": 0.0006
+  },
+  "odom_path_m": 26.264
+}

@@ -1,0 +1,9 @@
+{
+  "seconds": 70.258,
+  "commands": 1400,
+  "topic": "/cmd_vel_nav",
+  "amplitude_mps": 0.02,
+  "period_s": 20.0,
+  "odom_samples": 2428,
+  "odom_x_span_m": 0.093
+}

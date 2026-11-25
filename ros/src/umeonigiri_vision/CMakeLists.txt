@@ -132,6 +132,9 @@ if(BUILD_TESTING)
 
   ament_add_gtest(test_publish_rate_gate test/test_publish_rate_gate.cpp)
   target_link_libraries(test_publish_rate_gate umeonigiri_vision_core)
+
+  ament_add_gtest(test_box_center_filter test/test_box_center_filter.cpp)
+  target_link_libraries(test_box_center_filter umeonigiri_vision_core)
 endif()
 
 ament_export_include_directories(include)

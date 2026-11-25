@@ -1,0 +1,787 @@
+[INFO] [launch]: All log files can be found below /home/so/.ros/log/2026-11-26-00-44-04-340942-so-desktop-100206
+[INFO] [launch]: Default logging verbosity is set to INFO
+[WARN] [1795621445.176251446] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795621445.176566958] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[INFO] [robot_state_publisher-1]: process started with pid [100229]
+[INFO] [gazebo-2]: process started with pid [100230]
+[INFO] [create-3]: process started with pid [100231]
+[INFO] [parameter_bridge-4]: process started with pid [100232]
+[INFO] [async_slam_toolbox_node-5]: process started with pid [100236]
+[INFO] [controller_server-6]: process started with pid [100237]
+[INFO] [planner_server-7]: process started with pid [100239]
+[INFO] [behavior_server-8]: process started with pid [100241]
+[INFO] [bt_navigator-9]: process started with pid [100244]
+[INFO] [velocity_smoother-10]: process started with pid [100245]
+[INFO] [lifecycle_manager-11]: process started with pid [100251]
+[INFO] [map_server-12]: process started with pid [100258]
+[INFO] [amcl-13]: process started with pid [100259]
+[INFO] [map_saver_server-14]: process started with pid [100283]
+[INFO] [nav_mode_manager-15]: process started with pid [100298]
+[INFO] [umeonigiri_webnav_server-16]: process started with pid [100305]
+[INFO] [yolo_grasp_node-17]: process started with pid [100333]
+[robot_state_publisher-1] [WARN] [1795621445.540369883] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[robot_state_publisher-1] [WARN] [1795621445.540427912] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[robot_state_publisher-1] [INFO] [1795621445.606110651] [robot_state_publisher]: Robot initialized
+[create-3] [WARN] [1795621445.581511809] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[create-3] [WARN] [1795621445.581538345] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[create-3] [INFO] [1795621445.669451838] [ros_gz_sim]: Requesting list of world names.
+[parameter_bridge-4] [WARN] [1795621445.595998235] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[parameter_bridge-4] [WARN] [1795621445.596021271] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[async_slam_toolbox_node-5] [WARN] [1795621445.629712511] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[async_slam_toolbox_node-5] [WARN] [1795621445.629734672] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[controller_server-6] [WARN] [1795621445.659968987] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[controller_server-6] [WARN] [1795621445.659996689] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[planner_server-7] [WARN] [1795621445.661558210] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[planner_server-7] [WARN] [1795621445.661582705] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[behavior_server-8] [WARN] [1795621445.650160710] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[behavior_server-8] [WARN] [1795621445.650187829] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[lifecycle_manager-11] [WARN] [1795621445.668738291] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[lifecycle_manager-11] [WARN] [1795621445.668761328] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[parameter_bridge-4] [INFO] [1795621445.695021418] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/world/my_custom_world/clock (gz.msgs.Clock) -> /world/my_custom_world/clock (rosgraph_msgs/msg/Clock)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795621445.699210844] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/umeonigiri_bot/cmd_vel (gz.msgs.Twist) -> /model/umeonigiri_bot/cmd_vel (geometry_msgs/msg/Twist)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795621445.704856814] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/model/umeonigiri_bot/cmd_vel (geometry_msgs/msg/Twist) -> /model/umeonigiri_bot/cmd_vel (gz.msgs.Twist)] (Lazy 0)
+[velocity_smoother-10] [WARN] [1795621445.710864369] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[parameter_bridge-4] [INFO] [1795621445.714607354] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/umeonigiri_bot/odometry (gz.msgs.Odometry) -> /model/umeonigiri_bot/odometry (nav_msgs/msg/Odometry)] (Lazy 0)
+[behavior_server-8] [INFO] [1795621445.716438314] [behavior_server]: 
+[behavior_server-8] 	behavior_server lifecycle node launched. 
+[behavior_server-8] 	Waiting on external lifecycle transitions to activate
+[behavior_server-8] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[velocity_smoother-10] [WARN] [1795621445.713093947] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[parameter_bridge-4] [INFO] [1795621445.726993380] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/model/umeonigiri_bot/odometry (nav_msgs/msg/Odometry) -> /model/umeonigiri_bot/odometry (gz.msgs.Odometry)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795621445.751838625] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/joint_states (gz.msgs.Model) -> /joint_states (sensor_msgs/msg/JointState)] (Lazy 0)
+[bt_navigator-9] [WARN] [1795621445.754694852] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[bt_navigator-9] [WARN] [1795621445.757953781] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[parameter_bridge-4] [INFO] [1795621445.761004506] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/joint_states (sensor_msgs/msg/JointState) -> /joint_states (gz.msgs.Model)] (Lazy 0)
+[nav_mode_manager-15] [WARN] [1795621445.762060100] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[nav_mode_manager-15] [WARN] [1795621445.762121919] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[parameter_bridge-4] [INFO] [1795621445.771568612] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/scan (gz.msgs.LaserScan) -> /scan (sensor_msgs/msg/LaserScan)] (Lazy 0)
+[map_server-12] [WARN] [1795621445.774463914] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[map_server-12] [WARN] [1795621445.774549353] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[parameter_bridge-4] [INFO] [1795621445.777113688] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/scan (sensor_msgs/msg/LaserScan) -> /scan (gz.msgs.LaserScan)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795621445.780409941] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera_image (gz.msgs.Image) -> /camera_image (sensor_msgs/msg/Image)] (Lazy 0)
+[amcl-13] [WARN] [1795621445.783507906] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[amcl-13] [WARN] [1795621445.783544939] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[parameter_bridge-4] [INFO] [1795621445.796874585] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/camera_image (sensor_msgs/msg/Image) -> /camera_image (gz.msgs.Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795621445.871545037] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/arm_camera_image (gz.msgs.Image) -> /arm_camera_image (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795621445.893237496] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/arm_camera_image (sensor_msgs/msg/Image) -> /arm_camera_image (gz.msgs.Image)] (Lazy 0)
+[lifecycle_manager-11] [INFO] [1795621445.905168625] [lifecycle_manager_navigation]: Creating
+[parameter_bridge-4] [INFO] [1795621445.912726329] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/umeonigiri_bot/tf (gz.msgs.Pose_V) -> /model/umeonigiri_bot/tf (tf2_msgs/msg/TFMessage)] (Lazy 0)
+[bt_navigator-9] [INFO] [1795621445.931940183] [bt_navigator]: 
+[bt_navigator-9] 	bt_navigator lifecycle node launched. 
+[bt_navigator-9] 	Waiting on external lifecycle transitions to activate
+[bt_navigator-9] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-9] [INFO] [1795621445.940965804] [bt_navigator]: Creating
+[parameter_bridge-4] [INFO] [1795621445.951176199] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/model/umeonigiri_bot/tf (tf2_msgs/msg/TFMessage) -> /model/umeonigiri_bot/tf (gz.msgs.Pose_V)] (Lazy 0)
+[map_saver_server-14] [WARN] [1795621445.964750789] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[map_saver_server-14] [WARN] [1795621445.968062205] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[lifecycle_manager-11] [INFO] [1795621446.000566922] [lifecycle_manager_navigation]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[umeonigiri_webnav_server-16] [WARN] [1795621446.084546135] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[umeonigiri_webnav_server-16] [WARN] [1795621446.088071028] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[planner_server-7] [INFO] [1795621446.099225411] [planner_server]: 
+[planner_server-7] 	planner_server lifecycle node launched. 
+[planner_server-7] 	Waiting on external lifecycle transitions to activate
+[planner_server-7] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-7] [INFO] [1795621446.116839084] [planner_server]: Creating
+[amcl-13] [INFO] [1795621446.144533751] [amcl]: 
+[amcl-13] 	amcl lifecycle node launched. 
+[amcl-13] 	Waiting on external lifecycle transitions to activate
+[amcl-13] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[amcl-13] [INFO] [1795621446.146991669] [amcl]: Creating
+[controller_server-6] [INFO] [1795621446.170668052] [controller_server]: 
+[controller_server-6] 	controller_server lifecycle node launched. 
+[controller_server-6] 	Waiting on external lifecycle transitions to activate
+[controller_server-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[nav_mode_manager-15] [INFO] [1795621446.180853148] [nav_mode_manager]: nav_mode_manager ready (mode=mapping)
+[controller_server-6] [INFO] [1795621446.187404876] [controller_server]: Creating controller server
+[velocity_smoother-10] [INFO] [1795621446.192282513] [velocity_smoother]: 
+[velocity_smoother-10] 	velocity_smoother lifecycle node launched. 
+[velocity_smoother-10] 	Waiting on external lifecycle transitions to activate
+[velocity_smoother-10] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[async_slam_toolbox_node-5] [INFO] [1795621446.231594336] [slam_toolbox]: Node using stack size 40000000
+[map_server-12] [INFO] [1795621446.372508384] [map_server]: 
+[map_server-12] 	map_server lifecycle node launched. 
+[map_server-12] 	Waiting on external lifecycle transitions to activate
+[map_server-12] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[map_server-12] [INFO] [1795621446.372709007] [map_server]: Creating
+[map_saver_server-14] [INFO] [1795621446.407858786] [map_saver]: 
+[map_saver_server-14] 	map_saver lifecycle node launched. 
+[map_saver_server-14] 	Waiting on external lifecycle transitions to activate
+[map_saver_server-14] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[map_saver_server-14] [INFO] [1795621446.414331781] [map_saver]: Creating
+[controller_server-6] [INFO] [1795621446.437856239] [local_costmap.local_costmap]: 
+[controller_server-6] 	local_costmap lifecycle node launched. 
+[controller_server-6] 	Waiting on external lifecycle transitions to activate
+[controller_server-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-6] [INFO] [1795621446.440239799] [local_costmap.local_costmap]: Creating Costmap
+[planner_server-7] [INFO] [1795621446.460665396] [global_costmap.global_costmap]: 
+[planner_server-7] 	global_costmap lifecycle node launched. 
+[planner_server-7] 	Waiting on external lifecycle transitions to activate
+[planner_server-7] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-7] [INFO] [1795621446.461745783] [global_costmap.global_costmap]: Creating Costmap
+[yolo_grasp_node-17] [WARN] [1795621446.522219500] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[yolo_grasp_node-17] [WARN] [1795621446.522253910] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[lifecycle_manager-11] [INFO] [1795621446.570650321] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-11] [INFO] [1795621446.570804870] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[controller_server-6] [INFO] [1795621446.571560704] [controller_server]: Configuring controller interface
+[controller_server-6] [INFO] [1795621446.571623690] [controller_server]: getting progress checker plugins..
+[controller_server-6] [INFO] [1795621446.571881759] [controller_server]: getting goal checker plugins..
+[controller_server-6] [INFO] [1795621446.572059928] [controller_server]: Controller frequency set to 20.0000Hz
+[controller_server-6] [INFO] [1795621446.572135453] [local_costmap.local_costmap]: Configuring
+[controller_server-6] [INFO] [1795621446.597374243] [local_costmap.local_costmap]: Using plugin "obstacle_layer"
+[controller_server-6] [INFO] [1795621446.603658862] [local_costmap.local_costmap]: Subscribed to Topics: scan
+[controller_server-6] [INFO] [1795621446.615084436] [local_costmap.local_costmap]: Initialized plugin "obstacle_layer"
+[controller_server-6] [INFO] [1795621446.615159086] [local_costmap.local_costmap]: Using plugin "inflation_layer"
+[controller_server-6] [INFO] [1795621446.616607476] [local_costmap.local_costmap]: Initialized plugin "inflation_layer"
+[yolo_grasp_node-17] [INFO] [1795621446.627738823] [yolo_grasp]: NPU 検出を開始: 入力トピック /arm_camera/image_raw, ラベル 80 件
+[controller_server-6] [INFO] [1795621446.680689193] [controller_server]: Created progress_checker : progress_checker of type nav2_controller::SimpleProgressChecker
+[controller_server-6] [INFO] [1795621446.681774829] [controller_server]: Controller Server has progress_checker  progress checkers available.
+[controller_server-6] [INFO] [1795621446.683427050] [controller_server]: Created goal checker : general_goal_checker of type nav2_controller::SimpleGoalChecker
+[controller_server-6] [INFO] [1795621446.686040975] [controller_server]: Controller Server has general_goal_checker  goal checkers available.
+[controller_server-6] [INFO] [1795621446.688167342] [controller_server]: Created controller : FollowPath of type nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController
+[controller_server-6] [INFO] [1795621446.708480672] [controller_server]: Controller Server has FollowPath  controllers available.
+[lifecycle_manager-11] [INFO] [1795621446.738224722] [lifecycle_manager_navigation]: [34m[1mConfiguring planner_server[0m[0m
+[planner_server-7] [INFO] [1795621446.739581257] [planner_server]: Configuring
+[planner_server-7] [INFO] [1795621446.739733182] [global_costmap.global_costmap]: Configuring
+[planner_server-7] [INFO] [1795621446.767182028] [global_costmap.global_costmap]: Using plugin "static_layer"
+[planner_server-7] [INFO] [1795621446.773496682] [global_costmap.global_costmap]: Subscribing to the map topic (/map) with transient local durability
+[planner_server-7] [INFO] [1795621446.779065418] [global_costmap.global_costmap]: Initialized plugin "static_layer"
+[planner_server-7] [INFO] [1795621446.779140068] [global_costmap.global_costmap]: Using plugin "obstacle_layer"
+[planner_server-7] [INFO] [1795621446.781157958] [global_costmap.global_costmap]: Subscribed to Topics: scan
+[planner_server-7] [INFO] [1795621446.792398364] [global_costmap.global_costmap]: Initialized plugin "obstacle_layer"
+[planner_server-7] [INFO] [1795621446.792475930] [global_costmap.global_costmap]: Using plugin "inflation_layer"
+[planner_server-7] [INFO] [1795621446.794551558] [global_costmap.global_costmap]: Initialized plugin "inflation_layer"
+[create-3] [INFO] [1795621446.819109747] [ros_gz_sim]: Waiting messages on topic [/robot_description].
+[create-3] [INFO] [1795621446.842473240] [ros_gz_sim]: Entity creation successful.
+[umeonigiri_webnav_server-16] [INFO] [1795621446.847073563] [umeonigiri_webnav_vision_listener]: 認識モニター購読状態: ACTIVE (enabled=1)
+[planner_server-7] [INFO] [1795621446.894001464] [planner_server]: Created global planner plugin GridBased of type nav2_smac_planner::SmacPlanner2D
+[planner_server-7] [INFO] [1795621446.894087778] [planner_server]: Configuring GridBased of type SmacPlanner2D
+[planner_server-7] [INFO] [1795621446.907970395] [planner_server]: Configured plugin GridBased of type SmacPlanner2D with tolerance 0.12, maximum iterations 1000000, max on approach iterations 1000, and allowing unknown traversal.
+[planner_server-7] [INFO] [1795621446.908050003] [planner_server]: Planner Server has GridBased  planners available.
+[lifecycle_manager-11] [INFO] [1795621446.966318912] [lifecycle_manager_navigation]: [34m[1mConfiguring behavior_server[0m[0m
+[behavior_server-8] [INFO] [1795621446.967714814] [behavior_server]: Configuring
+[behavior_server-8] [INFO] [1795621446.986750050] [behavior_server]: Creating behavior plugin spin of type nav2_behaviors::Spin
+[behavior_server-8] [INFO] [1795621446.988178319] [behavior_server]: Creating behavior plugin backup of type nav2_behaviors::BackUp
+[behavior_server-8] [INFO] [1795621446.989631375] [behavior_server]: Creating behavior plugin drive_on_heading of type nav2_behaviors::DriveOnHeading
+[behavior_server-8] [INFO] [1795621446.990949127] [behavior_server]: Creating behavior plugin wait of type nav2_behaviors::Wait
+[behavior_server-8] [INFO] [1795621447.016416927] [behavior_server]: Configuring spin
+[behavior_server-8] [INFO] [1795621447.047652447] [behavior_server]: Configuring backup
+[behavior_server-8] [INFO] [1795621447.065498942] [behavior_server]: Configuring drive_on_heading
+[behavior_server-8] [INFO] [1795621447.085974835] [behavior_server]: Configuring wait
+[INFO] [create-3]: process has finished cleanly [pid 100231]
+[lifecycle_manager-11] [INFO] [1795621447.111003259] [lifecycle_manager_navigation]: [34m[1mConfiguring bt_navigator[0m[0m
+[bt_navigator-9] [INFO] [1795621447.111603965] [bt_navigator]: Configuring
+[bt_navigator-9] [INFO] [1795621447.146106332] [bt_navigator]: Creating navigator id navigate_to_pose of type nav2_bt_navigator::NavigateToPoseNavigator
+[umeonigiri_webnav_server-16] [umeonigiri_webnav] Web UI ready at http://localhost:8088 (bind 0.0.0.0:8088)
+[bt_navigator-9] [WARN] [1795621447.166927193] [bt_navigator]: Error_code parameters were not set. Using default values of: follow_path_error_code compute_path_error_code
+[bt_navigator-9] Make sure these match your BT and there are not other sources of error codes youreported to your application
+[bt_navigator-9] [INFO] [1795621447.346981382] [bt_navigator]: Creating navigator id navigate_through_poses of type nav2_bt_navigator::NavigateThroughPosesNavigator
+[lifecycle_manager-11] [INFO] [1795621447.413665818] [lifecycle_manager_navigation]: [34m[1mConfiguring velocity_smoother[0m[0m
+[velocity_smoother-10] [INFO] [1795621447.414560461] [velocity_smoother]: Configuring velocity smoother
+[lifecycle_manager-11] [INFO] [1795621447.444086887] [lifecycle_manager_navigation]: [34m[1mConfiguring map_saver[0m[0m
+[map_saver_server-14] [INFO] [1795621447.444599236] [map_saver]: Configuring
+[lifecycle_manager-11] [INFO] [1795621447.453736375] [lifecycle_manager_navigation]: [34m[1mActivating controller_server[0m[0m
+[controller_server-6] [INFO] [1795621447.454098548] [controller_server]: Activating
+[controller_server-6] [INFO] [1795621447.454157160] [local_costmap.local_costmap]: Activating
+[controller_server-6] [INFO] [1795621447.454172907] [local_costmap.local_costmap]: Checking transform
+[controller_server-6] [INFO] [1795621447.454234727] [local_costmap.local_costmap]: Timed out waiting for transform from base_footprint to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[controller_server-6] [INFO] [1795621447.954379516] [local_costmap.local_costmap]: Timed out waiting for transform from base_footprint to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[async_slam_toolbox_node-5] [INFO] [1795621448.183625136] [slam_toolbox]: Configuring
+[async_slam_toolbox_node-5] [INFO] [1795621448.239096583] [slam_toolbox]: Using solver plugin solver_plugins::CeresSolver
+[async_slam_toolbox_node-5] [INFO] [1795621448.248476400] [slam_toolbox]: CeresSolver: Using SCHUR_JACOBI preconditioner.
+[async_slam_toolbox_node-5] [INFO] [1795621448.333012568] [slam_toolbox]: Activating
+[gazebo-2] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="umeonigiri_bot"]/link[@name="base_footprint"]/sensor[@name="lidar"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[controller_server-6] [INFO] [1795621448.454367276] [local_costmap.local_costmap]: Timed out waiting for transform from base_footprint to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[gazebo-2] libEGL warning: Not allowed to force software rendering when API explicitly selects a hardware device.
+[gazebo-2] libEGL warning: MESA-LOADER: failed to open rknpu: /usr/lib/dri/rknpu_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib/aarch64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri)
+[gazebo-2] 
+[gazebo-2] libEGL warning: Not allowed to force software rendering when API explicitly selects a hardware device.
+[controller_server-6] [INFO] [1795621448.954369352] [local_costmap.local_costmap]: Timed out waiting for transform from base_footprint to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[controller_server-6] [INFO] [1795621449.454679174] [local_costmap.local_costmap]: start
+[controller_server-6] [INFO] [1795621449.661903488] [controller_server]: Activating controller: FollowPath of type regulated_pure_pursuit_controller::RegulatedPurePursuitController
+[controller_server-6] [INFO] [1795621449.662125693] [controller_server]: Creating bond (controller_server) to lifecycle manager.
+[lifecycle_manager-11] [INFO] [1795621449.779489380] [lifecycle_manager_navigation]: Server controller_server connected with bond.
+[lifecycle_manager-11] [INFO] [1795621449.779616813] [lifecycle_manager_navigation]: [34m[1mActivating planner_server[0m[0m
+[planner_server-7] [INFO] [1795621449.780574163] [planner_server]: Activating
+[planner_server-7] [INFO] [1795621449.780741838] [global_costmap.global_costmap]: Activating
+[planner_server-7] [INFO] [1795621449.780788496] [global_costmap.global_costmap]: Checking transform
+[planner_server-7] [INFO] [1795621449.780973667] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[async_slam_toolbox_node-5] Info: clipped range threshold to be within minimum and maximum range!
+[async_slam_toolbox_node-5] Registering sensor: [Custom Described Lidar]
+[parameter_bridge-4] [INFO] [1795621450.219887640] [ros_gz_bridge]: Passing message from ROS tf2_msgs/msg/TFMessage to Gazebo gz.msgs.Pose_V (showing msg only once per type)
+[planner_server-7] [INFO] [1795621450.281283303] [global_costmap.global_costmap]: Timed out waiting for transform from base_footprint to map to become available, tf error: Lookup would require extrapolation at time 0.310000, but only time 0.700000 is in the buffer, when looking up transform from frame [base_footprint] to frame [map]
+[planner_server-7] [INFO] [1795621450.361069670] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 128 X 197 at 0.050000 m/pix
+[planner_server-7] [INFO] [1795621450.781095148] [global_costmap.global_costmap]: start
+[yolo_grasp_node-17] [INFO] [1795621451.721968938] [yolo_grasp]: トピック入力 60 フレーム  推論 24.4 ms  検出 2
+[planner_server-7] [INFO] [1795621451.782779731] [planner_server]: Activating plugin GridBased of type SmacPlanner2D
+[planner_server-7] [INFO] [1795621451.785891234] [planner_server]: Creating bond (planner_server) to lifecycle manager.
+[lifecycle_manager-11] [INFO] [1795621451.894644552] [lifecycle_manager_navigation]: Server planner_server connected with bond.
+[lifecycle_manager-11] [INFO] [1795621451.894774611] [lifecycle_manager_navigation]: [34m[1mActivating behavior_server[0m[0m
+[behavior_server-8] [INFO] [1795621451.895990342] [behavior_server]: Activating
+[behavior_server-8] [INFO] [1795621451.896056538] [behavior_server]: Activating spin
+[behavior_server-8] [INFO] [1795621451.896075493] [behavior_server]: Activating backup
+[behavior_server-8] [INFO] [1795621451.896090365] [behavior_server]: Activating drive_on_heading
+[behavior_server-8] [INFO] [1795621451.896109029] [behavior_server]: Activating wait
+[behavior_server-8] [INFO] [1795621451.896131774] [behavior_server]: Creating bond (behavior_server) to lifecycle manager.
+[lifecycle_manager-11] [INFO] [1795621452.011252779] [lifecycle_manager_navigation]: Server behavior_server connected with bond.
+[lifecycle_manager-11] [INFO] [1795621452.011387796] [lifecycle_manager_navigation]: [34m[1mActivating bt_navigator[0m[0m
+[bt_navigator-9] [INFO] [1795621452.012371119] [bt_navigator]: Activating
+[bt_navigator-9] [INFO] [1795621452.215393492] [bt_navigator]: Creating bond (bt_navigator) to lifecycle manager.
+[lifecycle_manager-11] [INFO] [1795621452.324791676] [lifecycle_manager_navigation]: Server bt_navigator connected with bond.
+[lifecycle_manager-11] [INFO] [1795621452.324924069] [lifecycle_manager_navigation]: [34m[1mActivating velocity_smoother[0m[0m
+[velocity_smoother-10] [INFO] [1795621452.325781998] [velocity_smoother]: Activating
+[velocity_smoother-10] [INFO] [1795621452.325873273] [velocity_smoother]: Creating bond (velocity_smoother) to lifecycle manager.
+[lifecycle_manager-11] [INFO] [1795621452.440503015] [lifecycle_manager_navigation]: Server velocity_smoother connected with bond.
+[lifecycle_manager-11] [INFO] [1795621452.440575919] [lifecycle_manager_navigation]: [34m[1mActivating map_saver[0m[0m
+[map_saver_server-14] [INFO] [1795621452.441398271] [map_saver]: Activating
+[map_saver_server-14] [INFO] [1795621452.441451928] [map_saver]: Creating bond (map_saver) to lifecycle manager.
+[lifecycle_manager-11] [INFO] [1795621452.565710187] [lifecycle_manager_navigation]: Server map_saver connected with bond.
+[lifecycle_manager-11] [INFO] [1795621452.565839664] [lifecycle_manager_navigation]: [34m[1mManaged nodes are active[0m[0m
+[lifecycle_manager-11] [INFO] [1795621452.565878740] [lifecycle_manager_navigation]: [34m[1mCreating bond timer...[0m[0m
+[umeonigiri_webnav_server-16] [INFO] [1795621453.104260663] [umeonigiri_webnav_commander]: Nav2 が起動しました
+[yolo_grasp_node-17] [INFO] [1795621453.559164126] [yolo_grasp]: トピック入力 120 フレーム  推論 20.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621455.395681343] [yolo_grasp]: トピック入力 180 フレーム  推論 21.2 ms  検出 2
+[umeonigiri_webnav_server-16] [INFO] [1795621456.850696813] [umeonigiri_webnav_vision_listener]: 認識モニター購読状態: SUSPENDED (enabled=1)
+[yolo_grasp_node-17] [INFO] [1795621457.401827238] [yolo_grasp]: トピック入力 240 フレーム  推論 20.4 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621459.281587957] [yolo_grasp]: トピック入力 300 フレーム  推論 27.5 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621461.039892348] [yolo_grasp]: トピック入力 360 フレーム  推論 20.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621462.757087885] [yolo_grasp]: トピック入力 420 フレーム  推論 25.4 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621464.635543864] [yolo_grasp]: トピック入力 480 フレーム  推論 19.4 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621467.018987857] [yolo_grasp]: トピック入力 540 フレーム  推論 26.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621469.158720517] [yolo_grasp]: トピック入力 600 フレーム  推論 25.5 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621471.072765573] [yolo_grasp]: トピック入力 660 フレーム  推論 20.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621473.046681970] [yolo_grasp]: トピック入力 720 フレーム  推論 29.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621475.151698929] [yolo_grasp]: トピック入力 780 フレーム  推論 22.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621477.086942783] [yolo_grasp]: トピック入力 840 フレーム  推論 25.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621478.834315082] [yolo_grasp]: トピック入力 900 フレーム  推論 24.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621480.608354003] [yolo_grasp]: トピック入力 960 フレーム  推論 20.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621482.410484539] [yolo_grasp]: トピック入力 1020 フレーム  推論 26.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621484.453782984] [yolo_grasp]: トピック入力 1080 フレーム  推論 20.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621486.349411662] [yolo_grasp]: トピック入力 1140 フレーム  推論 20.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621488.079269352] [yolo_grasp]: トピック入力 1200 フレーム  推論 26.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621489.835820986] [yolo_grasp]: トピック入力 1260 フレーム  推論 25.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621491.742136468] [yolo_grasp]: トピック入力 1320 フレーム  推論 26.5 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621493.781097831] [yolo_grasp]: トピック入力 1380 フレーム  推論 38.4 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621495.620353964] [yolo_grasp]: トピック入力 1440 フレーム  推論 25.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621497.367852780] [yolo_grasp]: トピック入力 1500 フレーム  推論 21.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621499.107600001] [yolo_grasp]: トピック入力 1560 フレーム  推論 20.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621501.122785239] [yolo_grasp]: トピック入力 1620 フレーム  推論 26.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621503.206646720] [yolo_grasp]: トピック入力 1680 フレーム  推論 26.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621504.957860790] [yolo_grasp]: トピック入力 1740 フレーム  推論 24.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621506.703843951] [yolo_grasp]: トピック入力 1800 フレーム  推論 21.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621508.484800846] [yolo_grasp]: トピック入力 1860 フレーム  推論 26.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621510.520631236] [yolo_grasp]: トピック入力 1920 フレーム  推論 27.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621512.532032350] [yolo_grasp]: トピック入力 1980 フレーム  推論 25.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621514.288237750] [yolo_grasp]: トピック入力 2040 フレーム  推論 21.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621516.022130664] [yolo_grasp]: トピック入力 2100 フレーム  推論 20.4 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621517.794396500] [yolo_grasp]: トピック入力 2160 フレーム  推論 26.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621519.911659821] [yolo_grasp]: トピック入力 2220 フレーム  推論 25.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621521.810506136] [yolo_grasp]: トピック入力 2280 フレーム  推論 20.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621523.583431337] [yolo_grasp]: トピック入力 2340 フレーム  推論 28.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621525.355929729] [yolo_grasp]: トピック入力 2400 フレーム  推論 19.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621527.219488950] [yolo_grasp]: トピック入力 2460 フレーム  推論 24.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621529.262533480] [yolo_grasp]: トピック入力 2520 フレーム  推論 21.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621531.119587457] [yolo_grasp]: トピック入力 2580 フレーム  推論 26.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621532.864122138] [yolo_grasp]: トピック入力 2640 フレーム  推論 25.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621534.577798831] [yolo_grasp]: トピック入力 2700 フレーム  推論 23.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621536.455570910] [yolo_grasp]: トピック入力 2760 フレーム  推論 20.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621538.565233462] [yolo_grasp]: トピック入力 2820 フレーム  推論 27.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621540.340872162] [yolo_grasp]: トピック入力 2880 フレーム  推論 20.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621542.107733769] [yolo_grasp]: トピック入力 2940 フレーム  推論 24.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621543.855174032] [yolo_grasp]: トピック入力 3000 フレーム  推論 26.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621545.849524075] [yolo_grasp]: トピック入力 3060 フレーム  推論 27.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621547.924483722] [yolo_grasp]: トピック入力 3120 フレーム  推論 26.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621549.715091069] [yolo_grasp]: トピック入力 3180 フレーム  推論 26.5 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621551.440672343] [yolo_grasp]: トピック入力 3240 フレーム  推論 26.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621553.219456367] [yolo_grasp]: トピック入力 3300 フレーム  推論 25.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621555.310106013] [yolo_grasp]: トピック入力 3360 フレーム  推論 26.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621557.276988304] [yolo_grasp]: トピック入力 3420 フレーム  推論 22.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621559.023806348] [yolo_grasp]: トピック入力 3480 フレーム  推論 25.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621560.786189138] [yolo_grasp]: トピック入力 3540 フレーム  推論 25.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621562.530438646] [yolo_grasp]: トピック入力 3600 フレーム  推論 25.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621564.623706578] [yolo_grasp]: トピック入力 3660 フレーム  推論 20.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621566.597767253] [yolo_grasp]: トピック入力 3720 フレーム  推論 26.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621568.313613436] [yolo_grasp]: トピック入力 3780 フレーム  推論 24.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621570.078002351] [yolo_grasp]: トピック入力 3840 フレーム  推論 26.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621571.893135870] [yolo_grasp]: トピック入力 3900 フレーム  推論 21.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621574.010977851] [yolo_grasp]: トピック入力 3960 フレーム  推論 27.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621575.887804595] [yolo_grasp]: トピック入力 4020 フレーム  推論 26.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621577.639946666] [yolo_grasp]: トピック入力 4080 フレーム  推論 19.5 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621579.412259680] [yolo_grasp]: トピック入力 4140 フレーム  推論 28.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621581.193285958] [yolo_grasp]: トピック入力 4200 フレーム  推論 26.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621583.242687442] [yolo_grasp]: トピック入力 4260 フレーム  推論 20.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621585.101770346] [yolo_grasp]: トピック入力 4320 フレーム  推論 20.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621586.822590420] [yolo_grasp]: トピック入力 4380 フレーム  推論 25.5 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621588.568195297] [yolo_grasp]: トピック入力 4440 フレーム  推論 20.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621590.411755008] [yolo_grasp]: トピック入力 4500 フレーム  推論 21.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621592.477828235] [yolo_grasp]: トピック入力 4560 フレーム  推論 22.5 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621594.338051895] [yolo_grasp]: トピック入力 4620 フレーム  推論 25.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621596.090961545] [yolo_grasp]: トピック入力 4680 フレーム  推論 26.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621597.840512967] [yolo_grasp]: トピック入力 4740 フレーム  推論 30.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621599.856927689] [yolo_grasp]: トピック入力 4800 フレーム  推論 28.5 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621601.922705062] [yolo_grasp]: トピック入力 4860 フレーム  推論 26.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621603.681666998] [yolo_grasp]: トピック入力 4920 フレーム  推論 20.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621605.450971024] [yolo_grasp]: トピック入力 4980 フレーム  推論 26.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621607.223019844] [yolo_grasp]: トピック入力 5040 フレーム  推論 25.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621609.238286038] [yolo_grasp]: トピック入力 5100 フレーム  推論 31.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621611.248447526] [yolo_grasp]: トピック入力 5160 フレーム  推論 25.5 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621612.986784924] [yolo_grasp]: トピック入力 5220 フレーム  推論 26.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621614.701422997] [yolo_grasp]: トピック入力 5280 フレーム  推論 20.4 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621616.487055065] [yolo_grasp]: トピック入力 5340 フレーム  推論 26.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621618.551177528] [yolo_grasp]: トピック入力 5400 フレーム  推論 20.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621620.526217467] [yolo_grasp]: トピック入力 5460 フレーム  推論 25.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621622.253220074] [yolo_grasp]: トピック入力 5520 フレーム  推論 21.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621624.023953819] [yolo_grasp]: トピック入力 5580 フレーム  推論 29.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621625.835987623] [yolo_grasp]: トピック入力 5640 フレーム  推論 19.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621627.899163383] [yolo_grasp]: トピック入力 5700 フレーム  推論 25.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621629.855028537] [yolo_grasp]: トピック入力 5760 フレーム  推論 26.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621631.597146453] [yolo_grasp]: トピック入力 5820 フレーム  推論 24.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621633.297408908] [yolo_grasp]: トピック入力 5880 フレーム  推論 20.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621635.161496589] [yolo_grasp]: トピック入力 5940 フレーム  推論 26.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621637.230872908] [yolo_grasp]: トピック入力 6000 フレーム  推論 20.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621639.106826133] [yolo_grasp]: トピック入力 6060 フレーム  推論 19.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621640.861345711] [yolo_grasp]: トピック入力 6120 フレーム  推論 24.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621642.610224923] [yolo_grasp]: トピック入力 6180 フレーム  推論 20.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621644.507535721] [yolo_grasp]: トピック入力 6240 フレーム  推論 26.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621646.566208196] [yolo_grasp]: トピック入力 6300 フレーム  推論 26.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621648.403481515] [yolo_grasp]: トピック入力 6360 フレーム  推論 25.4 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621650.132880311] [yolo_grasp]: トピック入力 6420 フレーム  推論 24.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621651.886897826] [yolo_grasp]: トピック入力 6480 フレーム  推論 22.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621653.849800998] [yolo_grasp]: トピック入力 6540 フレーム  推論 27.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621655.800557424] [yolo_grasp]: トピック入力 6600 フレーム  推論 26.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621657.634831171] [yolo_grasp]: トピック入力 6660 フレーム  推論 25.4 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621659.370902489] [yolo_grasp]: トピック入力 6720 フレーム  推論 26.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621661.080619656] [yolo_grasp]: トピック入力 6780 フレーム  推論 25.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621663.101421649] [yolo_grasp]: トピック入力 6840 フレーム  推論 22.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621665.149256268] [yolo_grasp]: トピック入力 6900 フレーム  推論 21.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621666.906512597] [yolo_grasp]: トピック入力 6960 フレーム  推論 25.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621668.615260085] [yolo_grasp]: トピック入力 7020 フレーム  推論 26.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621670.369029822] [yolo_grasp]: トピック入力 7080 フレーム  推論 24.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621672.484560269] [yolo_grasp]: トピック入力 7140 フレーム  推論 30.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621674.375943214] [yolo_grasp]: トピック入力 7200 フレーム  推論 25.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621676.114144278] [yolo_grasp]: トピック入力 7260 フレーム  推論 22.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621677.943330465] [yolo_grasp]: トピック入力 7320 フレーム  推論 25.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621679.718826562] [yolo_grasp]: トピック入力 7380 フレーム  推論 29.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621681.787482384] [yolo_grasp]: トピック入力 7440 フレーム  推論 26.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621683.690879497] [yolo_grasp]: トピック入力 7500 フレーム  推論 23.4 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621685.418093919] [yolo_grasp]: トピック入力 7560 フレーム  推論 25.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621687.162095374] [yolo_grasp]: トピック入力 7620 フレーム  推論 19.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621689.025889568] [yolo_grasp]: トピック入力 7680 フレーム  推論 26.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621691.074137896] [yolo_grasp]: トピック入力 7740 フレーム  推論 21.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621692.940631772] [yolo_grasp]: トピック入力 7800 フレーム  推論 25.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621694.711577066] [yolo_grasp]: トピック入力 7860 フレーム  推論 27.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621696.420258456] [yolo_grasp]: トピック入力 7920 フレーム  推論 24.4 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621698.291709974] [yolo_grasp]: トピック入力 7980 フレーム  推論 20.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621700.388658887] [yolo_grasp]: トピック入力 8040 フレーム  推論 26.5 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621702.180161471] [yolo_grasp]: トピック入力 8100 フレーム  推論 26.5 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621703.918405279] [yolo_grasp]: トピック入力 8160 フレーム  推論 19.4 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621705.691412870] [yolo_grasp]: トピック入力 8220 フレーム  推論 24.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621707.669052850] [yolo_grasp]: トピック入力 8280 フレーム  推論 19.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621709.725541245] [yolo_grasp]: トピック入力 8340 フレーム  推論 21.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621711.500158395] [yolo_grasp]: トピック入力 8400 フレーム  推論 26.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621713.254135316] [yolo_grasp]: トピック入力 8460 フレーム  推論 25.1 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621714.962563921] [yolo_grasp]: トピック入力 8520 フレーム  推論 25.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621717.023041188] [yolo_grasp]: トピック入力 8580 フレーム  推論 19.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621719.070846179] [yolo_grasp]: トピック入力 8640 フレーム  推論 25.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621720.774636025] [yolo_grasp]: トピック入力 8700 フレーム  推論 26.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621722.536843317] [yolo_grasp]: トピック入力 8760 フレーム  推論 24.4 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621724.304052436] [yolo_grasp]: トピック入力 8820 フレーム  推論 32.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621726.325973230] [yolo_grasp]: トピック入力 8880 フレーム  推論 20.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621728.322712080] [yolo_grasp]: トピック入力 8940 フレーム  推論 26.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621730.108563829] [yolo_grasp]: トピック入力 9000 フレーム  推論 24.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621731.824761680] [yolo_grasp]: トピック入力 9060 フレーム  推論 24.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621733.628903591] [yolo_grasp]: トピック入力 9120 フレーム  推論 25.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621735.701887478] [yolo_grasp]: トピック入力 9180 フレーム  推論 19.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621737.632284490] [yolo_grasp]: トピック入力 9240 フレーム  推論 21.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621739.385658109] [yolo_grasp]: トピック入力 9300 フレーム  推論 20.5 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621741.130398835] [yolo_grasp]: トピック入力 9360 フレーム  推論 25.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621742.923767737] [yolo_grasp]: トピック入力 9420 フレーム  推論 27.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621744.920047426] [yolo_grasp]: トピック入力 9480 フレーム  推論 26.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621746.849237713] [yolo_grasp]: トピック入力 9540 フレーム  推論 21.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621748.592183473] [yolo_grasp]: トピック入力 9600 フレーム  推論 26.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621750.337554327] [yolo_grasp]: トピック入力 9660 フレーム  推論 20.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621752.209391134] [yolo_grasp]: トピック入力 9720 フレーム  推論 20.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621754.261755557] [yolo_grasp]: トピック入力 9780 フレーム  推論 26.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621756.114290496] [yolo_grasp]: トピック入力 9840 フレーム  推論 26.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621757.861781656] [yolo_grasp]: トピック入力 9900 フレーム  推論 24.9 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621759.687378785] [yolo_grasp]: トピック入力 9960 フレーム  推論 22.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621761.644341504] [yolo_grasp]: トピック入力 10020 フレーム  推論 29.4 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621763.662408602] [yolo_grasp]: トピック入力 10080 フレーム  推論 27.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621765.455594965] [yolo_grasp]: トピック入力 10140 フレーム  推論 20.3 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621767.179705816] [yolo_grasp]: トピック入力 10200 フレーム  推論 26.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621768.911117297] [yolo_grasp]: トピック入力 10260 フレーム  推論 20.5 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621770.924290793] [yolo_grasp]: トピック入力 10320 フレーム  推論 25.6 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621772.908317956] [yolo_grasp]: トピック入力 10380 フレーム  推論 20.5 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621774.667454013] [yolo_grasp]: トピック入力 10440 フレーム  推論 26.4 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621776.425107140] [yolo_grasp]: トピック入力 10500 フレーム  推論 28.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621778.168766731] [yolo_grasp]: トピック入力 10560 フレーム  推論 20.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621780.220713220] [yolo_grasp]: トピック入力 10620 フレーム  推論 27.8 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621782.192160626] [yolo_grasp]: トピック入力 10680 フレーム  推論 26.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621783.938366873] [yolo_grasp]: トピック入力 10740 フレーム  推論 27.0 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621785.893968112] [yolo_grasp]: トピック入力 10800 フレーム  推論 25.7 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621787.879174227] [yolo_grasp]: トピック入力 10860 フレーム  推論 26.2 ms  検出 2
+[yolo_grasp_node-17] [INFO] [1795621789.942204382] [yolo_grasp]: トピック入力 10920 フレーム  推論 23.5 ms  検出 2
+[bt_navigator-9] [INFO] [1795621790.720938824] [bt_navigator]: Begin navigating from current location (-4.00, -4.00) to (-0.65, 2.60)
+[controller_server-6] [INFO] [1795621790.792051358] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-6] [WARN] [1795621790.792969462] [controller_server]: No goal checker was specified in parameter 'current_goal_checker'. Server will use only plugin loaded general_goal_checker . This warning will appear once.
+[controller_server-6] [WARN] [1795621790.793001835] [controller_server]: No progress checker was specified in parameter 'current_progress_checker'. Server will use only plugin loaded progress_checker . This warning will appear once.
+[parameter_bridge-4] [INFO] [1795621790.801995347] [ros_gz_bridge]: Passing message from ROS geometry_msgs/msg/Twist to Gazebo gz.msgs.Twist (showing msg only once per type)
+[yolo_grasp_node-17] [INFO] [1795621791.843963298] [yolo_grasp]: トピック入力 10980 フレーム  推論 25.3 ms  検出 0
+[controller_server-6] [INFO] [1795621791.893260199] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621792.943160785] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621793.599048601] [yolo_grasp]: トピック入力 11040 フレーム  推論 26.0 ms  検出 0
+[controller_server-6] [INFO] [1795621793.943159284] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621794.993204553] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621795.301984952] [yolo_grasp]: トピック入力 11100 フレーム  推論 26.7 ms  検出 0
+[planner_server-7] [INFO] [1795621795.781548681] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 128 X 197 at 0.050000 m/pix
+[controller_server-6] [INFO] [1795621795.993154909] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621797.043448333] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621797.093165091] [yolo_grasp]: トピック入力 11160 フレーム  推論 25.5 ms  検出 0
+[controller_server-6] [INFO] [1795621798.043501154] [controller_server]: Passing new path to controller.
+[planner_server-7] [INFO] [1795621798.781497534] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 197 X 197 at 0.050000 m/pix
+[yolo_grasp_node-17] [INFO] [1795621799.067751662] [yolo_grasp]: トピック入力 11220 フレーム  推論 27.1 ms  検出 0
+[controller_server-6] [INFO] [1795621799.093205133] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621800.143187034] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621800.847982938] [yolo_grasp]: トピック入力 11280 フレーム  推論 20.4 ms  検出 0
+[controller_server-6] [INFO] [1795621801.143200820] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621802.193149479] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621802.581272018] [yolo_grasp]: トピック入力 11340 フレーム  推論 25.5 ms  検出 0
+[planner_server-7] [INFO] [1795621802.781411825] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 197 X 198 at 0.050000 m/pix
+[controller_server-6] [INFO] [1795621803.193160050] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621804.243239804] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621804.316168573] [yolo_grasp]: トピック入力 11400 フレーム  推論 29.2 ms  検出 0
+[controller_server-6] [INFO] [1795621805.243188972] [controller_server]: Passing new path to controller.
+[planner_server-7] [INFO] [1795621805.781566609] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 198 X 198 at 0.050000 m/pix
+[yolo_grasp_node-17] [INFO] [1795621806.098882746] [yolo_grasp]: トピック入力 11460 フレーム  推論 27.6 ms  検出 0
+[controller_server-6] [INFO] [1795621806.293161093] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621807.293196294] [controller_server]: Passing new path to controller.
+[planner_server-7] [INFO] [1795621807.781427836] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 198 X 198 at 0.050000 m/pix
+[yolo_grasp_node-17] [INFO] [1795621807.945060270] [yolo_grasp]: トピック入力 11520 フレーム  推論 19.9 ms  検出 0
+[controller_server-6] [INFO] [1795621808.343159507] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621809.343210312] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621809.712488067] [yolo_grasp]: トピック入力 11580 フレーム  推論 26.3 ms  検出 0
+[controller_server-6] [INFO] [1795621810.393615379] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621811.293301292] [controller_server]: Reached the goal!
+[bt_navigator-9] [INFO] [1795621811.316528294] [bt_navigator]: Goal succeeded
+[yolo_grasp_node-17] [INFO] [1795621811.443873297] [yolo_grasp]: トピック入力 11640 フレーム  推論 25.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621813.163294710] [yolo_grasp]: トピック入力 11700 フレーム  推論 24.5 ms  検出 0
+[bt_navigator-9] [INFO] [1795621813.749241465] [bt_navigator]: Begin navigating from current location (-0.72, 2.44) to (-0.60, 0.90)
+[controller_server-6] [INFO] [1795621813.771106495] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-6] [INFO] [1795621814.821418124] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621814.954937475] [yolo_grasp]: トピック入力 11760 フレーム  推論 25.8 ms  検出 0
+[controller_server-6] [INFO] [1795621815.873629639] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621816.871430971] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621816.935023861] [yolo_grasp]: トピック入力 11820 フレーム  推論 25.4 ms  検出 0
+[controller_server-6] [INFO] [1795621817.921383059] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621818.771844255] [yolo_grasp]: トピック入力 11880 フレーム  推論 25.5 ms  検出 0
+[controller_server-6] [INFO] [1795621818.921414586] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621819.971397846] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621820.511836858] [yolo_grasp]: トピック入力 11940 フレーム  推論 25.2 ms  検出 0
+[controller_server-6] [INFO] [1795621820.971466145] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621821.271658281] [controller_server]: Reached the goal!
+[bt_navigator-9] [INFO] [1795621821.299770528] [bt_navigator]: Goal succeeded
+[yolo_grasp_node-17] [INFO] [1795621822.232587377] [yolo_grasp]: トピック入力 12000 フレーム  推論 20.6 ms  検出 0
+[bt_navigator-9] [INFO] [1795621823.785675524] [bt_navigator]: Begin navigating from current location (-0.64, 0.99) to (0.50, -2.90)
+[controller_server-6] [INFO] [1795621823.821251042] [controller_server]: Received a goal, begin computing control effort.
+[yolo_grasp_node-17] [INFO] [1795621824.000946593] [yolo_grasp]: トピック入力 12060 フレーム  推論 26.1 ms  検出 0
+[controller_server-6] [INFO] [1795621824.871969654] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621825.871622715] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621825.971532449] [yolo_grasp]: トピック入力 12120 フレーム  推論 26.6 ms  検出 0
+[controller_server-6] [INFO] [1795621826.921645566] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621827.821063614] [yolo_grasp]: トピック入力 12180 フレーム  推論 25.1 ms  検出 0
+[controller_server-6] [INFO] [1795621827.921914580] [controller_server]: Passing new path to controller.
+[planner_server-7] [INFO] [1795621828.781548230] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 198 X 198 at 0.050000 m/pix
+[controller_server-6] [INFO] [1795621828.921544008] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621829.518027102] [yolo_grasp]: トピック入力 12240 フレーム  推論 22.3 ms  検出 0
+[planner_server-7] [INFO] [1795621829.781419557] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 198 X 198 at 0.050000 m/pix
+[controller_server-6] [INFO] [1795621829.971546589] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621830.971542445] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621831.255011603] [yolo_grasp]: トピック入力 12300 フレーム  推論 24.6 ms  検出 0
+[controller_server-6] [INFO] [1795621832.021591328] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621833.007831370] [yolo_grasp]: トピック入力 12360 フレーム  推論 21.0 ms  検出 0
+[controller_server-6] [INFO] [1795621833.021592140] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621834.071627446] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621834.893010819] [yolo_grasp]: トピック入力 12420 フレーム  推論 26.4 ms  検出 0
+[controller_server-6] [INFO] [1795621835.071605703] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621836.121613584] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621836.698806112] [yolo_grasp]: トピック入力 12480 フレーム  推論 26.6 ms  検出 0
+[controller_server-6] [INFO] [1795621837.121554904] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621837.621619910] [controller_server]: Reached the goal!
+[bt_navigator-9] [INFO] [1795621837.648461707] [bt_navigator]: Goal succeeded
+[yolo_grasp_node-17] [INFO] [1795621838.421240980] [yolo_grasp]: トピック入力 12540 フレーム  推論 21.0 ms  検出 0
+[bt_navigator-9] [INFO] [1795621839.816741605] [bt_navigator]: Begin navigating from current location (0.43, -2.82) to (0.30, -0.90)
+[controller_server-6] [INFO] [1795621839.838512721] [controller_server]: Received a goal, begin computing control effort.
+[yolo_grasp_node-17] [INFO] [1795621840.122700284] [yolo_grasp]: トピック入力 12600 フレーム  推論 21.5 ms  検出 0
+[controller_server-6] [INFO] [1795621840.888766441] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621841.877165219] [yolo_grasp]: トピック入力 12660 フレーム  推論 33.1 ms  検出 0
+[controller_server-6] [INFO] [1795621841.888772115] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621842.940863087] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621843.823882911] [yolo_grasp]: トピック入力 12720 フレーム  推論 22.9 ms  検出 0
+[controller_server-6] [INFO] [1795621843.938794490] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621844.989255491] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621845.637092434] [yolo_grasp]: トピック入力 12780 フレーム  推論 25.4 ms  検出 0
+[controller_server-6] [INFO] [1795621845.988776562] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621847.039005551] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621847.367952239] [yolo_grasp]: トピック入力 12840 フレーム  推論 21.1 ms  検出 0
+[controller_server-6] [INFO] [1795621848.088789803] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621848.588866880] [controller_server]: Reached the goal!
+[bt_navigator-9] [INFO] [1795621848.617944731] [bt_navigator]: Goal succeeded
+[yolo_grasp_node-17] [INFO] [1795621849.090077217] [yolo_grasp]: トピック入力 12900 フレーム  推論 21.2 ms  検出 0
+[bt_navigator-9] [INFO] [1795621850.843293083] [bt_navigator]: Begin navigating from current location (0.35, -1.07) to (-3.20, -0.55)
+[yolo_grasp_node-17] [INFO] [1795621850.843772309] [yolo_grasp]: トピック入力 12960 フレーム  推論 28.1 ms  検出 0
+[controller_server-6] [INFO] [1795621850.867988833] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-6] [INFO] [1795621851.918298573] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621852.728754088] [yolo_grasp]: トピック入力 13020 フレーム  推論 20.6 ms  検出 0
+[controller_server-6] [INFO] [1795621852.968216557] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621853.968205857] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621854.611370743] [yolo_grasp]: トピック入力 13080 フレーム  推論 25.8 ms  検出 0
+[controller_server-6] [INFO] [1795621855.018344487] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621856.018227599] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621856.341756769] [yolo_grasp]: トピック入力 13140 フレーム  推論 21.5 ms  検出 0
+[controller_server-6] [INFO] [1795621857.068259847] [controller_server]: Passing new path to controller.
+[planner_server-7] [INFO] [1795621857.781440509] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 198 X 198 at 0.050000 m/pix
+[controller_server-6] [INFO] [1795621858.118375392] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621858.127109744] [yolo_grasp]: トピック入力 13200 フレーム  推論 21.0 ms  検出 0
+[controller_server-6] [INFO] [1795621859.118218280] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621859.870648446] [yolo_grasp]: トピック入力 13260 フレーム  推論 26.5 ms  検出 0
+[controller_server-6] [INFO] [1795621860.168339026] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621861.168253495] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621861.786092504] [yolo_grasp]: トピック入力 13320 フレーム  推論 20.8 ms  検出 0
+[controller_server-6] [INFO] [1795621862.218322794] [controller_server]: Passing new path to controller.
+[planner_server-7] [INFO] [1795621862.781451476] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 198 X 198 at 0.050000 m/pix
+[controller_server-6] [INFO] [1795621863.218317535] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621863.595278905] [yolo_grasp]: トピック入力 13380 フレーム  推論 26.0 ms  検出 0
+[controller_server-6] [INFO] [1795621864.218293304] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621865.268227397] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621865.392206077] [yolo_grasp]: トピック入力 13440 フレーム  推論 25.5 ms  検出 0
+[controller_server-6] [INFO] [1795621866.268218892] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621867.068356484] [controller_server]: Reached the goal!
+[bt_navigator-9] [INFO] [1795621867.084121900] [bt_navigator]: Goal succeeded
+[yolo_grasp_node-17] [INFO] [1795621867.127418896] [yolo_grasp]: トピック入力 13500 フレーム  推論 21.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621868.842422091] [yolo_grasp]: トピック入力 13560 フレーム  推論 26.3 ms  検出 0
+[bt_navigator-9] [INFO] [1795621869.893547832] [bt_navigator]: Begin navigating from current location (-3.09, -0.52) to (3.20, 1.05)
+[controller_server-6] [INFO] [1795621869.914992040] [controller_server]: Received a goal, begin computing control effort.
+[yolo_grasp_node-17] [INFO] [1795621870.809133530] [yolo_grasp]: トピック入力 13620 フレーム  推論 27.1 ms  検出 0
+[controller_server-6] [INFO] [1795621870.965431449] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621872.015291840] [controller_server]: Passing new path to controller.
+[planner_server-7] [INFO] [1795621872.782241916] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 198 X 198 at 0.050000 m/pix
+[yolo_grasp_node-17] [INFO] [1795621872.783889343] [yolo_grasp]: トピック入力 13680 フレーム  推論 24.7 ms  検出 0
+[controller_server-6] [INFO] [1795621873.065363974] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621874.115327538] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621874.485722586] [yolo_grasp]: トピック入力 13740 フレーム  推論 25.6 ms  検出 0
+[controller_server-6] [INFO] [1795621875.115327334] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621876.165373535] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621876.220700749] [yolo_grasp]: トピック入力 13800 フレーム  推論 26.5 ms  検出 0
+[controller_server-6] [INFO] [1795621877.165307988] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621877.946581049] [yolo_grasp]: トピック入力 13860 フレーム  推論 25.5 ms  検出 0
+[controller_server-6] [INFO] [1795621878.215288309] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621879.265342593] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621879.887991601] [yolo_grasp]: トピック入力 13920 フレーム  推論 27.0 ms  検出 0
+[controller_server-6] [INFO] [1795621880.265308616] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621881.315291698] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621881.771622428] [yolo_grasp]: トピック入力 13980 フレーム  推論 20.6 ms  検出 0
+[controller_server-6] [INFO] [1795621882.315274230] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621883.365287863] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621883.510602030] [yolo_grasp]: トピック入力 14040 フレーム  推論 25.7 ms  検出 0
+[controller_server-6] [INFO] [1795621884.365441453] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621885.213414449] [yolo_grasp]: トピック入力 14100 フレーム  推論 20.6 ms  検出 0
+[controller_server-6] [INFO] [1795621885.415275873] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621886.415317254] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621886.945881140] [yolo_grasp]: トピック入力 14160 フレーム  推論 20.1 ms  検出 0
+[controller_server-6] [INFO] [1795621887.415280478] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621888.465556677] [controller_server]: Passing new path to controller.
+[yolo_grasp_node-17] [INFO] [1795621888.824630364] [yolo_grasp]: トピック入力 14220 フレーム  推論 23.8 ms  検出 0
+[controller_server-6] [INFO] [1795621889.465306711] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795621889.465589647] [controller_server]: Reached the goal!
+[bt_navigator-9] [INFO] [1795621889.504137470] [bt_navigator]: Goal succeeded
+[yolo_grasp_node-17] [INFO] [1795621890.658247777] [yolo_grasp]: トピック入力 14280 フレーム  推論 19.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621892.403600547] [yolo_grasp]: トピック入力 14340 フレーム  推論 20.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621894.124219571] [yolo_grasp]: トピック入力 14400 フレーム  推論 22.8 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621895.840412684] [yolo_grasp]: トピック入力 14460 フレーム  推論 25.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621897.579579202] [yolo_grasp]: トピック入力 14520 フレーム  推論 26.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621899.440902339] [yolo_grasp]: トピック入力 14580 フレーム  推論 26.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621901.216760744] [yolo_grasp]: トピック入力 14640 フレーム  推論 25.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621902.916588835] [yolo_grasp]: トピック入力 14700 フレーム  推論 21.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621904.637316935] [yolo_grasp]: トピック入力 14760 フレーム  推論 21.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621906.407013899] [yolo_grasp]: トピック入力 14820 フレーム  推論 26.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621908.249289143] [yolo_grasp]: トピック入力 14880 フレーム  推論 27.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621910.000975249] [yolo_grasp]: トピック入力 14940 フレーム  推論 26.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621911.725016363] [yolo_grasp]: トピック入力 15000 フレーム  推論 21.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621913.435393556] [yolo_grasp]: トピック入力 15060 フレーム  推論 20.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621915.194622060] [yolo_grasp]: トピック入力 15120 フレーム  推論 22.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621917.035138490] [yolo_grasp]: トピック入力 15180 フレーム  推論 20.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621918.829738904] [yolo_grasp]: トピック入力 15240 フレーム  推論 26.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621920.561860650] [yolo_grasp]: トピック入力 15300 フレーム  推論 25.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621922.282394255] [yolo_grasp]: トピック入力 15360 フレーム  推論 25.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621924.006308956] [yolo_grasp]: トピック入力 15420 フレーム  推論 25.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621925.835779810] [yolo_grasp]: トピック入力 15480 フレーム  推論 25.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621927.611362948] [yolo_grasp]: トピック入力 15540 フレーム  推論 25.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621929.310050206] [yolo_grasp]: トピック入力 15600 フレーム  推論 21.8 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621931.036659909] [yolo_grasp]: トピック入力 15660 フレーム  推論 29.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621932.819029444] [yolo_grasp]: トピック入力 15720 フレーム  推論 25.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621934.662217340] [yolo_grasp]: トピック入力 15780 フレーム  推論 19.8 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621936.463541965] [yolo_grasp]: トピック入力 15840 フレーム  推論 26.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621938.170240495] [yolo_grasp]: トピック入力 15900 フレーム  推論 20.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621939.913773420] [yolo_grasp]: トピック入力 15960 フレーム  推論 21.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621941.595345576] [yolo_grasp]: トピック入力 16020 フレーム  推論 20.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621943.468730481] [yolo_grasp]: トピック入力 16080 フレーム  推論 35.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621945.269401093] [yolo_grasp]: トピック入力 16140 フレーム  推論 20.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621946.982368153] [yolo_grasp]: トピック入力 16200 フレーム  推論 24.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621948.698819646] [yolo_grasp]: トピック入力 16260 フレーム  推論 25.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621950.430793794] [yolo_grasp]: トピック入力 16320 フレーム  推論 25.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621952.276748180] [yolo_grasp]: トピック入力 16380 フレーム  推論 26.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621954.094758948] [yolo_grasp]: トピック入力 16440 フレーム  推論 26.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621955.797065903] [yolo_grasp]: トピック入力 16500 フレーム  推論 24.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621957.515189442] [yolo_grasp]: トピック入力 16560 フレーム  推論 24.8 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621959.240799484] [yolo_grasp]: トピック入力 16620 フレーム  推論 25.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621961.109327553] [yolo_grasp]: トピック入力 16680 フレーム  推論 25.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621962.877116710] [yolo_grasp]: トピック入力 16740 フレーム  推論 29.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621964.623647157] [yolo_grasp]: トピック入力 16800 フレーム  推論 24.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621966.351017894] [yolo_grasp]: トピック入力 16860 フレーム  推論 25.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621968.051830874] [yolo_grasp]: トピック入力 16920 フレーム  推論 26.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621969.877472840] [yolo_grasp]: トピック入力 16980 フレーム  推論 25.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621971.692894709] [yolo_grasp]: トピック入力 17040 フレーム  推論 42.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621973.448013249] [yolo_grasp]: トピック入力 17100 フレーム  推論 25.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621975.144148963] [yolo_grasp]: トピック入力 17160 フレーム  推論 28.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621976.862009033] [yolo_grasp]: トピック入力 17220 フレーム  推論 27.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621978.667269176] [yolo_grasp]: トピック入力 17280 フレーム  推論 22.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621980.492120165] [yolo_grasp]: トピック入力 17340 フレーム  推論 21.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621982.264846315] [yolo_grasp]: トピック入力 17400 フレーム  推論 24.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621983.991682648] [yolo_grasp]: トピック入力 17460 フレーム  推論 26.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621985.686056140] [yolo_grasp]: トピック入力 17520 フレーム  推論 26.8 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621987.458760219] [yolo_grasp]: トピック入力 17580 フレーム  推論 19.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621989.323172667] [yolo_grasp]: トピック入力 17640 フレーム  推論 25.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621991.036531116] [yolo_grasp]: トピック入力 17700 フレーム  推論 29.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621992.760756019] [yolo_grasp]: トピック入力 17760 フレーム  推論 27.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621994.486221214] [yolo_grasp]: トピック入力 17820 フレーム  推論 20.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621996.230254529] [yolo_grasp]: トピック入力 17880 フレーム  推論 30.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621998.068537050] [yolo_grasp]: トピック入力 17940 フレーム  推論 30.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795621999.838737954] [yolo_grasp]: トピック入力 18000 フレーム  推論 21.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622001.561957667] [yolo_grasp]: トピック入力 18060 フレーム  推論 27.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622003.273157485] [yolo_grasp]: トピック入力 18120 フレーム  推論 19.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622005.058595415] [yolo_grasp]: トピック入力 18180 フレーム  推論 26.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622006.887288191] [yolo_grasp]: トピック入力 18240 フレーム  推論 24.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622008.701013735] [yolo_grasp]: トピック入力 18300 フレーム  推論 25.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622010.419828822] [yolo_grasp]: トピック入力 18360 フレーム  推論 26.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622012.116279491] [yolo_grasp]: トピック入力 18420 フレーム  推論 26.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622013.865337925] [yolo_grasp]: トピック入力 18480 フレーム  推論 24.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622015.738433394] [yolo_grasp]: トピック入力 18540 フレーム  推論 26.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622017.549247144] [yolo_grasp]: トピック入力 18600 フレーム  推論 26.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622019.245827478] [yolo_grasp]: トピック入力 18660 フレーム  推論 26.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622020.954222585] [yolo_grasp]: トピック入力 18720 フレーム  推論 25.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622022.714037938] [yolo_grasp]: トピック入力 18780 フレーム  推論 26.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622024.545991579] [yolo_grasp]: トピック入力 18840 フレーム  推論 26.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622026.333871216] [yolo_grasp]: トピック入力 18900 フレーム  推論 25.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622028.048999544] [yolo_grasp]: トピック入力 18960 フレーム  推論 20.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622029.755139218] [yolo_grasp]: トピック入力 19020 フレーム  推論 26.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622031.501716990] [yolo_grasp]: トピック入力 19080 フレーム  推論 25.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622033.348813649] [yolo_grasp]: トピック入力 19140 フレーム  推論 27.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622035.122458897] [yolo_grasp]: トピック入力 19200 フレーム  推論 27.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622036.848695148] [yolo_grasp]: トピック入力 19260 フレーム  推論 26.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622038.571848125] [yolo_grasp]: トピック入力 19320 フレーム  推論 25.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622040.286123641] [yolo_grasp]: トピック入力 19380 フレーム  推論 25.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622042.156669170] [yolo_grasp]: トピック入力 19440 フレーム  推論 20.8 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622043.975479923] [yolo_grasp]: トピック入力 19500 フレーム  推論 26.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622045.719176254] [yolo_grasp]: トピック入力 19560 フレーム  推論 26.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622047.479994194] [yolo_grasp]: トピック入力 19620 フレーム  推論 20.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622049.243571407] [yolo_grasp]: トピック入力 19680 フレーム  推論 21.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622051.383802510] [yolo_grasp]: トピック入力 19740 フレーム  推論 20.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622053.477609316] [yolo_grasp]: トピック入力 19800 フレーム  推論 25.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622055.199444339] [yolo_grasp]: トピック入力 19860 フレーム  推論 26.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622056.891743303] [yolo_grasp]: トピック入力 19920 フレーム  推論 20.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622058.626831325] [yolo_grasp]: トピック入力 19980 フレーム  推論 22.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622060.452399814] [yolo_grasp]: トピック入力 20040 フレーム  推論 25.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622062.252207814] [yolo_grasp]: トピック入力 20100 フレーム  推論 20.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622063.938908869] [yolo_grasp]: トピック入力 20160 フレーム  推論 20.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622065.695276854] [yolo_grasp]: トピック入力 20220 フレーム  推論 25.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622067.495930293] [yolo_grasp]: トピック入力 20280 フレーム  推論 25.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622069.726119640] [yolo_grasp]: トピック入力 20340 フレーム  推論 26.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622071.659031363] [yolo_grasp]: トピック入力 20400 フレーム  推論 25.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622073.717352509] [yolo_grasp]: トピック入力 20460 フレーム  推論 26.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622075.497922093] [yolo_grasp]: トピック入力 20520 フレーム  推論 26.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622077.385183440] [yolo_grasp]: トピック入力 20580 フレーム  推論 26.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622079.513328931] [yolo_grasp]: トピック入力 20640 フレーム  推論 35.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622081.436989093] [yolo_grasp]: トピック入力 20700 フレーム  推論 26.3 ms  検出 0
+[async_slam_toolbox_node-5] [INFO] [1795622082.727910451] [slam_toolbox]: Message Filter dropping message: frame 'lidar_link' at time 581.200 for reason 'discarding message because the queue is full'
+[yolo_grasp_node-17] [INFO] [1795622083.498798909] [yolo_grasp]: トピック入力 20760 フレーム  推論 20.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622085.197979174] [yolo_grasp]: トピック入力 20820 フレーム  推論 20.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622086.968944438] [yolo_grasp]: トピック入力 20880 フレーム  推論 26.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622088.839760225] [yolo_grasp]: トピック入力 20940 フレーム  推論 26.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622090.570134502] [yolo_grasp]: トピック入力 21000 フレーム  推論 26.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622092.345171625] [yolo_grasp]: トピック入力 21060 フレーム  推論 24.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622094.119750015] [yolo_grasp]: トピック入力 21120 フレーム  推論 19.8 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622095.961261961] [yolo_grasp]: トピック入力 21180 フレーム  推論 27.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622097.835359187] [yolo_grasp]: トピック入力 21240 フレーム  推論 35.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622099.594671746] [yolo_grasp]: トピック入力 21300 フレーム  推論 26.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622101.324818904] [yolo_grasp]: トピック入力 21360 フレーム  推論 26.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622103.016589082] [yolo_grasp]: トピック入力 21420 フレーム  推論 25.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622104.940259947] [yolo_grasp]: トピック入力 21480 フレーム  推論 27.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622107.266300531] [yolo_grasp]: トピック入力 21540 フレーム  推論 27.8 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622108.995271399] [yolo_grasp]: トピック入力 21600 フレーム  推論 25.8 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622110.824793058] [yolo_grasp]: トピック入力 21660 フレーム  推論 26.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622112.547206896] [yolo_grasp]: トピック入力 21720 フレーム  推論 25.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622114.310239814] [yolo_grasp]: トピック入力 21780 フレーム  推論 19.8 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622116.207748422] [yolo_grasp]: トピック入力 21840 フレーム  推論 27.8 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622117.964139925] [yolo_grasp]: トピック入力 21900 フレーム  推論 26.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622119.660684522] [yolo_grasp]: トピック入力 21960 フレーム  推論 21.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622121.390429563] [yolo_grasp]: トピック入力 22020 フレーム  推論 25.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622123.180547194] [yolo_grasp]: トピック入力 22080 フレーム  推論 27.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622125.022778892] [yolo_grasp]: トピック入力 22140 フレーム  推論 25.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622126.815902288] [yolo_grasp]: トピック入力 22200 フレーム  推論 25.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622128.532898173] [yolo_grasp]: トピック入力 22260 フレーム  推論 21.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622130.231095312] [yolo_grasp]: トピック入力 22320 フレーム  推論 21.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622131.967267645] [yolo_grasp]: トピック入力 22380 フレーム  推論 26.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622133.782335193] [yolo_grasp]: トピック入力 22440 フレーム  推論 20.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622135.565173714] [yolo_grasp]: トピック入力 22500 フレーム  推論 20.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622137.281585059] [yolo_grasp]: トピック入力 22560 フレーム  推論 26.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622139.111431553] [yolo_grasp]: トピック入力 22620 フレーム  推論 20.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622140.910735111] [yolo_grasp]: トピック入力 22680 フレーム  推論 20.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622143.179061051] [yolo_grasp]: トピック入力 22740 フレーム  推論 28.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622145.390312551] [yolo_grasp]: トピック入力 22800 フレーム  推論 20.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622147.193667496] [yolo_grasp]: トピック入力 22860 フレーム  推論 27.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622148.885410504] [yolo_grasp]: トピック入力 22920 フレーム  推論 19.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622150.632559605] [yolo_grasp]: トピック入力 22980 フレーム  推論 20.8 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622152.520706711] [yolo_grasp]: トピック入力 23040 フレーム  推論 20.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622154.255220717] [yolo_grasp]: トピック入力 23100 フレーム  推論 19.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622155.981571805] [yolo_grasp]: トピック入力 23160 フレーム  推論 25.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622157.693692022] [yolo_grasp]: トピック入力 23220 フレーム  推論 25.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622159.409414547] [yolo_grasp]: トピック入力 23280 フレーム  推論 20.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622161.263145442] [yolo_grasp]: トピック入力 23340 フレーム  推論 21.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622163.033194310] [yolo_grasp]: トピック入力 23400 フレーム  推論 24.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622164.729775837] [yolo_grasp]: トピック入力 23460 フレーム  推論 21.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622166.456979304] [yolo_grasp]: トピック入力 23520 フレーム  推論 25.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622168.227522118] [yolo_grasp]: トピック入力 23580 フレーム  推論 30.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622170.071323917] [yolo_grasp]: トピック入力 23640 フレーム  推論 30.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622171.850896765] [yolo_grasp]: トピック入力 23700 フレーム  推論 25.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622173.585508088] [yolo_grasp]: トピック入力 23760 フレーム  推論 20.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622175.295500760] [yolo_grasp]: トピック入力 23820 フレーム  推論 20.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622177.018118365] [yolo_grasp]: トピック入力 23880 フレーム  推論 25.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622178.857835305] [yolo_grasp]: トピック入力 23940 フレーム  推論 21.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622180.720710658] [yolo_grasp]: トピック入力 24000 フレーム  推論 25.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622182.498592830] [yolo_grasp]: トピック入力 24060 フレーム  推論 25.5 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622184.213492811] [yolo_grasp]: トピック入力 24120 フレーム  推論 23.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622185.971481986] [yolo_grasp]: トピック入力 24180 フレーム  推論 27.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622187.763561611] [yolo_grasp]: トピック入力 24240 フレーム  推論 26.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622189.582394222] [yolo_grasp]: トピック入力 24300 フレーム  推論 24.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622191.299262621] [yolo_grasp]: トピック入力 24360 フレーム  推論 29.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622192.999055784] [yolo_grasp]: トピック入力 24420 フレーム  推論 20.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622194.718813102] [yolo_grasp]: トピック入力 24480 フレーム  推論 25.8 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622196.624996274] [yolo_grasp]: トピック入力 24540 フレーム  推論 25.6 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622198.394653220] [yolo_grasp]: トピック入力 24600 フレーム  推論 35.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622200.101681400] [yolo_grasp]: トピック入力 24660 フレーム  推論 27.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622201.826862968] [yolo_grasp]: トピック入力 24720 フレーム  推論 24.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622203.537781885] [yolo_grasp]: トピック入力 24780 フレーム  推論 25.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622205.378683903] [yolo_grasp]: トピック入力 24840 フレーム  推論 21.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622207.293961722] [yolo_grasp]: トピック入力 24900 フレーム  推論 26.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622209.022892009] [yolo_grasp]: トピック入力 24960 フレーム  推論 24.2 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622210.751769659] [yolo_grasp]: トピック入力 25020 フレーム  推論 25.3 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622212.466297642] [yolo_grasp]: トピック入力 25080 フレーム  推論 21.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622214.454708546] [yolo_grasp]: トピック入力 25140 フレーム  推論 26.1 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622216.242764591] [yolo_grasp]: トピック入力 25200 フレーム  推論 27.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622217.948895740] [yolo_grasp]: トピック入力 25260 フレーム  推論 25.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622219.681147792] [yolo_grasp]: トピック入力 25320 フレーム  推論 25.4 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622221.377729742] [yolo_grasp]: トピック入力 25380 フレーム  推論 22.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622223.226191070] [yolo_grasp]: トピック入力 25440 フレーム  推論 26.7 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622225.145222843] [yolo_grasp]: トピック入力 25500 フレーム  推論 20.8 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622226.838887010] [yolo_grasp]: トピック入力 25560 フレーム  推論 24.9 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622228.560634482] [yolo_grasp]: トピック入力 25620 フレーム  推論 21.0 ms  検出 0
+[yolo_grasp_node-17] [INFO] [1795622230.284740187] [yolo_grasp]: トピック入力 25680 フレーム  推論 25.9 ms  検出 0

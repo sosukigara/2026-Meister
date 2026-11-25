@@ -1,0 +1,9 @@
+=== mapping_nav regression 2026-11-26T00:09:52+09:00 ===
+1
+0
+--- topics ---
+/camera/image_raw
+/cmd_vel
+/scan
+--- smoother path ---
+12

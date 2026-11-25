@@ -20,6 +20,7 @@
 #include <vision_msgs/msg/detection2_d_array.hpp>
 #include <vision_msgs/msg/object_hypothesis_with_pose.hpp>
 
+#include "umeonigiri_vision/box_center_filter.hpp"
 #include "umeonigiri_vision/detection_msg.hpp"
 #include "umeonigiri_vision/image_util.hpp"
 #include "umeonigiri_vision/publish_rate_gate.hpp"
@@ -422,15 +423,23 @@ private:
     vision_msgs::msg::Detection2DArray message;
     message.header.stamp = stamp;
     message.header.frame_id = frame_id_;
+    std::lock_guard<std::mutex> lock(filter_mutex_);
     for (size_t i = 0; i < boxes.size(); ++i) {
+      const SmoothedBox measured{static_cast<double>(boxes[i].x0),
+                                 static_cast<double>(boxes[i].y0),
+                                 static_cast<double>(boxes[i].x1),
+                                 static_cast<double>(boxes[i].y1),
+                                 static_cast<double>(boxes[i].score),
+                                 boxes[i].class_id};
+      const auto smooth = center_filter_.Update(measured);
       DetectionIdentity identity;
-      identity.class_id = boxes[i].class_id;
-      identity.class_name = LabelOf(boxes[i].class_id);
-      identity.score = boxes[i].score;
-      identity.x0 = boxes[i].x0;
-      identity.y0 = boxes[i].y0;
-      identity.x1 = boxes[i].x1;
-      identity.y1 = boxes[i].y1;
+      identity.class_id = smooth.class_id;
+      identity.class_name = LabelOf(smooth.class_id);
+      identity.score = smooth.score;
+      identity.x0 = smooth.x0;
+      identity.y0 = smooth.y0;
+      identity.x1 = smooth.x1;
+      identity.y1 = smooth.y1;
       vision_msgs::msg::Detection2D detection;
       FillDetection2D(identity, detection);
       message.detections.push_back(detection);
@@ -454,6 +463,8 @@ private:
   RknnYolo detector_;
   std::vector<std::string> labels_;
   PublishRateGate publish_gate_;
+  BoxCenterFilter center_filter_;
+  std::mutex filter_mutex_;
 
   cv::VideoCapture capture_;
   std::mutex mutex_;

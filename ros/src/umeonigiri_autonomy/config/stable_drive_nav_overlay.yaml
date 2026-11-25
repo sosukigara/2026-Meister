@@ -1,0 +1,8 @@
+# 走行安定化セッション専用の上書き。
+# 既定の mapping_nav_params.yaml は変更しない (R2: 上書きはこの 1 ファイル)。
+# angular 加速度を 3.2 -> 0.9 rad/s^2 に下げ、/cmd_vel の連続サンプル間の
+# angular.z 急変 (>0.5 rad/s) を抑える。linear は既定のまま。
+velocity_smoother:
+  ros__parameters:
+    max_accel: [1.0, 0.0, 0.9]
+    max_decel: [-1.0, 0.0, -0.9]

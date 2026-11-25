@@ -1,0 +1,98 @@
+[
+ {
+  "goal": [
+   -0.65,
+   2.6
+  ],
+  "yaw": 0.0,
+  "state": "succeeded",
+  "seconds": 22.1,
+  "started_at": 1795618306.812,
+  "ended_at": 1795618328.924,
+  "final": [
+   -0.73,
+   2.43
+  ],
+  "err_m": 0.186
+ },
+ {
+  "goal": [
+   -0.6,
+   0.9
+  ],
+  "yaw": 0.0,
+  "state": "succeeded",
+  "seconds": 9.0,
+  "started_at": 1795618330.93,
+  "ended_at": 1795618339.964,
+  "final": [
+   -0.63,
+   1.0
+  ],
+  "err_m": 0.108
+ },
+ {
+  "goal": [
+   0.5,
+   -2.9
+  ],
+  "yaw": 0.0,
+  "state": "succeeded",
+  "seconds": 14.0,
+  "started_at": 1795618341.966,
+  "ended_at": 1795618356.013,
+  "final": [
+   0.41,
+   -2.82
+  ],
+  "err_m": 0.115
+ },
+ {
+  "goal": [
+   0.3,
+   -0.9
+  ],
+  "yaw": 0.0,
+  "state": "succeeded",
+  "seconds": 10.0,
+  "started_at": 1795618358.017,
+  "ended_at": 1795618368.048,
+  "final": [
+   0.35,
+   -1.07
+  ],
+  "err_m": 0.181
+ },
+ {
+  "goal": [
+   -3.2,
+   -0.55
+  ],
+  "yaw": 0.0,
+  "state": "succeeded",
+  "seconds": 16.1,
+  "started_at": 1795618370.051,
+  "ended_at": 1795618386.111,
+  "final": [
+   -3.08,
+   -0.49
+  ],
+  "err_m": 0.136
+ },
+ {
+  "goal": [
+   3.2,
+   1.05
+  ],
+  "yaw": 0.0,
+  "state": "succeeded",
+  "seconds": 21.1,
+  "started_at": 1795618388.113,
+  "ended_at": 1795618409.179,
+  "final": [
+   3.13,
+   0.91
+  ],
+  "err_m": 0.152
+ }
+]

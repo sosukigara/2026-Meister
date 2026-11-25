@@ -1,0 +1,27 @@
+=== health snapshot 2026-11-25T22:44:27+09:00 ===
+slam_toolbox active [3]
+controller_server active [3]
+planner_server active [3]
+bt_navigator active [3]
+--- tf map->odom ---
+  0.008  1.000 -0.000  0.029
+  0.000  0.000  1.000 -0.000
+  0.000  0.000  0.000  1.000
+[INFO] [1795614291.270540658] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+--- hz ---
+	min: 0.016s max: 0.086s std dev: 0.00924s window: 258
+average rate: 37.113
+	min: 0.016s max: 0.086s std dev: 0.00910s window: 301
+	min: 0.000s max: 0.382s std dev: 0.03319s window: 235
+average rate: 33.457
+	min: 0.000s max: 0.382s std dev: 0.03083s window: 275
+--- rtf x3 ---
+[WARN] [1795614314.780350147] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795614314.780406740] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+clock_msgs=1258 wall=20.018s sim=12.570s RTF=0.628
+[WARN] [1795614335.931572001] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795614335.931629762] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+clock_msgs=1371 wall=20.011s sim=14.180s RTF=0.709
+[WARN] [1795614357.075662477] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795614357.075735700] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+clock_msgs=1470 wall=20.009s sim=14.690s RTF=0.734

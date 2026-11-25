@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/so/Meistar/.worktrees/stable-drive-accurate-vision/ros/src/umeonigiri_autonomy/scripts/stability_test.py", line 113, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/so/Meistar/.worktrees/stable-drive-accurate-vision/ros/src/umeonigiri_autonomy/scripts/stability_test.py", line 72, in main
+    gx, gy, gyaw = goal
+    ^^^^^^^^^^^^
+ValueError: not enough values to unpack (expected 3, got 2)

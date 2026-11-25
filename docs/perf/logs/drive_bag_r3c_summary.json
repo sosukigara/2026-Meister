@@ -1,0 +1,55 @@
+{
+  "bag": "/home/so/Meistar/.worktrees/stable-drive-accurate-vision/docs/perf/logs/drive_bag_r3c",
+  "span_s": 93.616,
+  "messages": {
+    "/detections": 3220,
+    "/clock": 7038,
+    "/arm_camera/image_raw": 3198,
+    "/odom": 3518,
+    "/cmd_vel": 2938
+  },
+  "image_hz": 34.161,
+  "detections_hz": 34.396,
+  "nonempty_detections": 3220,
+  "nonempty_ratio": 1.0,
+  "detection_gaps_gt_200ms": [
+    0.353
+  ],
+  "labels": {
+    "person": 3946
+  },
+  "bbox_center_stats": {
+    "person": {
+      "n": 3946,
+      "std_x": 1.525,
+      "std_y": 0.057
+    }
+  },
+  "cmd_vel": {
+    "hz": 31.383,
+    "linear_jumps_gt_0.3": 0,
+    "angular_jumps_gt_0.5": 0,
+    "max_abs_dlinear": 0.005,
+    "max_abs_dangular": 0.0
+  },
+  "rtf_20s_windows": [
+    0.74,
+    0.781,
+    0.783,
+    0.771
+  ],
+  "rtf_median": 0.776,
+  "visibility": {
+    "reference": "/home/so/Meistar/.worktrees/stable-drive-accurate-vision/docs/perf/bus.jpg",
+    "hist_threshold": 0.7,
+    "sampled_frames": 640,
+    "visible_frames": 640,
+    "detections_in_view": 3173,
+    "nonempty_in_view": 3173,
+    "continuity_in_view": 1.0,
+    "detections_out_of_view": 0,
+    "nonempty_out_of_view": 0,
+    "false_positive_out_of_view": null
+  },
+  "odom_path_m": 0.18
+}
