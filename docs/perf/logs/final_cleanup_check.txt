@@ -1,0 +1,13 @@
+=== topic info after relaunch ===
+=== detections pub count ===
+Type: vision_msgs/msg/Detection2DArray
+Publisher count: 1
+Subscription count: 0
+=== nodes ===
+/nav_mode_manager
+/ros_gz_bridge
+/slam_toolbox
+/yolo_grasp
+Type: sensor_msgs/msg/Image
+Publisher count: 1
+Subscription count: 2

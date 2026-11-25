@@ -1,0 +1,10 @@
+=== CPU over 20s (utime+stime; 1 core = 1.00) ===
+23235 robot_state_pub      cpu=0.02 cores
+23236 sh                   cpu=0.00 cores
+23238 ruby                 cpu=3.60 cores
+23239 parameter_bridg      cpu=0.17 cores
+23240 async_slam_tool      cpu=0.07 cores
+23241 nav_mode_manage      cpu=0.00 cores
+23242 yolo_grasp_node      cpu=0.61 cores
+24203 bash                 cpu=0.00 cores
+24210 bash                 cpu=0.00 cores

@@ -1,0 +1,44 @@
+=== map hz 10s ===
+	min: 1.000s max: 1.001s std dev: 0.00024s window: 5
+average rate: 1.000
+	min: 1.000s max: 1.001s std dev: 0.00039s window: 7
+average rate: 0.999
+	min: 1.000s max: 1.005s std dev: 0.00170s window: 8
+=== tf once ===
+transforms:
+- header:
+    stamp:
+      sec: 144
+      nanosec: 570000000
+    frame_id: odom
+  child_frame_id: base_footprint
+  transform:
+    translation:
+      x: -4.0
+      y: -4.0
+      z: 0.0
+    rotation:
+      x: 3.34841939970691e-18
+      y: 7.84662713284966e-18
+      z: 1.0965052216406462e-35
+      w: 1.0
+---
+=== tf_static once ===
+transforms:
+- header:
+    stamp:
+      sec: 0
+      nanosec: 0
+    frame_id: base_link
+  child_frame_id: arm_base_link
+  transform:
+    translation:
+      x: 0.2
+      y: 0.0
+      z: 0.1
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.0
+      w: 1.0
+- header:

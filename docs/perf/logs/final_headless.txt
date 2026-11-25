@@ -1,0 +1,5 @@
+rviz2:
+none
+gz sim cmdline:
+23236 /bin/sh -c ruby /opt/ros/jazzy/opt/gz_tools_vendor/bin/gz sim -s -r /tmp/meister_maze_step_0.01.sdf --force-version 8
+23238 gz sim -s -r /tmp/meister_maze_step_0.01.sdf

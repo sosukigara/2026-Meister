@@ -89,7 +89,8 @@ if(RKNN_INCLUDE_DIR AND RKNN_LIBRARY)
     include ${RKNN_INCLUDE_DIR} ${OpenCV_INCLUDE_DIRS})
   target_link_libraries(yolo_grasp_node
     ${OpenCV_LIBS} ${RKNN_LIBRARY} rclcpp::rclcpp
-    ${sensor_msgs_TARGETS} ${vision_msgs_TARGETS})
+    ${sensor_msgs_TARGETS} ${vision_msgs_TARGETS}
+    umeonigiri_vision_core)
   install(TARGETS yolo_grasp_node DESTINATION lib/${PROJECT_NAME})
   message(STATUS "yolo_grasp_node: 有効 (RKNN ${RKNN_LIBRARY})")
 else()
@@ -125,6 +126,12 @@ if(BUILD_TESTING)
 
   ament_add_gtest(test_target_selector test/test_target_selector.cpp)
   target_link_libraries(test_target_selector umeonigiri_vision_core)
+
+  ament_add_gtest(test_detection_msg test/test_detection_msg.cpp)
+  target_link_libraries(test_detection_msg umeonigiri_vision_core)
+
+  ament_add_gtest(test_publish_rate_gate test/test_publish_rate_gate.cpp)
+  target_link_libraries(test_publish_rate_gate umeonigiri_vision_core)
 endif()
 
 ament_export_include_directories(include)

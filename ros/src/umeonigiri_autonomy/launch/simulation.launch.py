@@ -1,4 +1,5 @@
 import os
+import re
 
 import yaml
 from ament_index_python.packages import get_package_share_directory
@@ -32,10 +33,28 @@ def _resolve_world(context):
     spawn = SPAWN[world_key]
     pkg_nav = get_package_share_directory('umeonigiri_autonomy')
     world_path = os.path.join(pkg_nav, 'worlds', entry['sdf'])
+    # 物理ステップを間引くと、同じ sim 時間を少ない iteration で進められる。
+    # ワールド SDF を書き換えず /tmp のコピーだけを gz に渡す (既定は無変更)。
+    physics_step = context.launch_configurations.get('physics_step', '')
+    if physics_step:
+        with open(world_path, encoding='utf-8') as handle:
+            text = handle.read()
+        text, count = re.subn(
+            r'<max_step_size>[^<]+</max_step_size>',
+            f'<max_step_size>{physics_step}</max_step_size>', text, count=1)
+        if count != 1:
+            raise RuntimeError(f'max_step_size が 1 つではありません: {world_path}')
+        world_path = os.path.join('/tmp', f'meister_{world_key}_step_{physics_step}.sdf')
+        with open(world_path, 'w', encoding='utf-8') as handle:
+            handle.write(text)
     # GUI は表示だけ。計測やヘッドレス運用では切ってよい（物理とセンサはサーバ側）。
     # `-s` はサーバ単体起動。付けないと GUI も一緒に上がり、ソフトウェア描画で
     # 1 コア近くを GUI が食う（実測 66%）。
     gz_args = f'-r {world_path}' if gui else f'-s -r {world_path}'
+    # -z は明示指定時だけ使う。実測ではセンサ更新まで遅くなった (9.6 Hz)。
+    update_rate = context.launch_configurations.get('sim_update_rate', '')
+    if update_rate:
+        gz_args += f' -z {update_rate}'
     return [
         SetLaunchConfiguration('gz_args', gz_args),
         SetLaunchConfiguration('spawn_x', str(spawn[0])),
@@ -73,6 +92,7 @@ def generate_launch_description():
             '/joint_states@sensor_msgs/msg/JointState@gz.msgs.Model',
             '/scan@sensor_msgs/msg/LaserScan@gz.msgs.LaserScan',
             '/camera_image@sensor_msgs/msg/Image@gz.msgs.Image',
+            '/arm_camera_image@sensor_msgs/msg/Image@gz.msgs.Image',
             '/model/umeonigiri_bot/tf@tf2_msgs/msg/TFMessage@gz.msgs.Pose_V',
         ],
         remappings=[
@@ -81,6 +101,7 @@ def generate_launch_description():
             ('/model/umeonigiri_bot/odometry', '/odom'),
             ('/model/umeonigiri_bot/tf', '/tf'),
             ('/camera_image', '/camera/image_raw'),
+            ('/arm_camera_image', '/arm_camera/image_raw'),
         ],
         parameters=[{'use_sim_time': True}],
         output='screen'
@@ -91,6 +112,10 @@ def generate_launch_description():
                               description='World to load: warehouse, maze, or empty'),
         DeclareLaunchArgument('gui', default_value='true',
                               description='Gazebo GUI を出すか。false でサーバ単体 (ヘッドレス)'),
+        DeclareLaunchArgument('sim_update_rate', default_value='',
+                              description='gz sim -z。空ならワールド既定 (1ms step)'),
+        DeclareLaunchArgument('physics_step', default_value='',
+                              description='/tmp にコピーした SDF の max_step_size。空なら無変更'),
         OpaqueFunction(function=_resolve_world),
         gazebo,
         spawn_robot,

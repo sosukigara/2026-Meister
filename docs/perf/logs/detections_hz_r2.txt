@@ -1,0 +1,47 @@
+--- lifecycle ---
+active [3]
+--- detections hz 20s ---
+average rate: 18.096
+	min: 0.034s max: 0.070s std dev: 0.01069s window: 20
+average rate: 17.977
+	min: 0.034s max: 0.086s std dev: 0.01323s window: 38
+average rate: 18.594
+	min: 0.033s max: 0.086s std dev: 0.01445s window: 58
+average rate: 18.840
+	min: 0.033s max: 0.086s std dev: 0.01428s window: 78
+average rate: 18.822
+	min: 0.033s max: 0.086s std dev: 0.01383s window: 97
+average rate: 18.932
+	min: 0.033s max: 0.092s std dev: 0.01384s window: 117
+average rate: 18.694
+	min: 0.033s max: 0.092s std dev: 0.01340s window: 135
+average rate: 18.837
+	min: 0.033s max: 0.092s std dev: 0.01315s window: 155
+average rate: 18.783
+	min: 0.033s max: 0.092s std dev: 0.01295s window: 174
+average rate: 18.672
+	min: 0.033s max: 0.092s std dev: 0.01291s window: 192
+average rate: 18.853
+	min: 0.033s max: 0.092s std dev: 0.01301s window: 213
+average rate: 18.669
+	min: 0.033s max: 0.100s std dev: 0.01334s window: 230
+average rate: 18.685
+	min: 0.033s max: 0.100s std dev: 0.01337s window: 250
+average rate: 18.752
+	min: 0.027s max: 0.100s std dev: 0.01330s window: 270
+average rate: 18.606
+	min: 0.027s max: 0.100s std dev: 0.01334s window: 287
+average rate: 18.622
+	min: 0.027s max: 0.100s std dev: 0.01338s window: 307
+average rate: 18.671
+	min: 0.027s max: 0.100s std dev: 0.01315s window: 327
+average rate: 18.580
+	min: 0.027s max: 0.100s std dev: 0.01298s window: 345
+average rate: 18.591
+	min: 0.027s max: 0.100s std dev: 0.01294s window: 364
+average rate: 18.580
+	min: 0.027s max: 0.100s std dev: 0.01312s window: 383
+average rate: 18.584
+	min: 0.027s max: 0.100s std dev: 0.01313s window: 402
+average rate: 18.661
+	min: 0.027s max: 0.100s std dev: 0.01315s window: 423

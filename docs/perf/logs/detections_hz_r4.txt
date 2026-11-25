@@ -1,0 +1,46 @@
+WARNING: topic [/detections] does not appear to be published yet
+average rate: 23.104
+	min: 0.023s max: 0.060s std dev: 0.00833s window: 25
+average rate: 23.240
+	min: 0.023s max: 0.094s std dev: 0.01038s window: 49
+average rate: 24.829
+	min: 0.020s max: 0.094s std dev: 0.01067s window: 78
+average rate: 25.994
+	min: 0.020s max: 0.094s std dev: 0.01011s window: 108
+average rate: 26.493
+	min: 0.020s max: 0.094s std dev: 0.00987s window: 137
+average rate: 26.872
+	min: 0.020s max: 0.094s std dev: 0.00984s window: 166
+average rate: 27.215
+	min: 0.020s max: 0.094s std dev: 0.00972s window: 196
+average rate: 27.137
+	min: 0.020s max: 0.094s std dev: 0.00946s window: 223
+average rate: 26.462
+	min: 0.020s max: 0.106s std dev: 0.01050s window: 245
+average rate: 26.263
+	min: 0.020s max: 0.106s std dev: 0.01036s window: 270
+average rate: 26.271
+	min: 0.020s max: 0.106s std dev: 0.01028s window: 297
+average rate: 26.685
+	min: 0.020s max: 0.106s std dev: 0.01018s window: 329
+average rate: 27.026
+	min: 0.020s max: 0.106s std dev: 0.01009s window: 361
+average rate: 27.371
+	min: 0.020s max: 0.106s std dev: 0.01002s window: 393
+average rate: 27.707
+	min: 0.020s max: 0.106s std dev: 0.00983s window: 426
+average rate: 27.952
+	min: 0.019s max: 0.106s std dev: 0.00976s window: 458
+average rate: 27.947
+	min: 0.019s max: 0.106s std dev: 0.00979s window: 486
+average rate: 27.877
+	min: 0.019s max: 0.106s std dev: 0.00982s window: 513
+average rate: 27.877
+	min: 0.019s max: 0.106s std dev: 0.00976s window: 541
+average rate: 27.870
+	min: 0.019s max: 0.106s std dev: 0.00980s window: 569
+average rate: 28.043
+	min: 0.019s max: 0.106s std dev: 0.00968s window: 601
+average rate: 28.206
+	min: 0.019s max: 0.106s std dev: 0.00956s window: 633
+exit=124

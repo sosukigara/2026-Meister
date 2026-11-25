@@ -13,12 +13,16 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/videoio.hpp>
+#include <rclcpp/executors/single_threaded_executor.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <vision_msgs/msg/detection2_d.hpp>
 #include <vision_msgs/msg/detection2_d_array.hpp>
 #include <vision_msgs/msg/object_hypothesis_with_pose.hpp>
 
+#include "umeonigiri_vision/detection_msg.hpp"
+#include "umeonigiri_vision/image_util.hpp"
+#include "umeonigiri_vision/publish_rate_gate.hpp"
 #include "umeonigiri_vision/rknn_yolo.hpp"
 
 namespace umeonigiri_vision
@@ -98,24 +102,39 @@ bool ComputeGrasp(const cv::Mat & image_bgr, const YoloBox & box, GraspTarget & 
 
 }  // namespace
 
-class YoloGraspNode : public rclcpp::Node
+class YoloGraspNode
 {
 public:
   YoloGraspNode(
-    const std::string & model, const std::string & device, float conf, float iou,
-    const std::string & labels_csv, double display_fps)
-  : rclcpp::Node("yolo_grasp"), device_(device), conf_(conf), iou_(iou),
-    display_period_(display_fps > 0.0 ? 1.0 / display_fps : 0.0),
-    detector_(model), labels_(LoadLabels(labels_csv))
+    const rclcpp::Node::SharedPtr & node, const std::string & model, const std::string & device,
+    float conf, float iou, const std::string & labels_csv, double display_fps,
+    const std::string & image_topic, bool topic_input, double detection_fps,
+    const std::string & frame_id)
+  : node_(node), device_(device), conf_(conf), iou_(iou), topic_input_(topic_input),
+    frame_id_(frame_id), display_period_(display_fps > 0.0 ? 1.0 / display_fps : 0.0),
+    detector_(model), labels_(LoadLabels(labels_csv)), publish_gate_(detection_fps)
   {
     if (!detector_.ok()) {
       throw std::runtime_error("RKNN モデルを読めません: " + model);
     }
-    pub_detections_ = create_publisher<vision_msgs::msg::Detection2DArray>("detections", 10);
-    pub_annotated_ = create_publisher<sensor_msgs::msg::Image>("detection_image", 10);
-    pub_grasp_ = create_publisher<sensor_msgs::msg::Image>("grasp_image", 10);
-    pub_target_ = create_publisher<vision_msgs::msg::Detection2DArray>(
+    pub_detections_ = node_->create_publisher<vision_msgs::msg::Detection2DArray>("detections", 10);
+    pub_annotated_ = node_->create_publisher<sensor_msgs::msg::Image>("detection_image", 10);
+    pub_grasp_ = node_->create_publisher<sensor_msgs::msg::Image>("grasp_image", 10);
+    pub_target_ = node_->create_publisher<vision_msgs::msg::Detection2DArray>(
       "target", rclcpp::QoS(rclcpp::KeepLast(1)));
+
+    if (topic_input) {
+      if (image_topic.empty()) {
+        throw std::runtime_error("トピック入力を指定するには image_topic が必要です");
+      }
+      // 購読はメンバで保持する。ローカルに捨てると Jazzy では即破棄される (P12)。
+      image_sub_ = node_->create_subscription<sensor_msgs::msg::Image>(
+        image_topic, rclcpp::SensorDataQoS(),
+        [this](const sensor_msgs::msg::Image::ConstSharedPtr & msg) {OnImage(msg);});
+      RCLCPP_INFO(node_->get_logger(), "NPU 検出を開始: 入力トピック %s, ラベル %zu 件",
+        image_topic.c_str(), labels_.size());
+      return;
+    }
 
     capture_.open(device_, cv::CAP_V4L2);
     capture_.set(cv::CAP_PROP_FRAME_WIDTH, kCaptureWidth);
@@ -124,7 +143,7 @@ public:
     if (!capture_.isOpened()) {
       throw std::runtime_error("カメラを開けません: " + device);
     }
-    RCLCPP_INFO(get_logger(), "NPU 検出を開始: 入力 %d, ラベル %zu 件", detector_.input_size(),
+    RCLCPP_INFO(node_->get_logger(), "NPU 検出を開始: 入力 %d, ラベル %zu 件", detector_.input_size(),
       labels_.size());
   }
 
@@ -147,21 +166,48 @@ public:
       grasps_ = std::move(grasps);
       valid_ = std::move(valid);
     }
-    Compose(image);
-    RCLCPP_INFO(get_logger(), "静止画像: 検出 %zu 件  推論 %.1f ms", boxes_.size(),
+    ComposeAndPublish(image);
+    RCLCPP_INFO(node_->get_logger(), "静止画像: 検出 %zu 件  推論 %.1f ms", boxes_.size(),
       detector_.last_infer_ms());
+    // 1 配信で即終了すると購読側の discovery が間に合わずメッセージが届かない。
+    std::this_thread::sleep_for(std::chrono::seconds(2));
   }
 
   void Run()
   {
     std::thread infer([this] {InferLoop();});
-    CaptureLoop();
+    if (topic_input_) {
+      // 購読コールバックは executor を回さないと届かない。推論スレッドは別に動く。
+      rclcpp::executors::SingleThreadedExecutor executor;
+      executor.add_node(node_);
+      executor.spin();
+    } else {
+      CaptureLoop();
+    }
     stop_ = true;
     cond_.notify_all();
     if (infer.joinable()) {
       infer.join();
     }
     capture_.release();
+  }
+
+  /// gz bridge が出す rgb8 を BGR に直して最新フレームとして差し替える。
+  void OnImage(const sensor_msgs::msg::Image::ConstSharedPtr & msg)
+  {
+    try {
+      cv::Mat bgr = BgrFromImageMsg(*msg);
+      const rclcpp::Time stamp(msg->header.stamp);
+      {
+        std::lock_guard<std::mutex> lock(mutex_);
+        latest_ = std::move(bgr);
+        latest_stamp_ = stamp;
+        has_frame_ = true;
+      }
+      cond_.notify_one();
+    } catch (const std::exception & e) {
+      RCLCPP_ERROR(node_->get_logger(), "画像を捨てます: %s", e.what());
+    }
   }
 
 private:
@@ -201,6 +247,7 @@ private:
       {
         std::lock_guard<std::mutex> lock(mutex_);
         latest_ = frame;
+        latest_stamp_ = node_->now();
         has_frame_ = true;
       }
       cond_.notify_one();
@@ -212,10 +259,10 @@ private:
         continue;  // 配信はレート上限に抑える。カメラは読み続けて最新を保つ。
       }
       last_publish_ = now;
-      Compose(frame);
+      ComposeAndPublish(frame);
       ++frames_;
       if (frames_ % 60 == 0) {
-        RCLCPP_INFO(get_logger(), "表示 %d フレーム  推論 %.1f ms  検出 %zu", frames_,
+        RCLCPP_INFO(node_->get_logger(), "表示 %d フレーム  推論 %.1f ms  検出 %zu", frames_,
           detector_.last_infer_ms(), boxes_.size());
       }
     }
@@ -226,6 +273,7 @@ private:
   {
     while (!stop_) {
       cv::Mat frame;
+      rclcpp::Time stamp;
       {
         std::unique_lock<std::mutex> lock(mutex_);
         cond_.wait(lock, [this] {return has_frame_ || stop_;});
@@ -233,6 +281,7 @@ private:
           break;
         }
         frame = latest_.clone();
+        stamp = latest_stamp_;
         has_frame_ = false;
       }
       // このスレッドで例外が外へ出ると std::terminate でプロセスごと落ちる。
@@ -245,17 +294,33 @@ private:
         for (size_t i = 0; i < boxes.size(); ++i) {
           valid[i] = ComputeGrasp(frame, boxes[i], grasps[i]) ? 1 : 0;
         }
-        std::lock_guard<std::mutex> lock(mutex_);
-        boxes_ = std::move(boxes);
-        grasps_ = std::move(grasps);
-        valid_ = std::move(valid);
+        {
+          std::lock_guard<std::mutex> lock(mutex_);
+          boxes_ = boxes;
+          grasps_ = std::move(grasps);
+          valid_ = std::move(valid);
+        }
+        if (topic_input_) {
+          const auto now = std::chrono::steady_clock::now();
+          const double seconds =
+            std::chrono::duration<double>(now.time_since_epoch()).count();
+          if (publish_gate_.Ready(seconds)) {
+            PublishTopicResults(frame, stamp, boxes);
+            ++topic_frames_;
+            if (topic_frames_ % 60 == 0) {
+              RCLCPP_INFO(node_->get_logger(),
+                "トピック入力 %d フレーム  推論 %.1f ms  検出 %zu", topic_frames_,
+                detector_.last_infer_ms(), boxes.size());
+            }
+          }
+        }
       } catch (const std::exception & e) {
-        RCLCPP_ERROR(get_logger(), "推論に失敗しました (フレームを捨てます): %s", e.what());
+        RCLCPP_ERROR(node_->get_logger(), "推論に失敗しました (フレームを捨てます): %s", e.what());
       }
     }
   }
 
-  void Compose(const cv::Mat & frame)
+  cv::Mat Compose(const cv::Mat & frame)
   {
     cv::Mat canvas = frame.clone();
     std::vector<YoloBox> boxes;
@@ -301,10 +366,30 @@ private:
       boxes.size());
     cv::putText(canvas, header, cv::Point(8, 22), cv::FONT_HERSHEY_SIMPLEX, 0.6,
       cv::Scalar(255, 255, 255), 2);
+    return canvas;
+  }
 
-    const auto stamp = now();
+  void ComposeAndPublish(const cv::Mat & frame)
+  {
+    const auto stamp = node_->now();
+    const cv::Mat canvas = Compose(frame);
     Publish(canvas, stamp);
+    std::vector<YoloBox> boxes;
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      boxes = boxes_;
+    }
     PublishDetections(stamp, boxes);
+  }
+
+  /// トピック入力では推論のたびに detections を出す。描画は購読者が居るときだけ。
+  void PublishTopicResults(
+    const cv::Mat & frame, const rclcpp::Time & stamp, const std::vector<YoloBox> & boxes)
+  {
+    PublishDetections(stamp, boxes);
+    if (pub_annotated_->get_subscription_count() > 0 || pub_grasp_->get_subscription_count() > 0) {
+      Publish(Compose(frame), stamp);
+    }
   }
 
   std::string LabelOf(int class_id) const
@@ -319,7 +404,7 @@ private:
   {
     auto message = std::make_unique<sensor_msgs::msg::Image>();
     message->header.stamp = stamp;
-    message->header.frame_id = "camera_link";
+    message->header.frame_id = frame_id_;
     message->height = static_cast<uint32_t>(canvas.rows);
     message->width = static_cast<uint32_t>(canvas.cols);
     message->encoding = "bgr8";
@@ -336,17 +421,18 @@ private:
   {
     vision_msgs::msg::Detection2DArray message;
     message.header.stamp = stamp;
-    message.header.frame_id = "camera_link";
+    message.header.frame_id = frame_id_;
     for (size_t i = 0; i < boxes.size(); ++i) {
+      DetectionIdentity identity;
+      identity.class_id = boxes[i].class_id;
+      identity.class_name = LabelOf(boxes[i].class_id);
+      identity.score = boxes[i].score;
+      identity.x0 = boxes[i].x0;
+      identity.y0 = boxes[i].y0;
+      identity.x1 = boxes[i].x1;
+      identity.y1 = boxes[i].y1;
       vision_msgs::msg::Detection2D detection;
-      detection.bbox.center.position.x = (boxes[i].x0 + boxes[i].x1) / 2.0;
-      detection.bbox.center.position.y = (boxes[i].y0 + boxes[i].y1) / 2.0;
-      detection.bbox.size_x = boxes[i].x1 - boxes[i].x0;
-      detection.bbox.size_y = boxes[i].y1 - boxes[i].y0;
-      vision_msgs::msg::ObjectHypothesisWithPose hypothesis;
-      hypothesis.hypothesis.class_id = LabelOf(boxes[i].class_id);
-      hypothesis.hypothesis.score = boxes[i].score;
-      detection.results.push_back(hypothesis);
+      FillDetection2D(identity, detection);
       message.detections.push_back(detection);
     }
     pub_detections_->publish(message);
@@ -358,18 +444,24 @@ private:
     }
   }
 
+  rclcpp::Node::SharedPtr node_;
   std::string device_;
   float conf_;
   float iou_;
+  bool topic_input_;
+  std::string frame_id_;
   double display_period_;
   RknnYolo detector_;
   std::vector<std::string> labels_;
+  PublishRateGate publish_gate_;
 
   cv::VideoCapture capture_;
   std::mutex mutex_;
   std::condition_variable cond_;
   cv::Mat latest_;
+  rclcpp::Time latest_stamp_{};
   bool has_frame_ = false;
+  int topic_frames_ = 0;
   bool stop_ = false;
   int frames_ = 0;
   std::chrono::steady_clock::time_point last_publish_ {};
@@ -381,6 +473,7 @@ private:
   rclcpp::Publisher<vision_msgs::msg::Detection2DArray>::SharedPtr pub_target_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_annotated_;
   rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr pub_grasp_;
+  rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr image_sub_;
 };
 
 }  // namespace umeonigiri_vision
@@ -388,19 +481,25 @@ private:
 int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
-  auto node = rclcpp::Node::make_shared("yolo_grasp_params");
+  // 1 プロセス 1 ノード。-r __node:= で複数ノードが同じ名前に潰れるのを避ける (P12)。
+  auto node = rclcpp::Node::make_shared("yolo_grasp");
   const std::string model = node->declare_parameter<std::string>("model", "");
   const std::string labels = node->declare_parameter<std::string>("labels", "");
   const std::string device = node->declare_parameter<std::string>("device", "/dev/video0");
   const double conf = node->declare_parameter<double>("conf", 0.45);
   const double iou = node->declare_parameter<double>("iou", 0.45);
   const double display_fps = node->declare_parameter<double>("display_fps", 15.0);
+  const double detection_fps = node->declare_parameter<double>("detection_fps", 30.0);
   const std::string image = node->declare_parameter<std::string>("image", "");
+  const std::string image_topic = node->declare_parameter<std::string>("image_topic", "");
+  const bool topic_input = node->declare_parameter<bool>("use_topic_input", false);
+  const std::string frame_id = node->declare_parameter<std::string>("frame_id", "camera_link");
   // ここで shutdown すると、この後のノード生成が無効なコンテキストで失敗する。
 
   try {
     auto grasp = std::make_shared<umeonigiri_vision::YoloGraspNode>(
-      model, device, static_cast<float>(conf), static_cast<float>(iou), labels, display_fps);
+      node, model, device, static_cast<float>(conf), static_cast<float>(iou), labels, display_fps,
+      image_topic, topic_input, detection_fps, frame_id);
     if (image.empty()) {
       grasp->Run();
     } else {

@@ -1,0 +1,4 @@
+=== RTF 20s ===
+clock_msgs=1571 wall=20.010s sim=15.700s RTF=0.785
+=== lifecycle ===
+active [3]

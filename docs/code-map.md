@@ -36,8 +36,8 @@
 
 | パッケージ | 役割 | エントリポイント | 依存 |
 |---|---|---|---|
-| `umeonigiri_description` | URDF / spawn / 全システム起動 | `launch/all_system.launch.py` `launch/spawn.launch.py` | — |
-| `umeonigiri_autonomy` | Nav2 / SLAM / 評価ツール (ament_cmake) | 各 `launch/*.launch.py`、`generate_map` / `waypoint_follower` / `nav_mode_manager`（いずれも C++） | umeonigiri_description, umeonigiri_serial_bridge |
+| `umeonigiri_description` | URDF / spawn / 全システム起動 | `launch/all_system.launch.py` `launch/spawn.launch.py` `urdf/arm_camera.xacro`（手先カメラ） | — |
+| `umeonigiri_autonomy` | Nav2 / SLAM / 評価ツール (ament_cmake) | 各 `launch/*.launch.py`（`arm_vision_slam.launch.py` = 手先カメラ＋NPU＋SLAM のヘッドレス一括起動）、`generate_map` / `waypoint_follower` / `nav_mode_manager`（いずれも C++） | umeonigiri_description, umeonigiri_serial_bridge |
 | `umeonigiri_vision` | YOLOv8n ONNX 検出 → `detections` | `detection_node` / `hand_landmarks_node` / `pc_camera`（いずれも C++） | OpenCV, ONNX Runtime |
 | `umeonigiri_webnav` | Web UI（地図・現在地・経路・認識モニター） | `umeonigiri_webnav_server`（C++） | umeonigiri_description |
 | `umeonigiri_serial_bridge` | **`/cmd_vel` → UART フレーム、`/esp32/state` ← FB_STATE** | `umeonigiri_serial_bridge` / `umeonigiri_comm_check` / `umeonigiri_hz_measure`（いずれも C++） | libserial, firmware の protocol ソース |
@@ -96,7 +96,7 @@
 
 2026-10-05 に `ament_python` から `ament_cmake` へ移行した。実行ファイル名は
 Python 版から変えていないので `launch/` `launch_vision.sh` `kill.sh` は
-無変更で動く。ノードは 3 本（物体検出・手中 keypoint・PC カメラ）。
+無変更で動く。ノードは 4 本（物体検出・手中 keypoint・PC カメラ・NPU 検出）。
 
 | ファイル | 役割 | 備考 |
 |---|---|---|
@@ -110,6 +110,8 @@ Python 版から変えていないので `launch/` `launch_vision.sh` `kill.sh` 
 | `src/detection_node.cpp` | rclcpp ノード `umeonigiri_vision`。購読者 0 なら推論を止める | 推定失敗で購読は止めない |
 | `src/hand_landmarks_node.cpp` | rclcpp ノード `hand_landmarks`。検出外れは `hand_timeout_sec` 超過で空配列を **1 度だけ** 配信 | 検出時刻は**処理完了**時刻（推論に時間がかかると猶予を消費する） |
 | `src/pc_camera_node.cpp` | rclcpp ノード `pc_camera`。`cv::VideoCapture` で `/camera/image_raw` を配信 | デバイス不在でも落とさず毎周期エラー + 開き直し |
+| `src/yolo_grasp_node.cpp` / `src/rknn_yolo.cpp` | rclcpp ノード `yolo_grasp`。NPU 推論＋把持候補。`use_topic_input:=true` で ROS 画像トピックを購読 | V4L2 直接入力は既定のまま。トピック入力では描画を購読者がいるときだけ行う |
+| `include/.../detection_msg.hpp` / `publish_rate_gate.hpp` | 検出メッセージの id/数値 ID 契約と配信レート上限 | 共に gtest で固定 |
 | `scripts/download_model.py` | モデルのダウンロード | **Python のまま据え置き**。ネットワーク取得だけで C++ にすると libcurl 依存が増えるだけ |
 
 > `cv_bridge` は使わない。numpy 2.x との ABI 非互換で import できない環境が

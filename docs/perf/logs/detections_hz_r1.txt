@@ -1,0 +1,47 @@
+--- detections hz 20s ---
+[WARN] [1795608715.429759209] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795608715.429791583] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+average rate: 17.318
+	min: 0.034s max: 0.106s std dev: 0.02085s window: 20
+average rate: 18.976
+	min: 0.034s max: 0.106s std dev: 0.01865s window: 41
+average rate: 19.855
+	min: 0.034s max: 0.106s std dev: 0.01732s window: 63
+average rate: 19.827
+	min: 0.033s max: 0.106s std dev: 0.01711s window: 83
+average rate: 19.632
+	min: 0.033s max: 0.127s std dev: 0.01823s window: 102
+average rate: 19.676
+	min: 0.033s max: 0.127s std dev: 0.01798s window: 122
+average rate: 19.379
+	min: 0.033s max: 0.127s std dev: 0.01818s window: 140
+average rate: 19.213
+	min: 0.033s max: 0.127s std dev: 0.01786s window: 159
+average rate: 19.108
+	min: 0.033s max: 0.127s std dev: 0.01817s window: 178
+average rate: 19.065
+	min: 0.033s max: 0.127s std dev: 0.01803s window: 197
+average rate: 19.140
+	min: 0.033s max: 0.127s std dev: 0.01777s window: 217
+average rate: 19.255
+	min: 0.033s max: 0.128s std dev: 0.01820s window: 238
+average rate: 19.356
+	min: 0.033s max: 0.128s std dev: 0.01813s window: 259
+average rate: 19.261
+	min: 0.033s max: 0.128s std dev: 0.01824s window: 277
+average rate: 19.109
+	min: 0.033s max: 0.128s std dev: 0.01856s window: 294
+average rate: 19.024
+	min: 0.033s max: 0.128s std dev: 0.01836s window: 312
+average rate: 19.046
+	min: 0.033s max: 0.128s std dev: 0.01826s window: 332
+average rate: 19.014
+	min: 0.033s max: 0.128s std dev: 0.01844s window: 351
+average rate: 19.093
+	min: 0.033s max: 0.128s std dev: 0.01842s window: 372
+average rate: 19.062
+	min: 0.033s max: 0.128s std dev: 0.01848s window: 391
+average rate: 19.079
+	min: 0.033s max: 0.128s std dev: 0.01837s window: 411
+average rate: 19.018
+	min: 0.033s max: 0.128s std dev: 0.01859s window: 429

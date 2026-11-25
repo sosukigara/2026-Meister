@@ -1,0 +1,46 @@
+[WARN] [1795610447.598107145] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795610447.598201101] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+average rate: 39.612
+	min: 0.020s max: 0.036s std dev: 0.00325s window: 41
+average rate: 39.982
+	min: 0.018s max: 0.037s std dev: 0.00370s window: 82
+average rate: 40.796
+	min: 0.018s max: 0.037s std dev: 0.00373s window: 125
+average rate: 40.556
+	min: 0.018s max: 0.068s std dev: 0.00506s window: 165
+average rate: 39.698
+	min: 0.018s max: 0.084s std dev: 0.00664s window: 202
+average rate: 39.638
+	min: 0.013s max: 0.084s std dev: 0.00650s window: 242
+average rate: 39.351
+	min: 0.013s max: 0.084s std dev: 0.00640s window: 280
+average rate: 39.597
+	min: 0.013s max: 0.084s std dev: 0.00615s window: 322
+average rate: 39.846
+	min: 0.013s max: 0.084s std dev: 0.00617s window: 365
+average rate: 39.911
+	min: 0.013s max: 0.084s std dev: 0.00595s window: 406
+average rate: 39.727
+	min: 0.013s max: 0.084s std dev: 0.00582s window: 444
+average rate: 39.656
+	min: 0.013s max: 0.084s std dev: 0.00572s window: 483
+average rate: 39.594
+	min: 0.013s max: 0.084s std dev: 0.00568s window: 523
+average rate: 39.330
+	min: 0.013s max: 0.084s std dev: 0.00578s window: 559
+average rate: 39.246
+	min: 0.013s max: 0.084s std dev: 0.00600s window: 598
+average rate: 39.268
+	min: 0.013s max: 0.084s std dev: 0.00595s window: 638
+average rate: 39.225
+	min: 0.013s max: 0.084s std dev: 0.00593s window: 677
+average rate: 39.205
+	min: 0.013s max: 0.084s std dev: 0.00583s window: 716
+average rate: 39.215
+	min: 0.013s max: 0.084s std dev: 0.00580s window: 756
+average rate: 39.144
+	min: 0.013s max: 0.084s std dev: 0.00575s window: 794
+average rate: 39.137
+	min: 0.013s max: 0.084s std dev: 0.00569s window: 834
+average rate: 39.099
+	min: 0.013s max: 0.084s std dev: 0.00573s window: 873

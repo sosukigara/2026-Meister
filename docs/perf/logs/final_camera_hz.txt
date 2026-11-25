@@ -1,0 +1,43 @@
+[WARN] [1795610422.220969444] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795610422.221026744] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+WARNING: topic [/arm_camera/image_raw] does not appear to be published yet
+average rate: 37.645
+	min: 0.020s max: 0.061s std dev: 0.00795s window: 39
+average rate: 38.037
+	min: 0.019s max: 0.075s std dev: 0.00899s window: 78
+average rate: 38.848
+	min: 0.019s max: 0.075s std dev: 0.00818s window: 119
+average rate: 40.097
+	min: 0.017s max: 0.075s std dev: 0.00791s window: 163
+average rate: 40.999
+	min: 0.016s max: 0.075s std dev: 0.00773s window: 209
+average rate: 41.536
+	min: 0.016s max: 0.075s std dev: 0.00758s window: 254
+average rate: 41.973
+	min: 0.016s max: 0.075s std dev: 0.00736s window: 300
+average rate: 42.261
+	min: 0.016s max: 0.075s std dev: 0.00729s window: 345
+average rate: 42.162
+	min: 0.016s max: 0.075s std dev: 0.00709s window: 387
+average rate: 41.604
+	min: 0.016s max: 0.075s std dev: 0.00724s window: 424
+average rate: 41.363
+	min: 0.016s max: 0.075s std dev: 0.00727s window: 463
+average rate: 41.402
+	min: 0.016s max: 0.075s std dev: 0.00729s window: 505
+average rate: 41.532
+	min: 0.016s max: 0.075s std dev: 0.00723s window: 549
+average rate: 41.757
+	min: 0.016s max: 0.075s std dev: 0.00717s window: 594
+average rate: 41.927
+	min: 0.016s max: 0.075s std dev: 0.00710s window: 639
+average rate: 42.070
+	min: 0.016s max: 0.075s std dev: 0.00705s window: 684
+average rate: 42.170
+	min: 0.016s max: 0.075s std dev: 0.00699s window: 728
+average rate: 42.101
+	min: 0.016s max: 0.075s std dev: 0.00702s window: 769
+average rate: 41.888
+	min: 0.016s max: 0.083s std dev: 0.00724s window: 807
+average rate: 41.830
+	min: 0.016s max: 0.083s std dev: 0.00728s window: 848

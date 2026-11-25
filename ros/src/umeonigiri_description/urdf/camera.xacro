@@ -4,10 +4,11 @@
   <!-- 認識モデルの入力は 320 なので、lite でも検出そのものは成立する。
        lite: 320x240 / 5 Hz。full: 640x480 / 10 Hz。 -->
   <xacro:arg name="sensor_profile" default="full"/>
+  <xacro:arg name="base_camera_rate" default=""/>
   <xacro:property name="cam_lite" value="${'$(arg sensor_profile)' == 'lite'}"/>
   <xacro:property name="cam_width" value="${320 if cam_lite else 640}"/>
   <xacro:property name="cam_height" value="${240 if cam_lite else 480}"/>
-  <xacro:property name="cam_rate" value="${5 if cam_lite else 10}"/>
+  <xacro:property name="cam_rate" value="${int('$(arg base_camera_rate)') if '$(arg base_camera_rate)' != '' else (5 if cam_lite else 10)}"/>
 
   <!-- Camera Link (robot's-eye view, facing forward +X) -->
   <link name="camera_link">

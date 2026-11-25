@@ -1,0 +1,18 @@
+=== camera 20s ===
+average rate: 41.685
+	min: 0.017s max: 0.066s std dev: 0.00695s window: 760
+average rate: 41.836
+	min: 0.017s max: 0.066s std dev: 0.00690s window: 805
+average rate: 41.941
+	min: 0.017s max: 0.066s std dev: 0.00686s window: 849
+=== detections 20s ===
+average rate: 38.299
+	min: 0.018s max: 0.080s std dev: 0.00592s window: 737
+average rate: 38.372
+	min: 0.018s max: 0.080s std dev: 0.00587s window: 777
+average rate: 38.438
+	min: 0.018s max: 0.080s std dev: 0.00584s window: 817
+=== RTF 20s ===
+[WARN] [1795609594.170198169] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795609594.170364417] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+clock_msgs=3949 wall=20.010s sim=15.792s RTF=0.789

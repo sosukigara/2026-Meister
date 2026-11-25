@@ -1,0 +1,50 @@
+--- camera encoding ---
+rgb8
+---
+--- camera hz 20s ---
+[WARN] [1795608682.442454313] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795608682.442912518] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+average rate: 21.909
+	min: 0.031s max: 0.089s std dev: 0.01449s window: 23
+average rate: 22.295
+	min: 0.031s max: 0.101s std dev: 0.01492s window: 46
+average rate: 22.961
+	min: 0.025s max: 0.101s std dev: 0.01490s window: 71
+average rate: 24.056
+	min: 0.025s max: 0.101s std dev: 0.01435s window: 99
+average rate: 24.559
+	min: 0.024s max: 0.101s std dev: 0.01411s window: 127
+average rate: 24.931
+	min: 0.024s max: 0.101s std dev: 0.01375s window: 154
+average rate: 25.151
+	min: 0.024s max: 0.101s std dev: 0.01343s window: 181
+average rate: 24.962
+	min: 0.024s max: 0.101s std dev: 0.01350s window: 205
+average rate: 24.482
+	min: 0.024s max: 0.106s std dev: 0.01420s window: 226
+average rate: 24.181
+	min: 0.024s max: 0.106s std dev: 0.01469s window: 248
+average rate: 24.024
+	min: 0.024s max: 0.106s std dev: 0.01457s window: 271
+average rate: 24.248
+	min: 0.024s max: 0.106s std dev: 0.01425s window: 298
+average rate: 24.491
+	min: 0.024s max: 0.106s std dev: 0.01407s window: 326
+average rate: 24.583
+	min: 0.024s max: 0.106s std dev: 0.01404s window: 352
+average rate: 24.735
+	min: 0.024s max: 0.106s std dev: 0.01393s window: 379
+average rate: 24.873
+	min: 0.024s max: 0.106s std dev: 0.01385s window: 406
+average rate: 24.721
+	min: 0.024s max: 0.106s std dev: 0.01384s window: 429
+average rate: 24.489
+	min: 0.024s max: 0.106s std dev: 0.01414s window: 450
+average rate: 24.351
+	min: 0.024s max: 0.106s std dev: 0.01420s window: 472
+average rate: 24.297
+	min: 0.024s max: 0.106s std dev: 0.01413s window: 496
+average rate: 24.439
+	min: 0.024s max: 0.106s std dev: 0.01403s window: 524
+average rate: 24.495
+	min: 0.024s max: 0.106s std dev: 0.01399s window: 551

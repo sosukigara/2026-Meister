@@ -1,0 +1,44 @@
+--- hz camera 20s ---
+WARNING: topic [/arm_camera/image_raw] does not appear to be published yet
+average rate: 30.340
+	min: 0.025s max: 0.044s std dev: 0.00476s window: 32
+average rate: 28.539
+	min: 0.025s max: 0.075s std dev: 0.00862s window: 59
+average rate: 28.159
+	min: 0.025s max: 0.075s std dev: 0.00866s window: 87
+average rate: 28.030
+	min: 0.025s max: 0.075s std dev: 0.00834s window: 115
+average rate: 28.741
+	min: 0.022s max: 0.075s std dev: 0.00827s window: 147
+average rate: 29.181
+	min: 0.022s max: 0.075s std dev: 0.00804s window: 179
+average rate: 29.516
+	min: 0.022s max: 0.075s std dev: 0.00788s window: 211
+average rate: 29.787
+	min: 0.022s max: 0.075s std dev: 0.00774s window: 243
+average rate: 30.051
+	min: 0.022s max: 0.075s std dev: 0.00751s window: 276
+average rate: 29.845
+	min: 0.022s max: 0.075s std dev: 0.00745s window: 304
+average rate: 29.584
+	min: 0.022s max: 0.075s std dev: 0.00767s window: 331
+average rate: 29.430
+	min: 0.022s max: 0.075s std dev: 0.00764s window: 359
+average rate: 29.286
+	min: 0.022s max: 0.075s std dev: 0.00776s window: 387
+average rate: 29.457
+	min: 0.022s max: 0.075s std dev: 0.00768s window: 419
+average rate: 29.609
+	min: 0.022s max: 0.075s std dev: 0.00766s window: 451
+average rate: 29.719
+	min: 0.022s max: 0.075s std dev: 0.00758s window: 483
+average rate: 29.851
+	min: 0.021s max: 0.075s std dev: 0.00745s window: 516
+average rate: 29.955
+	min: 0.021s max: 0.075s std dev: 0.00746s window: 548
+average rate: 29.841
+	min: 0.021s max: 0.077s std dev: 0.00760s window: 576
+average rate: 29.622
+	min: 0.021s max: 0.077s std dev: 0.00778s window: 602
+average rate: 29.576
+	min: 0.021s max: 0.077s std dev: 0.00773s window: 631
