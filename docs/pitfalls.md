@@ -268,3 +268,17 @@
 - 影響: **★要確認★** `rm -rf install` や clean build で消える。ソースに残したい
   場合は `maps_dir` の設計を見直す必要がある。今は「保存 → 一覧 → 削除」は
   同じ install 側で閉じているので動作はする。
+
+## P22. シミュレーションで 30fps を出すための落とし穴（2026-11-25 実測）
+
+- gz カメラの描画は llvmpipe では非常に重い。320x240/40Hz では RTF 0.52、
+  80x60/45Hz + 物理 step 10ms で RTF 0.90 まで回復した。解像度と
+  `max_step_size` を先に調整すること（[docs/perf/arm-cam-30fps-slam.md](perf/arm-cam-30fps-slam.md)）。
+- `gz sim -z 250` で物理を間引くと**センサ更新まで 9.6 Hz に落ちた**。
+  物理を間引くなら `-z` ではなく SDF コピーの `max_step_size` を変える。
+- 30 Hz の publish gate を推論 (~25 ms) と併用すると 1 フレームおきに捨てて
+  18.6 Hz に落ちた。推論自体が上限になる経路ではゲートを無効にすること。
+- `/detections` は `id` にクラス名、`results[0].hypothesis.class_id` に数値 ID
+  を入れる。片方だけだと Web UI の認識モニターが `unknown` になる。
+- 静止画像 1 枚で即終了すると購読側の discovery が間に合わず届かないことが
+  ある。動作確認用の `image` モードは 2 秒待ってから終了する。

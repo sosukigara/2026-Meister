@@ -1,0 +1,29 @@
+[WARN] [1795610525.131355571] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795610525.131459704] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+WARNING: topic [/scan] does not appear to be published yet
+average rate: 4.756
+	min: 0.200s max: 0.231s std dev: 0.01201s window: 6
+average rate: 4.829
+	min: 0.189s max: 0.231s std dev: 0.01314s window: 11
+average rate: 4.794
+	min: 0.189s max: 0.231s std dev: 0.01384s window: 16
+average rate: 4.827
+	min: 0.189s max: 0.231s std dev: 0.01341s window: 21
+average rate: 4.811
+	min: 0.189s max: 0.252s std dev: 0.01519s window: 26
+average rate: 4.710
+	min: 0.189s max: 0.319s std dev: 0.02402s window: 31
+average rate: 4.660
+	min: 0.189s max: 0.319s std dev: 0.02366s window: 36
+average rate: 4.610
+	min: 0.189s max: 0.319s std dev: 0.02345s window: 41
+average rate: 4.643
+	min: 0.189s max: 0.319s std dev: 0.02291s window: 46
+average rate: 4.660
+	min: 0.189s max: 0.319s std dev: 0.02222s window: 51
+average rate: 4.679
+	min: 0.184s max: 0.319s std dev: 0.02179s window: 56
+average rate: 4.691
+	min: 0.184s max: 0.319s std dev: 0.02119s window: 61
+average rate: 4.706
+	min: 0.184s max: 0.319s std dev: 0.02089s window: 66

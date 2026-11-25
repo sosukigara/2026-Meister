@@ -1,0 +1,48 @@
+[WARN] [1795610264.693977656] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795610264.694085569] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+average rate: 37.422
+	min: 0.019s max: 0.041s std dev: 0.00551s window: 39
+average rate: 38.113
+	min: 0.019s max: 0.042s std dev: 0.00564s window: 78
+average rate: 38.723
+	min: 0.019s max: 0.042s std dev: 0.00523s window: 118
+average rate: 39.035
+	min: 0.019s max: 0.054s std dev: 0.00542s window: 159
+average rate: 39.582
+	min: 0.019s max: 0.054s std dev: 0.00519s window: 201
+average rate: 39.773
+	min: 0.019s max: 0.054s std dev: 0.00500s window: 242
+average rate: 39.743
+	min: 0.019s max: 0.062s std dev: 0.00529s window: 282
+average rate: 39.950
+	min: 0.018s max: 0.062s std dev: 0.00535s window: 324
+average rate: 39.867
+	min: 0.018s max: 0.062s std dev: 0.00536s window: 364
+average rate: 39.533
+	min: 0.018s max: 0.094s std dev: 0.00628s window: 401
+average rate: 39.361
+	min: 0.018s max: 0.094s std dev: 0.00631s window: 439
+average rate: 39.382
+	min: 0.018s max: 0.094s std dev: 0.00631s window: 479
+average rate: 39.489
+	min: 0.018s max: 0.094s std dev: 0.00614s window: 520
+average rate: 39.635
+	min: 0.018s max: 0.094s std dev: 0.00598s window: 562
+average rate: 39.584
+	min: 0.018s max: 0.094s std dev: 0.00588s window: 601
+average rate: 39.635
+	min: 0.018s max: 0.094s std dev: 0.00578s window: 642
+average rate: 39.544
+	min: 0.018s max: 0.094s std dev: 0.00591s window: 681
+average rate: 39.461
+	min: 0.018s max: 0.094s std dev: 0.00590s window: 720
+average rate: 39.332
+	min: 0.018s max: 0.094s std dev: 0.00593s window: 758
+average rate: 39.277
+	min: 0.018s max: 0.094s std dev: 0.00598s window: 797
+average rate: 39.257
+	min: 0.018s max: 0.094s std dev: 0.00593s window: 836
+average rate: 39.450
+	min: 0.018s max: 0.094s std dev: 0.00590s window: 880
+average rate: 39.596
+	min: 0.018s max: 0.094s std dev: 0.00588s window: 923

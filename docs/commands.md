@@ -260,3 +260,30 @@ curl -s -X POST http://localhost:8088/api/params \
 # 変更を確認
 ros2 param get /controller_server FollowPath.desired_linear_vel
 ```
+
+## 14. 手先カメラ ＋ NPU 検出 ＋ SLAM（ヘッドレス）
+
+RViz / gz GUI を起動せず、手先カメラの画像トピックを NPU 検出器が購読する一括起動。
+計測値・試行の失敗・判定は [docs/perf/arm-cam-30fps-slam.md](perf/arm-cam-30fps-slam.md)。
+
+```bash
+cd ros   # R6
+export ROS_DOMAIN_ID=5 ROS_LOCALHOST_ONLY=1
+export LIBGL_ALWAYS_SOFTWARE=1 GALLIUM_DRIVER=llvmpipe
+source /opt/ros/jazzy/setup.bash && source install/setup.bash
+ros2 launch umeonigiri_autonomy arm_vision_slam.launch.py world:=maze sensor_profile:=lite
+
+# 別シェルで 20 秒ずつ計測
+ros2 topic hz /arm_camera/image_raw
+ros2 topic hz /detections
+python3 ../docs/perf/measure_rtf.py --seconds 20
+ros2 lifecycle get /slam_toolbox
+ros2 run tf2_ros tf2_echo map odom
+pgrep -a rviz2; pgrep -af 'gz sim'    # rviz2 なし / gz sim -s のみ
+cd .. && ./kill.sh                     # 後始末（同じ domain のみ）
+```
+
+- 既定: 手先カメラ 80x60 / 45 sim Hz、物理 step 10ms、base カメラ 1 sim Hz。
+  いずれも launch 引数で上書きできる（Xacro 側の既定は変更しない）。
+- `gz sim -z` で物理を間引くとセンサ更新まで遅くなるので使わない（実測 9.6 Hz）。
+- `yolo_grasp_node` は `use_topic_input:=false` なら従来どおり `/dev/video0` を開く。

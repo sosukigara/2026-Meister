@@ -1,0 +1,11 @@
+=== camera hz ===
+	min: 0.016s max: 0.083s std dev: 0.00724s window: 807
+average rate: 41.830
+	min: 0.016s max: 0.083s std dev: 0.00728s window: 848
+=== detections hz ===
+	min: 0.013s max: 0.084s std dev: 0.00569s window: 834
+average rate: 39.099
+	min: 0.013s max: 0.084s std dev: 0.00573s window: 873
+=== RTF x2 ===
+clock_msgs=1812 wall=20.009s sim=18.110s RTF=0.905
+clock_msgs=1852 wall=20.010s sim=18.510s RTF=0.925

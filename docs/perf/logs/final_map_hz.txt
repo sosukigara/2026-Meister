@@ -1,0 +1,13 @@
+[WARN] [1795610543.369726468] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795610543.369820696] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+WARNING: topic [/map] does not appear to be published yet
+average rate: 1.000
+	min: 0.999s max: 1.001s std dev: 0.00048s window: 3
+average rate: 1.000
+	min: 0.999s max: 1.001s std dev: 0.00042s window: 4
+average rate: 1.000
+	min: 0.999s max: 1.001s std dev: 0.00039s window: 5
+average rate: 0.999
+	min: 0.999s max: 1.003s std dev: 0.00123s window: 6
+average rate: 1.000
+	min: 0.997s max: 1.003s std dev: 0.00148s window: 8

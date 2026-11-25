@@ -1,0 +1,45 @@
+=== camera hz 20s ===
+average rate: 23.607
+	min: 0.032s max: 0.062s std dev: 0.00606s window: 25
+average rate: 23.174
+	min: 0.032s max: 0.080s std dev: 0.00847s window: 48
+average rate: 24.638
+	min: 0.023s max: 0.080s std dev: 0.00917s window: 76
+average rate: 26.012
+	min: 0.023s max: 0.080s std dev: 0.00886s window: 107
+average rate: 26.549
+	min: 0.023s max: 0.080s std dev: 0.00879s window: 136
+average rate: 27.096
+	min: 0.023s max: 0.080s std dev: 0.00854s window: 166
+average rate: 27.403
+	min: 0.023s max: 0.080s std dev: 0.00857s window: 196
+average rate: 27.022
+	min: 0.023s max: 0.080s std dev: 0.00843s window: 221
+average rate: 26.437
+	min: 0.023s max: 0.101s std dev: 0.00939s window: 243
+average rate: 26.146
+	min: 0.023s max: 0.101s std dev: 0.00971s window: 268
+average rate: 26.021
+	min: 0.023s max: 0.101s std dev: 0.00952s window: 293
+average rate: 26.261
+	min: 0.023s max: 0.101s std dev: 0.00933s window: 323
+average rate: 26.517
+	min: 0.023s max: 0.101s std dev: 0.00923s window: 353
+average rate: 26.777
+	min: 0.022s max: 0.101s std dev: 0.00903s window: 384
+average rate: 26.892
+	min: 0.022s max: 0.101s std dev: 0.00889s window: 413
+average rate: 26.940
+	min: 0.022s max: 0.101s std dev: 0.00890s window: 441
+average rate: 26.727
+	min: 0.022s max: 0.101s std dev: 0.00887s window: 465
+average rate: 26.464
+	min: 0.022s max: 0.116s std dev: 0.00953s window: 487
+average rate: 26.262
+	min: 0.022s max: 0.116s std dev: 0.00976s window: 510
+average rate: 26.219
+	min: 0.022s max: 0.116s std dev: 0.00962s window: 536
+average rate: 26.338
+	min: 0.022s max: 0.116s std dev: 0.00955s window: 565
+average rate: 26.257
+	min: 0.022s max: 0.116s std dev: 0.00967s window: 590
