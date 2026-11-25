@@ -1,0 +1,26 @@
+=== lifecycle ===
+active [3]
+=== scan hz ===
+	min: 0.201s max: 0.308s std dev: 0.03038s window: 28
+average rate: 4.257
+	min: 0.200s max: 0.308s std dev: 0.02994s window: 33
+=== map hz ===
+	min: 0.999s max: 1.001s std dev: 0.00084s window: 5
+average rate: 1.000
+	min: 0.999s max: 1.001s std dev: 0.00080s window: 7
+=== tf map odom ===
+[WARN] [1795612248.743795021] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795612248.743892731] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[INFO] [1795612248.803104804] [tf2_echo]: Waiting for transform map ->  odom: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+At time 133.900000000
+- Translation: [0.000, 0.000, 0.000]
+- Rotation: in Quaternion (xyzw) [0.000, 0.000, 0.000, 1.000]
+=== detection publishers ===
+Type: vision_msgs/msg/Detection2DArray
+Publisher count: 1
+Subscription count: 0
+=== headless processes ===
+rviz2: none
+35585 /bin/sh -c ruby /opt/ros/jazzy/opt/gz_tools_vendor/bin/gz sim -s -r /tmp/meister_maze_step_0.01_vision.sdf --force-version 8
+35588 gz sim -s -r /tmp/meister_maze_step_0.01_vision.sdf
+36133 bash -c cd /home/so/Meistar/.worktrees/arm-cam-live-detections && export ROS_DOMAIN_ID=5 ROS_LOCALHOST_ONLY=1 && source /opt/ros/jazzy/setup.bash && source ros/install/setup.bash && L=docs/perf/logs && { echo '=== lifecycle ==='; ros2 lifecycle get /slam_toolbox 2>/dev/null; echo '=== scan hz ==='; timeout 11 ros2 topic hz /scan 2>&1 | tail -3; echo '=== map hz ==='; timeout 11 ros2 topic hz /map 2>&1 | tail -3; echo '=== tf map odom ==='; timeout 6 ros2 run tf2_ros tf2_echo map odom 2>&1 | head -6; echo '=== detection publishers ==='; ros2 topic info /detections 2>&1 | head -5; echo '=== headless processes ==='; pgrep -a rviz2 || echo 'rviz2: none'; pgrep -af 'gz sim' | head -3; } > $L/live_slam_tf_headless.txt 2>&1; cat $L/live_slam_tf_headless.txt

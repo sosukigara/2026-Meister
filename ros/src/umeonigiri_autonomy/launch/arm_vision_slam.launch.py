@@ -68,6 +68,7 @@ def generate_launch_description():
             "gui": "false",
             "sim_update_rate": LaunchConfiguration("sim_update_rate"),
             "physics_step": LaunchConfiguration("physics_step"),
+            "vision_target": LaunchConfiguration("vision_target"),
         }.items())
 
     slam = IncludeLaunchDescription(
@@ -100,6 +101,8 @@ def generate_launch_description():
         # 1ms -> 10ms step。gz の iteration を 1/10 にして RTF を 0.86 まで上げる (実測)。
         DeclareLaunchArgument("physics_step", default_value="0.01",
                               description="/tmp の SDF コピーに使う max_step_size"),
+        DeclareLaunchArgument("vision_target", default_value="false",
+                              description="maze に計測用テクスチャ対象を追加 (既定は false)"),
         robot_state_publisher,
         simulation,
         slam,

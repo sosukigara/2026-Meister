@@ -1,0 +1,26 @@
+=== default arm_vision_slam (vision_target omitted) ===
+--- world file used ---
+37704 /bin/sh -c ruby /opt/ros/jazzy/opt/gz_tools_vendor/bin/gz sim -s -r /tmp/meister_maze_step_0.01.sdf --force-version 8
+37708 gz sim -s -r /tmp/meister_maze_step_0.01.sdf
+--- camera publishers ---
+Publisher count: 1
+--- slam ---
+active [3]
+--- detections ---
+header:
+  stamp:
+--- gz errors ---
+--- detailed topic info ---
+[camera/image_raw]
+Type: sensor_msgs/msg/Image
+Publisher count: 1
+Subscription count: 1
+[arm_camera/image_raw]
+Type: sensor_msgs/msg/Image
+Publisher count: 1
+Subscription count: 2
+[detections default]
+    nanosec: 90000000
+  frame_id: arm_camera_link
+detections: []
+---

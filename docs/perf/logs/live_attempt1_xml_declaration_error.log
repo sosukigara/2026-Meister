@@ -1,0 +1,77 @@
+[INFO] [launch]: All log files can be found below /home/so/.ros/log/2026-11-25-21-58-52-506772-so-desktop-31695
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [robot_state_publisher-1]: process started with pid [31721]
+[INFO] [gazebo-2]: process started with pid [31722]
+[INFO] [create-3]: process started with pid [31723]
+[INFO] [parameter_bridge-4]: process started with pid [31724]
+[INFO] [async_slam_toolbox_node-5]: process started with pid [31726]
+[INFO] [nav_mode_manager-6]: process started with pid [31727]
+[INFO] [yolo_grasp_node-7]: process started with pid [31728]
+[nav_mode_manager-6] [WARN] [1795611533.502229662] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[nav_mode_manager-6] [WARN] [1795611533.502301117] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[robot_state_publisher-1] [WARN] [1795611533.502621938] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[robot_state_publisher-1] [WARN] [1795611533.502670645] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[create-3] [WARN] [1795611533.513769304] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[create-3] [WARN] [1795611533.513809552] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[async_slam_toolbox_node-5] [WARN] [1795611533.556942777] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[async_slam_toolbox_node-5] [WARN] [1795611533.556974276] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[create-3] [INFO] [1795611533.586343111] [ros_gz_sim]: Requesting list of world names.
+[nav_mode_manager-6] [INFO] [1795611533.591728822] [nav_mode_manager]: nav_mode_manager ready (mode=mapping)
+[async_slam_toolbox_node-5] [INFO] [1795611533.598388776] [slam_toolbox]: Node using stack size 40000000
+[robot_state_publisher-1] [INFO] [1795611533.604554665] [robot_state_publisher]: Robot initialized
+[parameter_bridge-4] [WARN] [1795611533.609916752] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[parameter_bridge-4] [WARN] [1795611533.609947084] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[parameter_bridge-4] [INFO] [1795611533.647248949] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/world/my_custom_world/clock (gz.msgs.Clock) -> /world/my_custom_world/clock (rosgraph_msgs/msg/Clock)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611533.654075438] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/umeonigiri_bot/cmd_vel (gz.msgs.Twist) -> /model/umeonigiri_bot/cmd_vel (geometry_msgs/msg/Twist)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611533.659810844] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/model/umeonigiri_bot/cmd_vel (geometry_msgs/msg/Twist) -> /model/umeonigiri_bot/cmd_vel (gz.msgs.Twist)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611533.662455867] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/umeonigiri_bot/odometry (gz.msgs.Odometry) -> /model/umeonigiri_bot/odometry (nav_msgs/msg/Odometry)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611533.666625083] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/model/umeonigiri_bot/odometry (nav_msgs/msg/Odometry) -> /model/umeonigiri_bot/odometry (gz.msgs.Odometry)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611533.668498095] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/joint_states (gz.msgs.Model) -> /joint_states (sensor_msgs/msg/JointState)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611533.672449444] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/joint_states (sensor_msgs/msg/JointState) -> /joint_states (gz.msgs.Model)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611533.673968969] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/scan (gz.msgs.LaserScan) -> /scan (sensor_msgs/msg/LaserScan)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611533.675080760] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/scan (sensor_msgs/msg/LaserScan) -> /scan (gz.msgs.LaserScan)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611533.676756029] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera_image (gz.msgs.Image) -> /camera_image (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611533.677974566] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/camera_image (sensor_msgs/msg/Image) -> /camera_image (gz.msgs.Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611533.679117855] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/arm_camera_image (gz.msgs.Image) -> /arm_camera_image (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611533.680000988] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/arm_camera_image (sensor_msgs/msg/Image) -> /arm_camera_image (gz.msgs.Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611533.680991159] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/umeonigiri_bot/tf (gz.msgs.Pose_V) -> /model/umeonigiri_bot/tf (tf2_msgs/msg/TFMessage)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611533.684706266] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/model/umeonigiri_bot/tf (tf2_msgs/msg/TFMessage) -> /model/umeonigiri_bot/tf (gz.msgs.Pose_V)] (Lazy 0)
+[yolo_grasp_node-7] [WARN] [1795611533.861032440] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[yolo_grasp_node-7] [WARN] [1795611533.861087271] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[yolo_grasp_node-7] [INFO] [1795611533.978567862] [yolo_grasp]: NPU 検出を開始: 入力トピック /arm_camera/image_raw, ラベル 80 件
+[gazebo-2] [1;31m[Err] [Server.cc:86] [0m[1;31mError Code [0m[1;31m1[0m[1;31m: [0m[1;31mMsg: [0m[1;31mError parsing XML in file [/tmp/meister_maze_step_0.01_vision.sdf]: Error=XML_ERROR_PARSING_DECLARATION ErrorID=11 (0xb) Line number=306: XMLDeclaration value=xml version="1.0"[0m[1;31m[0m
+[gazebo-2] [1;31m[Err] [Server.cc:86] [0m[1;31mError Code [0m[1;31m1[0m[1;31m: [0m[1;31mMsg: [0m[1;31mUnable to read file: [/tmp/meister_maze_step_0.01_vision.sdf][0m[1;31m[0m
+[INFO] [gazebo-2]: process has finished cleanly [pid 31722]
+[async_slam_toolbox_node-5] [INFO] [1795611535.594068472] [slam_toolbox]: Configuring
+[async_slam_toolbox_node-5] [INFO] [1795611535.617474429] [slam_toolbox]: Using solver plugin solver_plugins::CeresSolver
+[async_slam_toolbox_node-5] [INFO] [1795611535.618772881] [slam_toolbox]: CeresSolver: Using SCHUR_JACOBI preconditioner.
+[async_slam_toolbox_node-5] [INFO] [1795611535.670817099] [slam_toolbox]: Activating
+[create-3] [INFO] [1795611538.589739818] [ros_gz_sim]: Requesting list of world names.
+[create-3] [INFO] [1795611543.590116838] [ros_gz_sim]: Requesting list of world names.
+[create-3] [INFO] [1795611548.590568156] [ros_gz_sim]: Requesting list of world names.
+[create-3] [INFO] [1795611553.591300360] [ros_gz_sim]: Requesting list of world names.
+[create-3] [INFO] [1795611558.591870822] [ros_gz_sim]: Requesting list of world names.
+[create-3] [INFO] [1795611563.592455516] [ros_gz_sim]: Requesting list of world names.
+[robot_state_publisher-1] [INFO] [1795611564.310690147] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[create-3] [INFO] [1795611564.315823929] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[parameter_bridge-4] [INFO] [1795611564.318337738] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[async_slam_toolbox_node-5] [INFO] [1795611564.323984839] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[nav_mode_manager-6] [INFO] [1795611564.329830852] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[yolo_grasp_node-7] [INFO] [1795611564.336737629] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [yolo_grasp_node-7]: sending signal 'SIGINT' to process[yolo_grasp_node-7]
+[INFO] [nav_mode_manager-6]: sending signal 'SIGINT' to process[nav_mode_manager-6]
+[INFO] [async_slam_toolbox_node-5]: sending signal 'SIGINT' to process[async_slam_toolbox_node-5]
+[INFO] [parameter_bridge-4]: sending signal 'SIGINT' to process[parameter_bridge-4]
+[INFO] [create-3]: sending signal 'SIGINT' to process[create-3]
+[INFO] [robot_state_publisher-1]: sending signal 'SIGINT' to process[robot_state_publisher-1]
+[yolo_grasp_node-7] [INFO] [1795611564.404395225] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[parameter_bridge-4] [INFO] [1795611564.407713429] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[create-3] [INFO] [1795611564.408623114] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ERROR] [async_slam_toolbox_node-5]: process has died [pid 31726, exit code -2, cmd '/opt/ros/jazzy/lib/slam_toolbox/async_slam_toolbox_node --ros-args -r __node:=slam_toolbox --params-file /home/so/Meistar/.worktrees/arm-cam-live-detections/ros/install/umeonigiri_autonomy/share/umeonigiri_autonomy/config/mapper_params_online_async.yaml --params-file /tmp/launch_params_zvdihuj3'].
+[ERROR] [nav_mode_manager-6]: process has died [pid 31727, exit code -2, cmd '/home/so/Meistar/.worktrees/arm-cam-live-detections/ros/install/umeonigiri_autonomy/lib/umeonigiri_autonomy/nav_mode_manager --ros-args -r __node:=nav_mode_manager --params-file /tmp/launch_params_yikl_s46'].
+[ERROR] [robot_state_publisher-1]: process has died [pid 31721, exit code -2, cmd '/opt/ros/jazzy/lib/robot_state_publisher/robot_state_publisher --ros-args --params-file /tmp/launch_params_cpc7vswg'].
+[INFO] [parameter_bridge-4]: process has finished cleanly [pid 31724]
+[INFO] [yolo_grasp_node-7]: process has finished cleanly [pid 31728]
+[create-3] [INFO] [1795611568.593172678] [ros_gz_sim]: Timed out when getting world names.
+[ERROR] [create-3]: process has died [pid 31723, exit code -9, cmd '/opt/ros/jazzy/lib/ros_gz_sim/create -name umeonigiri_bot -topic /robot_description -x -4.0 -y -4.0 -z 0.1 --ros-args'].

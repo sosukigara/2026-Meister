@@ -1,0 +1,3 @@
+=== RTF x2, point-light target config (20s each) ===
+clock_msgs=1708 wall=20.012s sim=17.070s RTF=0.853
+clock_msgs=1664 wall=20.018s sim=16.720s RTF=0.835

@@ -1,0 +1,35 @@
+=== /arm_camera/image_raw 20s (final config, 80x60/45simHz/10ms step) ===
+[WARN] [1795612260.812489305] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795612260.812545014] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+average rate: 37.306
+	min: 0.020s max: 0.075s std dev: 0.00864s window: 39
+average rate: 35.453
+	min: 0.020s max: 0.075s std dev: 0.00920s window: 73
+average rate: 35.936
+	min: 0.020s max: 0.075s std dev: 0.00799s window: 110
+average rate: 35.834
+	min: 0.020s max: 0.082s std dev: 0.00851s window: 146
+average rate: 37.165
+	min: 0.018s max: 0.082s std dev: 0.00853s window: 189
+average rate: 37.880
+	min: 0.018s max: 0.082s std dev: 0.00861s window: 231
+average rate: 38.378
+	min: 0.018s max: 0.082s std dev: 0.00851s window: 273
+average rate: 38.856
+	min: 0.018s max: 0.082s std dev: 0.00835s window: 316
+average rate: 39.185
+	min: 0.018s max: 0.082s std dev: 0.00822s window: 358
+average rate: 38.953
+	min: 0.018s max: 0.082s std dev: 0.00819s window: 395
+average rate: 38.453
+	min: 0.018s max: 0.082s std dev: 0.00810s window: 429
+average rate: 38.236
+	min: 0.018s max: 0.082s std dev: 0.00812s window: 465
+average rate: 38.188
+	min: 0.018s max: 0.082s std dev: 0.00813s window: 503
+average rate: 38.476
+	min: 0.018s max: 0.082s std dev: 0.00806s window: 546
+average rate: 38.669
+	min: 0.018s max: 0.082s std dev: 0.00802s window: 588
+average rate: 38.901
+	min: 0.018s max: 0.082s std dev: 0.00797s window: 631

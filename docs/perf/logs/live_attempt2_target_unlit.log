@@ -1,0 +1,114 @@
+[INFO] [launch]: All log files can be found below /home/so/.ros/log/2026-11-25-21-59-44-677905-so-desktop-32261
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [robot_state_publisher-1]: process started with pid [32287]
+[INFO] [gazebo-2]: process started with pid [32288]
+[INFO] [create-3]: process started with pid [32289]
+[INFO] [parameter_bridge-4]: process started with pid [32290]
+[INFO] [async_slam_toolbox_node-5]: process started with pid [32292]
+[INFO] [nav_mode_manager-6]: process started with pid [32293]
+[INFO] [yolo_grasp_node-7]: process started with pid [32294]
+[robot_state_publisher-1] [WARN] [1795611585.530623521] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[robot_state_publisher-1] [WARN] [1795611585.530677478] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[create-3] [WARN] [1795611585.543452236] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[create-3] [WARN] [1795611585.543490735] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[nav_mode_manager-6] [WARN] [1795611585.548042982] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[nav_mode_manager-6] [WARN] [1795611585.548077106] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[parameter_bridge-4] [WARN] [1795611585.559882965] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[parameter_bridge-4] [WARN] [1795611585.559912715] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[async_slam_toolbox_node-5] [WARN] [1795611585.576746229] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[async_slam_toolbox_node-5] [WARN] [1795611585.576820019] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[nav_mode_manager-6] [INFO] [1795611585.594256688] [nav_mode_manager]: nav_mode_manager ready (mode=mapping)
+[parameter_bridge-4] [INFO] [1795611585.601289221] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/world/my_custom_world/clock (gz.msgs.Clock) -> /world/my_custom_world/clock (rosgraph_msgs/msg/Clock)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611585.604305580] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/umeonigiri_bot/cmd_vel (gz.msgs.Twist) -> /model/umeonigiri_bot/cmd_vel (geometry_msgs/msg/Twist)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611585.608984700] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/model/umeonigiri_bot/cmd_vel (geometry_msgs/msg/Twist) -> /model/umeonigiri_bot/cmd_vel (gz.msgs.Twist)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611585.611260532] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/umeonigiri_bot/odometry (gz.msgs.Odometry) -> /model/umeonigiri_bot/odometry (nav_msgs/msg/Odometry)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611585.615933235] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/model/umeonigiri_bot/odometry (nav_msgs/msg/Odometry) -> /model/umeonigiri_bot/odometry (gz.msgs.Odometry)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611585.618214316] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/joint_states (gz.msgs.Model) -> /joint_states (sensor_msgs/msg/JointState)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611585.621795915] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/joint_states (sensor_msgs/msg/JointState) -> /joint_states (gz.msgs.Model)] (Lazy 0)
+[create-3] [INFO] [1795611585.623638630] [ros_gz_sim]: Requesting list of world names.
+[parameter_bridge-4] [INFO] [1795611585.623871959] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/scan (gz.msgs.LaserScan) -> /scan (sensor_msgs/msg/LaserScan)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611585.625837755] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/scan (sensor_msgs/msg/LaserScan) -> /scan (gz.msgs.LaserScan)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611585.627518890] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera_image (gz.msgs.Image) -> /camera_image (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611585.629136734] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/camera_image (sensor_msgs/msg/Image) -> /camera_image (gz.msgs.Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611585.630815535] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/arm_camera_image (gz.msgs.Image) -> /arm_camera_image (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611585.632813706] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/arm_camera_image (sensor_msgs/msg/Image) -> /arm_camera_image (gz.msgs.Image)] (Lazy 0)
+[parameter_bridge-4] [INFO] [1795611585.634264137] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/umeonigiri_bot/tf (gz.msgs.Pose_V) -> /model/umeonigiri_bot/tf (tf2_msgs/msg/TFMessage)] (Lazy 0)
+[async_slam_toolbox_node-5] [INFO] [1795611585.634718253] [slam_toolbox]: Node using stack size 40000000
+[parameter_bridge-4] [INFO] [1795611585.637538033] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/model/umeonigiri_bot/tf (tf2_msgs/msg/TFMessage) -> /model/umeonigiri_bot/tf (gz.msgs.Pose_V)] (Lazy 0)
+[robot_state_publisher-1] [INFO] [1795611585.641330211] [robot_state_publisher]: Robot initialized
+[yolo_grasp_node-7] [WARN] [1795611585.768501755] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[yolo_grasp_node-7] [WARN] [1795611585.768537921] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+[yolo_grasp_node-7] [INFO] [1795611585.852169708] [yolo_grasp]: NPU 検出を開始: 入力トピック /arm_camera/image_raw, ラベル 80 件
+[create-3] [INFO] [1795611586.348578814] [ros_gz_sim]: Waiting messages on topic [/robot_description].
+[create-3] [INFO] [1795611586.363592367] [ros_gz_sim]: Entity creation successful.
+[INFO] [create-3]: process has finished cleanly [pid 32289]
+[async_slam_toolbox_node-5] [INFO] [1795611587.595388165] [slam_toolbox]: Configuring
+[async_slam_toolbox_node-5] [INFO] [1795611587.605905764] [slam_toolbox]: Using solver plugin solver_plugins::CeresSolver
+[async_slam_toolbox_node-5] [INFO] [1795611587.606494045] [slam_toolbox]: CeresSolver: Using SCHUR_JACOBI preconditioner.
+[async_slam_toolbox_node-5] [INFO] [1795611587.644829134] [slam_toolbox]: Activating
+[gazebo-2] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="umeonigiri_bot"]/link[@name="base_footprint"]/sensor[@name="lidar"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gazebo-2] libEGL warning: Not allowed to force software rendering when API explicitly selects a hardware device.
+[gazebo-2] libEGL warning: MESA-LOADER: failed to open rknpu: /usr/lib/dri/rknpu_dri.so: cannot open shared object file: No such file or directory (search paths /usr/lib/aarch64-linux-gnu/dri:\$${ORIGIN}/dri:/usr/lib/dri, suffix _dri)
+[gazebo-2] 
+[gazebo-2] libEGL warning: Not allowed to force software rendering when API explicitly selects a hardware device.
+[async_slam_toolbox_node-5] Info: clipped range threshold to be within minimum and maximum range!
+[async_slam_toolbox_node-5] Registering sensor: [Custom Described Lidar]
+[parameter_bridge-4] [INFO] [1795611590.641398563] [ros_gz_bridge]: Passing message from ROS tf2_msgs/msg/TFMessage to Gazebo gz.msgs.Pose_V (showing msg only once per type)
+[yolo_grasp_node-7] [INFO] [1795611592.058760608] [yolo_grasp]: トピック入力 60 フレーム  推論 25.5 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611593.581493520] [yolo_grasp]: トピック入力 120 フレーム  推論 25.6 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611595.146625460] [yolo_grasp]: トピック入力 180 フレーム  推論 20.4 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611596.665400852] [yolo_grasp]: トピック入力 240 フレーム  推論 26.0 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611598.241136861] [yolo_grasp]: トピック入力 300 フレーム  推論 27.8 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611599.908062512] [yolo_grasp]: トピック入力 360 フレーム  推論 26.5 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611601.177943894] [yolo_grasp]: トピック入力 420 フレーム  推論 21.9 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611602.720853350] [yolo_grasp]: トピック入力 480 フレーム  推論 27.0 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611604.311127607] [yolo_grasp]: トピック入力 540 フレーム  推論 27.0 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611605.881582028] [yolo_grasp]: トピック入力 600 フレーム  推論 20.5 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611607.511789708] [yolo_grasp]: トピック入力 660 フレーム  推論 26.4 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611609.222970214] [yolo_grasp]: トピック入力 720 フレーム  推論 33.1 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611610.821806809] [yolo_grasp]: トピック入力 780 フレーム  推論 25.0 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611612.350200313] [yolo_grasp]: トピック入力 840 フレーム  推論 30.4 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611613.927152415] [yolo_grasp]: トピック入力 900 フレーム  推論 27.4 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611615.473282151] [yolo_grasp]: トピック入力 960 フレーム  推論 19.8 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611617.242790402] [yolo_grasp]: トピック入力 1020 フレーム  推論 29.1 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611618.805683660] [yolo_grasp]: トピック入力 1080 フレーム  推論 19.6 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611620.384307061] [yolo_grasp]: トピック入力 1140 フレーム  推論 20.9 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611621.970680152] [yolo_grasp]: トピック入力 1200 フレーム  推論 24.7 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611623.495413965] [yolo_grasp]: トピック入力 1260 フレーム  推論 25.8 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611625.076772068] [yolo_grasp]: トピック入力 1320 フレーム  推論 25.0 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611626.680498186] [yolo_grasp]: トピック入力 1380 フレーム  推論 25.4 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611628.311521781] [yolo_grasp]: トピック入力 1440 フレーム  推論 20.9 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611629.875222666] [yolo_grasp]: トピック入力 1500 フレーム  推論 26.7 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611631.409127730] [yolo_grasp]: トピック入力 1560 フレーム  推論 20.8 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611632.888237034] [yolo_grasp]: トピック入力 1620 フレーム  推論 19.6 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611634.426416560] [yolo_grasp]: トピック入力 1680 フレーム  推論 25.7 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611636.221644266] [yolo_grasp]: トピック入力 1740 フレーム  推論 19.9 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611637.768551066] [yolo_grasp]: トピック入力 1800 フレーム  推論 26.2 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611639.259323158] [yolo_grasp]: トピック入力 1860 フレーム  推論 19.7 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611640.867017953] [yolo_grasp]: トピック入力 1920 フレーム  推論 25.0 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611642.343719563] [yolo_grasp]: トピック入力 1980 フレーム  推論 24.7 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611644.000484497] [yolo_grasp]: トピック入力 2040 フレーム  推論 20.6 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611645.617201170] [yolo_grasp]: トピック入力 2100 フレーム  推論 25.1 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611647.141915683] [yolo_grasp]: トピック入力 2160 フレーム  推論 20.1 ms  検出 0
+[yolo_grasp_node-7] [INFO] [1795611648.602366876] [yolo_grasp]: トピック入力 2220 フレーム  推論 20.4 ms  検出 0
+[robot_state_publisher-1] [INFO] [1795611649.884563608] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[parameter_bridge-4] [INFO] [1795611649.892600891] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[async_slam_toolbox_node-5] [INFO] [1795611649.903643660] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[nav_mode_manager-6] [INFO] [1795611649.906510014] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[async_slam_toolbox_node-5] Unregistering sensor: Custom Described Lidar
+[yolo_grasp_node-7] [INFO] [1795611649.910372460] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[WARNING] [launch]: user interrupted with ctrl-c (SIGINT)
+[INFO] [yolo_grasp_node-7]: sending signal 'SIGINT' to process[yolo_grasp_node-7]
+[INFO] [nav_mode_manager-6]: sending signal 'SIGINT' to process[nav_mode_manager-6]
+[INFO] [async_slam_toolbox_node-5]: sending signal 'SIGINT' to process[async_slam_toolbox_node-5]
+[INFO] [parameter_bridge-4]: sending signal 'SIGINT' to process[parameter_bridge-4]
+[INFO] [gazebo-2]: sending signal 'SIGINT' to process[gazebo-2]
+[INFO] [robot_state_publisher-1]: sending signal 'SIGINT' to process[robot_state_publisher-1]
+[yolo_grasp_node-7] [INFO] [1795611649.991114849] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[parameter_bridge-4] [INFO] [1795611650.002766066] [rclcpp]: signal_handler(SIGINT/SIGTERM)
+[ERROR] [nav_mode_manager-6]: process has died [pid 32293, exit code -2, cmd '/home/so/Meistar/.worktrees/arm-cam-live-detections/ros/install/umeonigiri_autonomy/lib/umeonigiri_autonomy/nav_mode_manager --ros-args -r __node:=nav_mode_manager --params-file /tmp/launch_params_5yydev63'].
+[ERROR] [robot_state_publisher-1]: process has died [pid 32287, exit code -2, cmd '/opt/ros/jazzy/lib/robot_state_publisher/robot_state_publisher --ros-args --params-file /tmp/launch_params_98nevgj6'].
+[ERROR] [async_slam_toolbox_node-5]: process has died [pid 32292, exit code -2, cmd '/opt/ros/jazzy/lib/slam_toolbox/async_slam_toolbox_node --ros-args -r __node:=slam_toolbox --params-file /home/so/Meistar/.worktrees/arm-cam-live-detections/ros/install/umeonigiri_autonomy/share/umeonigiri_autonomy/config/mapper_params_online_async.yaml --params-file /tmp/launch_params_ud0d050j'].
+[INFO] [parameter_bridge-4]: process has finished cleanly [pid 32290]
+[INFO] [yolo_grasp_node-7]: process has finished cleanly [pid 32294]
+[ERROR] [gazebo-2]: process has died [pid 32288, exit code -2, cmd 'ruby /opt/ros/jazzy/opt/gz_tools_vendor/bin/gz sim -s -r /tmp/meister_maze_step_0.01_vision.sdf --force-version 8'].
