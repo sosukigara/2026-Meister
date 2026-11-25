@@ -140,3 +140,26 @@ timeout 6 ros2 run tf2_ros tf2_echo map odom
 pgrep -a rviz2; pgrep -af 'gz sim'
 ./kill.sh
 ```
+
+## 独立再現（2026-11-25、作業者とは別セッション）
+
+`fix/arm-cam-live-detections` を main へマージした後、worktree のビルド成果を
+使って同じ手順を再実行した（`/tmp` のログは再現用スクリプトが出力したもので、
+リポジトリには含めない）。
+
+| 項目 | 独立計測値 | 判定 |
+|---|---|---|
+| `./build.sh` / gtest | 6 packages 成功、`umeonigiri_vision` + `umeonigiri_autonomy` 103 tests 0 failures | Measured |
+| `/arm_camera/image_raw` | 39.071 Hz（20 秒） | Measured |
+| `/detections` | 37.662 Hz（20 秒） | Measured |
+| 非空検出 | 752 / 752 メッセージ（20.007 秒、37.586 Hz）、 detection_count_total=1504、`id='person'` / `class_id='0'` | Measured / Confirmed |
+| `slam_toolbox` | active、`/scan` 4.318 Hz、gz は `-s -r` のみ、rviz2 なし | Measured |
+| 後始末 | `./kill.sh` 後に gz / launch / yolo ノードなし | Measured |
+
+RTF は **条件付き**: 独立セッションの 20 秒計測で 0.794（初回）と
+0.820 / 0.816 / 0.800 / 0.853 / 0.803（連続 5 回）。作業者の 0.849〜0.869 より低く、
+**0.8 をわずかに下回る回がある**。物理ステップ 0.02 に変えても
+0.754 / 0.811 / 0.881 とばらつきが残るため、既定は 0.01 のまま。
+つまり「RTF 常時 ≥0.8」は Measured とは言えず ★要確認★（ホスト負荷依存）。
+30fps の検出と SLAM の同時動作そのものは上記のとおり再現されている。
+
