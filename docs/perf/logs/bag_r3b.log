@@ -1,0 +1,20 @@
+[WARN] [1795620478.510349340] [rcl]: ROS_LOCALHOST_ONLY is deprecated but still honored if it is enabled. Use ROS_AUTOMATIC_DISCOVERY_RANGE and ROS_STATIC_PEERS instead.
+[WARN] [1795620478.510456404] [rcl]: 'localhost_only' is enabled, 'automatic_discovery_range' and 'static_peers' will be ignored.
+stdin is not a terminal device. Keyboard handling disabled.[INFO] [1795620478.542992029] [rosbag2_recorder]: Press SPACE for pausing/resuming
+[INFO] [1795620478.543032871] [rosbag2_recorder]: Event publisher thread: Started
+[INFO] [1795620478.552302550] [rosbag2_recorder]: Starting recording to 'docs/perf/logs/drive_bag_r3b'
+[INFO] [1795620478.555097895] [rosbag2_storage]: Opened database 'docs/perf/logs/drive_bag_r3b/drive_bag_r3b_0.db3' for READ_WRITE.
+[INFO] [1795620478.556101150] [rosbag2_recorder]: Listening for topics...
+[INFO] [1795620478.556181958] [rosbag2_recorder]: Recording...
+[INFO] [1795620478.556296900] [rosbag2_recorder]: Topics discovery started.
+[INFO] [1795620479.391567248] [rosbag2_recorder]: Subscribed to topic '/detections'
+[INFO] [1795620481.544883641] [rosbag2_recorder]: Subscribed to topic '/clock'
+[INFO] [1795620481.554748160] [rosbag2_recorder]: Subscribed to topic '/arm_camera/image_raw'
+[INFO] [1795620481.565968343] [rosbag2_recorder]: Subscribed to topic '/cmd_vel'
+[INFO] [1795620481.580307107] [rosbag2_recorder]: Subscribed to topic '/odom'
+[INFO] [1795620481.580523570] [rosbag2_recorder]: All requested topics are subscribed. Stopping discovery...
+[INFO] [1795620481.580598253] [rosbag2_recorder]: Topics discovery stopped.
+[INFO] [1795620567.780208070] [rosbag2_recorder]: Pausing recording.
+[INFO] [1795620567.781713452] [rosbag2_cpp]: Writing remaining messages from cache to the bag. It may take a while
+[INFO] [1795620567.803871615] [rosbag2_recorder]: Recording stopped
+[INFO] [1795620567.816977654] [rosbag2_recorder]: Event publisher thread: Exited

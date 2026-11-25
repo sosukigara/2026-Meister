@@ -45,7 +45,8 @@ def main(argv=None):
                         help="ゴール間の待ち時間 [s]")
     args = parser.parse_args(argv)
     base = args.base.rstrip("/")
-    goals = GOALS
+    # 既定 GOALS は 2 要素、--goals ファイルは 2 または 3 要素なのでここで揃える。
+    goals = [(goal[0], goal[1], 0.0) for goal in GOALS]
     if args.goals:
         with open(args.goals, encoding="utf-8") as handle:
             loaded = json.load(handle)

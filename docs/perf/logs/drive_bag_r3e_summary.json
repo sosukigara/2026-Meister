@@ -1,0 +1,48 @@
+{
+  "bag": "/home/so/Meistar/.worktrees/stable-drive-accurate-vision/docs/perf/logs/drive_bag_r3e",
+  "span_s": 93.789,
+  "messages": {
+    "/detections": 3038,
+    "/clock": 8415,
+    "/odom": 4207,
+    "/arm_camera/image_raw": 3005,
+    "/cmd_vel": 2984
+  },
+  "image_hz": 32.04,
+  "detections_hz": 32.392,
+  "nonempty_detections": 0,
+  "nonempty_ratio": 0.0,
+  "detection_gaps_gt_200ms": [
+    0.203,
+    0.382
+  ],
+  "labels": {},
+  "bbox_center_stats": {},
+  "cmd_vel": {
+    "hz": 31.816,
+    "linear_jumps_gt_0.3": 0,
+    "angular_jumps_gt_0.5": 0,
+    "max_abs_dlinear": 0.005,
+    "max_abs_dangular": 0.0
+  },
+  "rtf_20s_windows": [
+    0.893,
+    0.91,
+    0.902,
+    0.902
+  ],
+  "rtf_median": 0.902,
+  "visibility": {
+    "reference": "/home/so/Meistar/.worktrees/stable-drive-accurate-vision/docs/perf/bus.jpg",
+    "hist_threshold": 0.7,
+    "sampled_frames": 601,
+    "visible_frames": 0,
+    "detections_in_view": 0,
+    "nonempty_in_view": 0,
+    "continuity_in_view": null,
+    "detections_out_of_view": 3014,
+    "nonempty_out_of_view": 0,
+    "false_positive_out_of_view": 0.0
+  },
+  "odom_path_m": 0.214
+}

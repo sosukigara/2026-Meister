@@ -79,6 +79,40 @@ def test_shared_vision_node_disables_detection_gate():
     assert parameters["image_topic"] == "/arm_camera/image_raw"
 
 
+def test_default_goals_are_normalized(monkeypatch, tmp_path):
+    """既定の 2 要素 GOALS でも 3 要素として展開され走行できる。"""
+    script = load(PKG / "scripts" / "stability_test.py", "stability_default")
+
+    class Response:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return json.dumps(self.payload).encode()
+
+    def fake_urlopen(request, timeout=5):
+        endpoint = str(getattr(request, "full_url", request)).rsplit("/", 1)[-1]
+        if endpoint == "status":
+            return Response({"state": "succeeded"})
+        if endpoint == "pose":
+            return Response({"has_pose": True, "x": 0.0, "y": 0.0})
+        return Response({"ok": True})
+
+    monkeypatch.setattr(script.urllib.request, "urlopen", fake_urlopen)
+    monkeypatch.setattr(script.time, "sleep", lambda seconds: None)
+    out = tmp_path / "stability.json"
+    code = script.main(["--base", "http://127.0.0.1:1", "--out", str(out),
+                        "--timeout", "0.1", "--post-delay", "0"])
+    assert code == 0
+    assert len(json.loads(out.read_text(encoding="utf-8"))) == len(script.GOALS)
+
+
 def test_stability_test_writes_custom_output(monkeypatch, tmp_path):
     script = load(PKG / "scripts" / "stability_test.py", "stability_script")
 
