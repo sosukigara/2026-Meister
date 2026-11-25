@@ -40,6 +40,18 @@ TEST(BgrFromImageMsg, SwapsRgb8ToBgr) {
   EXPECT_EQ(got.at<cv::Vec3b>(0, 0), cv::Vec3b(3, 2, 1));
 }
 
+TEST(BgrFromImageMsg, DecodesGzRgb8WithRowPadding) {
+  // gz bridge の画像は rgb8。step にパディングが入っても色が入れ替わるだけに留める。
+  const cv::Mat got = BgrFromImageMsg(MakeImage(
+      "rgb8", 2, 2, 8, {1, 2, 3, 4, 5, 6, 9, 9, 7, 8, 9, 10, 11, 12, 9, 9}));
+  ASSERT_EQ(got.rows, 2);
+  ASSERT_EQ(got.cols, 2);
+  EXPECT_EQ(got.at<cv::Vec3b>(0, 0), cv::Vec3b(3, 2, 1));
+  EXPECT_EQ(got.at<cv::Vec3b>(0, 1), cv::Vec3b(6, 5, 4));
+  EXPECT_EQ(got.at<cv::Vec3b>(1, 0), cv::Vec3b(9, 8, 7));
+  EXPECT_EQ(got.at<cv::Vec3b>(1, 1), cv::Vec3b(12, 11, 10));
+}
+
 TEST(BgrFromImageMsg, ExpandsMono8ToThreeChannels) {
   const cv::Mat got = BgrFromImageMsg(MakeImage("mono8", 2, 1, 2, {10, 20}));
   ASSERT_EQ(got.type(), CV_8UC3);

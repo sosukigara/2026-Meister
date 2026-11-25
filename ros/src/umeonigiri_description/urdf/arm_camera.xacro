@@ -1,0 +1,112 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- 手先カメラを載せるアームは、実機の 4 軸アームを模した固定姿勢のリンク列。
+       関節は未実装 (ROS 側のアーム制御は無い) ので gz でも固定のまま。 -->
+  <xacro:arg name="arm_camera_rate" default=""/>
+  <xacro:arg name="arm_camera_width" default=""/>
+  <xacro:arg name="arm_camera_height" default=""/>
+  <xacro:property name="arm_rate" value="${40 if '$(arg arm_camera_rate)' == '' else int('$(arg arm_camera_rate)')}"/>
+  <xacro:property name="arm_width" value="${320 if '$(arg arm_camera_width)' == '' else int('$(arg arm_camera_width)')}"/>
+  <xacro:property name="arm_height" value="${240 if '$(arg arm_camera_height)' == '' else int('$(arg arm_camera_height)')}"/>
+
+  <link name="arm_base_link">
+    <visual>
+      <geometry><box size="0.08 0.08 0.06"/></geometry>
+      <material name="carbon_grey"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.08 0.08 0.06"/></geometry>
+    </collision>
+  </link>
+  <joint name="arm_base_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="arm_base_link"/>
+    <origin xyz="0.20 0 0.10" rpy="0 0 0"/>
+  </joint>
+
+  <link name="arm_upper_link">
+    <visual>
+      <geometry><box size="0.05 0.05 0.14"/></geometry>
+      <material name="carbon_grey"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.05 0.05 0.14"/></geometry>
+    </collision>
+  </link>
+  <joint name="arm_upper_joint" type="fixed">
+    <parent link="arm_base_link"/>
+    <child link="arm_upper_link"/>
+    <origin xyz="0 0 0.10" rpy="0 0 0"/>
+  </joint>
+
+  <link name="arm_forearm_link">
+    <visual>
+      <geometry><box size="0.14 0.04 0.04"/></geometry>
+      <material name="carbon_grey"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.14 0.04 0.04"/></geometry>
+    </collision>
+  </link>
+  <joint name="arm_forearm_joint" type="fixed">
+    <parent link="arm_upper_link"/>
+    <child link="arm_forearm_link"/>
+    <origin xyz="0.07 0 0.05" rpy="0 0 0"/>
+  </joint>
+
+  <link name="arm_end_effector_link">
+    <visual>
+      <geometry><box size="0.04 0.06 0.04"/></geometry>
+      <material name="neon_blue"/>
+    </visual>
+    <collision>
+      <geometry><box size="0.04 0.06 0.04"/></geometry>
+    </collision>
+  </link>
+  <joint name="arm_end_effector_joint" type="fixed">
+    <parent link="arm_forearm_link"/>
+    <child link="arm_end_effector_link"/>
+    <origin xyz="0.09 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <link name="arm_camera_link">
+    <visual>
+      <geometry><box size="0.03 0.03 0.02"/></geometry>
+      <material name="silver"><color rgba="0.75 0.75 0.75 1"/></material>
+    </visual>
+    <collision>
+      <geometry><box size="0.03 0.03 0.02"/></geometry>
+    </collision>
+  </link>
+  <joint name="arm_camera_joint" type="fixed">
+    <parent link="arm_end_effector_link"/>
+    <child link="arm_camera_link"/>
+    <!-- +X 前方、ピッチ -20deg で卓上/床の物体を見下ろす。 -->
+    <origin xyz="0.03 0 -0.01" rpy="0 -0.349 0"/>
+  </joint>
+
+  <!-- 320x240 で十分に 30 fps を狙う。update_rate はシミュレーション時刻基准なので
+       RTF<1 のときは実時間レートが下がる。実測は docs/perf に記録する。 -->
+  <gazebo reference="arm_camera_link">
+    <sensor name="arm_camera" type="camera">
+      <topic>/arm_camera_image</topic>
+      <update_rate>${arm_rate}</update_rate>
+      <always_on>1</always_on>
+      <visualize>false</visualize>
+      <camera>
+        <horizontal_fov>1.047</horizontal_fov>
+        <image>
+          <width>${arm_width}</width>
+          <height>${arm_height}</height>
+          <format>R8G8B8</format>
+        </image>
+        <clip>
+          <near>0.03</near>
+          <far>10.0</far>
+        </clip>
+      </camera>
+    </sensor>
+  </gazebo>
+
+</robot>
