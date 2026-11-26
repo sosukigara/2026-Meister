@@ -70,7 +70,7 @@ class VisionCache {
   int height_ = 0;
   std::string frame_id_;
   Clock::time_point frame_at_{};
-  /// fps は直近の到達間隔だけで見る。起動直後の 1 フレーム目を 0 と出したいので
+  /// fps は直近 2 秒の到達時刻で見る。起動直後の 1 フレーム目を 0 と出したいので
   /// レートの移動平均は持たない。
   std::deque<Clock::time_point> arrivals_;
 

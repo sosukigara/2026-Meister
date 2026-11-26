@@ -44,13 +44,15 @@ void VisionListener::ApplyEnabled() {
     return;
   }
   if (want) {
-    // best_effort + depth 1: 表示に要るのは最新フレームだけ。取りこぼしを溜めると
-    // 遅い描画に古い絵が混ざる。
+    // best_effort + depth 1: 表示に要るのは最新フレームだけ。921KB 画像を
+    // reliable にすると ACK 待ちで publisher 側が止まる (実測で 9Hz / 24s stale)。
+    const rclcpp::QoS image_qos = rclcpp::SensorDataQoS();
     image_sub_ = create_subscription<sensor_msgs::msg::Image>(
-        kImageTopic, rclcpp::SensorDataQoS(),
+        kImageTopic, image_qos,
         [this](sensor_msgs::msg::Image::ConstSharedPtr msg) { cache_.SetFrame(*msg); });
+    const rclcpp::QoS detection_qos = rclcpp::SensorDataQoS();
     detections_sub_ = create_subscription<vision_msgs::msg::Detection2DArray>(
-        kDetectionsTopic, rclcpp::SensorDataQoS(),
+        kDetectionsTopic, detection_qos,
         [this](vision_msgs::msg::Detection2DArray::ConstSharedPtr msg) {
           cache_.SetDetections(*msg);
         });

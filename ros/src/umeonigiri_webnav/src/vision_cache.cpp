@@ -2,6 +2,7 @@
 #include "umeonigiri_webnav/vision_cache.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <utility>
@@ -13,8 +14,9 @@
 namespace umeonigiri_webnav {
 namespace {
 
-/// fps を数える窓。3 Hz なら 20 フレームで約 7 秒分。
-constexpr std::size_t kFpsWindow = 20;
+/// fps は「枚数」ではなく「時間」で窓を切る。枚数窓だと配信が止まったときに
+/// 古いサンプルが残り、表示が実際より高く出たり揺れたりする。
+constexpr double kFpsWindowSeconds = 2.0;
 
 /// 1 応答に載せる検出の上限。壊れた detector が数千件を返しても UI と JSON が
 /// 破綻しないようにする。
@@ -105,7 +107,10 @@ bool VisionCache::SetFrame(const sensor_msgs::msg::Image& msg) {
   has_frame_ = true;
   ++seq_;
   arrivals_.push_back(now);
-  while (arrivals_.size() > kFpsWindow) {
+  const Clock::time_point cutoff =
+      now - std::chrono::duration_cast<Clock::duration>(
+                std::chrono::duration<double>(kFpsWindowSeconds));
+  while (arrivals_.size() > 1 && arrivals_.front() < cutoff) {
     arrivals_.pop_front();
   }
   frame_cv_.notify_all();

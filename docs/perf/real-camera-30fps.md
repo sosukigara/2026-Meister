@@ -83,3 +83,30 @@ before / after（同じ `ros2 topic hz /detections`）:
   ここで使ったのは汎用 PC カメラである。
 - 30Hz 配信がアーム制御側で問題ないか（重複フレームの扱い）は ✗ Unverified。
 - INT8 量子化の score 0.5 張り付きは従来どおり残る。
+
+## 25Hz 固定と Web UI レートの安定化（2026-11-26 夜）
+
+要求が「30Hz に見せかける」ではなく「実カメラの 25Hz に張り付ける」に
+変わったため、既定を 25Hz に戻した。あわせて Web UI の表示レートが
+5〜20Hz で揺れていた問題を C++ 側で直した。
+
+| 変更 | 根拠 |
+|---|---|
+| `output_fps` 既定を 25.0 に（`pc_vision.launch.py` / `real_robot.launch.py`） | 実入力が 25 枚/秒。フレーム再利用による疑似 30Hz をやめる |
+| 表示用画像を `annotated_width=320`（既定 320、0 で元解像度）に縮小 | 640x480 の 921KB を best_effort で流すと DDS のフラグメントロスで Web UI の購読が 200〜1500ms 止まった。実測でエンコード自体は 2〜6ms しかかからず、ボトルネックは転送 |
+| `VisionCache` の fps 窓を「直近 20 枚」から「直近 2 秒」に変更 | 枚数窓では到達が止まったとき古いサンプルが残り、表示が揺れる |
+| Web UI Subscriber の QoS は best_effort を維持 | reliable に変更すると 921KB 画像の ACK 待ちで publisher が止まり 9Hz / 24 秒 stale に悪化（実測）。revert 済み |
+
+最終実測（20 秒、ブラウザの認識モニターを開いた状態）:
+
+| 項目 | 値 |
+|---|---|
+| `/detections` | **24.731 Hz**（max 間隔 42ms） |
+| `/detection_image` | **24.730 Hz**（max 間隔 44ms） |
+| Web UI `/api/vision` の fps | **24.6〜24.8**（20 回連続、frame_age 43ms 以下） |
+| 表示解像度 | 320x240 |
+| ビルド / テスト | 成功、233 tests 0 failures |
+
+一時的に入れたエンコード時間ログは最終コードから削除済み。
+`annotated_width=0` にすれば元の 640x480 に戻るが、その場合は上記の
+DDS フラグメントロスが再発する（トレードオフを明示）。

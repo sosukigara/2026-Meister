@@ -72,10 +72,13 @@ def generate_launch_description():
             "display_fps", default_value="15.0",
             description="npu 時の配信レート上限 [Hz]"),
         DeclareLaunchArgument(
-            "output_fps", default_value="30.0",
+            "output_fps", default_value="25.0",
             description="npu の /detections 固定配信レート [Hz]。0 はカメラ同期。"
-                        "この機体の USB カメラは実入力 25 枚/秒なので "
-                        "30Hz 出力では 5 回/秒 最新フレームを再利用する"),
+                        "この機体の USB カメラは実入力 25 枚/秒なので既定を 25 に固定する"),
+        DeclareLaunchArgument(
+            "annotated_width", default_value="320",
+            description="表示用画像の幅 [px]。0 で元解像度。640 のまま流すと "
+                        "DDS のフラグメントロスで Web UI のレートが揺れる"),
 
         Node(
             package="umeonigiri_vision",
@@ -102,6 +105,7 @@ def generate_launch_description():
                 "iou": LaunchConfiguration("iou_threshold"),
                 "display_fps": LaunchConfiguration("display_fps"),
                 "output_fps": LaunchConfiguration("output_fps"),
+                "annotated_width": LaunchConfiguration("annotated_width"),
             }],
             condition=on_npu,
         ),
