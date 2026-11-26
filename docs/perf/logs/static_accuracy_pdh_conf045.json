@@ -1,0 +1,97 @@
+{
+  "definition": "Known-object regression on a hand-labelled still image, NOT COCO mAP",
+  "model": "/home/so/Meistar/ros/src/umeonigiri_vision/models/yolov8n-zoo.rknn",
+  "model_output_used_as_ground_truth": false,
+  "image": "/home/so/Meistar/.worktrees/accurate-25hz-cpu40/docs/perf/person_dog_horse.jpg",
+  "image_size": [
+    640,
+    424
+  ],
+  "input_size": 640,
+  "conf": 0.45,
+  "iou_nms": 0.45,
+  "iou_match": 0.5,
+  "evaluation": {
+    "ground_truth_count": 3,
+    "prediction_count": 3,
+    "matched_count": 3,
+    "class_correct_count": 3,
+    "class_accuracy": 1.0,
+    "mean_iou_matched": 0.9449,
+    "false_positive_count": 0,
+    "pairs": [
+      {
+        "gt_class": "person",
+        "gt_box": {
+          "x0": 190,
+          "y0": 98,
+          "x1": 275,
+          "y1": 375
+        },
+        "iou": 0.937,
+        "pred_class": "person",
+        "pred_score": 0.5,
+        "matched": true,
+        "class_ok": true
+      },
+      {
+        "gt_class": "dog",
+        "gt_box": {
+          "x0": 68,
+          "y0": 262,
+          "x1": 205,
+          "y1": 347
+        },
+        "iou": 0.9455,
+        "pred_class": "dog",
+        "pred_score": 0.5,
+        "matched": true,
+        "class_ok": true
+      },
+      {
+        "gt_class": "horse",
+        "gt_box": {
+          "x0": 405,
+          "y0": 140,
+          "x1": 600,
+          "y1": 342
+        },
+        "iou": 0.9522,
+        "pred_class": "horse",
+        "pred_score": 0.5,
+        "matched": true,
+        "class_ok": true
+      }
+    ],
+    "false_positives": []
+  },
+  "predictions": [
+    {
+      "x0": 64.20364342812536,
+      "y0": 262.6625207701941,
+      "x1": 205.837507374119,
+      "y1": 345.68231889399885,
+      "score": 0.5,
+      "class_id": 16,
+      "label": "dog"
+    },
+    {
+      "x0": 190.19447681351812,
+      "y0": 99.7335465017095,
+      "x1": 279.6740953061726,
+      "y1": 375.9108381299884,
+      "score": 0.5,
+      "class_id": 0,
+      "label": "person"
+    },
+    {
+      "x0": 406.60654144718137,
+      "y0": 138.36782859340747,
+      "x1": 601.6177693281497,
+      "y1": 347.0838114419166,
+      "score": 0.5,
+      "class_id": 17,
+      "label": "horse"
+    }
+  ]
+}
