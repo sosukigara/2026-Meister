@@ -71,6 +71,11 @@ def generate_launch_description():
         DeclareLaunchArgument(
             "display_fps", default_value="15.0",
             description="npu 時の配信レート上限 [Hz]"),
+        DeclareLaunchArgument(
+            "output_fps", default_value="30.0",
+            description="npu の /detections 固定配信レート [Hz]。0 はカメラ同期。"
+                        "この機体の USB カメラは実入力 25 枚/秒なので "
+                        "30Hz 出力では 5 回/秒 最新フレームを再利用する"),
 
         Node(
             package="umeonigiri_vision",
@@ -96,6 +101,7 @@ def generate_launch_description():
                 "conf": LaunchConfiguration("conf_threshold"),
                 "iou": LaunchConfiguration("iou_threshold"),
                 "display_fps": LaunchConfiguration("display_fps"),
+                "output_fps": LaunchConfiguration("output_fps"),
             }],
             condition=on_npu,
         ),

@@ -39,6 +39,9 @@ def generate_launch_description():
     vision_threads_arg = DeclareLaunchArgument(
         'vision_threads', default_value='4',
         description='ONNX inference threads (320x2 reaches 10Hz on RK3588)')
+    vision_output_fps_arg = DeclareLaunchArgument(
+        'vision_output_fps', default_value='30.0',
+        description='NPU 検出の固定配信レート [Hz]。0 はカメラ同期')
 
     serial_port = LaunchConfiguration('serial_port')
     serial_baud = LaunchConfiguration('serial_baud')
@@ -210,6 +213,7 @@ def generate_launch_description():
             'backend': LaunchConfiguration('vision_backend'),
             'model_path': LaunchConfiguration('vision_model'),
             'inference_threads': LaunchConfiguration('vision_threads'),
+            'output_fps': LaunchConfiguration('vision_output_fps'),
         }.items()
     )
 
@@ -220,6 +224,7 @@ def generate_launch_description():
         vision_model_arg,
         vision_backend_arg,
         vision_threads_arg,
+        vision_output_fps_arg,
         LogInfo(msg='=== Starting Real Robot Navigation (use_sim_time: False) ==='),
         LogInfo(msg='Make sure your hardware (LD-D500 LiDAR, ESP32) is connected!'),
 

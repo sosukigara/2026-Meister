@@ -110,10 +110,12 @@ public:
     const rclcpp::Node::SharedPtr & node, const std::string & model, const std::string & device,
     float conf, float iou, const std::string & labels_csv, double display_fps,
     const std::string & image_topic, bool topic_input, double detection_fps,
-    const std::string & frame_id)
+    const std::string & frame_id, double output_fps)
   : node_(node), device_(device), conf_(conf), iou_(iou), topic_input_(topic_input),
     frame_id_(frame_id), display_period_(display_fps > 0.0 ? 1.0 / display_fps : 0.0),
-    detector_(model), labels_(LoadLabels(labels_csv)), publish_gate_(detection_fps)
+    output_period_(output_fps > 0.0 ? 1.0 / output_fps : 0.0),
+    detector_(model), labels_(LoadLabels(labels_csv)), publish_gate_(detection_fps),
+    output_gate_(output_fps)
   {
     if (!detector_.ok()) {
       throw std::runtime_error("RKNN モデルを読めません: " + model);
@@ -144,8 +146,11 @@ public:
     if (!capture_.isOpened()) {
       throw std::runtime_error("カメラを開けません: " + device);
     }
-    RCLCPP_INFO(node_->get_logger(), "NPU 検出を開始: 入力 %d, ラベル %zu 件", detector_.input_size(),
-      labels_.size());
+    RCLCPP_INFO(node_->get_logger(),
+      "NPU 検出を開始: 入力 %d, カメラ %dx%d, 出力 %.1fHz%s, ラベル %zu 件",
+      detector_.input_size(), kCaptureWidth, kCaptureHeight,
+      output_period_ > 0.0 ? 1.0 / output_period_ : 0.0,
+      output_period_ > 0.0 ? " 固定" : " (カメラ同期)", labels_.size());
   }
 
   /// 静止画像 1 枚だけで推論して配信し、終了する（動作確認用）。
@@ -177,6 +182,12 @@ public:
   void Run()
   {
     std::thread infer([this] {InferLoop();});
+    // 実カメラが 25fps しか出せない機体では、検出結果を 30Hz で配信するため
+    // 取得と配信を分離する。最新フレームを再利用するので実画像は 25 枚/秒。
+    std::thread publish;
+    if (!topic_input_ && output_period_ > 0.0) {
+      publish = std::thread([this] {PublishLoop();});
+    }
     if (topic_input_) {
       // 購読コールバックは executor を回さないと届かない。推論スレッドは別に動く。
       rclcpp::executors::SingleThreadedExecutor executor;
@@ -187,10 +198,41 @@ public:
     }
     stop_ = true;
     cond_.notify_all();
+    if (publish.joinable()) {
+      publish.join();
+    }
     if (infer.joinable()) {
       infer.join();
     }
     capture_.release();
+  }
+
+  /// 固定周期で最新フレームを配信する。推論は InferLoop が別スレッドで回す。
+  void PublishLoop()
+  {
+    {
+      std::unique_lock<std::mutex> lock(mutex_);
+      cond_.wait(lock, [this] {return !latest_.empty() || stop_;});
+    }
+    while (!stop_) {
+      std::this_thread::sleep_for(std::chrono::milliseconds(1));
+      const auto now = std::chrono::steady_clock::now();
+      const double seconds =
+        std::chrono::duration<double>(now.time_since_epoch()).count();
+      if (!output_gate_.Ready(seconds)) {
+        continue;
+      }
+      cv::Mat frame;
+      {
+        std::lock_guard<std::mutex> lock(mutex_);
+        // has_frame_ は推論側が消費するので、配信側は latest_ の有無だけ見る。
+        if (latest_.empty()) {
+          continue;
+        }
+        frame = latest_.clone();
+      }
+      ComposeAndPublish(frame);
+    }
   }
 
   /// gz bridge が出す rgb8 を BGR に直して最新フレームとして差し替える。
@@ -252,6 +294,11 @@ private:
         has_frame_ = true;
       }
       cond_.notify_one();
+
+      if (output_period_ > 0.0) {
+        // 配信は PublishLoop が固定周期で担う。カメラは読み続けるだけ。
+        continue;
+      }
 
       const auto now = std::chrono::steady_clock::now();
       const double since_publish =
@@ -373,8 +420,12 @@ private:
   void ComposeAndPublish(const cv::Mat & frame)
   {
     const auto stamp = node_->now();
-    const cv::Mat canvas = Compose(frame);
-    Publish(canvas, stamp);
+    // 640x480 の描画と画像コピーは detections より重い。見る人がいなければ作らない。
+    if (pub_annotated_->get_subscription_count() > 0 ||
+        pub_grasp_->get_subscription_count() > 0) {
+      const cv::Mat canvas = Compose(frame);
+      Publish(canvas, stamp);
+    }
     std::vector<YoloBox> boxes;
     {
       std::lock_guard<std::mutex> lock(mutex_);
@@ -460,9 +511,11 @@ private:
   bool topic_input_;
   std::string frame_id_;
   double display_period_;
+  double output_period_;
   RknnYolo detector_;
   std::vector<std::string> labels_;
   PublishRateGate publish_gate_;
+  PublishRateGate output_gate_;
   BoxCenterFilter center_filter_;
   std::mutex filter_mutex_;
 
@@ -505,12 +558,13 @@ int main(int argc, char ** argv)
   const std::string image_topic = node->declare_parameter<std::string>("image_topic", "");
   const bool topic_input = node->declare_parameter<bool>("use_topic_input", false);
   const std::string frame_id = node->declare_parameter<std::string>("frame_id", "camera_link");
+  const double output_fps = node->declare_parameter<double>("output_fps", 0.0);
   // ここで shutdown すると、この後のノード生成が無効なコンテキストで失敗する。
 
   try {
     auto grasp = std::make_shared<umeonigiri_vision::YoloGraspNode>(
       node, model, device, static_cast<float>(conf), static_cast<float>(iou), labels, display_fps,
-      image_topic, topic_input, detection_fps, frame_id);
+      image_topic, topic_input, detection_fps, frame_id, output_fps);
     if (image.empty()) {
       grasp->Run();
     } else {
