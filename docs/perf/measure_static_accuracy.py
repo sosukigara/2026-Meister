@@ -28,6 +28,7 @@ import numpy as np
 # [class, x0, y0, x1, y1] in source-image pixels.
 GROUND_TRUTH = {
     "bus.jpg": [
+        ["person", 0, 550, 74, 874],
         ["person", 49, 397, 244, 904],
         ["person", 222, 405, 352, 857],
         ["person", 669, 382, 810, 882],

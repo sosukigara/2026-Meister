@@ -17,6 +17,15 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
+def default_rknn_model(share):
+    """検出数が多い yolov8s を優先し、無ければ従来の n を使う。"""
+    for name in ("yolov8s-zoo.rknn", "yolov8n-zoo.rknn"):
+        path = os.path.join(share, "models", name)
+        if os.path.isfile(path):
+            return path
+    return os.path.join(share, "models", "yolov8s-zoo.rknn")
+
+
 def generate_launch_description():
     share = get_package_share_directory("umeonigiri_vision")
     labels = os.path.join(share, "config", "coco_labels.txt")
@@ -66,8 +75,8 @@ def generate_launch_description():
             description="推論の実行先。npu=RKNN(この機体のNPU)、onnx=ONNX Runtime(CPU)"),
         DeclareLaunchArgument(
             "rknn_model",
-            default_value=os.path.join(share, "models", "yolov8n-zoo.rknn"),
-            description="RKNN モデルのパス（tools/rknn の手順で生成する）"),
+            default_value=default_rknn_model(share),
+            description="RKNN モデルのパス（既定は yolov8s、無ければ yolov8n）"),
         DeclareLaunchArgument(
             "display_fps", default_value="15.0",
             description="npu 時の配信レート上限 [Hz]"),
