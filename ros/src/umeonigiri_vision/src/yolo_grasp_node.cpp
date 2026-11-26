@@ -110,10 +110,11 @@ public:
     const rclcpp::Node::SharedPtr & node, const std::string & model, const std::string & device,
     float conf, float iou, const std::string & labels_csv, double display_fps,
     const std::string & image_topic, bool topic_input, double detection_fps,
-    const std::string & frame_id, double output_fps)
+    const std::string & frame_id, double output_fps, int annotated_width)
   : node_(node), device_(device), conf_(conf), iou_(iou), topic_input_(topic_input),
     frame_id_(frame_id), display_period_(display_fps > 0.0 ? 1.0 / display_fps : 0.0),
     output_period_(output_fps > 0.0 ? 1.0 / output_fps : 0.0),
+    annotated_width_(annotated_width),
     detector_(model), labels_(LoadLabels(labels_csv)), publish_gate_(detection_fps),
     output_gate_(output_fps)
   {
@@ -454,16 +455,24 @@ private:
 
   void Publish(const cv::Mat & canvas, const rclcpp::Time & stamp)
   {
+    cv::Mat out = canvas;
+    // 921KB の 640x480 を best_effort で流すと DDS のフラグメントが落ち、
+    // Web UI の表示 fps が 5〜20 で揺れた (実測)。表示用は縮小して送る。
+    if (annotated_width_ > 0 && canvas.cols > annotated_width_) {
+      const double scale = static_cast<double>(annotated_width_) / canvas.cols;
+      cv::resize(canvas, out,
+        cv::Size(annotated_width_, std::max(1, static_cast<int>(canvas.rows * scale))));
+    }
     auto message = std::make_unique<sensor_msgs::msg::Image>();
     message->header.stamp = stamp;
     message->header.frame_id = frame_id_;
-    message->height = static_cast<uint32_t>(canvas.rows);
-    message->width = static_cast<uint32_t>(canvas.cols);
+    message->height = static_cast<uint32_t>(out.rows);
+    message->width = static_cast<uint32_t>(out.cols);
     message->encoding = "bgr8";
     message->is_bigendian = 0;
-    message->step = static_cast<uint32_t>(canvas.cols * 3);
+    message->step = static_cast<uint32_t>(out.cols * 3);
     message->data.resize(static_cast<size_t>(message->step) * message->height);
-    std::memcpy(message->data.data(), canvas.data, message->data.size());
+    std::memcpy(message->data.data(), out.data, message->data.size());
     pub_grasp_->publish(*message);
     pub_annotated_->publish(std::move(message));
   }
@@ -512,6 +521,7 @@ private:
   std::string frame_id_;
   double display_period_;
   double output_period_;
+  int annotated_width_;
   RknnYolo detector_;
   std::vector<std::string> labels_;
   PublishRateGate publish_gate_;
@@ -559,12 +569,13 @@ int main(int argc, char ** argv)
   const bool topic_input = node->declare_parameter<bool>("use_topic_input", false);
   const std::string frame_id = node->declare_parameter<std::string>("frame_id", "camera_link");
   const double output_fps = node->declare_parameter<double>("output_fps", 0.0);
+  const int annotated_width = node->declare_parameter<int>("annotated_width", 0);
   // ここで shutdown すると、この後のノード生成が無効なコンテキストで失敗する。
 
   try {
     auto grasp = std::make_shared<umeonigiri_vision::YoloGraspNode>(
       node, model, device, static_cast<float>(conf), static_cast<float>(iou), labels, display_fps,
-      image_topic, topic_input, detection_fps, frame_id, output_fps);
+      image_topic, topic_input, detection_fps, frame_id, output_fps, annotated_width);
     if (image.empty()) {
       grasp->Run();
     } else {
