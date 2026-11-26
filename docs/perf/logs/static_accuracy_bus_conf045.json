@@ -1,0 +1,120 @@
+{
+  "definition": "Known-object regression on a hand-labelled still image, NOT COCO mAP",
+  "model": "/home/so/Meistar/ros/src/umeonigiri_vision/models/yolov8n-zoo.rknn",
+  "model_output_used_as_ground_truth": false,
+  "image": "/home/so/Meistar/.worktrees/accurate-25hz-cpu40/docs/perf/bus.jpg",
+  "image_size": [
+    810,
+    1080
+  ],
+  "input_size": 640,
+  "conf": 0.45,
+  "iou_nms": 0.45,
+  "iou_match": 0.5,
+  "evaluation": {
+    "ground_truth_count": 4,
+    "prediction_count": 4,
+    "matched_count": 4,
+    "class_correct_count": 4,
+    "class_accuracy": 1.0,
+    "mean_iou_matched": 0.9177,
+    "false_positive_count": 0,
+    "pairs": [
+      {
+        "gt_class": "person",
+        "gt_box": {
+          "x0": 49,
+          "y0": 397,
+          "x1": 244,
+          "y1": 904
+        },
+        "iou": 0.8547,
+        "pred_class": "person",
+        "pred_score": 0.5,
+        "matched": true,
+        "class_ok": true
+      },
+      {
+        "gt_class": "person",
+        "gt_box": {
+          "x0": 222,
+          "y0": 405,
+          "x1": 352,
+          "y1": 857
+        },
+        "iou": 0.8999,
+        "pred_class": "person",
+        "pred_score": 0.5,
+        "matched": true,
+        "class_ok": true
+      },
+      {
+        "gt_class": "person",
+        "gt_box": {
+          "x0": 669,
+          "y0": 382,
+          "x1": 810,
+          "y1": 882
+        },
+        "iou": 0.9879,
+        "pred_class": "person",
+        "pred_score": 0.5,
+        "matched": true,
+        "class_ok": true
+      },
+      {
+        "gt_class": "bus",
+        "gt_box": {
+          "x0": 19,
+          "y0": 232,
+          "x1": 795,
+          "y1": 756
+        },
+        "iou": 0.9282,
+        "pred_class": "bus",
+        "pred_score": 0.5,
+        "matched": true,
+        "class_ok": true
+      }
+    ],
+    "false_positives": []
+  },
+  "predictions": [
+    {
+      "x0": 29.688970118157158,
+      "y0": 230.73030912180275,
+      "x1": 792.8090613679694,
+      "y1": 727.7643275658993,
+      "score": 0.5,
+      "class_id": 5,
+      "label": "bus"
+    },
+    {
+      "x0": 219.4145304518156,
+      "y0": 404.75951930795827,
+      "x1": 342.08904459283303,
+      "y1": 854.2481293212786,
+      "score": 0.5,
+      "class_id": 0,
+      "label": "person"
+    },
+    {
+      "x0": 52.9567944069222,
+      "y0": 398.6025519712787,
+      "x1": 220.33773018615602,
+      "y1": 904.6310766257211,
+      "score": 0.5,
+      "class_id": 0,
+      "label": "person"
+    },
+    {
+      "x0": 668.5681625314046,
+      "y0": 381.7472476798466,
+      "x1": 809,
+      "y1": 882.7419861320413,
+      "score": 0.5,
+      "class_id": 0,
+      "label": "person"
+    }
+  ]
+}

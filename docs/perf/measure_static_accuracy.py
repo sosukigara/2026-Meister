@@ -24,14 +24,19 @@ from pathlib import Path
 import cv2
 import numpy as np
 
-# Hand-labelled from the displayed bus.jpg (810x1080), NOT copied from detector
-# output.  [class, x0, y0, x1, y1] in source-image pixels.
+# Hand-labelled from the displayed images, NOT copied from detector output.
+# [class, x0, y0, x1, y1] in source-image pixels.
 GROUND_TRUTH = {
     "bus.jpg": [
         ["person", 49, 397, 244, 904],
         ["person", 222, 405, 352, 857],
         ["person", 669, 382, 810, 882],
         ["bus", 19, 232, 795, 756],
+    ],
+    "person_dog_horse.jpg": [
+        ["person", 190, 98, 275, 375],
+        ["dog", 68, 262, 205, 347],
+        ["horse", 405, 140, 600, 342],
     ],
 }
 PAD_VALUE = 114
@@ -170,6 +175,8 @@ def main():
     parser.add_argument("--model", required=True)
     parser.add_argument("--image", required=True)
     parser.add_argument("--labels", default="ros/src/umeonigiri_vision/config/coco_labels.txt")
+    parser.add_argument("--conf", type=float, default=CONF,
+                        help="detection confidence threshold")
     parser.add_argument("--out", default="/tmp/static_accuracy.json")
     args = parser.parse_args()
 
@@ -191,7 +198,7 @@ def main():
     if outputs is None:
         raise SystemExit("推論に失敗しました")
 
-    raw_boxes = decode(outputs, 640, CONF, IOU_NMS)
+    raw_boxes = decode(outputs, 640, args.conf, IOU_NMS)
     predictions = []
     for box in raw_boxes:
         source = to_source_coords(box, scale, pad_x, pad_y, image.shape)
@@ -209,7 +216,7 @@ def main():
         "model_output_used_as_ground_truth": False,
         "image": str(Path(args.image).resolve()),
         "image_size": [image.shape[1], image.shape[0]],
-        "input_size": 640, "conf": CONF, "iou_nms": IOU_NMS, "iou_match": IOU_MATCH,
+        "input_size": 640, "conf": args.conf, "iou_nms": IOU_NMS, "iou_match": IOU_MATCH,
         "evaluation": evaluate(predictions, gt, labels),
         "predictions": predictions,
     }
