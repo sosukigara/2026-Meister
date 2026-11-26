@@ -14,8 +14,10 @@ from launch_ros.actions import Node
 def arm_vision_node():
     """RKNN モデルが無い環境では落ちるノードを増やさず、取得方法だけ伝える。"""
     pkg_vision = get_package_share_directory("umeonigiri_vision")
-    model = os.path.join(pkg_vision, "models", "yolov8n-zoo.rknn")
-    if not os.path.isfile(model):
+    candidates = ("yolov8s-zoo.rknn", "yolov8n-zoo.rknn")
+    model = next((os.path.join(pkg_vision, "models", name) for name in candidates
+                  if os.path.isfile(os.path.join(pkg_vision, "models", name))), "")
+    if not model:
         return LogInfo(msg="[vision] RKNN モデルが無いため NPU 検出を起動しません。"
                            " tools/rknn/README.md の手順で生成してください。")
     return Node(
