@@ -46,8 +46,9 @@ def generate_launch_description():
             "image_topic", default_value="/camera/image_raw",
             description="検出ノードが購読する画像トピック名"),
         DeclareLaunchArgument(
-            "conf_threshold", default_value="0.45",
-            description="信頼度しきい値。誤検出が多いときは上げる"),
+            "conf_threshold", default_value="0.32",
+            description="信頼度しきい値。実カメラ 25Hz で非空検出を増やすため 0.32 "
+                        "(誤検出が多いときは上げる)"),
         DeclareLaunchArgument(
             "iou_threshold", default_value="0.45",
             description="NMS の IoU しきい値"),
