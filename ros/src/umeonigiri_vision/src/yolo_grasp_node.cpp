@@ -340,8 +340,13 @@ private:
         auto boxes = detector_.Detect(frame, conf_, iou_);
         std::vector<GraspTarget> grasps(boxes.size());
         std::vector<char> valid(boxes.size(), 0);
-        for (size_t i = 0; i < boxes.size(); ++i) {
-          valid[i] = ComputeGrasp(frame, boxes[i], grasps[i]) ? 1 : 0;
+        // 把持輪郭解析は検出 1 件ごとに OpenCV の二値化＋輪郭を回す。
+        // grasp_image を見る側が居なければ detections と枠には不要で、
+        // 実カメラで常時検出が出る構成では CPU を押し上げる。
+        if (pub_grasp_->get_subscription_count() > 0) {
+          for (size_t i = 0; i < boxes.size(); ++i) {
+            valid[i] = ComputeGrasp(frame, boxes[i], grasps[i]) ? 1 : 0;
+          }
         }
         {
           std::lock_guard<std::mutex> lock(mutex_);
@@ -473,7 +478,11 @@ private:
     message->step = static_cast<uint32_t>(out.cols * 3);
     message->data.resize(static_cast<size_t>(message->step) * message->height);
     std::memcpy(message->data.data(), out.data, message->data.size());
-    pub_grasp_->publish(*message);
+    // grasp_image を見る人がいなければ 1 コピーと 1 配信を省略する。
+    // アーム側が購読したときは従来どおり両方に出す。
+    if (pub_grasp_->get_subscription_count() > 0) {
+      pub_grasp_->publish(*message);
+    }
     pub_annotated_->publish(std::move(message));
   }
 
