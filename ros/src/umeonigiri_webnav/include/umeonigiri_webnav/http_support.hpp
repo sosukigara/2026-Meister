@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// HTTP 応答の共通部品。静的ファイル配信・ETag・JSON 送信をここ 1 箇所に置く。
-///
 /// http_app.cpp と vision_routes.cpp の両方が使う。片方に置いて他方から include
 /// すると、経路を足すたびに依存の向きが入れ替わる。
 #ifndef UMEONIGIRI_WEBNAV_HTTP_SUPPORT_HPP_

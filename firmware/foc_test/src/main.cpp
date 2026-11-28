@@ -1,50 +1,21 @@
-// Spin-test-only firmware: one LA8308 KV90 on M1, bounded safe envelope.
-// Bench use only. Production is firmware/foc_rover; this rig shares no code
-// with it on purpose.
-//
-// What it does: open-loop spin (O), explicit alignment (C), closed-loop
-// velocity (W) with a bounded current ceiling (L, default 1 A, max 5 A).
-// EVERY motion auto-stops after 10 s. Open-loop voltage is fixed at 0.3 V;
-// the closed-loop ceiling is 12 V so BEMF fits at 10 rps, and speed/current
-// stay inside the 12 V / 6 A envelope via the current loop plus OC trips.
-// Guards: O/C need a stopped motor, W retargets a running session, accel
-// ramp 30 rad/s^2, and supply sag + sensor loss stop a running test.
-//
-// Wiring (MKS ESP32 FOC V2.0, M1): motor 3-phase to M1 output, AS5600 to
-// SDA23/SCL5 (bus 1, 0x36, magnet diametral on the shaft end, 0.5-3 mm gap),
-// 12 V supply current-limited with a fuse in series (no reverse protection).
-// Keep the drum/wheel free: boot aligns the motor when a sensor is present.
-//
-// Envelope math (VENDOR R = 0.186 ohm line-to-line, KV90; measured 2026-11-09:
-//   driving one phase at 0.3 V drew 2.13 A, so the whole path is phase +
-//   phase/2 = 0.14 ohm and 0.186 is line-to-line, not per-phase). Open loop and
-//   align therefore draw ~2.1 A, not the 1.6 A the old per-phase reading gave;
-//   both stay under the 4 A open-loop trip and the 6 A bench envelope.
-//   Closed-loop current is fixed at 1.0 A; BEMF at 10 rps ~6.7 V fits in 12 V.
-
 #include <Arduino.h>
 
 #include <SimpleFOC.h>
 
 namespace cfg {
-// MKSREPO (makerbase-motor/MKS-ESP32FOC, branch MKS-ESP32-FOC-V2.0,
-// Test Code/3_dual_as5600_test.ino + 11_close_loop_velocity_example.ino)
 constexpr int kPwmA = 26, kPwmB = 27, kPwmC = 14, kGateEn = 12;
 constexpr float kSupplyV = 12.0f;
 constexpr float kShunt = 0.01f, kGain = 50.0f;
 constexpr int kCsA = 35, kCsB = 34;
 constexpr int kI2cBus = 1, kSda = 23, kScl = 5;
 constexpr int kI2cHz = 400000;
-// DATASHEET (Infineon AS5600 Fig 21-22): CONF high 0x07 bits[1:0] = SF.
 constexpr uint8_t kAs5600Addr = 0x36, kConfReg = 0x07, kConfFast = 0x03;
-// VENDOR (Eaglepower LA8308 KV90 reseller spec): 22 A / 900 W / 0.186 ohm.
 constexpr int kPolePairs = 20;  // 36N40P; count magnets (/2) to confirm.
 constexpr int kVinPin = 13;
 constexpr float kVinRatio = 8.5f, kVinGateV = 10.0f;  // reasoned pick, not measured.
-// USER bench envelope: 12 V / 6 A max.
 constexpr float kOpenV = 0.3f, kAlignV = 0.3f;  // fixed: 2.13 A measured on
                                                 // 2026-11-09 (path 0.14 ohm).
-constexpr float kCurLimA = 1.0f;   // default closed-loop ceiling; L raises it.
+constexpr float kCurLimA = 1.0f;
 // L hard cap. The board is rated 12 A total / 6 A per motor, and the 10 mohm shunt with
 // gain 50 puts ADC full scale at 6.6 A: 5 A is 83% of the motor rating and 76% of what the
 // sense path can still resolve. I2R at 5 A is ~3.5 W on the measured 0.14 ohm path, so the
@@ -68,13 +39,11 @@ constexpr float kAdcSatA = 6.47f;  // 0.98 * 6.6 A full scale: unmeasurable = fa
 // current sense unreadable; 10 ms is far shorter than any real overcurrent the
 // 6 A/200 ms trip would miss.
 constexpr uint32_t kAdcSatMs = 10;
-constexpr uint32_t kRunMs = 10000, kCoolMs = 10000;  // every motion stops itself.
-constexpr uint32_t kSpdMs = 500;  // #SPD telemetry while running.
-constexpr float kRampRps2 = 30.0f;  // velocity-loop accel cap: 0-62.8 rad/s in
-                                    // ~2.1 s. Reasoned pick for a free shaft;
-                                    // TODO(bench): raise if spin-up feels sluggish.
-constexpr uint32_t kHealthMs = 100;  // sensor/supply checks while running.
-constexpr float kVinRunV = 9.0f;  // sag gate while running (boot gate is 10 V).
+constexpr uint32_t kRunMs = 10000, kCoolMs = 10000;
+constexpr uint32_t kSpdMs = 500;
+constexpr float kRampRps2 = 30.0f;  // TODO(bench): raise if spin-up feels sluggish.
+constexpr uint32_t kHealthMs = 100;
+constexpr float kVinRunV = 9.0f;
 constexpr uint32_t kVinRunMs = 500;
 }  // namespace cfg
 
@@ -448,7 +417,7 @@ void setup() {
   motor.velocity_limit = cfg::kVelMaxRps * _2PI;
   motor.voltage_limit = cfg::kClVlimV;
   motor.voltage_sensor_align = cfg::kAlignV;
-  motor.PID_current_q.P = 1.0f;  // ARTICLE (5010) baseline; bench-tune on LA8308.
+  motor.PID_current_q.P = 1.0f;  // TODO(bench): tune on LA8308.
   motor.PID_current_q.I = 500.0f;
   motor.PID_current_d.P = 1.0f;
   motor.PID_current_d.I = 500.0f;

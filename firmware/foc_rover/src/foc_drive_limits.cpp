@@ -2,8 +2,7 @@
 
 #include "foc_config.h"
 
-// Limit/configuration commands. Every value is validated against foc_limits.h; the drive
-// never trusts the console to have done it.
+// Every value is validated against foc_limits.h; the drive never trusts the console.
 
 bool FocDrive::setCurrentLimit(float amps) {
   if (!foc::validCurrentLimit(amps)) {

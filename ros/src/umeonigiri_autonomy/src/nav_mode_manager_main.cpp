@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// 地図生成と保存地図ナビを切り替える。
-///
 /// `map→odom` を publish してよいのは常に1ノードだけ（設計書 §6.4）。
 ///
 /// nav2_lifecycle_manager は bond を張るため、切替のために deactivate すると

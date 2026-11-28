@@ -77,7 +77,6 @@ install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY rviz DESTINATION share/${PROJECT_NAME})
 # モデルは git 管理外（*.onnx は ignore）。取得済みのものだけ配備する。
 # launch.sh はこのパスを見て 320/640 を切り替える（R2: 参照は 1 箇所）。
-# --- NPU(RKNN) 版の検出ノード ---------------------------------------------
 # librknnrt が無い環境でも configure が落ちないよう存在チェックで切り替える。
 find_path(RKNN_INCLUDE_DIR rknn_api.h PATHS /usr/local/include/rknn /usr/include)
 find_library(RKNN_LIBRARY NAMES rknnrt PATHS /usr/lib /usr/local/lib)

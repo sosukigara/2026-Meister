@@ -1,8 +1,5 @@
 // SPDX-License-Identifier: MIT
-/// 画像を購読して手の keypoint を geometry_msgs/PoseArray で配信するノード。
-///
 /// 手なしの配信契約
-/// --------------
 /// 検出が外れたフレームでは何も配信しない。直前の検出から hand_timeout_sec
 /// を超えても手が写っていなければ、poses が空の配列を 1 度だけ配信して、
 /// 以降は無音にする。
@@ -26,13 +23,6 @@
 /// プロセスを落とす。「手なし」を無期限に待ち続けると上流が異常を取り逃す
 /// ため、起動時に判明する問題を起動時に出す。
 ///
-/// パラメータ:
-///   model_path         (string, "")                     手 keypoint モデルパス
-///   image_topic        (string, "/camera/image_raw")
-///   score_threshold    (double, 0.2)                    手とみなす最小スコア
-///   rate               (double, 3.0)                    最大処理レート [Hz]
-///   inference_threads  (int,    2)                      ONNX 推論スレッド数
-///   hand_timeout_sec   (double, 0.5)                    手なしを確定するまでの猶予
 #include <cstdio>
 #include <exception>
 #include <memory>

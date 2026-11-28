@@ -1,16 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// PC のカメラを sensor_msgs/Image として配信するノード。
-///
-/// cv::VideoCapture で每隔 1 枚取り、/camera/image_raw に流す。デバイスが
-/// 不在でもプロセスを落とさず、周期ごとに開き直す。
-///
-/// パラメータ:
-///   device    (string, /dev/video0) カメラ番号またはデバイスパス
-///   width     (int,    640)          取得幅
-///   height    (int,    480)          取得高さ
-///   fps       (double, 5.0)          取得フレームレート
-///   frame_id  (string, camera_link) 配信するフレーム ID
-///   pixel_format (string, MJPEG)    要求ピクセル形式。空はドライバ任せ
 #include <algorithm>
 #include <atomic>
 #include <chrono>

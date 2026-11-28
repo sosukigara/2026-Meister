@@ -1,9 +1,3 @@
-/*
- * bus_protocol.h — STS/SCS バスサーボのパケット codec
- *
- * Arduino 非依存。ここだけが pio test -e native でホスト側テストできる。
- * 仕様は hal/feetech_sts_registers.h を参照。
- */
 #pragma once
 
 #include <stddef.h>
@@ -18,12 +12,8 @@ using feetech::Endianness;
 using feetech::ErrorBit;
 using feetech::Instruction;
 
-// ===========================================================================
-// 送信パケットの組み立て
-//
 // 戻り値: 書き込んだバイト数。バッファ不足・パラメータ不正なら 0。
 //         0xFF 0xFF ヘッダとチェックサムは本モジュールが計算する。
-// ===========================================================================
 
 /// PING（存在確認）。応答は length=0 の status
 /// 例: FF FF 01 02 01 FB
@@ -46,15 +36,9 @@ size_t BuildWrite(uint8_t* buf, size_t cap, uint8_t id,
 size_t BuildSyncWrite(uint8_t* buf, size_t cap, uint8_t address,
                       const uint8_t* ids, const uint16_t* values, size_t count);
 
-/// 16 ビット値を 2 バイトに分割する（バイト順は endianness に従う）
 void SplitWord(uint16_t value, uint8_t* out, Endianness endianness);
 
-/// 2 バイトから 16 ビット値を復元する
 uint16_t JoinWord(const uint8_t* bytes, Endianness endianness);
-
-// ===========================================================================
-// 応答パケット（status）の解析
-// ===========================================================================
 
 /// 解析結果。`data` は `buf` を指す（コピーしない）。次のパケットで上書きされる。
 struct Status {
@@ -74,15 +58,10 @@ bool ParseStatus(const uint8_t* buf, size_t len, Status* out);
 /// 「何バイト待てば 1 パケット揃うか」を調べるのに使う。
 size_t StatusPacketSize(const uint8_t* buf, size_t len);
 
-/// 応答の error ビットから文言を引く（ログ用）
 const char* ErrorName(uint8_t error_bit);
 
-// ===========================================================================
-// ストリーム parser
-//
 // 応答は 1 バイトずつ届くので、バッファに溜めてから ParseStatus する。
 // 壊れたパケットは捨てて、次の 0xFF 0xFF へ再同期する。
-// ===========================================================================
 class StatusParser {
  public:
   void feed(const uint8_t* data, size_t len);
@@ -91,7 +70,6 @@ class StatusParser {
   /// 値（Status::data）は内部バッファを指すので、呼び出し側でコピーすること。
   size_t drain(Status* out, size_t max_items);
 
-  /// まだ解析されていないバイト数
   size_t pending() const { return buffer_length_; }
 
   /// 破棄した（壊れた）パケット数。ベンチ時の健全性判定に使う。
@@ -106,7 +84,6 @@ class StatusParser {
   uint32_t dropped_ = 0;
 };
 
-/// チェックサム計算（~(ID..PARAM 末尾の単純和) & 0xFF）
 uint8_t ComputeChecksum(const uint8_t* data, size_t len);
 
 }  // namespace bus

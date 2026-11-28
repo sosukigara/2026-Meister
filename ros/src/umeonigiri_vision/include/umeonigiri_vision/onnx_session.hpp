@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// ONNX Runtime の薄いラッパ（RK3588 最適化・出力バッファ再利用対応）。
-///
 /// Session と入出力名を生命期としてまとめ、モデルが無い・入力形が想定と違う
 /// をどちらも std::runtime_error で致命扱いにする（AGENTS.md R4）。
 #ifndef MEISTER_VISION_ONNX_SESSION_HPP_

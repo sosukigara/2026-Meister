@@ -50,7 +50,6 @@ def generate_launch_description():
     launch_dir = os.path.dirname(os.path.abspath(__file__))
     pkg_share = os.path.dirname(launch_dir)
 
-    # Pick GPU or CPU URDF
     urdf_name = 'my_robot_gpu.urdf' if has_gpu else 'my_robot_cpu.urdf'
     urdf_file = os.path.join(pkg_share, 'urdf', urdf_name)
     nav2_params_file = os.path.join(pkg_share, 'config', 'nav2_params.yaml')
@@ -81,7 +80,6 @@ def generate_launch_description():
     declare_world_arg = DeclareLaunchArgument('world', default_value='warehouse',
                                               description='World to load: warehouse, maze, or empty')
 
-    # --- Nodes ---
 
     robot_state_publisher = Node(
         package='robot_state_publisher',
@@ -130,7 +128,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # --- Nav2 stack ---
 
     map_server = Node(
         package='nav2_map_server',

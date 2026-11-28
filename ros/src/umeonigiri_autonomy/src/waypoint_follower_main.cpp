@@ -1,8 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// Nav2 に固定ウェイポイントを順に送る。以前は scripts/waypoint_follower.py。
-///
-/// 使い方:
-///   ros2 run umeonigiri_autonomy waypoint_follower
 #include <chrono>
 #include <cmath>
 #include <cstdio>

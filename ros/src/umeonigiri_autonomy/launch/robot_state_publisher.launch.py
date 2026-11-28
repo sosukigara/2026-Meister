@@ -8,7 +8,6 @@ from launch_ros.actions import Node
 def generate_launch_description():
     pkg_description = get_package_share_directory('umeonigiri_description')
     
-    # Path to xacro file
     xacro_file = os.path.join(pkg_description, 'urdf', 'robot.urdf.xacro')
     
     # センサの重さ。ソフトウェア描画 (llvmpipe) では lite にしないと
@@ -20,7 +19,6 @@ def generate_launch_description():
     arm_camera_height = LaunchConfiguration('arm_camera_height', default='')
     base_camera_rate = LaunchConfiguration('base_camera_rate', default='')
 
-    # Process xacro to urdf
     robot_description_config = Command(
         ['xacro ', xacro_file, ' sensor_profile:=', sensor_profile,
          ' arm_camera_rate:=', arm_camera_rate,

@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
-/// 検出枠中心の時間平滑化。80x60 の低解像度では DFL の量子化で中心が
-/// 数 px 揺れる。既存 TargetSelector の α-β と同じ発想を、 publishing する
-/// 全検出へ適用する（アームの狙いを変えるのではなく、揺れだけを抑える）。
+// 80x60 では DFL の量子化で中心が数 px 揺れる。揺れだけを抑えるため、
+// 既存 TargetSelector の α-β と同じ発想を全検出へ適用する。
 #ifndef MEISTER_VISION_BOX_CENTER_FILTER_HPP_
 #define MEISTER_VISION_BOX_CENTER_FILTER_HPP_
 

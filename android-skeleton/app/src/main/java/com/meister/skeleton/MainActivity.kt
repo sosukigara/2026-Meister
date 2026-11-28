@@ -20,8 +20,6 @@ import com.meister.skeleton.databinding.ActivityMainBinding
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-// 骨格専用: プレビュー + 手骨格推論 + 骨格描画 + FPS/ms/件数/CPU/遅延 HUD。
-// 通信なし。モデル未配置なら FakeSkeleton で配線確認できる。
 class MainActivity : AppCompatActivity() {
 
     companion object {

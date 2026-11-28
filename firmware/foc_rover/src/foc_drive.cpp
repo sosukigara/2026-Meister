@@ -2,10 +2,6 @@
 
 #include "foc_config.h"
 
-// Bring-up only: driver/current-sense/sensor construction, the shared-gate-safe init order
-// and the first PID limit bake. Motion, calibration and runtime safety live in their own
-// translation units.
-
 FocDrive::FocDrive(FocBoard& board, const foc_cfg::MotorPins& pins, const char* name,
                    bool invert, Print& monitor)
     : board_(board),

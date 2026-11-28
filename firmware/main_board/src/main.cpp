@@ -1,14 +1,8 @@
 /*
- * main.cpp — ファームウェアの配線とメインループ
- *
- * 処理は下の各層に分けている。依存の向きは片方向のみ。
- *   main → command_dispatch → 機構（base_chassis / arm）→ hal
- * 機構のインスタンスは CommandDispatch のメンバとして 1 か所で構築され、
- * 静的初期化順（翻訳単位間の順序）に依存しない。
- *
- * 注意: このファイルは Arduino 依存のため、`#ifdef ARDUINO` でガードして
- * いる。native テスト環境ではコンパイル対象外となり、プロトコル層
- * （meister_protocol.*）だけがホスト側でテストされる。
+ * 機構のインスタンスは CommandDispatch のメンバとして 1 か所で構築する。
+ * 静的初期化順（翻訳単位間の順序）に依存しないため（R11）。
+ * Arduino 依存のため #ifdef ARDUINO でガードし、native テストでは
+ * プロトコル層（meister_protocol.*）だけをホスト側でテストする。
  */
 
 #ifdef ARDUINO

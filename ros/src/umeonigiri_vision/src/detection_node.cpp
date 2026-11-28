@@ -1,25 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// 画像トピックを購読して YOLOv8n で物体検出するノード。
-///
-/// 検出結果は vision_msgs/Detection2DArray を detections に、描画済み画像を
-/// detection_image に配信する。購読者がいない間は推論自体を止める。
-///
-/// パラメータ:
-///   model_path         (string, "")          モデルパス。空なら自動解決
-///   conf_threshold     (double, 0.25)        信頼度しきい値
-///   iou_threshold      (double, 0.45)        NMS の IoU しきい値
-///   image_topic        (string, "image_raw") 購読する画像トピック
-///   publish_annotated  (bool,   true)        描画済み画像を配信するか
-///   rate               (double, 10.0)        処理レート [Hz]
-///   inference_threads  (int,    4)           ONNX 推論スレッド数
-///   target_class       (int,    -1)          追うクラス (-1 は指定なし)
-///   target_lock_radius (double, 120.0)       同一対象とみなす移動量 [px]
-///
-/// 最適化:
-///   - bgr8 入力時は BgrViewOrConvertFromImageMsg() により 921 KB のフレーム複製を省略。
-///   - TargetSelector に α-β カルマンフィルタ (`alpha_pos=0.70`, `beta_vel=0.25`) を設定し、
-///     走行中・アーム移動中のバウンディングボックス揺らぎを平滑化。
-///   - unique_ptr によるゼロコピー配信。
 #include <algorithm>
 #include <atomic>
 #include <chrono>

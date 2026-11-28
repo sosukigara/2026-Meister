@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// 認識画像を「ブラウザがそのまま貼れる JPEG」に直して保持する。
-///
 /// detection_node は 3 Hz で描画済み画像を流す。ブラウザに毎回 PNG を渡すと
 /// 1 フレーム数十 KB が積み上がるので、ここで JPEG に落としてから保持し、
 /// 配信側 (/api/vision.jpg と MJPEG) は同じバイト列を共有する。

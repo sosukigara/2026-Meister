@@ -14,10 +14,6 @@
 
 using namespace meister;
 
-// ---------------------------------------------------------------------------
-// ラウンドトリップ（エンコード → パース → フィールド一致）
-// ---------------------------------------------------------------------------
-
 void test_roundtrip_motor_velocity(void) {
   const int16_t vel[proto::kNumDriveMotors] = {1000, 500, 0, -500, -1000, 321};
   uint8_t buf[proto::kMaxFrameSize];
@@ -128,10 +124,6 @@ void test_roundtrip_imu_feedback(void) {
   TEST_ASSERT_EQUAL_UINT8(0xFF, proto::FrameGetU8(f, 2));
 }
 
-// ---------------------------------------------------------------------------
-// チェックサム
-// ---------------------------------------------------------------------------
-
 void test_checksum_valid_frame(void) {
   const int16_t vel[proto::kNumDriveMotors] = {100, -200, 300, -400, 500, -600};
   uint8_t buf[proto::kMaxFrameSize];
@@ -153,10 +145,6 @@ void test_checksum_corrupted_payload(void) {
   proto::Frame f;
   TEST_ASSERT_EQUAL(proto::ParseResult::kBadChecksum, proto::ParseFrame(buf, n, &f));
 }
-
-// ---------------------------------------------------------------------------
-// 不正フレームの拒否
-// ---------------------------------------------------------------------------
 
 void test_reject_bad_header(void) {
   const int16_t vel[proto::kNumDriveMotors] = {1, 2, 3, 4, 5, 6};
@@ -234,8 +222,6 @@ void test_encode_insufficient_buffer(void) {
 
   TEST_ASSERT_EQUAL_UINT(0, proto::EncodeMotorVelocity(small, sizeof(small), vel));
 }
-
-// ---------------------------------------------------------------------------
 
 int main(void) {
   UNITY_BEGIN();

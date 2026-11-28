@@ -26,10 +26,6 @@ struct ActuatorCommand {
 constexpr double kEpsilonVx = 0.01;
 
 /// Twist (vx, wz) を舵角と速度のコマンド値に変換する。
-///
-///   steering_tenths  = atan2(wheelbase * wz, vx) を度にして 10 倍
-///   velocity_permille = vx / max_linear_vel * 1000
-///
 /// max_linear_vel と max_steering_deg が 0 以下のときは std::invalid_argument。
 ActuatorCommand TwistToActuators(double vx, double wz, const TwistKinematics& kin);
 

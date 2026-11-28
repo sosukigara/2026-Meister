@@ -20,8 +20,6 @@ struct YoloBox
   int class_id = 0;
 };
 
-/// Rockchip の RKNN で yolov8 系（検出ヘッドが reg/cls/sum の 3 系統 × 3 スケール）を
-/// 回す薄いラッパ。NPU 出力は int8 のまま受け取り、必要なアンカーだけ逆量子化する。
 class RknnYolo
 {
 public:

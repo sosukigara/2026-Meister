@@ -1,9 +1,6 @@
 #ifndef FOC_CONSOLE_H
 #define FOC_CONSOLE_H
 
-// Line-oriented serial console: parse, dispatch to the selected channel, and emit the
-// 50 Hz telemetry rows for both channels.
-
 #include <Arduino.h>
 
 #include "foc_board.h"

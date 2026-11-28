@@ -24,7 +24,6 @@ void StreamFrameParser::Feed(const uint8_t* data, std::size_t len,
   }
 
   while (buf_.size() > head_) {
-    // 1. ヘッダバイト 0xA5 まで O(1) カーソル移動
     if (buf_[head_] != proto::kHeaderByte) {
       ++head_;
       continue;

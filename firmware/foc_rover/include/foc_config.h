@@ -1,20 +1,6 @@
 #ifndef FOC_CONFIG_H
 #define FOC_CONFIG_H
 
-// Single source of every tunable value in this project (repo rule R2).
-// Command limits live in foc_limits.h so the console, the drive and the native tests share
-// one definition. This file only aliases the defaults and holds hardware/board values.
-//
-// Provenance tags:
-//   MKSREPO   github.com/makerbase-motor/MKS-ESP32FOC, branch MKS-ESP32-FOC-V2.0,
-//             Test Code/11_close_loop_velocity_example
-//   SCH       Hardware/MKS ESP32 FOC V2.0_SCH.pdf on the same branch
-//   VENDOR    Eaglepower LA8308 KV90 reseller spec (not a primary datasheet)
-//   TODO      not confirmed by a primary source -> listed in README.md
-//
-// This project drives the two wheels of one axle (M0 = left, M1 = right). It is a sibling
-// of firmware/foc_winch (the single-channel winch) and shares no code with it.
-
 #include "foc_limits.h"
 
 #if !defined(FOC_ROLE_FRONT) && !defined(FOC_ROLE_MID) && !defined(FOC_ROLE_REAR)
@@ -26,10 +12,6 @@
 #endif
 
 namespace foc_cfg {
-
-// ---------------------------------------------------------------------------
-// Role (the only thing that differs between the three firmware images)
-// ---------------------------------------------------------------------------
 
 #if defined(FOC_ROLE_FRONT)
 constexpr char kRoleName[] = "FRONT";
@@ -47,10 +29,6 @@ constexpr char kFirmwareVersion[] = "0.2.0";
 constexpr bool kInvertM0 = false;  // TODO(bench): set per role after the direction test
 constexpr bool kInvertM1 = false;  // TODO(bench): set per role after the direction test
 
-// ---------------------------------------------------------------------------
-// Board: MKS ESP32 FOC V2.0, two channels, 12-24 V
-// ---------------------------------------------------------------------------
-
 struct MotorPins {
   int pwm_a;
   int pwm_b;
@@ -63,11 +41,7 @@ struct MotorPins {
   int i2c_scl;
 };
 
-// MKSREPO: BLDCDriver3PWM(32, 33, 25, 12) / InlineCurrentSense(0.01, 50.0, 39, 36)
-//          TwoWire(0).begin(19, 18, 400000)
 constexpr MotorPins kM0Pins{32, 33, 25, 12, 39, 36, 0, 19, 18};
-// MKSREPO: BLDCDriver3PWM(26, 27, 14, 12) / InlineCurrentSense(0.01, 50.0, 35, 34)
-//          TwoWire(1).begin(23, 5, 400000)
 constexpr MotorPins kM1Pins{26, 27, 14, 12, 35, 34, 1, 23, 5};
 
 // One GPIO drives both gate drivers on the official board. The guard and the stop policy
@@ -83,7 +57,7 @@ static_assert(kM0Pins.enable == kM1Pins.enable,
 // gate coordinator.
 constexpr bool kOneChannelAtATime = true;
 
-constexpr float kSupplyVolts = 12.0f;  // USER bench envelope: 12 V / 6 A max.
+constexpr float kSupplyVolts = 12.0f;
 // Board accepts 12-24 V, but this build targets the 12 V rail only.
 constexpr float kUndervoltageVolts = 10.0f;  // boot gate. TODO: reasoned, not measured.
 // Runtime gate, deliberately lower than the boot gate so load sag does not nuisance-stop.
@@ -91,41 +65,24 @@ constexpr float kUndervoltageVolts = 10.0f;  // boot gate. TODO: reasoned, not m
 constexpr float kRuntimeUndervoltageVolts = 9.0f;
 constexpr uint32_t kRuntimeUndervoltageMs = 500;
 
-// MKSREPO: InlineCurrentSense(0.01, 50.0, ...). 6 A -> 3.0 V, 6.6 A -> ADC full scale.
-// Some reseller pages claim 1 mohm / +/-33 A; SCH and the official example say 10 mohm.
-// Verify the shunt marking (R010) before trusting the current numbers.
-constexpr float kShuntOhms = 0.01f;        // MKSREPO (verify R010 on the board)
-constexpr float kCurrentSenseGain = 50.0f;  // MKSREPO / INA240A2
+constexpr float kShuntOhms = 0.01f;
+constexpr float kCurrentSenseGain = 50.0f;
 constexpr float kCurrentSenseFullScaleAmps = 6.6f;
 
-// VENDOR: Eaglepower LA8308 KV90 lists 0.186 ohm. It is used only for the low-speed
-// current-sense plausibility check, never for control gains. Measure it before trusting
-// the check on a different motor.
 constexpr float kPhaseResistanceOhms = 0.186f;
 
-constexpr int kVinSensePin = 13;           // MKSREPO
-constexpr float kVinDividerRatio = 8.5f;   // MKSREPO
+constexpr int kVinSensePin = 13;
+constexpr float kVinDividerRatio = 8.5f;
 
-constexpr int kI2cClockHz = 400000;  // MKSREPO
+constexpr int kI2cClockHz = 400000;
 
-// AS5600 fast mode (Infineon AS5600 datasheet Fig 21-22: CONF high 0x07 bits [1:0]
-// = SF, 0x03 = 2x fastest). CONF is volatile (OTP reset at power-up), so this write
-// must be repeated on every boot BEFORE the first sensor read. A NACK here is the
-// per-channel sensor-absent signal: initFOC() is skipped rather than run blind.
+// CONF is volatile (OTP reset at power-up), so this write must be repeated on every boot
+// BEFORE the first sensor read. A NACK here is the per-channel sensor-absent signal:
+// initFOC() is skipped rather than run blind.
 constexpr uint8_t kAs5600Address = 0x36;
 constexpr uint8_t kAs5600ConfRegister = 0x07;
 constexpr uint8_t kAs5600ConfFastMask = 0x03;
 
-// ---------------------------------------------------------------------------
-// Motor: LA8308 KV90
-// ---------------------------------------------------------------------------
-
-// The LA8308 family is a 40-magnet / 20-pole-pair rotor. The vendor pages do not publish
-// this, but two independent ODrive community reports and a working ODrive config for the
-// Eaglepower 8308 90KV agree on 20 pole pairs:
-//   https://discourse.odriverobotics.com/t/callibration-issue-when-motor-magnets-arent-alligned-with-coils/8806
-//   https://discourse.odriverobotics.com/t/odrive-s1-motor-calibration-error/11326
-//   https://github.com/AtomsClark/Integrated-Cycloidal-Robotic-Actuator/blob/main/firmware/odrivetool-session.md
 // Count the actual rotor magnets (÷2) before trusting it on a different variant. 7 is the
 // old 5010 placeholder and MUST NOT be used: SimpleFOC's alignSensor() only prints a PP
 // mismatch, it still returns success, so initFOC()==1 is not evidence.
@@ -152,14 +109,12 @@ constexpr float kClosedLoopOcTripAmps = 5.0f;
 constexpr uint32_t kClosedLoopOcTripMs = 200;
 
 // Open-loop voltage. 0.30 V is ~1.6 A at 0.186 ohm; 0.60 V is the hard ceiling (~3.2 A).
-// The command is clamped by foc::clampOpenLoopVoltage().
 constexpr float kOpenLoopVoltageVolts = 0.30f;
-constexpr uint32_t kOpenLoopTimeoutMs = 10000;  // 10 s run
-constexpr uint32_t kOpenLoopCooldownMs = 10000;  // 10 s before the next open-loop run
+constexpr uint32_t kOpenLoopTimeoutMs = 10000;
+constexpr uint32_t kOpenLoopCooldownMs = 10000;
 
-// Closed-loop deadman. W/T/A are not one-shot: the PC has to keep sending them (>= 5 Hz)
-// or the board disables the driver. Open loop has its own 10 s timeout instead. A resend
-// only updates the target; it must not re-enable the driver or reset the velocity PID.
+// The PC must keep sending motion commands (>= 5 Hz) or the driver disables. A resend only
+// updates the target; it must not re-enable the driver or reset the velocity PID.
 constexpr uint32_t kCommandTimeoutMs = 500;
 
 // Closed-loop ceiling. Full 12 V (the USER rail) is allowed because the FOC current
@@ -167,8 +122,7 @@ constexpr uint32_t kCommandTimeoutMs = 500;
 // the 4 A command hard cap plus the 4/5 A OC trips. Start the first closed-loop
 // test with a low `L` (e.g. 1 A).
 constexpr float kVoltageLimitVolts = 12.0f;
-// Alignment is voltage-mode, not current-limited. 0.30 V is ~1.6 A at 0.186 ohm. The
-// command is clamped to foc::kAlignVoltageMin..Max (0.10-0.60 V).
+// Alignment is voltage-mode, not current-limited. 0.30 V is ~1.6 A at 0.186 ohm.
 constexpr float kAlignVoltageVolts = 0.30f;
 
 // SimpleFOC's velocity_limit unit is rad/s despite the historical name. 5 rev/s (~31.4
@@ -197,17 +151,13 @@ constexpr uint32_t kCsCheckMs = 200;
 constexpr uint32_t kHealthPeriodMs = 50;
 constexpr uint32_t kDiagnoseCooldownMs = 2000;
 
-constexpr float kPidCurrentP = 1.0f;  // ARTICLE (official V2.0 example 11 agrees)
-constexpr float kPidCurrentI = 500.0f;  // ARTICLE (official V2.0 example 11 agrees)
-constexpr float kPidVelP = 0.2f;  // ARTICLE. Official V2.0 example 11 uses 0.021 for
-constexpr float kPidVelI = 2.0f;  // its 2808 motor: try those if this oscillates.
+constexpr float kPidCurrentP = 1.0f;
+constexpr float kPidCurrentI = 500.0f;
+constexpr float kPidVelP = 0.2f;
+constexpr float kPidVelI = 2.0f;
 constexpr float kPidVelD = 0.0f;  // TODO(gains): bench-tune on LA8308 KV90.
 constexpr float kPidAngleP = 8.0f;
 constexpr float kLpfCurrentTf = 0.002f;
-
-// ---------------------------------------------------------------------------
-// Console / telemetry
-// ---------------------------------------------------------------------------
 
 constexpr uint32_t kSerialBaud = 115200;
 constexpr uint32_t kLineTimeoutMs = 20;

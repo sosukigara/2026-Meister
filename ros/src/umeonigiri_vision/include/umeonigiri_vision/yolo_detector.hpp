@@ -1,16 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// YOLOv8n ONNX 物体検出器。
-///
-/// ONNX Runtime と YOLOv8n のモデル（COCO 80 クラス）だけを使う。torch や
-/// ultralytics は入れない。onnxruntime は Python 版と同じ C API を呼ぶので、
-/// 移植しても推論結果は変わらない。
-///
-/// 1. letterbox 前処理（アスペクト比を保ったまま 640x640 にパディング）
-/// 2. ONNX 推論（入力 (1,3,640,640) float32 / 出力 (1,84,8400)）
-/// 3. 出力をパース（cx,cy,w,h + 80 クラススコア）して xyxy に変換
-/// 4. NMS で重複抑制
-///
-/// 入力画像は BGR（OpenCV 形式）。
 #ifndef MEISTER_VISION_YOLO_DETECTOR_HPP_
 #define MEISTER_VISION_YOLO_DETECTOR_HPP_
 

@@ -20,9 +20,6 @@
 namespace meister {
 namespace feetech {
 
-// ===========================================================================
-// フレーム
-// ===========================================================================
 //   [0] 0xFF          HEADER0        scservo_def.py: PKT_HEADER0
 //   [1] 0xFF          HEADER1        scservo_def.py: PKT_HEADER1
 //   [2] id            0x01..0xFC     0xFE = 一斉送信
@@ -43,7 +40,6 @@ constexpr size_t kOffsetLength = 3;
 constexpr size_t kOffsetCmd    = 4;  ///< 送信 = instruction / 応答 = error
 constexpr size_t kOffsetParam0 = 5;
 
-/// length フィールドの直前にある 4 バイト（HEADER0/HEADER1/ID/LENGTH）
 constexpr size_t kLengthFieldSize = 4;
 constexpr size_t kMinPacketSize   = 6;  ///< PING
 /// protocol_packet_handler.py:5 TXPACKET_MAX_LEN / RXPACKET_MAX_LEN と同値
@@ -53,12 +49,10 @@ constexpr uint8_t kIdMin       = 0x01;
 constexpr uint8_t kIdMax       = 0xFC;
 constexpr uint8_t kIdBroadcast = 0xFE;
 
-// ===========================================================================
 // 命令（scservo_def.py INST_*）
 //
 // WRITE には長さバイトが無い。READ にはあるが WRITE にはないという非対称がある。
 // WRITE の長さは LENGTH からしか分からない。
-// ===========================================================================
 enum Instruction : uint8_t {
   kInstPing      = 0x01,  ///< params なし                     LENGTH = 2
   kInstRead      = 0x02,  ///< addr, len                       LENGTH = 4
@@ -69,9 +63,7 @@ enum Instruction : uint8_t {
   kInstSyncWrite = 0x83,  ///< start_addr, data_len, param     LENGTH = 4 + param_len
 };
 
-// ===========================================================================
 // 応答のエラービット（protocol_packet_handler.py ERRBIT_*）
-// ===========================================================================
 enum ErrorBit : uint8_t {
   kErrVoltage     = 0x01,
   kErrAngle       = 0x02,
@@ -80,17 +72,14 @@ enum ErrorBit : uint8_t {
   kErrOverload    = 0x20,
 };
 
-// ===========================================================================
 // バイト順（scservo_def.py SCS_MAKEWORD / SCS_END）
 // 要確認: STS3215 がどちら側かはモデルごとに違う。確定後にここを直す。
-// ===========================================================================
 enum class Endianness : uint8_t {
   kLittle = 0,  ///< SCS_END == 0
   kBig    = 1,  ///< SCS_END == 1
 };
 constexpr Endianness kEndianness = Endianness::kLittle;
 
-// ===========================================================================
 // 要確認: レジスタマップ
 //
 // ★未検証★ 以下のアドレスは一次情報で取得できていない。SDK 1.0.0 にレジスタ
@@ -102,7 +91,6 @@ constexpr Endianness kEndianness = Endianness::kLittle;
 //
 // 照合が完了するまで WRITE 命令は使わない。READ も Present Voltage 1 バイト
 // だけで確認する。kRegisterMapVerified を true にするのは照合後だけ。
-// ===========================================================================
 namespace reg {
 
 constexpr bool kRegisterMapVerified = false;
@@ -149,7 +137,6 @@ constexpr float kDegreesPerStep = 360.0f / static_cast<float>(kStepsPerRev);
 
 }  // namespace reg
 
-/// 角度 [deg] → ステップ値。範囲外は丸める。
 inline uint16_t DegreesToSteps(float degrees) {
   float steps = degrees / reg::kDegreesPerStep;
   if (steps < 0.0f) {
@@ -162,7 +149,6 @@ inline uint16_t DegreesToSteps(float degrees) {
   return static_cast<uint16_t>(steps + 0.5f);
 }
 
-/// ステップ値 → 角度 [deg]
 inline float StepsToDegrees(uint16_t steps) {
   return static_cast<float>(steps) * reg::kDegreesPerStep;
 }

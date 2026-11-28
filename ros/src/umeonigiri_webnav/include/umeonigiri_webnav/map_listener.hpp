@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// /map と /tf および /tf_static を購読し、Web UI が要る 3 つ（地図メタデータ / PNG / ロボット姿勢）に答える。
-///
 /// 重大バグ修正:
 ///   旧実装は `/tf` のみを購読し `/tf_static` を購読していなかったため、
 ///   `static_transform_publisher` 等が `/tf_static` (TransientLocal) に配信する変換を

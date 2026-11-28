@@ -1,13 +1,8 @@
 // SPDX-License-Identifier: MIT
-/// HTTP 面のテスト。実サーバーを ephemeral port で立て、実クライアントで流す。
-///
-/// MapListener は ROS グラフ (rclcpp::init と購読登録) を要するので、HTTP が触る口
-/// (MapSource / NavSink) は stub が満たす。ただし地図は本物の MapCache、メタデータは
-/// 本物の MetadataOf を使う。ロジックを複製しないので、本物の経路を検証できる。
-///
-/// - 地図が変わらない連続リクエストで 2 回目が 304
-/// - 地図を変えると 200 かつ別の bytes
-/// - /api/map の JSON 形状が変わっていないこと (app.js が依存している)
+// MapListener は ROS グラフを要するので HTTP が触る口 (MapSource / NavSink) は
+// stub が満たす。地図は本物の MapCache、メタデータは本物の MetadataOf を使い、
+// ロジックを複製せず本物の経路を検証する。
+// /api/map の JSON 形状は app.js が依存しているので変えないこと。
 #include <gtest/gtest.h>
 
 #include <algorithm>

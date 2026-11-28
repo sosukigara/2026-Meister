@@ -8,8 +8,6 @@
 
 namespace umeonigiri_serial_bridge {
 
-/// 受信ストリームから固定長フレームを取り出す増分パーサ。
-///
 /// firmware の ParseFrame は「フレームが揃ったバッファ」しか受けない。UART は
 /// 任意の境界で割れるので firmware 側 main.cpp の受信状態機械と同じ手順で
 /// バッファを持ち、再同期とチェックサム不一致の破棄はここでやる。

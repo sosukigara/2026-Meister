@@ -28,10 +28,6 @@ const uint8_t kStatusB[6] = {0xFF, 0xFF, 0x06, 0x02, 0x00, 0xF7};
 
 }  // namespace
 
-// ---------------------------------------------------------------------------
-// 送信パケット（SDK 出力との 1 バイトずつの一致）
-// ---------------------------------------------------------------------------
-
 void test_ping_matches_sdk_golden(void) {
   uint8_t buf[250];
   const size_t n = bus::BuildPing(buf, sizeof(buf), 0x01);
@@ -100,10 +96,6 @@ void test_sync_write_uses_broadcast_id(void) {
   TEST_ASSERT_EQUAL_UINT8(0x03, buf[9]);
 }
 
-// ---------------------------------------------------------------------------
-// チェックサム
-// ---------------------------------------------------------------------------
-
 void test_checksum_is_bitwise_not_of_sum(void) {
   // ~(0x01 + 0x02 + 0x01) & 0xFF = 0xFB。XOR ではない
   const uint8_t body[3] = {0x01, 0x02, 0x01};
@@ -121,10 +113,6 @@ void test_checksum_is_bitwise_not_of_sum(void) {
   // 全 6 バイトを 1 度に通すと ~sum になるので 0xFF にはならない（XOR でもない）
   TEST_ASSERT_EQUAL_UINT8(0x02, bus::ComputeChecksum(buf, n));
 }
-
-// ---------------------------------------------------------------------------
-// 応答パケット
-// ---------------------------------------------------------------------------
 
 void test_status_packet_size(void) {
   TEST_ASSERT_EQUAL_UINT(7, bus::StatusPacketSize(kStatusA, sizeof(kStatusA)));
@@ -205,10 +193,6 @@ void test_error_name(void) {
   // 未定義ビットだけなら不明
   TEST_ASSERT_EQUAL_STRING("不明", bus::ErrorName(0x10));
 }
-
-// ---------------------------------------------------------------------------
-// ストリーム parser
-// ---------------------------------------------------------------------------
 
 void test_status_parser_resyncs_after_garbage(void) {
   // フレームの頭を持たないノイズ 3 バイトは無視される
@@ -333,10 +317,6 @@ void test_status_parser_feed_overflow_drops_from_front(void) {
   TEST_ASSERT_EQUAL_UINT(0, parser.pending());
 }
 
-// ---------------------------------------------------------------------------
-// 組み立ての拒否条件
-// ---------------------------------------------------------------------------
-
 void test_build_rejects_bad_id_and_small_buffer(void) {
   uint8_t buf[250];
   const uint8_t data[2] = {0xE8, 0x03};
@@ -368,10 +348,6 @@ void test_build_rejects_bad_id_and_small_buffer(void) {
                                             2, feetech::kEndianness));
   TEST_ASSERT_EQUAL_UINT(0, bus::BuildSyncWrite(buf, sizeof(buf), 42, ids, values, 0));
 }
-
-// ---------------------------------------------------------------------------
-// バイト順と角度変換
-// ---------------------------------------------------------------------------
 
 void test_split_join_word_roundtrip(void) {
   const uint16_t values[5] = {0x0000, 0x0001, 0x00FF, 0x1234, 0xFFFF};
@@ -405,8 +381,6 @@ void test_degrees_steps_roundtrip(void) {
   TEST_ASSERT_EQUAL_UINT16(feetech::reg::kStepsPerRev - 1,
                            feetech::DegreesToSteps(1000.0f));
 }
-
-// ---------------------------------------------------------------------------
 
 int main(void) {
   UNITY_BEGIN();

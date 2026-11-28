@@ -1,10 +1,4 @@
 #pragma once
-// AckermannImuOdometry — 50 Hz SE(2) Complementary / Kalman Odometry Estimator
-// for the Meister 6-Wheel Steering Ackermann Robot.
-//
-// Fuses Ackermann kinematic velocity/steering commands with BNO055 IMU heading
-// (`FB_IMU` yaw_tenths & calibration status) to provide continuous, drift-free
-// `odom -> base_footprint` TF and `/odom` messages without external IPC latency.
 
 #include <algorithm>
 #include <cmath>

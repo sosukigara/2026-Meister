@@ -1,10 +1,5 @@
-/*
- * imu_bno055.h — GY-BNO055（BNO055）yaw 読み出し
- *
- * Adafruit_BNO055 等の外部ライブラリは使わず素の Wire で読む。
- * 理由: 読むのは heading 2B + CALIB 1B だけで、依存追加に見合わない。
- * NDOF 融合・I2C の面倒は BNO055 側が持つ。呼び出し側は設定を知らない。
- */
+// Adafruit_BNO055 等の外部ライブラリは使わず素の Wire で読む。
+// 読むのは heading 2B + CALIB 1B だけで、依存追加に見合わない。
 #pragma once
 
 #include <stdint.h>

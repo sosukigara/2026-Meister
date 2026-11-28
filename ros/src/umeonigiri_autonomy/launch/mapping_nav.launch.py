@@ -49,25 +49,21 @@ def generate_launch_description():
         'sensor_profile', default_value='full',
         description='センサの重さ。full=640点/10Hz、lite=360点/5Hz (ソフトウェア描画向け)')
 
-    # 1. Robot State Publisher (Xacro dynamic processing)
     robot_state_publisher = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(pkg_nav, 'launch', 'robot_state_publisher.launch.py')),
         launch_arguments={'sensor_profile': LaunchConfiguration('sensor_profile')}.items()
     )
 
-    # 2. Simulation (Gazebo + Bridge)
     simulation = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(pkg_nav, 'launch', 'simulation.launch.py')),
         launch_arguments={'world': LaunchConfiguration('world'),
                           'gui': LaunchConfiguration('gui')}.items()
     )
 
-    # 3. SLAM (slam_toolbox)
     slam = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(pkg_nav, 'launch', 'slam.launch.py'))
     )
 
-    # 4. Navigation (Nav2) — starts immediately alongside SLAM/Gazebo
     # Nav2 nodes are lifecycle-managed; they start unconfigured and wait.
     # lifecycle_manager discovers them via bond_timeout=10.0.
     # No artificial delay needed — overlap is handled by lifecycle transitions.
@@ -75,14 +71,12 @@ def generate_launch_description():
         PythonLaunchDescriptionSource(os.path.join(pkg_nav, 'launch', 'navigation.launch.py'))
     )
 
-    # 5. Web UI (map view + click-to-send waypoints) — http://localhost:8088
     web_nav = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(pkg_web_nav, 'launch', 'umeonigiri_webnav.launch.py')),
         launch_arguments={'use_sim_time': 'true',
                           'world': LaunchConfiguration('world')}.items()
     )
 
-    # 6. Vision (Gazeboロボット目線カメラ+YOLOv8n検出。/camera/image_raw→/detections,/detection_image)
     vision = vision_launch()
 
     return LaunchDescription([

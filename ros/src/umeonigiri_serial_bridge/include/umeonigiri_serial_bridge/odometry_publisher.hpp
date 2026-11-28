@@ -14,8 +14,6 @@
 
 namespace umeonigiri_serial_bridge {
 
-/// `/odom` と `odom -> base_footprint` TF の出版。
-///
 /// 指令速度・IMU ヨーの受信と出版を 1 つの mutex で直列化する。ROS 非依存の
 /// `AckermannImuOdometry` を内包し、ノードはタイマーから StepAndPublish を呼ぶだけ。
 class OdometryPublisher {

@@ -115,7 +115,6 @@ CheckResult RunCommCheck(const std::string& port, int baud, double timeout_s, bo
 
   StreamFrameParser parser;
 
-  // --- 1. 上り (ESP32 -> PC) ---
   const auto uplink = CollectFeedback(*link, parser, NowSeconds() + timeout_s, 1);
   if (uplink.empty()) {
     throw CommError("FB_STATE を受信できませんでした (" + DescribePort(port) + " @ " +
@@ -131,7 +130,6 @@ CheckResult RunCommCheck(const std::string& port, int baud, double timeout_s, bo
         "このフラグは再起動でしか消えないため、--reset（既定）付きで再実行してください。");
   }
 
-  // --- 2. 下り (PC -> ESP32) ---
   // FB_STATE はコマンドへの応答ではなく 10 Hz 周期送信なので、4 種を送った直後の
   // 最初の FB_STATE がそれに対する応答になる。フラグが立たなければ ESP32 側は
   // 全フレームを正常に受理している。
@@ -152,7 +150,6 @@ CheckResult RunCommCheck(const std::string& port, int baud, double timeout_s, bo
   }
   result.steps.push_back({"downlink", names + " -> " + reply[0].Describe()});
 
-  // --- 3. 手順 2 の判定基準が機能していることの裏取り ---
   // チェックサムを壊したフレームを送り、フラグが立つことを確認する。
   uint8_t broken[proto::kMaxFrameSize];
   const std::size_t good_n = EncodeVelocity(broken, sizeof(broken), Uniform<VelocityArray>(0));

@@ -19,7 +19,6 @@ def generate_launch_description():
         default_value='true',
         description='Use simulation (Gazebo) clock if true')
 
-    # 1. Gazebo & Spawn
     launch_gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_umeonigiri, 'launch', 'spawn.launch.py')
@@ -27,7 +26,6 @@ def generate_launch_description():
         launch_arguments={'use_sim_time': use_sim_time}.items()
     )
 
-    # 2. SLAM Toolbox
     launch_slam = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_slam, 'launch', 'online_async_launch.py')
@@ -35,7 +33,6 @@ def generate_launch_description():
         launch_arguments={'use_sim_time': 'true'}.items()
     )
 
-    # 3. Navigation2
     launch_nav2 = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_nav2, 'launch', 'navigation_launch.py')

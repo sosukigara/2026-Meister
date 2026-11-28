@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// Web UI サーバーの起動と配線。
-///
 /// 地図と認識画像は専用 Executor、ナビゲータは NavWorker の専用スレッドで動かし、
 /// HTTP は httplib のスレッドプールに任せる。地図の Node を NavWorker と共有すると、
 /// worker 側の spin_until_future_complete と Executor が同じ Node を奪い合う。

@@ -1,7 +1,3 @@
-// NPU(RKNN) で yolov8 を回し、物体名・枠・把持候補（中心/角度/幅）を配信する。
-//
-// 既存の detection_node（ONNX/CPU）と同じトピックを出すので、Web UI と
-// アーム制御から見ると差し替え可能。CPU 実装より速く、CPU をほとんど使わない。
 #include <algorithm>
 #include <chrono>
 #include <memory>

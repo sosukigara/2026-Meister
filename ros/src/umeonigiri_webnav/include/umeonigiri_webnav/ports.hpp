@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// HTTP 面が実装側に要求する口。
-///
 /// ROS 型をここに出さない: HTTP 面は ROS グラフ無しで test できる (AGENTS.md R8)。
 /// 実装は MapListener / NavWorker、テストは stub が満たす。
 #ifndef UMEONIGIRI_WEBNAV_PORTS_HPP_

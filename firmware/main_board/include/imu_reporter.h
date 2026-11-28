@@ -1,10 +1,4 @@
-/*
- * imu_reporter.h — FB_IMU の定周期送信
- *
- * Feedback（FB_STATE）とは別クラスにする。理由: 周期（20Hz）と
- * 失敗時の振る舞い（送らない＋sensor ビット）が FB_STATE と違う。
- * 送信間隔は設定の kImuIntervalMs（1000 / MSTE_IMU_HZ）で決まる。
- */
+// Feedback（FB_STATE）とは別クラスにする。周期（20Hz）と失敗時の振る舞いが違うため。
 #pragma once
 
 #include <stdint.h>

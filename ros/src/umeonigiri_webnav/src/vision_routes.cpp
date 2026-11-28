@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// 認識モニターの経路。/api/vision (状態 JSON)、/api/vision.jpg (1 枚)、
-/// /api/vision.mjpg (MJPEG ストリーム)、POST /api/vision (監視 ON/OFF)。
 #include "umeonigiri_webnav/vision_routes.hpp"
 
 #include <cstddef>

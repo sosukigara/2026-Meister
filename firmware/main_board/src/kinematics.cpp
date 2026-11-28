@@ -1,9 +1,4 @@
 /*
- * kinematics.cpp — TwistCommand を各輪の舵角・速度へ展開する
- *
- * 拘束ソルバ本体。D1: Twist の展開は ESP32 側で行う（PC は判断だけ担う）。
- * D3: ボギー軸は連続運動を拘束から解き、ロック位置だけ表で持つ。
- *
  * ★呼び出し側の禁止★ config/meister_robot.yaml の
  * kinematics.geometry_filled が false の間、Solve() は必ず kGeometryNotFilled を
  * 返し、指令を一切出力しない。値を確定したら YAML の 1 行を true にするだけで
@@ -18,17 +13,12 @@ namespace meister {
 namespace kin {
 namespace {
 
-/// 車体の速度ベクトルを mm/s から m/s へ。
 constexpr float kMmToM = 0.001f;
 
-/// 0.1 度単位を度へ。
 constexpr float kTenthsToDeg = 0.1f;
 
-/// 度を 0.1 度単位へ。
 constexpr float kDegToTenths = 10.0f;
 
-/// あるボギー位置の行で、1 輪の解が舵角の範囲に収まるか。
-///
 /// 返り値: 収まるなら true。収まらないなら false（その行では解けない）。
 bool WheelWithinLimits(float heading_deg, float rocker_deg,
                         int16_t min_steer, int16_t max_steer) {
@@ -178,11 +168,6 @@ SolveStatus SolveInverseWithGeometry(const int16_t* wheel_velocity,
     return SolveStatus::kNoSolution;
   }
 
-  // 最小二乗で vx と ω を求める。
-  // 各輪の測定値 u_i は車体速度と回転の寄与の和:
-  //   u_i = vx * c_i + ω * p_i
-  //   c_i = cos(θ_i)                 車輪の向きに沿った前進の成分
-  //   p_i = -y_i*c_i + x_i*sin(θ_i)   回転が車輪方向に落ちた成分
   float scc = 0.0f, scp = 0.0f, spp = 0.0f, scu = 0.0f, spu = 0.0f;
   for (uint8_t i = 0; i < config::kNumDriveMotors; ++i) {
     const WheelGeometry& w = geo.wheels[i];

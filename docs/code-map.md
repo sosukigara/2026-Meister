@@ -104,7 +104,7 @@ Python 版から変えていないので `launch/` `launch_vision.sh` `kill.sh` 
 | `include/.../nms.hpp` / `src/nms.cpp` | 重複抑制 | **OpenCV 4.6 の C++ 版は戻り値が void で第 5 引数が out パラメータ**。Python 版と API 形状が違う |
 | `include/.../onnx_session.hpp` / `src/onnx_session.cpp` | ONNX Runtime の薄いラッパ（pimpl） | 1 入出力・静的 rank 4 を強制。`Ort::Env` はプロセス共有 |
 | `include/.../yolo_detector.hpp` / `src/yolo_detector.cpp` | 検出器と後処理（84 要素の格子走査・argmax・xyxy 復元） | NMS に渡す score_threshold は 0.0（conf はここで既に切っている） |
-| `include/.../hand_landmark_detector.hpp` / `src/hand_landmark_detector.cpp` | 手中 keypoint。NCHW / NHWC を shape から推定 | **★要確認★** モデルの一次情報は未取得。契約はヘッダ冒頭に隔離してある |
+| `include/.../hand_landmark_detector.hpp` / `src/hand_landmark_detector.cpp` | 手中 keypoint。NCHW / NHWC を shape から推定 | **★要確認★** モデルの一次情報は未取得。契約は [docs/migrated-comment-knowledge.md](migrated-comment-knowledge.md) §1 に移行 |
 | `include/.../image_util.hpp` / `src/image_util.cpp` | `sensor_msgs/Image` ⇄ `cv::Mat`（9 種の encoding） | `cv_bridge` 不使用。未知 encoding は拒否（uint8 のまま読むと静かに壊れる） |
 | `include/.../draw.hpp` / `src/draw.cpp` | 検出枠とラベルの描画 | 入力は破壊しない |
 | `src/detection_node.cpp` | rclcpp ノード `umeonigiri_vision`。購読者 0 なら推論を止める | 推定失敗で購読は止めない |
@@ -120,7 +120,8 @@ Python 版から変えていないので `launch/` `launch_vision.sh` `kill.sh` 
 > `hand_landmarks.onnx` は `.gitignore` 済みで**一次情報を取得できていない**。
 > 入力（静的 4 次元・channels==3）と出力 `(1, K, 3)`、`K = 21`、添字順が
 > MediaPipe 21 点想定を前提に置く判断は保留。実モデルから shape と
-> 添字順を実測するまで確定ではない（R4）。
+> 添字順を実測するまで確定ではない（R4）。詳細と BGR/正規化の契約は
+> [docs/migrated-comment-knowledge.md](migrated-comment-knowledge.md) §1 を参照。
 
 ---
 

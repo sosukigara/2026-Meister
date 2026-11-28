@@ -1,9 +1,4 @@
 #!/bin/bash
-# ==========================================
-# Meister ROS 2 ビルドスクリプト
-# 使い方: ./build.sh
-# 並列ビルド + symlink-install で高速化
-# ==========================================
 set -eo pipefail
 
 WORKSPACE_ROOT=$(cd "$(dirname "$0")" && pwd)

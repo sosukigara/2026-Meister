@@ -2,8 +2,7 @@
 
 #include "foc_config.h"
 
-// Calibration commands. Kept separate from bring-up and motion: alignment blocks for
-// seconds and must never run while another channel is energised.
+// Alignment blocks for seconds and must never run while another channel is energised.
 
 void FocDrive::reportZeroElec(const char* tag) {
   printPrefix();

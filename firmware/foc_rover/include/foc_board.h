@@ -1,9 +1,6 @@
 #ifndef FOC_BOARD_H
 #define FOC_BOARD_H
 
-// Board-level plumbing below the motor layer: I2C bus ownership, the AS5600 fast-mode
-// register write and the supply-voltage sense gate.
-
 #include <Arduino.h>
 #include <Wire.h>
 

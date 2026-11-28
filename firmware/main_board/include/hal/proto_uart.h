@@ -1,9 +1,5 @@
-/*
- * proto_uart.h — プロトコル UART のリンク層
- *
- * どのポート（Serial2 / UART0）を使うか、ボーレートとピンは
- * meister_config.h の MSTE_* が決める。呼び出し側はその選択を知る必要なし。
- */
+// ポート・ボーレート・ピンは meister_config.h の MSTE_* が決める。
+// 呼び出し側はその選択を知る必要がない。
 #pragma once
 
 #include <stddef.h>
