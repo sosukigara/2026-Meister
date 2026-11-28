@@ -59,8 +59,9 @@ size_t EncodeFrame(uint8_t* buf, size_t cap, const Sample& sample) {
     PutI16(&buf[6 + 2 * i], sample.accel[i]);
     PutI16(&buf[12 + 2 * i], sample.gyro[i]);
   }
-  buf[18] = sample.status;
-  buf[19] = ComputeChecksum(buf, kFrameSize - 1);
+  PutI16(&buf[18], static_cast<int16_t>(sample.yaw_centideg));
+  buf[20] = sample.status;
+  buf[21] = ComputeChecksum(buf, kFrameSize - 1);
   return kFrameSize;
 }
 
@@ -74,7 +75,8 @@ bool DecodeFrame(const uint8_t* data, size_t len, Sample* out) {
     out->accel[i] = GetI16(&data[6 + 2 * i]);
     out->gyro[i] = GetI16(&data[12 + 2 * i]);
   }
-  out->status = data[18];
+  out->yaw_centideg = static_cast<uint16_t>(GetI16(&data[18]));
+  out->status = data[20];
   return true;
 }
 

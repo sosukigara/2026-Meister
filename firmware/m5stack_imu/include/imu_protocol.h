@@ -8,7 +8,7 @@ namespace protocol {
 
 constexpr uint8_t kHeader = 0xA5;
 constexpr uint8_t kTypeImu6Axis = 0x84;
-constexpr size_t kPayloadSize = 17;  // timestamp(4) + 6 axes(12) + status(1)
+constexpr size_t kPayloadSize = 19;  // timestamp(4) + 6 axes(12) + yaw(2) + status(1)
 constexpr size_t kFrameSize = 1 + 1 + kPayloadSize + 1;
 
 enum StatusBits : uint8_t {
@@ -20,6 +20,7 @@ struct Sample {
   uint32_t timestamp_ms = 0;
   int16_t accel[3] = {0, 0, 0};  // milli-G
   int16_t gyro[3] = {0, 0, 0};   // centi-deg/s
+  uint16_t yaw_centideg = 0;     // 積分 yaw [centi-deg], 0..36000
   uint8_t status = 0;
 };
 
