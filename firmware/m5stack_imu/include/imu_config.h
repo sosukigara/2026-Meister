@@ -9,6 +9,8 @@ namespace config {
 constexpr uint32_t kTxIntervalMs = 50;      // 20 Hz
 constexpr uint32_t kDrawIntervalMs = 100;   // 画面更新 10 Hz
 constexpr uint32_t kSerialBaud = 115200;
+// この期間以上 IMU から新鮮な値が来なければ status に kImuMissing を立てる。
+constexpr uint32_t kImuFreshTimeoutMs = 1000;
 
 // プロトコル上の固定小数点スケール（実測値ではなく表現の選択）。
 // 出典: M5Unified の imu_data_t は accel = G, gyro = deg/s。

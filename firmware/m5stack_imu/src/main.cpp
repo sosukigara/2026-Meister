@@ -10,6 +10,8 @@
 namespace {
 
 meister_imu::ImuView g_view;
+meister_imu::RawImu g_latest;
+uint32_t g_last_fresh_ms = 0;
 uint32_t g_last_tx_ms = 0;
 uint32_t g_last_draw_ms = 0;
 uint32_t g_window_start_ms = 0;
@@ -49,18 +51,22 @@ void setup() {
 
 void loop() {
   const uint32_t now = millis();
-  const bool updated = M5.Imu.update() != 0;
-  const m5::imu_data_t data = M5.Imu.getImuData();
+  if (M5.Imu.update() != 0) {
+    const m5::imu_data_t data = M5.Imu.getImuData();
+    g_latest.accel[0] = data.accel.x;
+    g_latest.accel[1] = data.accel.y;
+    g_latest.accel[2] = data.accel.z;
+    g_latest.gyro[0] = data.gyro.x;
+    g_latest.gyro[1] = data.gyro.y;
+    g_latest.gyro[2] = data.gyro.z;
+    g_latest.timestamp_ms = data.usec / 1000;
+    g_last_fresh_ms = now;
+  }
 
-  meister_imu::RawImu raw;
-  raw.accel[0] = data.accel.x;
-  raw.accel[1] = data.accel.y;
-  raw.accel[2] = data.accel.z;
-  raw.gyro[0] = data.gyro.x;
-  raw.gyro[1] = data.gyro.y;
-  raw.gyro[2] = data.gyro.z;
-  raw.timestamp_ms = data.usec / 1000;
-  raw.present = updated;
+  // 送信瞬間の update() 結果ではなく、直近の新鮮な値を送る。
+  meister_imu::RawImu raw = g_latest;
+  raw.present = g_last_fresh_ms != 0 &&
+                (now - g_last_fresh_ms) <= meister_imu::config::kImuFreshTimeoutMs;
 
   meister_imu::protocol::Sample sample;
   meister_imu::ConvertSample(raw, &sample);
