@@ -1,49 +1,48 @@
 amcl:
   ros__parameters:
     use_sim_time: false
-    alpha1: 0.2
-    alpha2: 0.2
-    alpha3: 0.2
-    alpha4: 0.2
-    alpha5: 0.2
+    alpha1: 0.15
+    alpha2: 0.15
+    alpha3: 0.15
+    alpha4: 0.15
+    alpha5: 0.10
     base_frame_id: "base_footprint"
     beam_skip_distance: 0.5
     beam_skip_error_threshold: 0.9
     beam_skip_threshold: 0.3
-    do_beamskip: false
+    # 歩行者など動的障害物による粒子崩壊を防ぐ
+    do_beamskip: true
     global_frame_id: "map"
     lambda_short: 0.1
     laser_likelihood_max_dist: 2.0
     laser_max_range: 12.0
-    laser_min_range: 0.1
+    laser_min_range: 0.12
     laser_model_type: "likelihood_field"
-    max_beams: 60
-    max_particles: 2000
-    min_particles: 500
+    # 10Hz LiDAR (720 bins) を密に評価しつつ RK3588 CPU 負荷を抑制
+    max_beams: 120
+    max_particles: 1500
+    min_particles: 300
     odom_frame_id: "odom"
     pf_err: 0.05
     pf_z: 0.99
     recovery_alpha_fast: 0.0
     recovery_alpha_slow: 0.0
     resample_interval: 1
-    robot_model_type: "nav2_amcl::HolonomicRobotModel"
+    # 6輪・前後4WSは非ホロノミック（HolonomicRobotModel は不整合のため修正）
+    robot_model_type: "nav2_amcl::DifferentialMotionModel"
     save_pose_rate: 0.5
-    sigma_hit: 0.2
+    sigma_hit: 0.10
     tf_broadcast: true
-    transform_tolerance: 1.0
-    update_min_a: 0.2
-    update_min_d: 0.25
-    z_hit: 0.5
-    z_max: 0.05
-    z_rand: 0.5
-    z_short: 0.05
-    scan_topic: scan
-    set_initial_pose: true
-    initial_pose:
-      x: -4.0
-      y: -4.0
-      z: 0.0
-      yaw: 0.0
+    transform_tolerance: 0.5
+    # 0.25 m/s 低速運用に合わせて高頻度に更新する
+    update_min_a: 0.05
+    update_min_d: 0.05
+    z_hit: 0.85
+    z_max: 0.02
+    z_rand: 0.10
+    z_short: 0.03
+    scan_topic: /scan
+    set_initial_pose: false
 
 bt_navigator:
   ros__parameters:
@@ -51,13 +50,7 @@ bt_navigator:
     global_frame: map
     robot_base_frame: base_footprint
     odom_topic: /odom
-    bt_loop_duration: 10
-    # BT がアクションサーバの受付 (ack) を待つ時間 [ms]。Nav2 既定の 20 ms は
-    # この機体では短すぎる: シミュレーションで 8 回中 5 回の失敗がこの ack 待ちで
-    # 起き、しかも失敗の 3.5 秒後に controller は「ゴール到達」していた (シミュレーションでの実測)。
-    # 実機は負荷が軽いので同じ値で問題ない見込み。★要確認★ 実機ベンチで
-    # 失敗時の検知が遅すぎないことを見ること。
-    # 成功/失敗の判定は変えず、遅いだけの受付を失敗と誤認しない値にする。
+    bt_loop_duration: 20
     default_server_timeout: 500
     navigators: ["navigate_to_pose", "navigate_through_poses"]
     navigate_to_pose:
@@ -68,63 +61,160 @@ bt_navigator:
 controller_server:
   ros__parameters:
     use_sim_time: false
-    controller_frequency: 20.0
-    min_x_velocity_threshold: 0.001
-    min_y_velocity_threshold: 0.01
-    min_theta_velocity_threshold: 0.001
-    failure_tolerance: 0.3
+    # 0.25 m/s 低速 + 10Hz LiDAR 運用に最適化（20Hz 比で CPU 負荷を約 40% 削減）
+    controller_frequency: 12.0
+    min_x_velocity_threshold: 0.005
+    min_y_velocity_threshold: 0.05
+    min_theta_velocity_threshold: 0.005
+    failure_tolerance: 0.5
     progress_checker_plugins: ["progress_checker"]
     goal_checker_plugins: ["general_goal_checker"]
     controller_plugins: ["FollowPath"]
 
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.5
-      movement_time_allowance: 10.0
+      # 0.25 m/s + 切り返しを考慮し、誤った停滞判定を防ぐ
+      required_movement_radius: 0.20
+      movement_time_allowance: 12.0
 
     general_goal_checker:
       stateful: true
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.25
+      xy_goal_tolerance: 0.15
+      yaw_goal_tolerance: 0.20
 
+    # 低速 4WS 向け軽量 Ackermann MPPI:
+    # 矩形 footprint 衝突回避と歩行者などの動的障害物回避を両立しつつ、
+    # RK3588 CPU で余裕を持って回る batch_size=600 / time_steps=32 に調整。
     FollowPath:
-      plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
-      desired_linear_vel: 1.0
-      lookahead_dist: 0.6
-      min_lookahead_dist: 0.3
-      max_lookahead_dist: 0.9
-      lookahead_time: 1.5
-      rotate_to_heading_angular_vel: 1.0
-      transform_tolerance: 0.1
-      use_velocity_scaled_lookahead_dist: false
-      min_approach_linear_velocity: 0.05
-      approach_velocity_scaling_dist: 0.6
-      use_collision_detection: true
-      max_allowed_time_to_collision_up_to_carrot: 1.0
-      use_regulated_linear_velocity_scaling: true
-      use_fixed_curvature_lookahead: false
-      curvature_scaled_lookahead_dist: 0.6
-      use_cost_regulated_linear_velocity_scaling: true
-      regulated_linear_scaling_min_radius: 0.9
-      regulated_linear_scaling_min_speed: 0.25
-      use_rotate_to_heading: false  # アッカーマン(操舵付き6輪)はその場旋回不可。RPP のカーブ追従で方向修正する
-      allow_reversing: false
-      rotate_to_heading_min_angle: 0.785
-      max_angular_accel: 3.2
-      max_robot_pose_search_dist: 10.0
-      use_interpolation: true
+      plugin: "nav2_mppi_controller::MPPIController"
+      time_steps: 32
+      model_dt: 0.10
+      batch_size: 600
+      iteration_count: 1
+      prune_distance: 1.5
+      transform_tolerance: 0.2
+      temperature: 0.3
+      gamma: 0.015
+      motion_model: "Ackermann"
+      visualize: false
+      vx_std: 0.08
+      vy_std: 0.0
+      wz_std: 0.25
+      vx_max: 0.25
+      vx_min: -0.15
+      vy_max: 0.0
+      wz_max: 0.60
+      ax_max: 0.40
+      ax_min: -0.60
+      az_max: 0.80
+      AckermannConstraints:
+        # 前後4WS最小旋回半径 [m]（実測後に meister_robot.yaml と揃えて更新）
+        min_turning_r: 0.60
+
+      critics:
+        [
+          "ConstraintCritic",
+          "ObstaclesCritic",
+          "GoalCritic",
+          "GoalAngleCritic",
+          "PreferForwardCritic",
+          "TwirlingCritic",
+          "PathAlignCritic",
+          "PathFollowCritic",
+          "PathAngleCritic",
+        ]
+
+      ConstraintCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 4.0
+      ObstaclesCritic:
+        enabled: true
+        cost_power: 1
+        consider_footprint: true
+        repulsion_weight: 2.0
+        critical_weight: 25.0
+        collision_cost: 10000.0
+        collision_margin_distance: 0.12
+        near_goal_distance: 0.4
+      GoalCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        threshold_to_consider: 1.0
+      GoalAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 3.0
+        threshold_to_consider: 0.4
+      PreferForwardCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 3.0
+        threshold_to_consider: 0.5
+      TwirlingCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 8.0
+      PathAlignCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 12.0
+        max_path_occupancy_ratio: 0.05
+        trajectory_point_step: 4
+        threshold_to_consider: 0.5
+        offset_from_furthest: 16
+        use_path_orientations: true
+      PathFollowCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 5.0
+        offset_from_furthest: 5
+        threshold_to_consider: 1.0
+      PathAngleCritic:
+        enabled: true
+        cost_power: 1
+        cost_weight: 2.0
+        offset_from_furthest: 4
+        threshold_to_consider: 0.4
+        max_angle_to_furthest: 1.0
+        mode: 2
 
 planner_server:
   ros__parameters:
     use_sim_time: false
-    expected_planner_frequency: 5.0
+    expected_planner_frequency: 2.0
     planner_plugins: ["GridBased"]
+    # 狭い通路での切り返しと矩形 footprint 回避を行う Reeds-Shepp Hybrid-A*
     GridBased:
-      plugin: "nav2_navfn_planner::NavfnPlanner"
-      tolerance: 0.5
-      use_astar: false
+      plugin: "nav2_smac_planner::SmacPlannerHybrid"
+      downsample_costmap: false
+      downsampling_factor: 1
+      tolerance: 0.25
       allow_unknown: true
+      max_iterations: 200000
+      max_on_approach_iterations: 1000
+      max_planning_time: 2.0
+      motion_model_for_search: "REEDS_SHEPP"
+      angle_quantization_bins: 72
+      analytic_expansion_ratio: 3.5
+      analytic_expansion_max_length: 2.5
+      minimum_turning_radius: 0.60
+      reverse_penalty: 2.0
+      change_penalty: 0.15
+      non_straight_penalty: 1.2
+      cost_penalty: 2.5
+      retrospective_penalty: 0.015
+      lookup_table_size: 12.0
+      cache_obstacle_heuristic: true
+      smooth_path: true
+      smoother:
+        max_iterations: 500
+        w_smooth: 0.3
+        w_data: 0.2
+        tolerance: 1.0e-6
+        do_refinement: true
 
 behavior_server:
   ros__parameters:
@@ -132,9 +222,8 @@ behavior_server:
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
-    behavior_plugins: ["spin", "backup", "drive_on_heading", "wait"]
-    spin:
-      plugin: "nav2_behaviors::Spin"
+    # 6輪・前後4WSはその場旋回不可のため spin を除外し、後退と待機で復帰する
+    behavior_plugins: ["backup", "drive_on_heading", "wait"]
     backup:
       plugin: "nav2_behaviors::BackUp"
     drive_on_heading:
@@ -143,23 +232,24 @@ behavior_server:
       plugin: "nav2_behaviors::Wait"
     global_frame: odom
     robot_base_frame: base_footprint
-    transform_tolerance: 0.1
+    transform_tolerance: 0.2
     simulate_ahead_time: 2.0
-    max_rotational_vel: 1.0
-    min_rotational_vel: 0.4
-    rotational_acc_lim: 3.2
+    max_rotational_vel: 0.60
+    min_rotational_vel: 0.15
+    rotational_acc_lim: 0.80
 
 velocity_smoother:
   ros__parameters:
     use_sim_time: false
-    smoothing_frequency: 40.0
+    # 0.25 m/s 低速機体には 20 Hz で十分（40 Hz から削減）
+    smoothing_frequency: 20.0
     scale_velocities: false
     feedback: "OPEN_LOOP"
-    max_velocity: [1.0, 1.0, 2.0]
-    min_velocity: [-1.0, -1.0, -2.0]
-    max_accel: [5.0, 5.0, 4.0]
-    max_decel: [-5.0, -5.0, -4.0]
-    odom_topic: odom
+    max_velocity: [0.25, 0.0, 0.60]
+    min_velocity: [-0.15, 0.0, -0.60]
+    max_accel: [0.40, 0.0, 0.80]
+    max_decel: [-0.60, 0.0, -1.00]
+    odom_topic: /odom
     odom_duration: 0.1
     deadband_velocity: [0.0, 0.0, 0.0]
     velocity_topic: cmd_vel_nav
@@ -169,15 +259,18 @@ local_costmap:
   local_costmap:
     ros__parameters:
       use_sim_time: false
-      update_frequency: 5.0
+      # 10Hz LiDAR に同期させ、歩行者の接近を即座に MPPI へ反映する
+      update_frequency: 10.0
       publish_frequency: 2.0
       global_frame: odom
       robot_base_frame: base_footprint
       rolling_window: true
-      width: 3
-      height: 3
+      width: 4
+      height: 4
       resolution: 0.05
-      robot_radius: 0.35
+      # 車輪配置 x=±0.30, y=±0.25 + 車体・タイヤ余裕（実測後に更新）
+      footprint: "[[0.38, 0.30], [0.38, -0.30], [-0.38, -0.30], [-0.38, 0.30]]"
+      footprint_padding: 0.02
       plugins: ["obstacle_layer", "inflation_layer"]
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
@@ -189,14 +282,14 @@ local_costmap:
           clearing: true
           marking: true
           data_type: "LaserScan"
-          raytrace_max_range: 3.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
+          raytrace_max_range: 4.0
+          raytrace_min_range: 0.12
+          obstacle_max_range: 3.5
+          obstacle_min_range: 0.12
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 20.0
-        inflation_radius: 1.5
+        cost_scaling_factor: 5.0
+        inflation_radius: 0.65
       always_send_full_costmap: true
 
 global_costmap:
@@ -207,7 +300,8 @@ global_costmap:
       publish_frequency: 1.0
       global_frame: map
       robot_base_frame: base_footprint
-      robot_radius: 0.35
+      footprint: "[[0.38, 0.30], [0.38, -0.30], [-0.38, -0.30], [-0.38, 0.30]]"
+      footprint_padding: 0.02
       resolution: 0.05
       track_unknown_space: true
       plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
@@ -224,14 +318,14 @@ global_costmap:
           clearing: true
           marking: true
           data_type: "LaserScan"
-          raytrace_max_range: 3.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
+          raytrace_max_range: 4.0
+          raytrace_min_range: 0.12
+          obstacle_max_range: 3.5
+          obstacle_min_range: 0.12
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 20.0
-        inflation_radius: 1.5
+        cost_scaling_factor: 5.0
+        inflation_radius: 0.65
       always_send_full_costmap: true
 
 map_server:

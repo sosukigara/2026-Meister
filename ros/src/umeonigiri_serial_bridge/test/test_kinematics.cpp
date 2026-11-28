@@ -163,3 +163,42 @@ TEST(AckermannImuOdometry, WrapAngleNormalizesToMinusPiToPi) {
   EXPECT_NEAR(msb::AckermannImuOdometry::WrapAngle(-3.0 * M_PI / 2.0), M_PI / 2.0, 1e-12);
   EXPECT_NEAR(msb::AckermannImuOdometry::WrapAngle(5.0 * M_PI / 4.0), -3.0 * M_PI / 4.0, 1e-12);
 }
+
+TEST(TwistToSixWheelActuators, LeftTurnCounterSteersWithAckermannAndDifferentialSpeed) {
+  msb::TwistKinematics k;
+  k.wheelbase_m = 0.60;
+  k.track_width_m = 0.50;
+  k.max_linear_vel_mps = 0.28;
+  k.max_steering_deg = 30.0;
+  k.use_4ws_ackermann = true;
+
+  // vx = 0.20 m/s, wz = 0.20 rad/s -> R = 1.0 m 左旋回
+  const auto sw = msb::TwistToSixWheelActuators(0.20, 0.20, k);
+  // 前輪は正、後輪は負の逆位相、中間2輪は固定 0
+  EXPECT_GT(sw.steering_tenths[0], 0);
+  EXPECT_GT(sw.steering_tenths[1], 0);
+  EXPECT_EQ(sw.steering_tenths[2], 0);
+  EXPECT_EQ(sw.steering_tenths[3], 0);
+  EXPECT_LT(sw.steering_tenths[4], 0);
+  EXPECT_LT(sw.steering_tenths[5], 0);
+  // アッカーマン内外輪差: 内側(FL) の舵角 > 外側(FR) の舵角
+  EXPECT_GT(sw.steering_tenths[0], sw.steering_tenths[1]);
+  // 左右差速: 外側(FR/MR/RR) > 内側(FL/ML/RL)
+  EXPECT_GT(sw.velocity_permille[1], sw.velocity_permille[0]);
+  EXPECT_GT(sw.velocity_permille[3], sw.velocity_permille[2]);
+  EXPECT_GT(sw.velocity_permille[5], sw.velocity_permille[4]);
+}
+
+TEST(TwistToSixWheelActuators, ScalesAllSixWheelsProportionallyWhenOuterWheelSaturates) {
+  msb::TwistKinematics k;
+  k.wheelbase_m = 0.60;
+  k.track_width_m = 0.50;
+  k.max_linear_vel_mps = 0.25;
+  k.max_steering_deg = 30.0;
+  k.use_4ws_ackermann = true;
+
+  const auto sw = msb::TwistToSixWheelActuators(0.25, 0.25, k);
+  // 外輪が 1000 に飽和しても、内輪は等比スケールされて外輪より確実に遅い
+  EXPECT_EQ(sw.velocity_permille[1], 1000);
+  EXPECT_LT(sw.velocity_permille[0], 700);
+}

@@ -46,12 +46,12 @@ class SerialBridgeNode final : public rclcpp::Node {
     BridgeParams params;
     params.serial_port = declare_parameter<std::string>("serial_port", kDefaultPort);
     params.baud = declare_parameter<int>("baud", kDefaultBaud);
-    params.kinematics.wheelbase_m = declare_parameter<double>("wheelbase", 0.30);
-    // vx [m/s] -> パーミル指令の正規化値。実機の実測最高速と一致していないと
-    // 指令速度と実速度がずれ、AckermannImuOdometry もその分ドリフトする。
-    // 5 km/h (1.39 m/s) を狙うなら実測後に launch から上書きする。
-    // ★要確認★ 1.0 は実測値ではなく従来既定のまま（R4）。
-    params.kinematics.max_linear_vel_mps = declare_parameter<double>("max_linear_vel", 1.0);
+    params.kinematics.wheelbase_m = declare_parameter<double>("wheelbase", 0.60);
+    params.kinematics.track_width_m = declare_parameter<double>("track_width", 0.50);
+    params.kinematics.use_4ws_ackermann = declare_parameter<bool>("use_4ws_ackermann", true);
+    // vx [m/s] -> パーミル指令の正規化値。LA8308 KV90 / 12V / 20:1 / φ100mm の
+    // 無負荷理論上限は 0.283 m/s。実測後に launch から上書きする。
+    params.kinematics.max_linear_vel_mps = declare_parameter<double>("max_linear_vel", 0.28);
     params.kinematics.max_steering_deg =
         declare_parameter<double>("max_steering_deg", 30.0);
     params.kinematics.steer_invert = declare_parameter<bool>("steer_invert", false);
@@ -84,6 +84,22 @@ class SerialBridgeNode final : public rclcpp::Node {
     odom_cfg.max_steering_deg = params.kinematics.max_steering_deg;
     odom_cfg.cmd_timeout_s = params.cmd_timeout_s;
     odom_cfg.imu_yaw_fusion_gain = declare_parameter<double>("imu_yaw_fusion_gain", 0.85);
+    odom_cfg.imu_use_differential_yaw =
+        declare_parameter<bool>("imu_use_differential_yaw", true);
+    odom_cfg.imu_wz_fusion_gain = declare_parameter<double>("imu_wz_fusion_gain", 0.70);
+    odom_cfg.imu_require_gyro_calib =
+        declare_parameter<bool>("imu_require_gyro_calib", false);
+    odom_cfg.imu_max_jump_rad_per_s =
+        declare_parameter<double>("imu_max_jump_rad_per_s", 3.5);
+    odom_cfg.imu_max_innovation_rad_per_s =
+        declare_parameter<double>("imu_max_innovation_rad_per_s", 1.2);
+    odom_cfg.use_encoder_feedback =
+        declare_parameter<bool>("use_encoder_feedback", false);
+    odom_cfg.encoder_units_to_mps =
+        declare_parameter<double>("encoder_units_to_mps", 0.001);
+    odom_cfg.encoder_timeout_s =
+        declare_parameter<double>("encoder_timeout_s", 0.25);
+
     odometry_ = std::make_unique<OdometryPublisher>(
         *this, odom_cfg, publish_odom_, publish_odom_tf_, odom_frame_id_, base_frame_id_);
     feedback_publisher_ = std::make_unique<FeedbackPublisher>(*this);
@@ -139,10 +155,13 @@ class SerialBridgeNode final : public rclcpp::Node {
     rx_thread_ = std::thread([this] { RxLoop(); });
 
     RCLCPP_INFO(get_logger(),
-                "serial bridge: port=%s baud=%d wheelbase=%.2f max_vel=%.2f max_steer=%.1fdeg odom=%.0fHz",
+                "serial bridge: port=%s baud=%d wheelbase=%.2f max_vel=%.2f max_steer=%.1fdeg "
+                "odom=%.0fHz enc_fb=%s imu_diff=%s",
                 params.serial_port.c_str(), params.baud, params.kinematics.wheelbase_m,
                 params.kinematics.max_linear_vel_mps,
-                params.kinematics.max_steering_deg, odom_rate_hz);
+                params.kinematics.max_steering_deg, odom_rate_hz,
+                odom_cfg.use_encoder_feedback ? "on" : "off",
+                odom_cfg.imu_use_differential_yaw ? "on" : "off");
   }
 
   ~SerialBridgeNode() override {
@@ -231,11 +250,13 @@ class SerialBridgeNode final : public rclcpp::Node {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         continue;
       }
+      const double rx_now = NowSeconds();
       for (const auto& fb : states) {
+        odometry_->UpdateWheelFeedback(fb, rx_now);
         feedback_publisher_->PublishState(fb);
       }
       for (const auto& imu : imus) {
-        odometry_->UpdateImuReport(imu, NowSeconds());
+        odometry_->UpdateImuReport(imu, rx_now);
         feedback_publisher_->PublishImu(imu);
       }
       for (uint8_t code : fb_errors) {

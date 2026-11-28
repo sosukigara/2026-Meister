@@ -1,19 +1,26 @@
+#include <nav_msgs/msg/odometry.hpp>
 #include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/laser_scan.hpp>
 
 #include <errno.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <termios.h>
 #include <unistd.h>
 
 #include <algorithm>
 #include <array>
+#include <atomic>
 #include <cmath>
 #include <cstdint>
 #include <cstring>
 #include <limits>
 #include <string>
+#include <thread>
 #include <vector>
+
+#include "umeonigiri_lidar/scan_processor.hpp"
 
 namespace
 {
@@ -45,14 +52,33 @@ public:
     baudrate_ = this->declare_parameter<int>("baudrate", 230400);
     frame_id_ = this->declare_parameter<std::string>("frame_id", "lidar_link");
     topic_name_ = this->declare_parameter<std::string>("topic_name", "/scan");
+    odom_topic_ = this->declare_parameter<std::string>("odom_topic", "/odom");
+    imu_topic_ = this->declare_parameter<std::string>("imu_topic", "/imu/data");
 
-    range_min_ = this->declare_parameter<double>("range_min", 0.03);
+    range_min_ = this->declare_parameter<double>("range_min", 0.12);
     range_max_ = this->declare_parameter<double>("range_max", 12.0);
     scan_frequency_ = this->declare_parameter<double>("scan_frequency", 10.0);
 
     clockwise_ = this->declare_parameter<bool>("clockwise", true);
     angle_offset_deg_ = this->declare_parameter<double>("angle_offset_deg", 0.0);
     bins_ = this->declare_parameter<int>("bins", 720);
+
+    filter_cfg_.speckle_filter_enabled =
+      this->declare_parameter<bool>("speckle_filter_enabled", true);
+    filter_cfg_.speckle_max_neighbor_diff_m = static_cast<float>(
+      this->declare_parameter<double>("speckle_max_neighbor_diff", 0.25));
+    filter_cfg_.deskew_enabled =
+      this->declare_parameter<bool>("deskew_enabled", true);
+    filter_cfg_.deskew_min_wz_rad_s =
+      this->declare_parameter<double>("deskew_min_wz", 0.05);
+    filter_cfg_.deskew_sign =
+      this->declare_parameter<double>("deskew_sign", 1.0);
+    filter_cfg_.min_intensity =
+      this->declare_parameter<int>("min_intensity", 15);
+    filter_cfg_.tilt_compensation_enabled =
+      this->declare_parameter<bool>("tilt_compensation_enabled", false);
+    filter_cfg_.max_tilt_rad =
+      this->declare_parameter<double>("max_tilt_rad", 0.25);
 
     if (bins_ < 90) {
       bins_ = 360;
@@ -63,9 +89,32 @@ public:
 
     ranges_.assign(bins_, std::numeric_limits<float>::infinity());
     intensities_.assign(bins_, 0.0f);
+    speckle_scratch_.resize(bins_);
     rx_buffer_.reserve(4096);
 
     scan_pub_ = this->create_publisher<sensor_msgs::msg::LaserScan>(topic_name_, 10);
+
+    if (filter_cfg_.tilt_compensation_enabled && !imu_topic_.empty()) {
+      imu_sub_ = this->create_subscription<sensor_msgs::msg::Imu>(
+        imu_topic_, rclcpp::SensorDataQoS(),
+        [this](const sensor_msgs::msg::Imu::SharedPtr msg) {
+          const auto & q = msg->orientation;
+          const double sinr = 2.0 * (q.w * q.x + q.y * q.z);
+          const double cosr = 1.0 - 2.0 * (q.x * q.x + q.y * q.y);
+          const double sinp = std::clamp(2.0 * (q.w * q.y - q.z * q.x), -1.0, 1.0);
+          latest_roll_.store(std::atan2(sinr, cosr), std::memory_order_relaxed);
+          latest_pitch_.store(std::asin(sinp), std::memory_order_relaxed);
+        });
+    }
+
+    if (filter_cfg_.deskew_enabled && !odom_topic_.empty()) {
+      odom_sub_ = this->create_subscription<nav_msgs::msg::Odometry>(
+        odom_topic_, rclcpp::SensorDataQoS(),
+        [this](const nav_msgs::msg::Odometry::SharedPtr msg) {
+          latest_wz_.store(msg->twist.twist.angular.z, std::memory_order_relaxed);
+          latest_odom_ns_.store(this->now().nanoseconds(), std::memory_order_relaxed);
+        });
+    }
 
     if (!openSerial()) {
       RCLCPP_ERROR(this->get_logger(), "Failed to open serial port: %s", port_.c_str());
@@ -74,19 +123,26 @@ public:
 
     RCLCPP_INFO(
       this->get_logger(),
-      "LDLiDAR D500 decoder started on %s at %d baud",
+      "LDLiDAR D500 decoder started on %s at %d baud (speckle=%s deskew=%s min_int=%d range_min=%.2fm)",
       port_.c_str(),
-      baudrate_
+      baudrate_,
+      filter_cfg_.speckle_filter_enabled ? "on" : "off",
+      filter_cfg_.deskew_enabled ? "on" : "off",
+      filter_cfg_.min_intensity,
+      range_min_
     );
 
-    timer_ = this->create_wall_timer(
-      std::chrono::milliseconds(2),
-      std::bind(&D500Node::readLoop, this)
-    );
+    // 500Hz タイマーポーリングをやめ、poll() ブロッキング待機スレッドで受信する。
+    rx_stop_.store(false, std::memory_order_relaxed);
+    rx_thread_ = std::thread([this] { pollLoop(); });
   }
 
   ~D500Node()
   {
+    rx_stop_.store(true, std::memory_order_relaxed);
+    if (rx_thread_.joinable()) {
+      rx_thread_.join();
+    }
     if (serial_fd_ >= 0) {
       close(serial_fd_);
     }
@@ -111,6 +167,34 @@ private:
       crc = kCrc8Table[crc ^ data[i]];
     }
     return crc;
+  }
+
+  double currentScanTimeSec(uint16_t speed) const noexcept
+  {
+    double scan_time_s = 1.0 / scan_frequency_;
+    if (speed > 0) {
+      const double measured_s = 360.0 / static_cast<double>(speed);
+      if (measured_s >= 0.02 && measured_s <= 2.0) {
+        scan_time_s = measured_s;
+      }
+    }
+    return scan_time_s;
+  }
+
+  double activeAngularVel() const
+  {
+    if (!filter_cfg_.deskew_enabled) {
+      return 0.0;
+    }
+    const int64_t stamp_ns = latest_odom_ns_.load(std::memory_order_relaxed);
+    if (stamp_ns <= 0) {
+      return 0.0;
+    }
+    const int64_t age_ns = this->now().nanoseconds() - stamp_ns;
+    if (age_ns < 0 || age_ns > 300000000LL) {
+      return 0.0;
+    }
+    return latest_wz_.load(std::memory_order_relaxed);
   }
 
   bool openSerial()
@@ -173,6 +257,19 @@ private:
     }
   }
 
+  void pollLoop()
+  {
+    pollfd pfd{};
+    pfd.fd = serial_fd_;
+    pfd.events = POLLIN;
+    while (!rx_stop_.load(std::memory_order_relaxed) && rclcpp::ok()) {
+      const int ret = poll(&pfd, 1, 50);
+      if (ret > 0 && (pfd.revents & POLLIN) != 0) {
+        readLoop();
+      }
+    }
+  }
+
   void readLoop()
   {
     if (serial_fd_ < 0) {
@@ -201,7 +298,6 @@ private:
 
   void parsePackets()
   {
-    // erase(begin) によるパケットごとの O(N) memmove を避け、rx_head_ を進めて遅延圧縮する。
     while (rx_buffer_.size() - rx_head_ >= PACKET_SIZE) {
       const uint8_t* ptr = rx_buffer_.data() + rx_head_;
       const size_t avail = rx_buffer_.size() - rx_head_;
@@ -250,6 +346,8 @@ private:
     }
 
     const double step = diff / static_cast<double>(POINTS_PER_PACKET - 1);
+    const double scan_time_s = currentScanTimeSec(speed);
+    const double wz = activeAngularVel();
 
     for (int i = 0; i < POINTS_PER_PACKET; ++i) {
       const size_t offset = 6 + static_cast<size_t>(i) * 3;
@@ -261,25 +359,42 @@ private:
         angle_deg -= 360.0;
       }
 
-      // 0° を跨ぐパケットの前後で点が混ざらないよう、点単位のラップでスキャンを区切る。
       if (has_last_angle_ && last_point_angle_deg_ > 270.0 && angle_deg < 90.0) {
         publishScan(speed);
         resetScan();
       }
 
-      addPoint(angle_deg, distance_mm, intensity);
+      const double frac = angle_deg / 360.0;
+      const double deskew_deg = umeonigiri_lidar::ComputeDeskewAngleOffsetDeg(
+        frac, scan_time_s, wz, filter_cfg_.deskew_min_wz_rad_s, filter_cfg_.deskew_sign);
+      addPoint(angle_deg, deskew_deg, distance_mm, intensity);
       last_point_angle_deg_ = angle_deg;
       has_last_angle_ = true;
     }
   }
 
-  void addPoint(double angle_deg, uint16_t distance_mm, uint8_t intensity)
+  void addPoint(double angle_deg, double deskew_deg, uint16_t distance_mm, uint8_t intensity)
   {
     if (distance_mm == 0) {
       return;
     }
+    if (filter_cfg_.min_intensity > 0 && static_cast<int>(intensity) < filter_cfg_.min_intensity) {
+      return;
+    }
 
-    const double range_m = static_cast<double>(distance_mm) * 0.001;
+    double range_m = static_cast<double>(distance_mm) * 0.001;
+    if (filter_cfg_.tilt_compensation_enabled) {
+      const double beam_rad = (angle_deg + angle_offset_deg_) * (M_PI / 180.0);
+      const float proj = umeonigiri_lidar::ProjectRangeToHorizontal(
+        static_cast<float>(range_m), beam_rad,
+        latest_roll_.load(std::memory_order_relaxed),
+        latest_pitch_.load(std::memory_order_relaxed),
+        filter_cfg_.max_tilt_rad);
+      if (!std::isfinite(proj)) {
+        return;
+      }
+      range_m = static_cast<double>(proj);
+    }
     if (range_m < range_min_ || range_m > range_max_) {
       return;
     }
@@ -288,13 +403,11 @@ private:
       angle_deg = 360.0 - angle_deg;
     }
 
-    // LaserScan の angle_min=-pi に対応させるため +180° シフトして [0, 360) に正規化する。
-    double shifted_deg = std::fmod(angle_deg + angle_offset_deg_ + 180.0, 360.0);
+    double shifted_deg = std::fmod(angle_deg + angle_offset_deg_ + deskew_deg + 180.0, 360.0);
     if (shifted_deg < 0.0) {
       shifted_deg += 360.0;
     }
 
-    // 切り捨てだと全ビームが平均 0.5 ビン偏るため、最近傍丸め + 循環モジュロで割り当てる。
     const int index = static_cast<int>(std::lround(shifted_deg * bins_per_deg_)) % bins_;
 
     if (!std::isfinite(ranges_[index]) || range_m < ranges_[index]) {
@@ -305,23 +418,21 @@ private:
 
   void publishScan(uint16_t speed)
   {
+    if (filter_cfg_.speckle_filter_enabled) {
+      umeonigiri_lidar::ApplySpeckleFilter(
+        ranges_, filter_cfg_.speckle_max_neighbor_diff_m, speckle_scratch_);
+    }
+
     sensor_msgs::msg::LaserScan scan;
 
     scan.header.stamp = this->now();
     scan.header.frame_id = frame_id_;
 
     scan.angle_min = static_cast<float>(-M_PI);
-    // bins_ 個の配列に対し angle_min + (bins_ - 1) * angle_increment が厳密な最終ビン角度。
     scan.angle_max = static_cast<float>(-M_PI + angle_increment_ * static_cast<double>(bins_ - 1));
     scan.angle_increment = static_cast<float>(angle_increment_);
 
-    double scan_time_s = 1.0 / scan_frequency_;
-    if (speed > 0) {
-      const double measured_s = 360.0 / static_cast<double>(speed);
-      if (measured_s >= 0.02 && measured_s <= 2.0) {
-        scan_time_s = measured_s;
-      }
-    }
+    const double scan_time_s = currentScanTimeSec(speed);
     scan.scan_time = static_cast<float>(scan_time_s);
     scan.time_increment = static_cast<float>(scan_time_s / static_cast<double>(bins_));
 
@@ -354,6 +465,8 @@ private:
   std::string port_;
   std::string frame_id_;
   std::string topic_name_;
+  std::string odom_topic_;
+  std::string imu_topic_;
 
   int baudrate_;
   int serial_fd_{-1};
@@ -367,6 +480,14 @@ private:
   double angle_offset_deg_;
 
   bool clockwise_;
+  umeonigiri_lidar::ScanFilterConfig filter_cfg_{};
+
+  std::atomic<double> latest_wz_{0.0};
+  std::atomic<double> latest_roll_{0.0};
+  std::atomic<double> latest_pitch_{0.0};
+  std::atomic<int64_t> latest_odom_ns_{0};
+  std::atomic<bool> rx_stop_{false};
+  std::thread rx_thread_;
 
   bool has_last_angle_{false};
   double last_point_angle_deg_{0.0};
@@ -376,9 +497,11 @@ private:
   std::vector<uint8_t> rx_buffer_;
   std::vector<float> ranges_;
   std::vector<float> intensities_;
+  std::vector<float> speckle_scratch_;
 
   rclcpp::Publisher<sensor_msgs::msg::LaserScan>::SharedPtr scan_pub_;
-  rclcpp::TimerBase::SharedPtr timer_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
+  rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr imu_sub_;
 };
 
 int main(int argc, char** argv)

@@ -14,17 +14,10 @@
 namespace umeonigiri_webnav {
 namespace {
 
-/// fps は「枚数」ではなく「時間」で窓を切る。枚数窓だと配信が止まったときに
-/// 古いサンプルが残り、表示が実際より高く出たり揺れたりする。
 constexpr double kFpsWindowSeconds = 2.0;
-
-/// 1 応答に載せる検出の上限。壊れた detector が数千件を返しても UI と JSON が
-/// 破綻しないようにする。
 constexpr std::size_t kMaxDetections = 12;
-
 constexpr int kJpegQuality = 80;
 
-/// 1 画素あたりのチャンネル数。0 は「扱わない encoding」。
 int ChannelsOf(const std::string& encoding) {
   if (encoding == "mono8") {
     return 1;
@@ -38,18 +31,11 @@ int ChannelsOf(const std::string& encoding) {
   return 0;
 }
 
-/// 画像メッセージを BGR の cv::Mat にする。
-///
-/// cv_bridge を使わない: 使うのは step を尊重して Mat を張るだけの処理で、Jazzy の
-/// cv_bridge はヘッダ名も API も移行途中 (cv_bridge.hpp)。ここで encoding と step を
-/// 自分で検査する方が、受け取る形を狭く保てる。
-bool ToBgr(const sensor_msgs::msg::Image& msg, cv::Mat& bgr) {
+bool ToBgrOwned(const sensor_msgs::msg::Image& msg, cv::Mat& bgr) {
   const int channels = ChannelsOf(msg.encoding);
   if (channels == 0 || msg.width == 0 || msg.height == 0) {
     return false;
   }
-  // step が幅に足りない画像を cv::Mat に渡すと、範囲外を読む壊れた行列になる。
-  // 行列を張る前に落とす。
   if (msg.step < static_cast<std::uint32_t>(msg.width) * channels ||
       msg.data.size() < static_cast<std::size_t>(msg.step) * msg.height) {
     return false;
@@ -58,7 +44,8 @@ bool ToBgr(const sensor_msgs::msg::Image& msg, cv::Mat& bgr) {
   const cv::Mat view(static_cast<int>(msg.height), static_cast<int>(msg.width), type,
                      const_cast<unsigned char*>(msg.data.data()), msg.step);
   if (msg.encoding == "bgr8") {
-    bgr = view;
+    // msg の寿命が尽きても安全に遅延 JPEG エンコードできるよう独立バッファへコピーする
+    bgr = view.clone();
   } else if (msg.encoding == "rgb8") {
     cv::cvtColor(view, bgr, cv::COLOR_RGB2BGR);
   } else if (msg.encoding == "bgra8") {
@@ -88,18 +75,13 @@ VisionCache::VisionCache(int stale_after_ms) : stale_after_ms_(stale_after_ms) {
 
 bool VisionCache::SetFrame(const sensor_msgs::msg::Image& msg) {
   cv::Mat bgr;
-  if (!ToBgr(msg, bgr)) {
-    return false;
-  }
-  std::vector<uchar> encoded;
-  if (!cv::imencode(".jpg", bgr, encoded, {cv::IMWRITE_JPEG_QUALITY, kJpegQuality})) {
+  if (!ToBgrOwned(msg, bgr)) {
     return false;
   }
   const Clock::time_point now = Clock::now();
-  const std::string jpeg(reinterpret_cast<const char*>(encoded.data()), encoded.size());
 
   std::lock_guard<std::mutex> lock(mutex_);
-  jpeg_ = jpeg;
+  latest_bgr_ = std::move(bgr);
   width_ = static_cast<int>(msg.width);
   height_ = static_cast<int>(msg.height);
   frame_id_ = msg.header.frame_id;
@@ -122,8 +104,6 @@ void VisionCache::SetDetections(const vision_msgs::msg::Detection2DArray& msg) {
   parsed.reserve(msg.detections.size());
   for (const vision_msgs::msg::Detection2D& detection : msg.detections) {
     VisionDetection entry;
-    // クラス名は id、確信度は results[0]。detection_node は id に名前を、
-    // class_id に数値 ID を入れる。
     entry.label = detection.id.empty() ? "unknown" : detection.id;
     entry.score = detection.results.empty() ? 0.0 : detection.results.front().hypothesis.score;
     entry.x = detection.bbox.center.position.x;
@@ -188,18 +168,39 @@ nlohmann::json VisionCache::Status() const {
   return payload;
 }
 
-VisionFrame VisionCache::FrameLocked() const { return VisionFrame{seq_, jpeg_}; }
-
 std::optional<VisionFrame> VisionCache::Latest(long after_seq, double timeout_s) {
   const auto ready = [this, after_seq] { return has_frame_ && seq_ > after_seq; };
-  std::unique_lock<std::mutex> lock(mutex_);
-  if (!ready() && timeout_s > 0.0) {
-    frame_cv_.wait_for(lock, std::chrono::duration<double>(timeout_s), ready);
+  cv::Mat bgr_to_encode;
+  long target_seq = 0;
+
+  {
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (!ready() && timeout_s > 0.0) {
+      frame_cv_.wait_for(lock, std::chrono::duration<double>(timeout_s), ready);
+    }
+    if (!ready()) {
+      return std::nullopt;
+    }
+    if (jpeg_seq_ == seq_) {
+      return VisionFrame{seq_, jpeg_};
+    }
+    // 参照カウント共有のままロック外で JPEG エンコードし、受信スレッドを止めない
+    bgr_to_encode = latest_bgr_;
+    target_seq = seq_;
   }
-  if (!ready()) {
+
+  std::vector<uchar> encoded;
+  if (!cv::imencode(".jpg", bgr_to_encode, encoded, {cv::IMWRITE_JPEG_QUALITY, kJpegQuality})) {
     return std::nullopt;
   }
-  return FrameLocked();
+  std::string jpeg(reinterpret_cast<const char*>(encoded.data()), encoded.size());
+
+  std::lock_guard<std::mutex> lock(mutex_);
+  if (seq_ == target_seq) {
+    jpeg_ = jpeg;
+    jpeg_seq_ = target_seq;
+  }
+  return VisionFrame{target_seq, std::move(jpeg)};
 }
 
 }  // namespace umeonigiri_webnav

@@ -12,6 +12,7 @@
 
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <httplib.h>
+#include <opencv2/core.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include "umeonigiri_webnav/http_app.hpp"
@@ -60,6 +61,8 @@ int main(int argc, char** argv) {
     return 1;
   }
 
+  // PNG/JPEG エンコードで A76 大コア（MPPI/SLAM/Vision）へスレッドを広げない
+  cv::setNumThreads(1);
   rclcpp::init(argc, argv);
 
   auto map_listener = std::make_shared<umeonigiri_webnav::MapListener>();
