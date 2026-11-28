@@ -169,7 +169,6 @@ void RegisterRoutes(httplib::Server& server, const std::filesystem::path& webui_
     SendJson(res, nav_sink.Status());
   });
 
-  // ---- モードと保存地図 ----
   server.Get("/api/mode", [&mode_sink](const httplib::Request&, httplib::Response& res) {
     SendJson(res, json{{"mode", mode_sink.Mode()}});
   });

@@ -1,9 +1,6 @@
 #ifndef FOC_PROTOCOL_H
 #define FOC_PROTOCOL_H
 
-// Command grammar and telemetry row formatting. Deliberately free of Arduino headers so
-// the same translation unit links into the native unit-test environment.
-
 #include <cstddef>
 #include <cstdint>
 

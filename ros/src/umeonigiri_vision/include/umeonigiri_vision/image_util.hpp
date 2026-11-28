@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// sensor_msgs/Image と OpenCV の cv::Mat の相互変換。
-///
 /// detection_node と hand_landmarks_node は同じ変換を使う。二重に持つと
 /// 対応するエンコーディングの片方だけが直され、同じ画像に違う結果が出る
 /// （AGENTS.md R2）。

@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-// 画面の組み立てと配線。値の取得は各パネルに任せ、ここは「誰が何を持つか」と
-// 操作の入口だけを決める。
 'use strict';
 
 import {

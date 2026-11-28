@@ -50,11 +50,8 @@ def generate_launch_description():
     serial_baud = LaunchConfiguration('serial_baud')
     lidar_port = LaunchConfiguration('lidar_port')
 
-    # 使用するURDFファイル（実機でもロボットの形状定義は必要）
-    # 通常は CPU 用のシンプルなものを使用します
     urdf_file = os.path.join(pkg_share, 'urdf', 'my_robot_cpu.urdf')
     
-    # 実機用のパラメータファイル
     slam_params_file = os.path.join(
         pkg_share, 'config', 'real_mapper_params_online_async.yaml'
     )
@@ -65,9 +62,7 @@ def generate_launch_description():
     with open(urdf_file, 'r') as f:
         robot_description = f.read()
 
-    # --- Standard Nodes ---
 
-    # ロボットの状態（TF）を配信
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -76,13 +71,10 @@ def generate_launch_description():
         output='screen'
     )
 
-    # --- odom->base_footprint は umeonigiri_serial_bridge が配信する ---
     # 静的 identity 変換を置くと、走行中もロボットが静止していると SLAM/Nav2 に
     # 誤認させる（旧実装の欠陥）。serial_bridge が /cmd_vel と IMU ヨーを融合して
     # 50 Hz で /odom と odom->base_footprint を出すので、ここでは何も置かない。
 
-    # --- SLAM (Slam Toolbox) ---
-    # 実機のLiDARデータ (/scan) を元に地図を作成
     slam_toolbox = LifecycleNode(
         package='slam_toolbox',
         executable='async_slam_toolbox_node',
@@ -120,11 +112,8 @@ def generate_launch_description():
         )
     )
 
-    # --- Nav2 Stack ---
-    # 実機のオドメトリ (/odom) と地図を元に経路計画と制御を行う
 
     # /cmd_vel -> ESP32 UART (ステアリング舵角 + モータ PWM フレーム)
-    # /odom と odom->base_footprint はこのノードが 50 Hz で配信する。
     serial_bridge = Node(
         package='umeonigiri_serial_bridge',
         executable='umeonigiri_serial_bridge',
@@ -188,7 +177,6 @@ def generate_launch_description():
         parameters=[nav2_params_file],
     )
 
-    # --- LD-D500 LiDAR (/scan) ---
     # SLAM の地図作成・自己位置推定の入力。frame_id は URDF の lidar_link と一致させる。
     lidar = Node(
         package='umeonigiri_lidar',
@@ -203,7 +191,6 @@ def generate_launch_description():
         }],
     )
 
-    # --- Web UI (map view + click-to-send waypoints) — http://localhost:8088 ---
     web_nav = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(os.path.join(pkg_web_nav, 'launch', 'umeonigiri_webnav.launch.py'))
     )

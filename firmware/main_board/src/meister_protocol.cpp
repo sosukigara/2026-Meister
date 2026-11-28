@@ -1,13 +1,3 @@
-/*
- * meister_protocol.cpp — バイナリプロトコルのエンコード/デコード実装
- *
- * フレーム形式（リトルエンディアン、固定長）:
- *   [ヘッダ 0xA5][種別][ペイロード][チェックサム]
- *   チェックサム = ペイロード末尾までの全バイト XOR
- *   検証: チェックサムを含む全バイトの XOR == 0
- *
- * このファイルは Arduino 非依存（ホスト側テストでもそのままコンパイル可能）。
- */
 #include "meister_protocol.h"
 
 #include <string.h>
@@ -15,9 +5,6 @@
 namespace meister {
 namespace proto {
 
-// ---------------------------------------------------------------------------
-// 内部ヘルパ: リトルエンディアン int16 の書込/読出
-// ---------------------------------------------------------------------------
 namespace {
 
 void PutI16(uint8_t* dst, int16_t v) {
@@ -30,7 +17,6 @@ int16_t GetI16(const uint8_t* src) {
                               (static_cast<uint16_t>(src[1]) << 8));
 }
 
-/// 汎用エンコーダ: [ヘッダ][種別][payload(固定長)][チェックサム] を組み立てる
 size_t BuildFrame(uint8_t* buf, size_t cap, TypeId type,
                   const uint8_t* payload, size_t payloadSize) {
   const size_t frameSize = FrameSize(type);
@@ -43,16 +29,12 @@ size_t BuildFrame(uint8_t* buf, size_t cap, TypeId type,
   for (size_t p = 0; p < payloadSize; ++p) {
     buf[i++] = payload[p];
   }
-  // チェックサム = 先頭からペイロード末尾までの XOR
   buf[frameSize - 1] = ComputeChecksum(buf, frameSize - 1);
   return frameSize;
 }
 
 }  // namespace
 
-// ---------------------------------------------------------------------------
-// チェックサム
-// ---------------------------------------------------------------------------
 uint8_t ComputeChecksum(const uint8_t* data, size_t len) {
   uint8_t sum = 0;
   for (size_t i = 0; i < len; ++i) {
@@ -65,13 +47,9 @@ bool CheckChecksum(const uint8_t* frame, size_t frameSize) {
   if (frameSize == 0) {
     return false;
   }
-  // チェックサムも含めて XOR すると 0 になる
   return ComputeChecksum(frame, frameSize) == 0;
 }
 
-// ---------------------------------------------------------------------------
-// エンコード: コマンド
-// ---------------------------------------------------------------------------
 size_t EncodeMotorVelocity(uint8_t* buf, size_t cap,
                            const int16_t (&vel)[kNumDriveMotors]) {
   uint8_t payload[kPayloadMotorVelocity];
@@ -104,9 +82,6 @@ size_t EncodeGripper(uint8_t* buf, size_t cap, GripperCommand cmd) {
   return BuildFrame(buf, cap, kCmdGripper, payload, sizeof(payload));
 }
 
-// ---------------------------------------------------------------------------
-// エンコード: フィードバック
-// ---------------------------------------------------------------------------
 size_t EncodeState(uint8_t* buf, size_t cap,
                    const int16_t (&encoder)[kNumDriveMotors],
                    uint8_t state, uint8_t errorFlags) {
@@ -131,14 +106,10 @@ size_t EncodeImu(uint8_t* buf, size_t cap, int16_t yawTenths, uint8_t calib) {
   return BuildFrame(buf, cap, kFbImu, payload, sizeof(payload));
 }
 
-// ---------------------------------------------------------------------------
-// デコード・検証
-// ---------------------------------------------------------------------------
 ParseResult ParseFrame(const uint8_t* data, size_t len, Frame* out) {
   if (out == nullptr) {
     return ParseResult::kUnknownType;
   }
-  // ヘッダと種別が読めるか（最低 2 バイト）
   if (len < 2) {
     return ParseResult::kNeedMore;
   }
@@ -164,9 +135,6 @@ ParseResult ParseFrame(const uint8_t* data, size_t len, Frame* out) {
   return ParseResult::kOk;
 }
 
-// ---------------------------------------------------------------------------
-// ペイロードアクセサ
-// ---------------------------------------------------------------------------
 int16_t FrameGetInt16(const Frame& frame, size_t offset) {
   if (offset + sizeof(int16_t) > frame.payloadSize) {
     return 0;

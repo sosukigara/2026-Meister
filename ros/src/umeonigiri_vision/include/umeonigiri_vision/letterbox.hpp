@@ -1,14 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// アスペクト比を保ったまま正方形へ収める letterbox 前処理。
-///
-/// 元画像に適用したスケールと、上下左右に追加したパディング幅を返す。
-/// 検出結果を元画像座標へ戻すにはこの 3 つが要るので、戻り値で必ず
-/// 呼び出し側へ渡す。
-///
-/// 最適化:
-///   - LetterboxInto() を追加し、事前確保済み cv::Mat キャンバスへの直接リサイズと
-///     上下または左右パディング帯のみの塗潰しを実現（毎フレームの 1.2MB 再確保と
-///     中央 ROI 領域の二重書き込みを排除）。
 #ifndef MEISTER_VISION_LETTERBOX_HPP_
 #define MEISTER_VISION_LETTERBOX_HPP_
 

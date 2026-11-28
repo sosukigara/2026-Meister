@@ -1,11 +1,8 @@
 #!/bin/bash
-# ==========================================
-# Meistar ROS 2 起動スクリプト
 # 使い方:
 #   ./launch.sh                     # 実機モード (Gazeboなし。LD-D500 + ESP32が必要)
 #   ./launch.sh --sim [warehouse|maze|empty]  # シミュレーションモード (Gazeboあり)
 # 事前に ./build.sh を実行しておくこと
-# ==========================================
 set -eo pipefail
 
 # Mode selection: default real robot, --sim for Gazebo simulation

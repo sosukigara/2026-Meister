@@ -2,10 +2,6 @@
 
 #include "foc_config.h"
 
-// Runtime safety: stop/fault handling, overcurrent, current-sense plausibility, supply and
-// sensor health, and the per-loop state machine. Kept apart from the motion commands so
-// each file has one job.
-
 void FocDrive::stop() {
   // Only an actually-driven open loop earns the cooldown. diagnose() and the session
   // timeout leave the controller at velocity_openloop while disabled; re-arming 10 s from

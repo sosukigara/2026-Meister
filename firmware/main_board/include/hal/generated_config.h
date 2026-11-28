@@ -8,7 +8,6 @@
 namespace meister {
 namespace config {
 
-// ---- プロトコル ----
 constexpr uint32_t kFeedbackHz  = 100;
 constexpr uint32_t kControlHz    = 100;
 constexpr uint32_t kFeedbackIntervalMs = 1000u / kFeedbackHz;
@@ -43,12 +42,10 @@ constexpr int16_t kMaxJoint   = 1800;
 constexpr int16_t kMinRockerAngle = 0;
 constexpr int16_t kMaxRockerAngle = 1800;
 
-// ---- UART ----
 constexpr uint32_t kProtoBaud = 115200;
 constexpr uint8_t  kProtoRxPin = 16;
 constexpr uint8_t  kProtoTxPin = 17;
 
-// ---- ピン ----
 // DC モータの PWM 駆動は廃止（foc drive 基板）。駆動ピン定数は作らない。
 
 // 既存コードが使う別名。値が重複定義されないよう using で公開する。
@@ -63,13 +60,11 @@ constexpr uint8_t kBusTxPin = 27;
 constexpr uint8_t kBusRxPin = 13;
 constexpr int8_t  kBusDirPin = -1;
 
-// ---- PWM ----
 constexpr uint32_t kServoFreqHz     = 50;
 constexpr uint16_t kServoResolution = 16;
 constexpr uint32_t kServoMinPulseUs = 1000;
 constexpr uint32_t kServoMaxPulseUs = 2000;
 
-// ---- LEDC ----
 constexpr uint8_t kMaxLedcChannels = 16;  // ESP32-WROOM-32
 // 実際に PWM を割り当てる本数（-1 = 未接続は数えない）。
 constexpr uint8_t kUsedLedcChannels =
@@ -81,12 +76,11 @@ static_assert(sizeof(kArmPins) / sizeof(kArmPins[0]) == kNumArmPwm,
 static_assert(kUsedLedcChannels <= kMaxLedcChannels,
               "LEDC 予算が超過");
 
-// ---- 運動学 ----
 constexpr bool kKinematicsGeometryFilled = false;
 constexpr float kWheelRadius = 0.05;
 constexpr float kMaxLinearMmPerSec = 800;
 
-// ---- バス（★要確認★ 実物無し・データシート未取得）----
+// バス（★要確認★ 実物無し・データシート未取得）
 constexpr bool     kBusEnabled    = false;
 constexpr uint32_t kBusBaud       = 1000000;
 constexpr uint8_t  kBusReadChunk  = 2;
@@ -95,10 +89,10 @@ constexpr uint32_t kBusInterFrameGapUs = 200;
 constexpr uint8_t  kBusSteeringIds[6] = {1, 2, 3, 4};
 constexpr uint8_t  kBusArmIds[4] = {5, 6, 7, 8};
 
-// ---- バイト順。判定は feetech::Endianness を使う ----
+// バイト順。判定は feetech::Endianness を使う
 constexpr bool kBusLittleEndian = true;
 
-// ---- ★未実装★ Phase 2 の計画値。実装には存在しない軸数 ----
+// ★未実装★ Phase 2 の計画値。実装には存在しない軸数
 // 実用の軸数（kNumSteeringServos など）とは別で管理する。
 constexpr uint8_t kPlannedSteeringCount = 4;
 constexpr uint8_t kPlannedArmBusCount   = 3;

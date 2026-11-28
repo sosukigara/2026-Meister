@@ -1,9 +1,6 @@
 #ifndef FOC_DRIVE_H
 #define FOC_DRIVE_H
 
-// Motor layer: owns one channel's driver, current sense, angle sensor and BLDCMotor, plus
-// every command that can make that wheel move.
-
 #include <Arduino.h>
 #include <SimpleFOC.h>
 
@@ -37,13 +34,9 @@ class FocDrive {
   bool commandAngle(float rad);
   bool commandOpenLoopVelocity(float vel_rps);
 
-  // TEMP D: energise the phases at the open-loop cap and report the shunt
-  // currents. Tells an open winding apart from a too-weak voltage and checks the
-  // current-sense gain against the configured winding resistance.
   bool diagnose();
 
-  // User stop: disables the channel and applies the open-loop cooldown. Does NOT clear a
-  // latched fault; only clearFault()/S does that.
+  // stop() does not clear a latched fault; only clearFault()/S does that.
   void stop();
   // Fault stop: stop() plus a latch that refuses every motion command until S.
   void emergencyStop();

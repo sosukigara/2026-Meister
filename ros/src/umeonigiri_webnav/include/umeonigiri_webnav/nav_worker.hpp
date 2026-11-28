@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// /navigate_to_pose を専用スレッド 1 本で叩く。
-///
 /// Python 版 (nav2_simple_commander) の blocking 呼び出しは内部で
 /// rclpy.spin_until_future_complete を回し、自分のノードを自分で spin する。同じ
 /// ノードを複数スレッドから同時に扱うと壊れるので、ナビゲータを触るのはこのスレッド

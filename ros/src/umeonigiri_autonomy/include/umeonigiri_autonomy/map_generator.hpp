@@ -1,9 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// nav_world.sdf の既知の壁ジオメトリから占有グリッド地図を作る。
-///
-/// SLAM を回さずに Nav2 を試すためのもの。以前は scripts/generate_map.py が
-/// 同じ計算をしていた（2026-11-18 に C++ へ移行）。出力は Python 版と
-/// バイト一致することをゴールデンファイルで確認している。
 #pragma once
 
 #include <cstdint>

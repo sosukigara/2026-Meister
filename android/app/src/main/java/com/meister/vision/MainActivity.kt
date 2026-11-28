@@ -21,8 +21,6 @@ import com.meister.vision.databinding.ActivityMainBinding
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
-// v1 基盤: プレビュー + Detector 推論 + 枠描画 + FPS/ms/件数 HUD。
-// 通信なし。モデル未配置なら FakeDetector で配線確認できる。
 class MainActivity : AppCompatActivity() {
 
     companion object {

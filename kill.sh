@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# kill.sh — 指定ドメインの ROS / Gazebo 関連プロセスのみ終了させる
-# 使い方: ./kill.sh
-#   - 対象ドメインは既定で 5 (ROS_DOMAIN_ID 環境変数で上書き可)
-#   - ROS_DOMAIN_ID が一致するプロセスのみ SIGINT → SIGKILL → daemon 停止
 # 注意: 他ドメイン (robocon 等) のスタックには一切触れない
 set -u
 

@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// 迷路をひと巡りする固定ウェイポイント。以前は scripts/waypoint_follower.py。
 #pragma once
 
 #include <vector>

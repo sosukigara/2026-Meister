@@ -1,11 +1,5 @@
-/*
- * command.h — ロボットの指令モデル
- *
- * ロボットの「意思」を 1 つの型で表す。種別ごとのフレームは持たない。
- * 値は hal/generated_config.h（config/meister_robot.yaml から生成）を使う。
- *
- * Arduino 非依存。pio test -e native で検証できる。
- */
+// 値は hal/generated_config.h（config/meister_robot.yaml から生成）を使う。
+// Arduino 非依存。pio test -e native で検証できる。
 #pragma once
 
 #include <stdint.h>

@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// 重複する検出枠の抑制。
-///
 /// OpenCV の cv::dnn::NMSBoxes に素直に乗せる。IoU の式を自前実装すると
 /// Python 版と僅かにずれて、移植のたびに検出数が変わる。
 #ifndef MEISTER_VISION_NMS_HPP_

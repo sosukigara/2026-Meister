@@ -7,23 +7,9 @@
 
 #include "meister_config.h"
 
-/*
- * BNO055 レジスタ表（★要確認★ Bosch BNO055 datasheet v1.4 で照合すること。
- * web search 遮断のため記憶値で実装し、実機ベンチで chip ID と heading 変化を確認する）。
- *
- * | 名称       | アドレス | 値        |
- * |------------|----------|-----------|
- * | CHIP_ID    | 0x00     | 0xA0 期待 |
- * | EULER_H_L  | 0x1A     | heading 下位（続く 0x1B が上位）|
- * | CALIB_STAT | 0x35     | sys[7:6] gyro[5:4] acc[3:2] mag[1:0] |
- * | OPR_MODE   | 0x3D     | CONFIG=0x00 / NDOF=0x0C |
- * | PWR_MODE   | 0x3E     | NORMAL=0x00 |
- * | SYS_TRIG   | 0x3F     | RST=0x20 |
- * | PAGE_ID    | 0x07     | 0（page 0 固定）|
- *
- * 単位: Euler 1 LSB = 1/16°。heading 生値 0..5760 → 0.1° 単位 0..3600。
- * 復帰待ち: reset 後 650ms、NDOF 切替後 30ms（データシートの立上り時間。★要確認★）。
- */
+// レジスタ表と単位・復帰待ちの根拠は docs/migrated-comment-knowledge.md §5。
+// すべて ★要確認★（Bosch BNO055 datasheet v1.4 未照合）。実機ベンチで
+// chip ID と heading 変化を確認するまで値を信じない（R4）。
 
 namespace meister {
 namespace hal {

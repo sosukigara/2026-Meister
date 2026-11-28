@@ -13,8 +13,6 @@ namespace umeonigiri_serial_bridge {
 inline constexpr char kDefaultPort[] = "/dev/ttyUSB0";
 inline constexpr int kDefaultBaud = 115200;
 
-/// ビットストリーム I/O の抽象。実装は libserial とテストのフェイク。
-///
 /// pyserial の read(size) は size バイトがそろうか timeout するまでブロックする。
 /// 1 フレーム分 (17 バイト) ごとに呼ぶと受信が数フレーム束ねになり、
 /// FB_STATE の到着間隔が乱れる（実測 p95 39.7 ms の遅延がそれ）。

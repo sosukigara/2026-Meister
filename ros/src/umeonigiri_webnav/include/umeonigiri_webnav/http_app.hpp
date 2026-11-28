@@ -1,8 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// Web UI と JSON API の経路を httplib::Server に登録する。
-///
-/// 中心は地図の ETag 配信。Web UI は 5 秒ごとに /api/map.png を叩くので、地図が
-/// 変わっていないときは本文を送らない (304) ことがこの面の主な仕事になる。
 #ifndef UMEONIGIRI_WEBNAV_HTTP_APP_HPP_
 #define UMEONIGIRI_WEBNAV_HTTP_APP_HPP_
 

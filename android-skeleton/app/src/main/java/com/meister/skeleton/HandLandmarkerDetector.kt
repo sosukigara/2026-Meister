@@ -9,7 +9,6 @@ import com.google.mediapipe.tasks.core.Delegate
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 
-// MediaPipe HandLandmarker を包む検出器。呼び出し側がバックグラウンドで呼ぶ。
 // 入力Bitmapは ARGB_8888 を想定 (ImageUtil.toRgbBitmap の出力)。
 class HandLandmarkerDetector(
     context: Context,

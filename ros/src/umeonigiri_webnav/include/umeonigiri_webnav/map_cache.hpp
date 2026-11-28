@@ -1,7 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// 最新の OccupancyGrid を保持し、crop bounds と PNG を version ごとに 1 回だけ
-/// 計算する。
-///
 /// Web UI は /api/map.png を 5 秒ごとに取り直す。1200x1200 の地図では crop と
 /// PNG encode が 1 サイクル約 370 ms かかっていた。HTTP スレッドは ROS の配信
 /// スレッドと CPU を奪い合うので、地図が変わった時だけ計算する。

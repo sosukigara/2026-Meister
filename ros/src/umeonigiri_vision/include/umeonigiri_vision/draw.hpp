@@ -1,5 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// 検出枠とラベルの描画。
 #ifndef MEISTER_VISION_DRAW_HPP_
 #define MEISTER_VISION_DRAW_HPP_
 

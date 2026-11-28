@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// detection_image / detections を購読し、認識モニターの口を HTTP 面に出す。
-///
 /// 購読の作成と破棄は executor スレッド (タイマー) だけで行う。HTTP スレッドから
 /// 直接作ると、executor が callback group を集めている最中と競合する。
 ///

@@ -145,7 +145,6 @@ export function createWaypointPanel({
     scrollToEnd();
   }
 
-  // ---------- 座標の入力・編集・並べ替え ----------
 
   function readNumber(input) {
     const raw = input.value.trim();

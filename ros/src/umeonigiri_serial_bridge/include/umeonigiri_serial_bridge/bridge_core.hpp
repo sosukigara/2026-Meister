@@ -27,9 +27,6 @@ struct WatchdogVerdict {
   bool arm_idle_started = false;
 };
 
-/// ROS に依存しないブリッジ中核。UART 1 本の所有、指令の符号化、ウォッチドッグの
-/// 判定、受信フレームの復号を持つ。ROS ノードはこの上の薄い適応層で、
-/// 時間源とログだけを持ち込む（rclcpp を取了テストが書けないため）。
 class BridgeCore {
  public:
   using LinkFactory = std::function<std::shared_ptr<SerialIo>(const std::string&, int)>;

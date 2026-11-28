@@ -1,8 +1,4 @@
 // SPDX-License-Identifier: MIT
-/// nav_world.sdf から nav_world.pgm / nav_world.yaml を書き出す。
-///
-/// 使い方:
-///   ros2 run umeonigiri_autonomy generate_map --out-dir maps
 #include <cstdio>
 #include <cstring>
 #include <filesystem>

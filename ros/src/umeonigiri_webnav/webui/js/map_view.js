@@ -1,6 +1,4 @@
 // SPDX-License-Identifier: MIT
-// 地図キャンバス。表示は「地図ピクセル → 画面 px」の相似変換 1 つで決める。
-// 目的地の一覧は waypoints.js が持ち、ここは描画と入力だけを担う。
 'use strict';
 
 import { meters } from './format.js';

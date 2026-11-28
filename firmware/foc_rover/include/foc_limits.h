@@ -1,16 +1,6 @@
 #ifndef FOC_LIMITS_H
 #define FOC_LIMITS_H
 
-// Deliberately free of Arduino headers: the same header links into the native unit-test
-// environment. Every command limit lives here so the console, the drive and the tests
-// cannot drift apart.
-//
-// Limits are chosen for the LA8308 KV90 + MKS ESP32 FOC V2.0 bench:
-//   - the board's current sense saturates near 6.6 A (10 mohm shunt, gain 50);
-//   - 6 A/ch is a peak figure with cooling, not a measured continuous rating;
-//   - 0.186 ohm (vendor figure) means 1.0 V already asks for ~5.4 A.
-// Leave headroom for ripple and offset error; 4 A is the hard cap, 3 A the default.
-
 #include <cmath>
 #include <cstdint>
 

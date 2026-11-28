@@ -2,9 +2,6 @@
 
 #include "foc_config.h"
 
-// Motion commands. The per-loop safety state machine lives in foc_drive_safety.cpp so both
-// files stay under the repo's 300-line limit.
-
 bool FocDrive::motionAllowed() {
   if (fault_) {
     printPrefix();

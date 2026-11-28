@@ -8,7 +8,6 @@ import android.util.AttributeSet
 import android.view.View
 import kotlin.math.max
 
-// 解析画像座標の Detection をプレビュー上に拡大描画する。
 // PreviewView (FILL) と同じ centerCrop 換算にしないと枠がずれる。
 class DetectionOverlayView @JvmOverloads constructor(
     context: Context,

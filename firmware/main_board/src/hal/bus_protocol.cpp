@@ -1,10 +1,6 @@
-/*
- * bus_protocol.cpp — STS/SCS バスサーボのパケット codec
- *
- * 出典: Feetech 公式 Python SDK `feetech-servo-sdk` 1.0.0
- *       scservo_def.py / protocol_packet_handler.py
- * チェックサムは XOR ではなく bit 否定の単純和。
- */
+// 出典: Feetech 公式 Python SDK `feetech-servo-sdk` 1.0.0
+//       scservo_def.py / protocol_packet_handler.py
+// チェックサムは XOR ではなく bit 否定の単純和。
 #include "hal/bus_protocol.h"
 
 #include <string.h>

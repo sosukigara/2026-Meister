@@ -13,7 +13,6 @@ def generate_launch_description():
     pkg_name = 'umeonigiri_description'
     pkg_share = get_package_share_directory(pkg_name)
 
-    # Path to xacro file
     xacro_file = os.path.join(pkg_share, 'urdf', 'robot.urdf.xacro')
     robot_description_raw = xacro.process_file(xacro_file).toxml()
 
@@ -24,7 +23,6 @@ def generate_launch_description():
         default_value='true',
         description='Use simulation (Gazebo) clock if true')
 
-    # Robot State Publisher
     node_robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
@@ -32,17 +30,14 @@ def generate_launch_description():
         parameters=[{'robot_description': robot_description_raw, 'use_sim_time': use_sim_time}]
     )
 
-    # Path to world file
     world_path = os.path.join(pkg_share, 'worlds', 'my_custom_world.sdf')
 
-    # Gazebo Sim
     node_gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(
             get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')]),
         launch_arguments={'gz_args': f'-r {world_path}'}.items(),
     )
 
-    # Spawn Robot
     node_spawn_entity = Node(
         package='ros_gz_sim',
         executable='create',
@@ -51,7 +46,6 @@ def generate_launch_description():
         parameters=[{'use_sim_time': use_sim_time}]
     )
 
-    # GZ Bridge
     node_gz_bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',

@@ -11,8 +11,6 @@
 
 namespace umeonigiri_serial_bridge {
 
-/// コマンドライン引数の数値を読む。読めなければ usage を出して終了する。
-///
 /// std::stoi / std::stod は例外を投げる。main の外へ抜けると std::terminate に
 /// なり、"terminate called after throwing ... what(): stod" だけを残して core を
 /// 吐く（実測）。利用者には何が悪いのか分からないので、ここで受けて終了する。

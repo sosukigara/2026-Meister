@@ -11,7 +11,6 @@ import android.graphics.Color
 import android.util.Log
 import java.nio.FloatBuffer
 
-// YOLOv8n ONNX を onnxruntime(-android) で動かす実装。
 // 前処理→推論→後処理の順序は PC 側 yolo_detector.cpp と 1:1。
 class YoloDetector(
     context: Context,
