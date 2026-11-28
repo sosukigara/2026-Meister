@@ -14,7 +14,7 @@
 
 namespace umeonigiri_serial_bridge {
 
-/// 指令速度・IMU ヨーの受信と出版を 1 つの mutex で直列化する。ROS 非依存の
+/// 指令速度・エンコーダFB・IMU ヨーの受信と出版を 1 つの mutex で直列化する。ROS 非依存の
 /// `AckermannImuOdometry` を内包し、ノードはタイマーから StepAndPublish を呼ぶだけ。
 class OdometryPublisher {
  public:
@@ -23,6 +23,7 @@ class OdometryPublisher {
                     std::string base_frame_id);
 
   void UpdateTwistCommand(double vx, double wz, double now_s);
+  void UpdateWheelFeedback(const Feedback& fb, double now_s);
   void UpdateImuReport(const ImuReport& imu, double now_s);
 
   /// 1 周期分を積分して出版する。now_s は単調時計 [秒]。

@@ -5,11 +5,17 @@ d500_node:
 
     frame_id: "lidar_link"
     topic_name: "/scan"
+    odom_topic: "/odom"
 
-    range_min: 0.03
+    range_min: 0.12
     range_max: 12.0
     scan_frequency: 10.0
 
     clockwise: true
     angle_offset_deg: 0.0
     bins: 720
+
+    speckle_filter_enabled: true
+    speckle_max_neighbor_diff: 0.25
+    deskew_enabled: true
+    deskew_min_wz: 0.05

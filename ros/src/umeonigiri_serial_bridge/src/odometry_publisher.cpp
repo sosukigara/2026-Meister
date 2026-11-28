@@ -30,6 +30,11 @@ void OdometryPublisher::UpdateTwistCommand(double vx, double wz, double now_s) {
   odometry_.UpdateTwistCommand(vx, wz, now_s);
 }
 
+void OdometryPublisher::UpdateWheelFeedback(const Feedback& fb, double now_s) {
+  std::lock_guard<std::mutex> lock(mutex_);
+  odometry_.UpdateWheelFeedback(fb, now_s);
+}
+
 void OdometryPublisher::UpdateImuReport(const ImuReport& imu, double now_s) {
   std::lock_guard<std::mutex> lock(mutex_);
   odometry_.UpdateImuReport(imu, now_s);
@@ -74,22 +79,25 @@ void OdometryPublisher::StepAndPublish(double now_s) {
     odom->pose.pose.orientation.y = 0.0;
     odom->pose.pose.orientation.z = st.qz;
     odom->pose.pose.orientation.w = st.qw;
-    odom->pose.covariance[0] = cfg.pose_cov_xy;
-    odom->pose.covariance[7] = cfg.pose_cov_xy;
+    // エンコーダ未接続（オープンループ指令推定）時は共分散を広めに出し、
+    // LiDAR 側（SLAM/AMCL）の重みが適切に効くようにする。
+    const double cov_scale = st.using_encoder_feedback ? 1.0 : 4.0;
+    odom->pose.covariance[0] = cfg.pose_cov_xy * cov_scale;
+    odom->pose.covariance[7] = cfg.pose_cov_xy * cov_scale;
     odom->pose.covariance[14] = 1e-6;
     odom->pose.covariance[21] = 1e-6;
     odom->pose.covariance[28] = 1e-6;
-    odom->pose.covariance[35] = cfg.pose_cov_yaw;
+    odom->pose.covariance[35] = cfg.pose_cov_yaw * cov_scale;
 
     odom->twist.twist.linear.x = st.vx;
     odom->twist.twist.linear.y = 0.0;
     odom->twist.twist.angular.z = st.wz;
-    odom->twist.covariance[0] = cfg.twist_cov_vx;
+    odom->twist.covariance[0] = cfg.twist_cov_vx * cov_scale;
     odom->twist.covariance[7] = 1e-6;
     odom->twist.covariance[14] = 1e-6;
     odom->twist.covariance[21] = 1e-6;
     odom->twist.covariance[28] = 1e-6;
-    odom->twist.covariance[35] = cfg.twist_cov_wz;
+    odom->twist.covariance[35] = cfg.twist_cov_wz * cov_scale;
     odom_pub_->publish(std::move(odom));
   }
 }

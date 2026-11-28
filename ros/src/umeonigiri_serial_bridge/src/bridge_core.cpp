@@ -91,15 +91,23 @@ void BridgeCore::WriteFrames(const std::vector<std::vector<uint8_t>>& frames) {
 }
 
 void BridgeCore::OnCmdVel(double vx, double wz) {
-  const ActuatorCommand cmd = TwistToActuators(vx, wz, params_.kinematics);
+  SteeringArray steer_arr{};
+  VelocityArray vel_arr{};
+  if (params_.kinematics.use_4ws_ackermann) {
+    const SixWheelCommand sw = TwistToSixWheelActuators(vx, wz, params_.kinematics);
+    steer_arr = sw.steering_tenths;
+    vel_arr = sw.velocity_permille;
+  } else {
+    const ActuatorCommand cmd = TwistToActuators(vx, wz, params_.kinematics);
+    steer_arr = Uniform<SteeringArray>(cmd.steering_tenths);
+    vel_arr = Uniform<VelocityArray>(cmd.velocity_permille);
+  }
 
   uint8_t buf[proto::kMaxFrameSize];
   std::vector<std::vector<uint8_t>> frames;
-  const auto steer =
-      EncodeSteering(buf, sizeof(buf), Uniform<SteeringArray>(cmd.steering_tenths));
+  const auto steer = EncodeSteering(buf, sizeof(buf), steer_arr);
   frames.emplace_back(buf, buf + steer);
-  const auto vel =
-      EncodeVelocity(buf, sizeof(buf), Uniform<VelocityArray>(cmd.velocity_permille));
+  const auto vel = EncodeVelocity(buf, sizeof(buf), vel_arr);
   frames.emplace_back(buf, buf + vel);
   WriteFrames(frames);
 

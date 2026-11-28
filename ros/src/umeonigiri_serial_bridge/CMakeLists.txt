@@ -80,6 +80,8 @@ if(BUILD_TESTING)
   target_link_libraries(test_bridge_core umeonigiri_serial_bridge_core)
   ament_add_gtest(test_serial_link test/test_serial_link.cpp)
   target_link_libraries(test_serial_link umeonigiri_serial_bridge_core)
+  ament_add_gtest(test_odometry test/test_odometry.cpp)
+  target_link_libraries(test_odometry umeonigiri_serial_bridge_core)
   # header-only なので本体は要らないが、include ディレクトリは core から借りる。
   # main を抜ける処理を見るので death test を含む。
   ament_add_gtest(test_cli_number test/test_cli_number.cpp)

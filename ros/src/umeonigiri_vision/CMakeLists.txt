@@ -14,6 +14,7 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(vision_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(OpenCV REQUIRED COMPONENTS core imgproc imgcodecs videoio dnn)
 find_package(onnxruntime_vendor REQUIRED)
@@ -75,21 +76,50 @@ install(TARGETS detection_node hand_landmarks_node pc_camera
 install(DIRECTORY include/ DESTINATION include)
 install(DIRECTORY launch DESTINATION share/${PROJECT_NAME})
 install(DIRECTORY rviz DESTINATION share/${PROJECT_NAME})
-# モデルは git 管理外（*.onnx は ignore）。取得済みのものだけ配備する。
-# launch.sh はこのパスを見て 320/640 を切り替える（R2: 参照は 1 箇所）。
 # librknnrt が無い環境でも configure が落ちないよう存在チェックで切り替える。
 find_path(RKNN_INCLUDE_DIR rknn_api.h PATHS /usr/local/include/rknn /usr/include)
 find_library(RKNN_LIBRARY NAMES rknnrt PATHS /usr/lib /usr/local/lib)
+find_path(RGA_INCLUDE_DIR im2d.h PATHS /usr/include/rga /usr/local/include/rga /usr/include)
+find_library(RGA_LIBRARY NAMES rga PATHS /usr/lib /usr/local/lib /usr/lib/aarch64-linux-gnu)
 if(RKNN_INCLUDE_DIR AND RKNN_LIBRARY)
+  include(CheckCXXSourceCompiles)
+  set(CMAKE_REQUIRED_INCLUDES ${RKNN_INCLUDE_DIR})
+  set(CMAKE_REQUIRED_LIBRARIES ${RKNN_LIBRARY})
+  check_cxx_source_compiles("
+    #include <rknn_api.h>
+    int main() {
+      rknn_context ctx = 0;
+      rknn_tensor_mem* mem = nullptr;
+      return rknn_mem_sync(ctx, mem, RKNN_MEMORY_SYNC_TO_DEVICE);
+    }
+  " HAVE_RKNN_MEM_SYNC)
+  unset(CMAKE_REQUIRED_INCLUDES)
+  unset(CMAKE_REQUIRED_LIBRARIES)
+
   add_executable(yolo_grasp_node
     src/yolo_grasp_node.cpp
-    src/rknn_yolo.cpp)
+    src/rknn_yolo.cpp
+    src/rknn_fastsam.cpp)
   target_include_directories(yolo_grasp_node PRIVATE
     include ${RKNN_INCLUDE_DIR} ${OpenCV_INCLUDE_DIRS})
   target_link_libraries(yolo_grasp_node
     ${OpenCV_LIBS} ${RKNN_LIBRARY} rclcpp::rclcpp
-    ${sensor_msgs_TARGETS} ${vision_msgs_TARGETS}
+    ${sensor_msgs_TARGETS} ${vision_msgs_TARGETS} ${std_srvs_TARGETS}
     umeonigiri_vision_core)
+  if(HAVE_RKNN_MEM_SYNC)
+    target_compile_definitions(yolo_grasp_node PRIVATE HAVE_RKNN_MEM_SYNC)
+    message(STATUS "yolo_grasp_node: RKNN DMA ゼロコピー入力 (rknn_mem_sync) 有効")
+  else()
+    message(STATUS "yolo_grasp_node: librknnrt 1.x 互換モード (rknn_inputs_set 使用)")
+  endif()
+  if(RGA_INCLUDE_DIR AND RGA_LIBRARY)
+    target_compile_definitions(yolo_grasp_node PRIVATE HAVE_LIBRGA)
+    target_include_directories(yolo_grasp_node PRIVATE ${RGA_INCLUDE_DIR})
+    target_link_libraries(yolo_grasp_node ${RGA_LIBRARY})
+    message(STATUS "yolo_grasp_node: RGA ハードウェア前処理 有効 (${RGA_LIBRARY})")
+  else()
+    message(STATUS "yolo_grasp_node: librga 未検出のため OpenCV フォールバック")
+  endif()
   install(TARGETS yolo_grasp_node DESTINATION lib/${PROJECT_NAME})
   message(STATUS "yolo_grasp_node: 有効 (RKNN ${RKNN_LIBRARY})")
 else()
@@ -101,9 +131,6 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/models")
   install(DIRECTORY models DESTINATION share/${PROJECT_NAME})
 endif()
 
-# モデル DL は Python のまま残す（ネットワーク取得だけなので C++ にしても
-# 得られるものが libcurl 依存の追加だけ）。実行ファイル名は download_model で
-# 維持し、`ros2 run umeonigiri_vision download_model` を壊さない。
 install(FILES config/coco_labels.txt
   DESTINATION share/${PROJECT_NAME}/config)
 install(PROGRAMS scripts/download_model.py scripts/record_detections.py
@@ -134,6 +161,10 @@ if(BUILD_TESTING)
 
   ament_add_gtest(test_box_center_filter test/test_box_center_filter.cpp)
   target_link_libraries(test_box_center_filter umeonigiri_vision_core)
+
+  ament_add_gtest(test_multi_object_tracker test/test_multi_object_tracker.cpp)
+  target_include_directories(test_multi_object_tracker PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}/include)
 endif()
 
 ament_export_include_directories(include)
