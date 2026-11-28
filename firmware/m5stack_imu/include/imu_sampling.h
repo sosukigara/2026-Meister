@@ -10,6 +10,7 @@ struct RawImu {
   float accel[3] = {0.0f, 0.0f, 0.0f};  // G
   float gyro[3] = {0.0f, 0.0f, 0.0f};   // deg/s
   uint32_t timestamp_ms = 0;
+  uint32_t timestamp_us = 0;  // 積分の刻みをマイ秒で与える（ミリ秒量子化を避ける）
   bool present = false;  // M5.Imu.update() が新鮮な値を返したか
 };
 

@@ -22,6 +22,7 @@ protocol::Sample NominalSample() {
   s.gyro[0] = 1000;
   s.gyro[1] = -2000;
   s.gyro[2] = 3000;
+  s.yaw_centideg = 1234;
   s.status = 0x00;
   return s;
 }
@@ -54,7 +55,8 @@ void test_encode_layout_and_checksum(void) {
   TEST_ASSERT_EQUAL_INT16(1000, ReadI16LE(&buf[12]));
   TEST_ASSERT_EQUAL_INT16(-2000, ReadI16LE(&buf[14]));
   TEST_ASSERT_EQUAL_INT16(3000, ReadI16LE(&buf[16]));
-  TEST_ASSERT_EQUAL_UINT8(0x00, buf[18]);
+  TEST_ASSERT_EQUAL_INT16(1234, ReadI16LE(&buf[18]));
+  TEST_ASSERT_EQUAL_UINT8(0x00, buf[20]);
   TEST_ASSERT_TRUE(protocol::CheckFrame(buf, n));
 }
 
@@ -69,6 +71,7 @@ void test_decode_roundtrip(void) {
     TEST_ASSERT_EQUAL_INT16(NominalSample().accel[i], out.accel[i]);
     TEST_ASSERT_EQUAL_INT16(NominalSample().gyro[i], out.gyro[i]);
   }
+  TEST_ASSERT_EQUAL_INT16(1234, out.yaw_centideg);
   TEST_ASSERT_EQUAL_UINT8(0x00, out.status);
 }
 
@@ -77,6 +80,7 @@ void test_decode_negative_extremes(void) {
   s.accel[0] = INT16_MIN;
   s.accel[1] = INT16_MAX;
   s.gyro[2] = -1;
+  s.yaw_centideg = 65535u;
   s.status = protocol::kClamped | protocol::kImuMissing;
 
   uint8_t buf[protocol::kFrameSize] = {};
@@ -88,6 +92,7 @@ void test_decode_negative_extremes(void) {
   TEST_ASSERT_EQUAL_INT16(INT16_MIN, decoded.accel[0]);
   TEST_ASSERT_EQUAL_INT16(INT16_MAX, decoded.accel[1]);
   TEST_ASSERT_EQUAL_INT16(-1, decoded.gyro[2]);
+  TEST_ASSERT_EQUAL_UINT16(65535u, decoded.yaw_centideg);
   TEST_ASSERT_EQUAL_UINT8(protocol::kClamped | protocol::kImuMissing,
                           decoded.status);
 }
