@@ -9,17 +9,20 @@
 namespace meister_imu {
 namespace {
 
-constexpr uint32_t kBg = 0x0B1220;
-constexpr uint32_t kCard = 0x151F35;
-constexpr uint32_t kLine = 0x273A5E;
-constexpr uint32_t kText = 0xE8EEFF;
-constexpr uint32_t kMuted = 0x8FA3C8;
-constexpr uint32_t kAccent = 0x00E5FF;
-constexpr uint32_t kGreen = 0x39FF9A;
-constexpr uint32_t kAmber = 0xFFC857;
-constexpr uint32_t kRed = 0xFF5C7A;
-constexpr uint32_t kTrack = 0x101B30;
-constexpr uint32_t kHeader = 0x0E1729;
+constexpr uint32_t kBg = 0x070C18;
+constexpr uint32_t kCard = 0x111C30;
+constexpr uint32_t kShade = 0x040912;
+constexpr uint32_t kLine = 0x243352;
+constexpr uint32_t kText = 0xF2F7FF;
+constexpr uint32_t kMuted = 0x7F93B5;
+constexpr uint32_t kAccent = 0x3FE0D0;
+constexpr uint32_t kAccent2 = 0x4DA3FF;
+constexpr uint32_t kAccentDim = 0x1D4A52;
+constexpr uint32_t kGreen = 0x5CE6A5;
+constexpr uint32_t kAmber = 0xFFC978;
+constexpr uint32_t kRed = 0xFF6F8D;
+constexpr uint32_t kTrack = 0x0D1628;
+constexpr uint32_t kHeader = 0x0A1120;
 constexpr float kPi = 3.14159265358979f;
 
 ViewLayout ComputeLayout(int32_t w, int32_t h) {
@@ -95,16 +98,29 @@ void DrawPill(int32_t x, int32_t y, int32_t w, int32_t h, const char* text,
 void DrawHeader(int32_t w) {
   M5.Display.fillRect(0, 0, w, 54, kHeader);
   M5.Display.fillRect(0, 53, w, 1, kLine);
+  UseSmallFont();
+  M5.Display.setTextColor(kAccent, kHeader);
+  M5.Display.setTextDatum(TL_DATUM);
+  M5.Display.drawString("MEISTER", 16, 4);
   UseBigFont();
   M5.Display.setTextColor(kText, kHeader);
-  M5.Display.setTextDatum(TL_DATUM);
-  M5.Display.drawString("IMU // TAB5", 16, 12);
+  M5.Display.drawString("IMU // TAB5", 16, 18);
+  M5.Display.fillRect(16, 51, 118, 2, kAccent);
   DrawPill(w - 78, 16, 62, 22, "LIVE", kGreen);
 }
 
 void DrawStatic(const ViewLayout& l) {
   M5.Display.fillScreen(kBg);
   DrawHeader(l.w);
+
+  M5.Display.fillRoundRect(l.compass_x + 3, l.compass_y + 4, l.compass_w,
+                           l.compass_h, 16, kShade);
+  M5.Display.fillRoundRect(l.roll_x + 2, l.roll_y + 3, l.mini_w, l.mini_h, 14,
+                           kShade);
+  M5.Display.fillRoundRect(l.pitch_x + 2, l.roll_y + 3, l.mini_w, l.mini_h, 14,
+                           kShade);
+  M5.Display.fillRoundRect(l.motion_x + 3, l.motion_y + 4, l.motion_w,
+                           l.motion_h, 16, kShade);
 
   M5.Display.fillRoundRect(l.compass_x, l.compass_y, l.compass_w, l.compass_h,
                            16, kCard);
@@ -146,17 +162,20 @@ void DrawCompass(const ViewLayout& l, float yaw, float roll, float pitch,
   }
   M5.Display.fillCircle(l.cx, l.cy, l.radius - 2, kCard);
   M5.Display.drawArc(l.cx, l.cy, l.radius, l.radius, 0, 360, kLine);
+  M5.Display.drawArc(l.cx, l.cy, l.radius - 6, l.radius - 6, 0, 360, kAccentDim);
 
   const char* cardinal[4] = {"N", "E", "S", "W"};
-  for (int a = 0; a < 360; a += 30) {
+  for (int a = 0; a < 360; a += 10) {
     const float theta = static_cast<float>(a) * kPi / 180.0f - kPi / 2.0f;
-    const int32_t inner = l.radius - (a % 90 == 0 ? 10 : 5);
-    const int32_t outer = l.radius + 4;
+    const int32_t tick = a % 90 == 0 ? 11 : (a % 30 == 0 ? 8 : 4);
+    const int32_t inner = l.radius - tick;
+    const int32_t outer = l.radius + 3;
+    const uint32_t color =
+        a % 90 == 0 ? kAccent : (a % 30 == 0 ? kText : kLine);
     M5.Display.drawLine(l.cx + static_cast<int32_t>(inner * cosf(theta)),
                         l.cy + static_cast<int32_t>(inner * sinf(theta)),
                         l.cx + static_cast<int32_t>(outer * cosf(theta)),
-                        l.cy + static_cast<int32_t>(outer * sinf(theta)),
-                        a % 90 == 0 ? kText : kLine);
+                        l.cy + static_cast<int32_t>(outer * sinf(theta)), color);
   }
   UseSmallFont();
   for (int i = 0; i < 4; ++i) {
@@ -169,23 +188,32 @@ void DrawCompass(const ViewLayout& l, float yaw, float roll, float pitch,
   }
 
   if (yaw > 0.1f) {
-    M5.Display.fillArc(l.cx, l.cy, l.radius - 13, l.radius, -90, -90 + yaw,
+    M5.Display.fillArc(l.cx, l.cy, l.radius - 13, l.radius - 8, -90,
+                       -90 + yaw, kAccentDim);
+    M5.Display.fillArc(l.cx, l.cy, l.radius - 7, l.radius, -90, -90 + yaw,
                        kAccent);
   }
   const float needle = yaw * kPi / 180.0f - kPi / 2.0f;
-  const int32_t nx = l.cx + static_cast<int32_t>((l.radius - 20) * cosf(needle));
-  const int32_t ny = l.cy + static_cast<int32_t>((l.radius - 20) * sinf(needle));
-  M5.Display.drawLine(l.cx, l.cy, nx, ny, kAccent);
-  M5.Display.drawLine(l.cx + 1, l.cy, nx + 1, ny, kAccent);
-  M5.Display.drawLine(l.cx - 1, l.cy, nx - 1, ny, kAccent);
-  M5.Display.fillCircle(l.cx, l.cy, 5, kAccent);
+  const int32_t nx = l.cx + static_cast<int32_t>((l.radius - 22) * cosf(needle));
+  const int32_t ny = l.cy + static_cast<int32_t>((l.radius - 22) * sinf(needle));
+  const int32_t tx = l.cx - static_cast<int32_t>((l.radius - 22) * cosf(needle) * 0.35f);
+  const int32_t ty = l.cy - static_cast<int32_t>((l.radius - 22) * sinf(needle) * 0.35f);
+  M5.Display.drawLine(tx, ty, nx, ny, kAccent2);
+  M5.Display.drawLine(tx + 1, ty, nx + 1, ny, kAccent2);
+  M5.Display.drawLine(tx - 1, ty, nx - 1, ny, kAccent2);
+  M5.Display.fillCircle(l.cx, l.cy, 7, kCard);
+  M5.Display.drawCircle(l.cx, l.cy, 7, kAccent);
+  M5.Display.fillCircle(l.cx, l.cy, 3, kAccent);
 
   UseBigFont();
   char text[32];
   snprintf(text, sizeof(text), "%.1f°", yaw);
   M5.Display.setTextDatum(TC_DATUM);
   M5.Display.setTextColor(kText, kCard);
-  M5.Display.drawString(text, l.cx, l.cy + 16);
+  M5.Display.drawString(text, l.cx, l.cy + 18);
+  UseSmallFont();
+  M5.Display.setTextColor(kAccent, kCard);
+  M5.Display.drawString("REL YAW", l.cx, l.cy + 48);
 
   UseSmallFont();
   if (count >= 2 && l.trend_w > 8) {
@@ -197,6 +225,7 @@ void DrawCompass(const ViewLayout& l, float yaw, float roll, float pitch,
       const int32_t x1 = l.trend_x + static_cast<int32_t>(i * l.trend_w / 31);
       const int32_t y0 = l.trend_y + 22 - static_cast<int32_t>(history[prev] / 360.0f * 20);
       const int32_t y1 = l.trend_y + 22 - static_cast<int32_t>(history[cur] / 360.0f * 20);
+      M5.Display.drawLine(x1, l.trend_y + 23, x1, y1, kAccentDim);
       M5.Display.drawLine(x0, y0, x1, y1, kAccent);
     }
   }
@@ -211,6 +240,7 @@ void DrawCompass(const ViewLayout& l, float yaw, float roll, float pitch,
 void DrawMiniValue(int32_t x, int32_t y, int32_t w, int32_t h, float value,
                    uint32_t color) {
   M5.Display.fillRect(x + 10, y + 24, w - 20, h - 26, kCard);
+  M5.Display.fillRect(x + 4, y + 24, 3, h - 30, color);
   UseBigFont();
   char text[32];
   snprintf(text, sizeof(text), "%+.1f°", value);
@@ -227,7 +257,7 @@ void DrawMotion(const ViewLayout& l, const RawImu& raw) {
   const float values[6] = {raw.accel[0], raw.accel[1], raw.accel[2],
                            raw.gyro[0], raw.gyro[1], raw.gyro[2]};
   const float ranges[6] = {2.0f, 2.0f, 2.0f, 250.0f, 250.0f, 250.0f};
-  const uint32_t colors[6] = {kRed, kGreen, kAccent, kAmber, kMuted, 0xB388FF};
+  const uint32_t colors[6] = {kRed, kGreen, kAccent, kAmber, kMuted, kAccent2};
   const int32_t bar_x = l.motion_x + 82;
   const int32_t bar_w = l.motion_w - 196;
 

@@ -112,6 +112,18 @@ void test_clamps_large_time_gap(void) {
   TEST_ASSERT_TRUE(yaw.yaw_deg() >= 99.99f);
 }
 
+void test_stationary_does_not_accumulate_yaw(void) {
+  YawTracker yaw;
+  yaw.Reset();
+  const RawImu noisy = LevelRaw(0.5f);  // 静止とみなせる微小な角速度
+  yaw.Update(noisy, 0);
+  yaw.Update(noisy, 1000);
+  yaw.Update(noisy, 2000);
+
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.0f, yaw.yaw_deg());
+  TEST_ASSERT_FLOAT_WITHIN(0.01f, 0.0f, yaw.yaw_rate_deg());
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_integrates_constant_yaw_rate);
@@ -121,5 +133,6 @@ int main(void) {
   RUN_TEST(test_tilt_compensates_yaw_rate);
   RUN_TEST(test_ignores_stale_samples);
   RUN_TEST(test_clamps_large_time_gap);
+  RUN_TEST(test_stationary_does_not_accumulate_yaw);
   return UNITY_END();
 }

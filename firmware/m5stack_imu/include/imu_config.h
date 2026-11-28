@@ -30,6 +30,8 @@ constexpr uint32_t kYawCalibrationMs = 1500;
 constexpr float kYawBiasAdaptRate = 0.0005f;
 // 静止とみなす角速度の閾値 [deg/s]。
 constexpr float kYawStillGyroThreshold = 2.0f;
+// ジャイロの一次ローパス係数。積分のランダムウォークを抑える。
+constexpr float kYawGyroLowpassAlpha = 0.30f;
 
 }  // namespace config
 }  // namespace meister_imu
