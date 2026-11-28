@@ -59,7 +59,7 @@ pio device monitor -b 115200 -p /dev/ttyACM0
 | 12 | 2 | gyro X [centi-deg/s]（int16 LE） |
 | 14 | 2 | gyro Y [centi-deg/s]（int16 LE） |
 | 16 | 2 | gyro Z [centi-deg/s]（int16 LE） |
-| 18 | 1 | status（`0x01` = クランプ、`0x02` = IMU 未更新） |
+| 18 | 1 | status（`0x01` = クランプ、`0x02` = 1 秒以上 IMU の新しい値が無い） |
 | 19 | 1 | XOR checksum（フレーム全バイトの XOR が 0 になる） |
 
 M5Unified の `imu_data_t` は accel が G、gyro が deg/s です。
@@ -95,7 +95,14 @@ status フラグ（OK / CLAMP / NO-IMU）を表示します。値エリアだけ
 
 ## 検証状況（2026-11-28）
 
-- **確認済み**: `pio test -e native` = 11/11 PASSED。`pio run -e m5stack-tab5-p4` = SUCCESS
-  （`firmware.bin` / `firmware.factory.bin` 生成、依存ライブラリのインストール完了）。
-- **★要確認★**: 実機への書き込み、画面表示、IMU 値の変化、PC 側でのフレーム受信、
-  シリアルポート名、姿勢の軸向き。Tab5 が開発 PC に接続されていないため未実施です。
+- **確認済み（ホスト）**: `pio test -e native` = 11/11 PASSED。
+  `pio run -e m5stack-tab5-p4` = SUCCESS（`firmware.bin` / `firmware.factory.bin` 生成）。
+- **確認済み（実機・計測）**: 接続された芯片は ESP32-P4 revision v1.3（esptool で確認）。
+  by-id 指定で書き込み・ベリファイ成功。`/dev/ttyACM0` に起動ログ
+  `M5Stack_IMU ready: imu=BMI270 frame=20 bytes interval=50 ms` を確認。
+  PC 側で 6 秒間受信した 142 フレームはすべて XOR 正常・`status=0x00`、
+  タイムスタンプの幅 7065 ms から **20.0 Hz**、加速度/角速度の値が変化していることを確認。
+- **補足**: この開発 PC では `cdc_acm` が未ロードで `/dev/ttyACM0` が出なかったため、
+  `sudo modprobe cdc_acm` を実行してから書き込んでいます。
+- **★要確認★**: 画面の見た目（数値・棒グラフ・roll/pitch のレイアウト）は目視未確認。
+  姿勢の軸の向きも、水平時に roll/pitch が 0 になるか実機で確認してください。
