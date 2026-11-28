@@ -23,6 +23,8 @@ log/
 # PlatformIO build artifacts (firmware/main_board/, firmware/foc/, and the shared firmware/.pio)
 firmware/*/.pio/
 firmware/.pio/
+# pioarduino generates this Component Manager manifest during every build.
+firmware/*/src/idf_component.yml
 
 # ONNX model files (downloaded, ~12MB each)
 *.onnx
