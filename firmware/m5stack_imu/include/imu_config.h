@@ -27,11 +27,15 @@ constexpr float kYawMinCosPitch = 0.2f;
 // 起動直後に静止している間にジャイロの零点を平均して取る時間。
 constexpr uint32_t kYawCalibrationMs = 1500;
 // 静止検出時のバイアス追従係数（1 サンプルあたり）。ドリフトを抑えるためゆっくり追従する。
-constexpr float kYawBiasAdaptRate = 0.0005f;
+// 回転後に止まった直後にバイアスを素早く戻し、次の回転への誤差持ち越しを防ぐ。
+constexpr float kYawBiasAdaptRate = 0.01f;
 // 静止とみなす角速度の閾値 [deg/s]。
 constexpr float kYawStillGyroThreshold = 2.0f;
 // ジャイロの一次ローパス係数。積分のランダムウォークを抑える。
 constexpr float kYawGyroLowpassAlpha = 0.30f;
+// 傾き補正用加速度のローパスと、重力として信頼できる大きさの許容幅 [G]。
+constexpr float kYawAccelLowpassAlpha = 0.15f;
+constexpr float kYawAccelValidTolerance = 0.20f;
 
 }  // namespace config
 }  // namespace meister_imu

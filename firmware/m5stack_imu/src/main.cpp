@@ -74,6 +74,8 @@ void setup() {
   cfg.external_imu = false;
   M5.begin(cfg);
 
+  // M5Unified のジャイロ較正も動かし、静止時の零点ずれを抑える。
+  M5.Imu.setCalibration(0, 64, 0);
   Serial.begin(meister_imu::config::kSerialBaud);
   g_boot_ms = millis();
 
@@ -136,5 +138,9 @@ void loop() {
   }
 
   M5.update();
+  // 既知の方位で画面をタップすると yaw を 0 に戻せる（ドリフトの手動リセット）。
+  if (M5.Touch.getDetail().wasClicked()) {
+    g_yaw.Reset();
+  }
   delay(1);
 }

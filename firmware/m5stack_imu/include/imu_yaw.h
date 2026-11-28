@@ -29,7 +29,10 @@ class YawTracker {
   float bias_[3] = {0.0f, 0.0f, 0.0f};
   float bias_sum_[3] = {0.0f, 0.0f, 0.0f};
   float filtered_gyro_[3] = {0.0f, 0.0f, 0.0f};
+  float filtered_accel_[3] = {0.0f, 0.0f, 0.0f};
   bool filtered_ready_ = false;
+  float last_roll_ = 0.0f;
+  float last_pitch_ = 0.0f;
   uint32_t bias_samples_ = 0;
   float yaw_deg_ = 0.0f;
   float yaw_rate_ = 0.0f;

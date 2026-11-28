@@ -66,9 +66,17 @@ void YawTracker::Update(const RawImu& raw) {
     dt = config::kYawMaxDtS;
   }
 
-  const float ax = raw.accel[0];
-  const float ay = raw.accel[1];
-  const float az = raw.accel[2];
+  for (size_t i = 0; i < 3; ++i) {
+    if (!filtered_ready_) {
+      filtered_accel_[i] = raw.accel[i];
+    } else {
+      filtered_accel_[i] += config::kYawAccelLowpassAlpha *
+                            (raw.accel[i] - filtered_accel_[i]);
+    }
+  }
+  const float ax = filtered_accel_[0];
+  const float ay = filtered_accel_[1];
+  const float az = filtered_accel_[2];
   if (!std::isfinite(ax) || !std::isfinite(ay) || !std::isfinite(az) ||
       !std::isfinite(raw.gyro[0]) || !std::isfinite(raw.gyro[1]) ||
       !std::isfinite(raw.gyro[2])) {
@@ -102,8 +110,15 @@ void YawTracker::Update(const RawImu& raw) {
     return;
   }
 
-  const float roll = std::atan2(ay, az);
-  const float pitch = std::atan2(-ax, std::sqrt(ay * ay + az * az));
+  // 直線加速度が混ざると傾き補正が壊れるため、重力とみなせる時だけ更新する。
+  float roll = last_roll_;
+  float pitch = last_pitch_;
+  if (std::fabs(magnitude - 1.0f) <= config::kYawAccelValidTolerance) {
+    roll = std::atan2(ay, az);
+    pitch = std::atan2(-ax, std::sqrt(ay * ay + az * az));
+    last_roll_ = roll;
+    last_pitch_ = pitch;
+  }
   float cos_pitch = std::cos(pitch);
   if (cos_pitch < config::kYawMinCosPitch) {
     cos_pitch = config::kYawMinCosPitch;
