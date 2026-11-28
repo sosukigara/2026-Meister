@@ -88,7 +88,6 @@ class AckermannImuOdometry {
       wz = 0.0;
     }
 
-    // Predict yaw via 2nd-order Runge-Kutta
     const double pred_yaw = WrapAngle(state_.yaw + wz * dt);
     double next_yaw = pred_yaw;
     if (has_imu_ && last_imu_time_s_ > 0.0 && (now_s - last_imu_time_s_) < 0.5) {
@@ -97,9 +96,20 @@ class AckermannImuOdometry {
       wz = 0.3 * wz + 0.7 * imu_wz_;
     }
 
-    const double mid_yaw = WrapAngle(state_.yaw + 0.5 * WrapAngle(next_yaw - state_.yaw));
-    state_.x += vx * std::cos(mid_yaw) * dt;
-    state_.y += vx * std::sin(mid_yaw) * dt;
+    // 旋回時の弦長と弧長の差を sinc(dyaw/2) で補正する厳密円弧積分。
+    // 小角ではテイラー展開を使い 0 除算と桁落ちを避ける。
+    const double dyaw = WrapAngle(next_yaw - state_.yaw);
+    const double half = 0.5 * dyaw;
+    const double half_sq = half * half;
+    const double sinc_half =
+        std::fabs(half) < 1e-4
+            ? (1.0 - half_sq / 6.0 + (half_sq * half_sq) / 120.0)
+            : (std::sin(half) / half);
+    const double mid_yaw = state_.yaw + half;
+    const double chord = vx * dt * sinc_half;
+
+    state_.x += chord * std::cos(mid_yaw);
+    state_.y += chord * std::sin(mid_yaw);
     state_.yaw = next_yaw;
     state_.vx = vx;
     state_.wz = wz;
@@ -112,7 +122,8 @@ class AckermannImuOdometry {
   const OdometryConfig& config() const noexcept { return cfg_; }
 
   static double WrapAngle(double rad) noexcept {
-    return std::atan2(std::sin(rad), std::cos(rad));
+    // atan2(sin, cos) は超越関数を 3 回呼ぶため、IEEE 754 remainder で高速・高精度に正規化する。
+    return std::remainder(rad, 2.0 * M_PI);
   }
 
  private:

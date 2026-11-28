@@ -26,7 +26,6 @@ TEST(TwistToActuators, StraightForward) {
 }
 
 TEST(TwistToActuators, StraightReverseDoesNotDeflectSteering) {
-  // 旧実装では atan2(0.0, -0.5) = +pi (+180度) となり +300 (+30.0度) に張り付いていたバグの回帰テスト
   const auto cmd = msb::TwistToActuators(-0.5, 0.0, Default());
   EXPECT_EQ(cmd.steering_tenths, 0);
   EXPECT_EQ(cmd.velocity_permille, -500);
@@ -34,7 +33,6 @@ TEST(TwistToActuators, StraightReverseDoesNotDeflectSteering) {
 
 TEST(TwistToActuators, CurvedReverseMaintainsTrueBicycleCurvature) {
   const auto k = Default();
-  // vx = -0.5 m/s, wz = -0.5 rad/s -> kappa = (-0.5)/(-0.5) = +1.0 m^-1 -> +atan(0.3)
   const auto cmd = msb::TwistToActuators(-0.5, -0.5, k);
   const int expected =
       static_cast<int>(std::nearbyint(std::atan(0.3 * 1.0) * 180.0 / M_PI * 10.0));
@@ -129,7 +127,6 @@ TEST(AckermannImuOdometry, FusesBicycleMotionWithBno055ImuHeading) {
   EXPECT_NEAR(odom.state().x, 0.20, 1e-4);
   EXPECT_NEAR(odom.state().y, 0.0, 1e-4);
 
-  // Feed initial IMU heading (0 deg) then +30.0 deg (300 tenths)
   msb::ImuReport imu0{0, 0xFF};
   odom.UpdateImuReport(imu0, 0.20);
   msb::ImuReport imu1{300, 0xFF};
@@ -137,4 +134,32 @@ TEST(AckermannImuOdometry, FusesBicycleMotionWithBno055ImuHeading) {
   odom.Step(0.22);
 
   EXPECT_GT(odom.state().yaw, 0.40);
+}
+
+TEST(AckermannImuOdometry, ExactArcIntegrationMatchesAnalyticSemicircle) {
+  msb::OdometryConfig cfg{};
+  cfg.wheelbase_m = 0.30;
+  cfg.max_steering_deg = 30.0;
+  cfg.cmd_timeout_s = 10.0;
+  msb::AckermannImuOdometry odom(cfg);
+
+  // 半径 R = 1.0 m の半円を大きなステップ (dt = 0.5 s, dyaw = pi/2) で 2 回積分しても
+  // 厳密円弧積分なら (0, 2R) に一致する（中点法では 10% 以上の誤差が出る）。
+  const double vx = M_PI / 2.0;
+  const double wz = M_PI / 2.0;
+  odom.Step(0.0);
+  odom.UpdateTwistCommand(vx, wz, 0.0);
+  odom.Step(1.0);
+  odom.UpdateTwistCommand(vx, wz, 1.0);
+  odom.Step(2.0);
+
+  EXPECT_NEAR(odom.state().x, 0.0, 1e-9);
+  EXPECT_NEAR(odom.state().y, 2.0, 1e-9);
+}
+
+TEST(AckermannImuOdometry, WrapAngleNormalizesToMinusPiToPi) {
+  EXPECT_NEAR(msb::AckermannImuOdometry::WrapAngle(0.0), 0.0, 1e-12);
+  EXPECT_NEAR(msb::AckermannImuOdometry::WrapAngle(3.0 * M_PI / 2.0), -M_PI / 2.0, 1e-12);
+  EXPECT_NEAR(msb::AckermannImuOdometry::WrapAngle(-3.0 * M_PI / 2.0), M_PI / 2.0, 1e-12);
+  EXPECT_NEAR(msb::AckermannImuOdometry::WrapAngle(5.0 * M_PI / 4.0), -3.0 * M_PI / 4.0, 1e-12);
 }

@@ -1,8 +1,10 @@
 #include "umeonigiri_vision/rknn_yolo.hpp"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <vector>
@@ -17,12 +19,16 @@ namespace
 
 constexpr int kBranchCount = 3;
 constexpr int kDflBins = 16;
-constexpr float kPadValue = 114.0F;
+constexpr int kPadValue = 114;
 
-/// int8 の生値を実数へ。RKNN の量子化はテンソル単位の一様量子化。
 inline float Dequant(int8_t value, int zp, float scale)
 {
   return (static_cast<float>(value) - static_cast<float>(zp)) * scale;
+}
+
+inline int RoundHalfToEven(double v)
+{
+  return static_cast<int>(std::nearbyint(v));
 }
 
 }  // namespace
@@ -118,95 +124,177 @@ void RknnYolo::DecodeScale(
   const int grid_h = cls.height;
   const int grid_w = cls.width;
   const int classes = cls.channels;
+  if (grid_h <= 0 || grid_w <= 0 || classes <= 0) {
+    return;
+  }
+  const size_t cells = static_cast<size_t>(grid_h) * static_cast<size_t>(grid_w);
   const float stride_x = static_cast<float>(input_size_) / static_cast<float>(grid_w);
   const float stride_y = static_cast<float>(input_size_) / static_cast<float>(grid_h);
 
-  // sigmoid は単調なので、しきい値は生ロジットのまま比較できる。
-  const float cls_threshold_raw = logit_thres;  // ここでは確率しきい値として渡す
-
-  for (int gy = 0; gy < grid_h; ++gy) {
-    for (int gx = 0; gx < grid_w; ++gx) {
-      const int base = (gy * grid_w + gx);
-      // クラス方向だけ先に走査して、通らないアンカーは DFL を計算しない。
-      int best = 0;
-      int8_t best_raw = 0;
-      bool first = true;
-      for (int c = 0; c < classes; ++c) {
-        const int8_t raw = cls_data[static_cast<size_t>(c) * grid_h * grid_w + base];
-        if (first || raw > best_raw) {
-          best_raw = raw;
-          best = c;
-          first = false;
-        }
-      }
-      // このモデルの cls 出力は sigmoid 後（0〜1）を量子化したもの。
-      // 生ロジット前提でしきい値を変換すると全部通ってしまう（実測で判明）。
-      const float score = Dequant(best_raw, cls.zp, cls.scale);
-      if (score < cls_threshold_raw) {
-        continue;
-      }
-
-      // DFL: 4 辺 × 16 ビン を softmax して期待値を取る。
-      float dist[4] = {0.0F, 0.0F, 0.0F, 0.0F};
-      for (int side = 0; side < 4; ++side) {
-        float max_v = -1e9F;
-        float values[kDflBins];
-        for (int bin = 0; bin < kDflBins; ++bin) {
-          const int channel = side * kDflBins + bin;
-          const int8_t raw = reg_data[static_cast<size_t>(channel) * grid_h * grid_w + base];
-          values[bin] = Dequant(raw, reg.zp, reg.scale);
-          max_v = std::max(max_v, values[bin]);
-        }
-        float sum = 0.0F;
-        for (int bin = 0; bin < kDflBins; ++bin) {
-          values[bin] = std::exp(values[bin] - max_v);
-          sum += values[bin];
-        }
-        float expect = 0.0F;
-        for (int bin = 0; bin < kDflBins; ++bin) {
-          expect += values[bin] / sum * static_cast<float>(bin);
-        }
-        dist[side] = expect;
-      }
-
-      YoloBox box;
-      box.x0 = (static_cast<float>(gx) + 0.5F - dist[0]) * stride_x;
-      box.y0 = (static_cast<float>(gy) + 0.5F - dist[1]) * stride_y;
-      box.x1 = (static_cast<float>(gx) + 0.5F + dist[2]) * stride_x;
-      box.y1 = (static_cast<float>(gy) + 0.5F + dist[3]) * stride_y;
-      box.score = score;
-      box.class_id = best;
-      boxes.push_back(box);
+  // cls.scale > 0 なら量子化は単調なので、int8 空間で 32 要素ブロック最大値を
+  // 読み取り専用で走査し、閾値を超えたごく少数のセルのみ記録する。
+  int8_t thres_i8 = -128;
+  if (cls.scale > 0.0F) {
+    const float raw_f = std::floor(logit_thres / cls.scale + static_cast<float>(cls.zp));
+    if (raw_f > 127.0F) {
+      return;
     }
+    if (raw_f > -128.0F) {
+      thres_i8 = static_cast<int8_t>(static_cast<int>(raw_f));
+    }
+  }
+
+  thread_local std::vector<int8_t> max_raw;
+  thread_local std::vector<uint16_t> best_cls;
+  thread_local std::vector<uint8_t> active_flags;
+  thread_local std::vector<size_t> active_cells;
+  if (max_raw.size() < cells) {
+    max_raw.resize(cells);
+    best_cls.resize(cells);
+    active_flags.assign(cells, 0);
+  }
+  active_cells.clear();
+
+  auto record_hit = [&](size_t idx, int8_t v, uint16_t cid) {
+    if (!active_flags[idx]) {
+      active_flags[idx] = 1;
+      active_cells.push_back(idx);
+      max_raw[idx] = v;
+      best_cls[idx] = cid;
+    } else if (v > max_raw[idx]) {
+      max_raw[idx] = v;
+      best_cls[idx] = cid;
+    }
+  };
+
+  for (int c = 0; c < classes; ++c) {
+    const int8_t * const row = cls_data + static_cast<size_t>(c) * cells;
+    const uint16_t cid = static_cast<uint16_t>(c);
+    size_t base = 0;
+    for (; base + 32 <= cells; base += 32) {
+      int8_t blk_max = row[base];
+      for (size_t k = 1; k < 32; ++k) {
+        const int8_t v = row[base + k];
+        blk_max = v > blk_max ? v : blk_max;
+      }
+      if (blk_max >= thres_i8) {
+        for (size_t k = 0; k < 32; ++k) {
+          const int8_t v = row[base + k];
+          if (v >= thres_i8) {
+            record_hit(base + k, v, cid);
+          }
+        }
+      }
+    }
+    for (; base < cells; ++base) {
+      const int8_t v = row[base];
+      if (v >= thres_i8) {
+        record_hit(base, v, cid);
+      }
+    }
+  }
+
+  if (active_cells.empty()) {
+    return;
+  }
+
+  // DFL の int8->float 変換は高々 256 通りなので、候補が出たときだけ LUT を作る。
+  bool lut_ready = false;
+  std::array<float, 256> reg_lut{};
+
+  for (const size_t base : active_cells) {
+    active_flags[base] = 0;
+    // このモデルの cls 出力は sigmoid 後（0〜1）を量子化したもの。
+    const float score = Dequant(max_raw[base], cls.zp, cls.scale);
+    if (score < logit_thres) {
+      continue;
+    }
+
+    if (!lut_ready) {
+      for (int i = 0; i < 256; ++i) {
+        reg_lut[static_cast<size_t>(i)] =
+          Dequant(static_cast<int8_t>(static_cast<uint8_t>(i)), reg.zp, reg.scale);
+      }
+      lut_ready = true;
+    }
+
+    float dist[4] = {0.0F, 0.0F, 0.0F, 0.0F};
+    for (int side = 0; side < 4; ++side) {
+      float max_v = -1e9F;
+      float values[kDflBins];
+      const size_t side_offset = static_cast<size_t>(side * kDflBins);
+      for (int bin = 0; bin < kDflBins; ++bin) {
+        const uint8_t u = static_cast<uint8_t>(
+          reg_data[(side_offset + static_cast<size_t>(bin)) * cells + base]);
+        values[bin] = reg_lut[u];
+        max_v = std::max(max_v, values[bin]);
+      }
+      float sum = 0.0F;
+      float weighted = 0.0F;
+      for (int bin = 0; bin < kDflBins; ++bin) {
+        const float e = std::exp(values[bin] - max_v);
+        sum += e;
+        weighted += e * static_cast<float>(bin);
+      }
+      dist[side] = sum > 0.0F ? (weighted / sum) : 0.0F;
+    }
+
+    const int gy = static_cast<int>(base / static_cast<size_t>(grid_w));
+    const int gx = static_cast<int>(base % static_cast<size_t>(grid_w));
+    YoloBox box;
+    box.x0 = (static_cast<float>(gx) + 0.5F - dist[0]) * stride_x;
+    box.y0 = (static_cast<float>(gy) + 0.5F - dist[1]) * stride_y;
+    box.x1 = (static_cast<float>(gx) + 0.5F + dist[2]) * stride_x;
+    box.y1 = (static_cast<float>(gy) + 0.5F + dist[3]) * stride_y;
+    box.score = score;
+    box.class_id = static_cast<int>(best_cls[base]);
+    boxes.push_back(box);
   }
 }
 
 void RknnYolo::Nms(std::vector<YoloBox> & boxes, float iou_thres)
 {
+  if (boxes.size() <= 1) {
+    return;
+  }
   std::sort(
     boxes.begin(), boxes.end(),
     [](const YoloBox & a, const YoloBox & b) {return a.score > b.score;});
+
+  const size_t n = boxes.size();
+  std::vector<float> areas(n);
+  for (size_t i = 0; i < n; ++i) {
+    areas[i] = std::max(0.0F, boxes[i].x1 - boxes[i].x0) *
+      std::max(0.0F, boxes[i].y1 - boxes[i].y0);
+  }
+
   std::vector<YoloBox> kept;
-  std::vector<bool> removed(boxes.size(), false);
-  for (size_t i = 0; i < boxes.size(); ++i) {
+  kept.reserve(n);
+  std::vector<uint8_t> removed(n, 0);
+  for (size_t i = 0; i < n; ++i) {
     if (removed[i]) {
       continue;
     }
-    kept.push_back(boxes[i]);
-    for (size_t j = i + 1; j < boxes.size(); ++j) {
-      if (removed[j] || boxes[j].class_id != boxes[i].class_id) {
+    const YoloBox & bi = boxes[i];
+    const float area_i = areas[i];
+    kept.push_back(bi);
+    for (size_t j = i + 1; j < n; ++j) {
+      if (removed[j] || boxes[j].class_id != bi.class_id) {
         continue;
       }
-      const float x0 = std::max(boxes[i].x0, boxes[j].x0);
-      const float y0 = std::max(boxes[i].y0, boxes[j].y0);
-      const float x1 = std::min(boxes[i].x1, boxes[j].x1);
-      const float y1 = std::min(boxes[i].y1, boxes[j].y1);
-      const float inter = std::max(0.0F, x1 - x0) * std::max(0.0F, y1 - y0);
-      const float area_i = (boxes[i].x1 - boxes[i].x0) * (boxes[i].y1 - boxes[i].y0);
-      const float area_j = (boxes[j].x1 - boxes[j].x0) * (boxes[j].y1 - boxes[j].y0);
-      const float uni = area_i + area_j - inter;
-      if (uni > 0.0F && inter / uni > iou_thres) {
-        removed[j] = true;
+      const YoloBox & bj = boxes[j];
+      const float iw = std::min(bi.x1, bj.x1) - std::max(bi.x0, bj.x0);
+      if (iw <= 0.0F) {
+        continue;
+      }
+      const float ih = std::min(bi.y1, bj.y1) - std::max(bi.y0, bj.y0);
+      if (ih <= 0.0F) {
+        continue;
+      }
+      const float inter = iw * ih;
+      const float uni = area_i + areas[j] - inter;
+      if (uni > 0.0F && inter > iou_thres * uni) {
+        removed[j] = 1;
       }
     }
   }
@@ -217,28 +305,46 @@ std::vector<YoloBox> RknnYolo::Detect(
   const cv::Mat & image_bgr, float conf_thres, float iou_thres)
 {
   std::vector<YoloBox> result;
-  if (!ok_) {
+  if (!ok_ || image_bgr.empty()) {
     return result;
   }
   const auto start = std::chrono::steady_clock::now();
 
-  // 縦横比を保って入力サイズへ収める（潰すと精度が落ちる）。
-  const float scale = std::min(
-    static_cast<float>(input_size_) / static_cast<float>(image_bgr.cols),
-    static_cast<float>(input_size_) / static_cast<float>(image_bgr.rows));
-  const int new_w = static_cast<int>(static_cast<float>(image_bgr.cols) * scale);
-  const int new_h = static_cast<int>(static_cast<float>(image_bgr.rows) * scale);
+  const double scale = std::min(
+    static_cast<double>(input_size_) / static_cast<double>(image_bgr.cols),
+    static_cast<double>(input_size_) / static_cast<double>(image_bgr.rows));
+  const int new_w = std::max(1, RoundHalfToEven(static_cast<double>(image_bgr.cols) * scale));
+  const int new_h = std::max(1, RoundHalfToEven(static_cast<double>(image_bgr.rows) * scale));
   const int pad_x = (input_size_ - new_w) / 2;
   const int pad_y = (input_size_ - new_h) / 2;
 
-  cv::Mat letterboxed(input_size_, input_size_, CV_8UC3, cv::Scalar::all(kPadValue));
-  cv::Mat resized;
-  cv::resize(image_bgr, resized, cv::Size(new_w, new_h));
-  resized.copyTo(letterboxed(cv::Rect(pad_x, pad_y, new_w, new_h)));
+  // input_buffer_ 上に直接 RGB letterbox を構築し、毎フレームの確保と全画素コピーを省く。
+  cv::Mat rgb_canvas(
+    input_size_, input_size_, CV_8UC3, reinterpret_cast<uint8_t *>(input_buffer_.data()));
+  const cv::Scalar pad_scalar = cv::Scalar::all(kPadValue);
+  const int bottom_h = input_size_ - (pad_y + new_h);
+  const int right_w = input_size_ - (pad_x + new_w);
+  if (pad_y > 0) {
+    rgb_canvas(cv::Rect(0, 0, input_size_, pad_y)).setTo(pad_scalar);
+  }
+  if (bottom_h > 0) {
+    rgb_canvas(cv::Rect(0, pad_y + new_h, input_size_, bottom_h)).setTo(pad_scalar);
+  }
+  if (pad_x > 0) {
+    rgb_canvas(cv::Rect(0, pad_y, pad_x, new_h)).setTo(pad_scalar);
+  }
+  if (right_w > 0) {
+    rgb_canvas(cv::Rect(pad_x + new_w, pad_y, right_w, new_h)).setTo(pad_scalar);
+  }
 
-  cv::Mat rgb;
-  cv::cvtColor(letterboxed, rgb, cv::COLOR_BGR2RGB);
-  std::memcpy(input_buffer_.data(), rgb.data, input_buffer_.size());
+  cv::Mat dst_roi = rgb_canvas(cv::Rect(pad_x, pad_y, new_w, new_h));
+  if (new_w == image_bgr.cols && new_h == image_bgr.rows) {
+    cv::cvtColor(image_bgr, dst_roi, cv::COLOR_BGR2RGB);
+  } else {
+    thread_local cv::Mat resized_bgr;
+    cv::resize(image_bgr, resized_bgr, cv::Size(new_w, new_h), 0, 0, cv::INTER_LINEAR);
+    cv::cvtColor(resized_bgr, dst_roi, cv::COLOR_BGR2RGB);
+  }
 
   auto * ctx = static_cast<rknn_context *>(ctx_);
   rknn_input input{};
@@ -252,7 +358,7 @@ std::vector<YoloBox> RknnYolo::Detect(
   std::vector<rknn_output> outputs(static_cast<size_t>(n_output_));
   for (int i = 0; i < n_output_; ++i) {
     outputs[static_cast<size_t>(i)].index = static_cast<uint32_t>(i);
-    outputs[static_cast<size_t>(i)].want_float = 0;  // int8 のまま受け取る
+    outputs[static_cast<size_t>(i)].want_float = 0;
     outputs[static_cast<size_t>(i)].is_prealloc = 0;
   }
 
@@ -263,9 +369,7 @@ std::vector<YoloBox> RknnYolo::Detect(
     return result;
   }
 
-  // cls 出力は sigmoid 後の確率を量子化したものなので、しきい値はそのまま使う。
-  const float logit_thres = conf_thres;
-
+  result.reserve(64);
   for (int branch = 0; branch < kBranchCount; ++branch) {
     const OutputTensor & reg = outputs_[static_cast<size_t>(branch * 3)];
     const OutputTensor & cls = outputs_[static_cast<size_t>(branch * 3 + 1)];
@@ -273,22 +377,27 @@ std::vector<YoloBox> RknnYolo::Detect(
       static_cast<const int8_t *>(outputs[static_cast<size_t>(branch * 3)].buf);
     const auto * cls_data =
       static_cast<const int8_t *>(outputs[static_cast<size_t>(branch * 3 + 1)].buf);
-    DecodeScale(reg, reg_data, cls, cls_data, logit_thres, result);
+    DecodeScale(reg, reg_data, cls, cls_data, conf_thres, result);
   }
 
   rknn_outputs_release(*ctx, static_cast<uint32_t>(n_output_), outputs.data());
 
-  // 入力座標 → 元画像座標（パディングを外す）。
-  for (auto & box : result) {
-    box.x0 = (box.x0 - static_cast<float>(pad_x)) / scale;
-    box.x1 = (box.x1 - static_cast<float>(pad_x)) / scale;
-    box.y0 = (box.y0 - static_cast<float>(pad_y)) / scale;
-    box.y1 = (box.y1 - static_cast<float>(pad_y)) / scale;
-    box.x0 = std::max(0.0F, std::min(box.x0, static_cast<float>(image_bgr.cols - 1)));
-    box.x1 = std::max(0.0F, std::min(box.x1, static_cast<float>(image_bgr.cols - 1)));
-    box.y0 = std::max(0.0F, std::min(box.y0, static_cast<float>(image_bgr.rows - 1)));
-    box.y1 = std::max(0.0F, std::min(box.y1, static_cast<float>(image_bgr.rows - 1)));
+  const float inv_scale = static_cast<float>(1.0 / scale);
+  const float max_w = static_cast<float>(image_bgr.cols);
+  const float max_h = static_cast<float>(image_bgr.rows);
+  size_t write_idx = 0;
+  for (size_t i = 0; i < result.size(); ++i) {
+    YoloBox box = result[i];
+    box.x0 = std::clamp((box.x0 - static_cast<float>(pad_x)) * inv_scale, 0.0F, max_w);
+    box.x1 = std::clamp((box.x1 - static_cast<float>(pad_x)) * inv_scale, 0.0F, max_w);
+    box.y0 = std::clamp((box.y0 - static_cast<float>(pad_y)) * inv_scale, 0.0F, max_h);
+    box.y1 = std::clamp((box.y1 - static_cast<float>(pad_y)) * inv_scale, 0.0F, max_h);
+    if (box.x1 > box.x0 && box.y1 > box.y0) {
+      result[write_idx++] = box;
+    }
   }
+  result.resize(write_idx);
+
   Nms(result, iou_thres);
 
   last_infer_ms_ = std::chrono::duration<double, std::milli>(

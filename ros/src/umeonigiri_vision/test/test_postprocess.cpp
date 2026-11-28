@@ -13,7 +13,6 @@ namespace {
 
 constexpr int kStride = kYoloNumClasses + kYoloBBoxCols;
 
-/// (1, 84, 8400) 相当の平坦配列。全部 0 で、指定 cell だけ埋める。
 std::vector<float> MakeOutput() {
   return std::vector<float>(static_cast<size_t>(kStride) * kYoloGridCells, 0.0f);
 }
@@ -29,8 +28,6 @@ void SetCell(std::vector<float>& out, int cell, double cx, double cy, double w,
   out[(kYoloBBoxCols + class_id) * stride + a] = score;
 }
 
-/// letterbox が scale 1.0 / pad 0 だった場合として素通しする。
-/// 名前は Run ではなく Decode。gtest の Test::Run と衝突する。
 std::vector<Detection> Decode(const std::vector<float>& out, float conf = 0.25f) {
   return YoloPostprocess(out, kYoloGridCells, 1.0, 0, 0, 640, 640, conf, 0.45f);
 }
@@ -79,14 +76,11 @@ TEST(YoloPostprocess, PicksHighestScoringClassPerCell) {
   const std::vector<Detection> dets = Decode(out);
   ASSERT_EQ(dets.size(), 1U);
   EXPECT_EQ(dets[0].class_id, 44);
-  // COCO 44 は spoon。book ではない（COCO には book が無い）。
   EXPECT_EQ(dets[0].class_name, "spoon");
 }
 
 TEST(YoloPostprocess, ClampsToImageBounds) {
   std::vector<float> out = MakeOutput();
-  // 完全に画像外に出る枠は clamp 後に幅 0 になり NMS の契約外になるので、
-  // clamp が効く「一部分だけ外」的座標を使う。
   SetCell(out, 3, 5.0, 5.0, 20.0, 20.0, 2, 0.7f);
   SetCell(out, 4, 635.0, 635.0, 20.0, 20.0, 2, 0.7f);
   const std::vector<Detection> dets = Decode(out);
@@ -115,6 +109,23 @@ TEST(YoloPostprocess, SuppressesOverlappingBoxes) {
   SetCell(out, 10, 100.0, 100.0, 40.0, 40.0, 0, 0.90f);
   SetCell(out, 11, 102.0, 101.0, 40.0, 40.0, 0, 0.70f);
   EXPECT_EQ(Decode(out).size(), 1U);
+}
+
+TEST(YoloPostprocess, KeepsOverlappingBoxesOfDifferentClasses) {
+  std::vector<float> out = MakeOutput();
+  SetCell(out, 10, 100.0, 100.0, 40.0, 40.0, 0, 0.90f);   // person
+  SetCell(out, 11, 101.0, 101.0, 38.0, 38.0, 24, 0.75f);  // backpack
+  const std::vector<Detection> dets = Decode(out);
+  ASSERT_EQ(dets.size(), 2U);
+  EXPECT_EQ(dets[0].class_id, 0);
+  EXPECT_EQ(dets[1].class_id, 24);
+}
+
+TEST(YoloPostprocess, DropsDegenerateBoxesAfterClamp) {
+  std::vector<float> out = MakeOutput();
+  SetCell(out, 30, -50.0, -50.0, 10.0, 10.0, 0, 0.95f);  // 完全に画像外
+  SetCell(out, 31, 200.0, 200.0, 0.0, 20.0, 0, 0.95f);   // 幅 0
+  EXPECT_TRUE(Decode(out).empty());
 }
 
 TEST(YoloPostprocess, KeepsDistantBoxes) {
