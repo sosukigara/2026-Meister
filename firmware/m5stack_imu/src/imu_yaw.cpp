@@ -75,6 +75,33 @@ void YawTracker::Update(const RawImu& raw) {
     return;
   }
 
+  for (size_t i = 0; i < 3; ++i) {
+    if (!filtered_ready_) {
+      filtered_gyro_[i] = raw.gyro[i];
+    } else {
+      filtered_gyro_[i] += config::kYawGyroLowpassAlpha *
+                           (raw.gyro[i] - filtered_gyro_[i]);
+    }
+  }
+  filtered_ready_ = true;
+
+  // 静止判定にはノイズ除去後の値を使う。
+  const float magnitude = std::sqrt(ax * ax + ay * ay + az * az);
+  const bool still =
+      std::fabs(magnitude - 1.0f) < 0.05f &&
+      std::fabs(filtered_gyro_[0]) < config::kYawStillGyroThreshold &&
+      std::fabs(filtered_gyro_[1]) < config::kYawStillGyroThreshold &&
+      std::fabs(filtered_gyro_[2]) < config::kYawStillGyroThreshold;
+
+  if (still) {
+    // 静止時は零点を追従させ、残留角速度を積分しない（ZUPT）。
+    for (size_t i = 0; i < 3; ++i) {
+      bias_[i] += config::kYawBiasAdaptRate * (filtered_gyro_[i] - bias_[i]);
+    }
+    yaw_rate_ = 0.0f;
+    return;
+  }
+
   const float roll = std::atan2(ay, az);
   const float pitch = std::atan2(-ax, std::sqrt(ay * ay + az * az));
   float cos_pitch = std::cos(pitch);
@@ -82,20 +109,8 @@ void YawTracker::Update(const RawImu& raw) {
     cos_pitch = config::kYawMinCosPitch;
   }
 
-  // 静止している間だけ零点をゆっくり追従させ、温度ドリフトを抑える。
-  const float magnitude = std::sqrt(ax * ax + ay * ay + az * az);
-  if (std::fabs(magnitude - 1.0f) < 0.05f &&
-      std::fabs(raw.gyro[0]) < config::kYawStillGyroThreshold &&
-      std::fabs(raw.gyro[1]) < config::kYawStillGyroThreshold &&
-      std::fabs(raw.gyro[2]) < config::kYawStillGyroThreshold) {
-    for (size_t i = 0; i < 3; ++i) {
-      bias_[i] += config::kYawBiasAdaptRate * (raw.gyro[i] - bias_[i]);
-    }
-  }
-
-  const float gx = raw.gyro[0] - bias_[0];
-  const float gy = raw.gyro[1] - bias_[1];
-  const float gz = raw.gyro[2] - bias_[2];
+  const float gy = filtered_gyro_[1] - bias_[1];
+  const float gz = filtered_gyro_[2] - bias_[2];
   yaw_rate_ = (gy * std::sin(roll) + gz * std::cos(roll)) / cos_pitch;
   yaw_deg_ += yaw_rate_ * dt;
 
