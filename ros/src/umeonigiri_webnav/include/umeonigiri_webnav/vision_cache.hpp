@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-/// detection_node は 3 Hz で描画済み画像を流す。ブラウザに毎回 PNG を渡すと
-/// 1 フレーム数十 KB が積み上がるので、ここで JPEG に落としてから保持し、
-/// 配信側 (/api/vision.jpg と MJPEG) は同じバイト列を共有する。
+/// 認識モニター用の画像・検出キャッシュ。
+/// SetFrame では BGR のまま保持し、JPEG エンコードは Latest() で実際にブラウザから
+/// 取得されたときだけ遅延実行（seq_ 単位でキャッシュ）することで、未視聴時の CPU を削減する。
 ///
 /// ROS グラフは要らない (購読は VisionListener)。node 無しで test できる。
 #ifndef UMEONIGIRI_WEBNAV_VISION_CACHE_HPP_
@@ -17,6 +17,7 @@
 #include <vector>
 
 #include <nlohmann/json.hpp>
+#include <opencv2/core.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <vision_msgs/msg/detection2_d_array.hpp>
 
@@ -34,17 +35,14 @@ struct VisionDetection {
   double height;
 };
 
-/// 古いと見なすまでの無通信時間。detection_node の既定は 3 Hz なので、その 7 倍
-/// 以上あけて「一時的な取りこぼし」と「配信が止まった」を分ける。
+/// 古いと見なすまでの無通信時間。
 inline constexpr int kStaleAfterMs = 2500;
 
 class VisionCache {
  public:
-  /// stale_after_ms は test が短くするための口。既定は kStaleAfterMs。
   explicit VisionCache(int stale_after_ms = kStaleAfterMs);
 
   /// 復号できない画像 (未知の encoding / 壊れた step) は false を返して捨てる。
-  /// 途中まで読めた画像を混ぜると、どのフレームか分からない絵が UI に残る。
   bool SetFrame(const sensor_msgs::msg::Image& msg);
 
   void SetDetections(const vision_msgs::msg::Detection2DArray& msg);
@@ -56,20 +54,18 @@ class VisionCache {
  private:
   using Clock = std::chrono::steady_clock;
 
-  VisionFrame FrameLocked() const;
-
   mutable std::mutex mutex_;
   std::condition_variable frame_cv_;
 
   bool has_frame_ = false;
   long seq_ = 0;
+  cv::Mat latest_bgr_;
+  long jpeg_seq_ = -1;
   std::string jpeg_;
   int width_ = 0;
   int height_ = 0;
   std::string frame_id_;
   Clock::time_point frame_at_{};
-  /// fps は直近 2 秒の到達時刻で見る。起動直後の 1 フレーム目を 0 と出したいので
-  /// レートの移動平均は持たない。
   std::deque<Clock::time_point> arrivals_;
 
   bool has_detections_ = false;
